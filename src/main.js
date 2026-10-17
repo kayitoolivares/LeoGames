@@ -6,6 +6,7 @@ import { MenuScene } from './scenes/MenuScene.js';
 import { PadTestScene } from './scenes/PadTestScene.js';
 import { BrawlScene } from './games/brawl/BrawlScene.js';
 import { SmashScene } from './games/smash/SmashScene.js';
+import { SmashSelectScene } from './games/smash/SmashSelectScene.js';
 import { ThreeGameScene } from './games/ThreeGameScene.js';
 import { COLORS } from './ui/style.js';
 
@@ -25,6 +26,7 @@ const game = new Phaser.Game({
     MenuScene,
     PadTestScene,
     BrawlScene,
+    SmashSelectScene,
     SmashScene,
     // Los juegos 3D se descargan hasta que alguien entra a ellos.
     new ThreeGameScene('Race', () => import('./games/race/RaceGame.js').then((m) => m.RaceGame)),

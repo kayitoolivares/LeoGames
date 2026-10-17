@@ -4,6 +4,7 @@ import { frameDelta } from '../../shared/clock.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
+import { CHARACTERS, CHARACTER_KEYS } from './characters.js';
 import { SmashFighter, STOCKS } from './SmashFighter.js';
 import { BLAST_ZONE, PLATFORMS, STAGE_FOCUS, drawStage } from './stage.js';
 
@@ -16,7 +17,9 @@ const ZOOM_MAX = 1.15;
 const CAMERA_MARGIN = 220;
 const STRONG_HIT_SPEED = 900;
 const HIT_WORDS = ['¡PAM!', '¡ZAS!', '¡POW!', '¡BAM!'];
-const IDLE = { x: 0, y: 0, jump: false, attack: false };
+const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false };
+// La estrella de Estrella: poco daño, pero pega de lejos.
+const STAR = { speed: 700, lifeMs: 900, radius: 16, hit: { damage: 5, base: 160, scale: 5, angle: 30 } };
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
 
 // "Bolitas Bros" (fase 1): pelea estilo Smash. Cada golpe sube tu %, y entre más % llevas,
@@ -41,6 +44,7 @@ export class SmashScene extends Phaser.Scene {
     this.uiCam.ignore(this.world);
 
     drawStage(this, this.world);
+    this.stars = [];
     this.fighters = this.createFighters();
     this.createHud();
     this.phase = 'countdown';
@@ -52,16 +56,24 @@ export class SmashScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
   }
 
-  // Los jugadores que se unieron; si solo hay uno, se agrega un CPU para que tenga contra quién pelear.
+  // Los jugadores con el personaje que escogieron; si solo hay uno, se agrega un CPU al azar.
   createFighters() {
     const humans = players.sorted();
+    const picks = this.returnData.picks ?? {};
     const list = humans.map(
-      (player) => new SmashFighter(this, this.world, { color: players.color(player).hex, label: `J${player.slot + 1}`, deviceId: player.deviceId }),
+      (player) =>
+        new SmashFighter(this, this.world, {
+          color: players.color(player).hex,
+          label: `J${player.slot + 1}`,
+          deviceId: player.deviceId,
+          character: picks[player.deviceId] ?? CHARACTER_KEYS[player.slot % CHARACTER_KEYS.length],
+        }),
     );
     if (list.length < 2) {
       const taken = new Set(humans.map((player) => player.colorIndex));
       const color = PLAYER_COLORS.find((_, i) => !taken.has(i)).hex;
-      list.push(new SmashFighter(this, this.world, { color, label: 'CPU' }));
+      const character = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
+      list.push(new SmashFighter(this, this.world, { color, label: 'CPU', character }));
     }
     list.forEach((fighter, i) => fighter.spawn(SPAWN_X[i], 700, 0));
     return list;
@@ -76,7 +88,12 @@ export class SmashScene extends Phaser.Scene {
       const x = startX + i * (panelW + gap);
       const y = height - 62;
       const bg = this.add.rectangle(x, y, panelW, 96, 0x1b1530, 0.6).setRounded(18).setStrokeStyle(4, fighter.color);
-      const name = this.add.text(x - panelW / 2 + 16, y - 40, fighter.label, textStyle(20, hexToCss(fighter.color), { fontStyle: 'bold', ...OUTLINE }));
+      const name = this.add.text(
+        x - panelW / 2 + 16,
+        y - 40,
+        `${fighter.label} · ${CHARACTERS[fighter.characterKey].name}`,
+        textStyle(18, hexToCss(fighter.color), { fontStyle: 'bold', ...OUTLINE }),
+      );
       const damage = this.add.text(x + 30, y + 2, '0%', textStyle(46, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5);
       const stocks = Array.from({ length: STOCKS }, (_, k) =>
         this.add.circle(x - panelW / 2 + 24 + k * 22, y + 30, 8, fighter.color).setStrokeStyle(2, 0xffffff),
@@ -89,7 +106,12 @@ export class SmashScene extends Phaser.Scene {
     this.banner = this.add.text(width / 2, 250, '', textStyle(84, TEXT.accent, bannerStyle)).setOrigin(0.5).setAlpha(0);
     this.subBanner = this.add.text(width / 2, 330, '', textStyle(28, TEXT.normal, { ...bannerStyle, strokeThickness: 6 })).setOrigin(0.5).setAlpha(0);
     const help = this.add
-      .text(width / 2, 22, 'Stick = moverse  ·  A = saltar (2 veces)  ·  X = golpe (con ↑ o ↓ cambia)  ·  ↓ = bajar de plataforma  ·  Mantén Y = salir', textStyle(16, TEXT.normal, OUTLINE))
+      .text(
+        width / 2,
+        22,
+        'A = saltar  ·  X = golpe (↑ ↓ cambian)  ·  B = especial (B + ↑ = rescate)  ·  RB / LB = escudo  ·  ↓ = bajar  ·  Mantén Y = salir',
+        textStyle(16, TEXT.normal, OUTLINE),
+      )
       .setOrigin(0.5);
     this.exitBar = this.add.rectangle(width / 2 - 100, 42, 200, 6, 0xffffff).setOrigin(0, 0.5).setScale(0, 1);
     this.ui.add([this.banner, this.subBanner, help, this.exitBar]);
@@ -113,6 +135,8 @@ export class SmashScene extends Phaser.Scene {
       for (const fighter of this.fighters) fighter.update(dt, IDLE);
     } else {
       for (const fighter of this.fighters) fighter.update(dt, this.inputFor(fighter));
+      this.spawnStars();
+      this.updateStars(dt);
       this.resolveHits();
       this.checkBlastZones();
       if (this.phase === 'fight') this.checkWinner();
@@ -142,18 +166,27 @@ export class SmashScene extends Phaser.Scene {
       x: stick.x,
       y: stick.y,
       jump: controls.justPressed(id, 'a'),
-      // En la fase 1 la B también pega; en la fase 2 será el ataque especial.
-      attack: controls.justPressed(id, 'x') || controls.justPressed(id, 'b'),
+      attack: controls.justPressed(id, 'x'),
+      special: controls.justPressed(id, 'b'),
+      // Escudo con cualquier botón de arriba (bumpers o gatillos), para que sea fácil de encontrar.
+      shield: ['rb', 'lb', 'rt', 'lt'].some((button) => controls.isDown(id, button)),
     };
   }
 
-  // CPU sencillo: persigue al más cercano, le pega cuando está cerca y regresa al escenario si se cae.
+  // CPU sencillo: persigue al más cercano, le pega cuando está cerca, a veces se cubre o usa su especial,
+  // y regresa al escenario si se cae (con el doble salto y luego el salto de rescate).
   cpuInput(fighter) {
-    if (fighter.hitstunMs > 0 || this.phase !== 'fight') return IDLE;
+    if (fighter.hitstunMs > 0 || fighter.stunMs > 0 || this.phase !== 'fight') return IDLE;
     const main = PLATFORMS[0];
     if (fighter.x < main.left - 10 || fighter.x > main.right + 10) {
       const falling = fighter.vy > 0 && fighter.y > main.top - 150;
-      return { x: Math.sign(1000 - fighter.x), y: 0, jump: falling && fighter.airJumps > 0, attack: false };
+      return {
+        ...IDLE,
+        x: Math.sign(1000 - fighter.x),
+        y: falling && fighter.airJumps === 0 ? -1 : 0,
+        jump: falling && fighter.airJumps > 0,
+        special: falling && fighter.airJumps === 0 && !fighter.rescueUsed,
+      };
     }
     let target = null;
     let best = Infinity;
@@ -169,12 +202,59 @@ export class SmashScene extends Phaser.Scene {
     let x = close ? Math.sign(dx) * 0.3 : Math.sign(dx);
     // No se avienta del escenario persiguiendo a alguien que va cayendo.
     if ((fighter.x < main.left + 40 && dx < 0) || (fighter.x > main.right - 40 && dx > 0)) x = 0;
+    // Se cubre a veces cuando el otro está por pegarle.
+    const threatened = close && target.attack && fighter.grounded && fighter.shieldHp > 40;
+    if (threatened && (fighter.shielding || Math.random() < 0.06)) return { ...IDLE, shield: true };
+    // Estrella dispara de lejos si el otro está a su altura.
+    const lined = fighter.characterKey === 'estrella' && Math.abs(dy) < 40 && Math.abs(dx) > 150 && Math.abs(dx) < 600;
+    // Para subir: salta, usa el doble salto al ir cayendo y, si no alcanza, el salto de rescate (B + ↑).
+    // Para bajar: ↓ en una plataforma delgada.
+    const above = dy < -90;
+    const below = dy > 90;
+    const needsRescue = above && !fighter.grounded && fighter.vy > 0 && fighter.airJumps === 0 && !fighter.rescueUsed;
     return {
       x,
-      y: dy < -60 ? -1 : 0,
-      jump: dy < -90 && fighter.grounded && Math.random() < 0.05,
+      y: below && fighter.platform?.soft ? 1 : dy < -60 ? -1 : 0,
+      jump: above && (fighter.grounded ? Math.random() < 0.08 : fighter.vy > 0 && fighter.airJumps > 0),
       attack: close && Math.random() < 0.08,
+      special:
+        (lined && Math.random() < 0.03) ||
+        (close && fighter.characterKey !== 'resorte' && Math.random() < 0.01) ||
+        (needsRescue && Math.random() < 0.1),
+      shield: false,
     };
+  }
+
+  // Estrellas que pidió lanzar algún peleador este cuadro.
+  spawnStars() {
+    for (const fighter of this.fighters) {
+      const request = fighter.projectileRequest;
+      if (!request) continue;
+      fighter.projectileRequest = null;
+      const sprite = this.add.star(request.x, request.y, 5, 9, 20, 0xffc93c).setStrokeStyle(3, 0xffffff);
+      this.world.add(sprite);
+      this.stars.push({ sprite, x: request.x, y: request.y, dir: request.dir, owner: fighter, ageMs: 0 });
+    }
+  }
+
+  updateStars(dt) {
+    this.stars = this.stars.filter((star) => {
+      star.ageMs += dt;
+      star.x += star.dir * STAR.speed * (dt / 1000);
+      star.sprite.setPosition(star.x, star.y).setAngle(star.ageMs * 0.8);
+      const victim = this.fighters.find(
+        (f) => f !== star.owner && f.isAlive() && f.invulnerableMs === 0 && Math.hypot(f.x - star.x, f.y - star.y) < f.radius + STAR.radius,
+      );
+      if (victim) {
+        const result = victim.takeHit({ facing: star.dir, power: star.owner.power }, STAR.hit);
+        burst(this, star.x, star.y, result.blocked ? 0x7fdcff : 0xffc93c, 6, this.world);
+      }
+      if (victim || star.ageMs > STAR.lifeMs) {
+        star.sprite.destroy();
+        return false;
+      }
+      return true;
+    });
   }
 
   resolveHits() {
@@ -185,7 +265,11 @@ export class SmashScene extends Phaser.Scene {
         if (victim === attacker || !victim.isAlive() || victim.invulnerableMs > 0 || attacker.attack.hit.has(victim)) continue;
         if (Math.hypot(victim.x - box.x, victim.y - box.y) > box.radius + victim.radius) continue;
         attacker.attack.hit.add(victim);
-        const speed = victim.takeHit(attacker, box.data);
+        const { blocked, speed } = victim.takeHit(attacker, box.data);
+        if (blocked) {
+          burst(this, box.x, box.y, 0x7fdcff, 6, this.world);
+          continue;
+        }
         burst(this, box.x, box.y, 0xffffff, 6, this.world);
         popText(this, box.x, box.y - 40, HIT_WORDS[Math.floor(Math.random() * HIT_WORDS.length)], '#ffc93c', this.world);
         if (speed > STRONG_HIT_SPEED) this.cameras.main.shake(120, 0.006);
@@ -213,7 +297,7 @@ export class SmashScene extends Phaser.Scene {
     this.phase = 'end';
     this.phaseMs = 0;
     const winner = standing[0];
-    this.showBanner(winner ? `¡Ganó ${winner.label}!` : '¡Empate!', 'A = revancha   ·   Mantén Y = salir');
+    this.showBanner(winner ? `¡Ganó ${winner.label}!` : '¡Empate!', 'A = revancha   ·   B = cambiar personaje   ·   Mantén Y = salir');
     if (winner) {
       this.banner.setColor(hexToCss(winner.color));
       confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
@@ -222,7 +306,9 @@ export class SmashScene extends Phaser.Scene {
 
   updateEnd() {
     if (this.phaseMs < END_INPUT_DELAY_MS) return;
-    if (this.fighters.some((f) => !f.isCpu && controls.justPressed(f.deviceId, 'a'))) this.scene.restart(this.returnData);
+    const humans = this.fighters.filter((f) => !f.isCpu);
+    if (humans.some((f) => controls.justPressed(f.deviceId, 'a'))) this.scene.restart(this.returnData);
+    else if (humans.some((f) => controls.justPressed(f.deviceId, 'b'))) this.scene.start('SmashSelect', { selected: this.returnData.selected });
   }
 
   // La cámara se aleja o se acerca para que siempre quepan todos (y el escenario).

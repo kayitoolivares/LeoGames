@@ -33,10 +33,13 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Pelea en equipo**: todos contra 4 rondas de slimes, y al final el Rey Slime.
   **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén Y** = salir.
   Si alguien cae, un compañero se para junto a él para levantarlo.
-- **Bolitas Bros** (estilo Smash, fase 1): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
-  si te sacan de la pantalla pierdes una de tus 3 vidas. **A** = saltar (doble salto), **X** = golpe
-  (con ↑ golpe hacia arriba, con ↓ barrida o pisotón), **↓** = bajar de plataforma, **mantén Y** = salir.
-  Con un solo jugador aparece un CPU.
+- **Bolitas Bros** (estilo Smash, fase 2): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
+  si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
+  **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),
+  **Resorte** (salta 3 veces, B = súper salto) y **Estrella** (B = lanza estrellas).
+  **A** = saltar, **X** = golpe (con ↑ hacia arriba, con ↓ barrida o pisotón), **B + ↑** = salto de rescate,
+  **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén Y** = salir.
+  Con un solo jugador aparece un CPU con personaje al azar.
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
   **A / RT** = acelerar, **B / LT** = frenar y reversa, **stick** = girar, **RB** = nitro (3 cargas que se recargan),
   **X** = lanzar el poder de las cajitas "?" (🚀 cohete, 🍌 plátano, ⚡ súper turbo, 🛡️ burbuja).
