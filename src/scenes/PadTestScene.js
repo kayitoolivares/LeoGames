@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { controls, readGamepads } from '../shared/controls.js';
+import { frameDelta } from '../shared/clock.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
 
 // Nombres de los botones en el mapeo "standard" (el que usan los controles de Xbox).
@@ -71,7 +72,7 @@ export class PadTestScene extends Phaser.Scene {
     return { bg, status, info, chips, axes, raw, connected: null };
   }
 
-  update(time, delta) {
+  update() {
     const pads = readGamepads();
     const byIndex = new Map(pads.map((pad) => [pad.index, pad]));
     const beyondSlots = pads.filter((pad) => pad.index >= SLOTS).length;
@@ -87,7 +88,7 @@ export class PadTestScene extends Phaser.Scene {
 
     // B también se está probando, por eso para salir hay que mantenerlo.
     const holdingB = controls.connectedDevices().some((device) => controls.isDown(device.id, 'b'));
-    this.exitMs = holdingB ? this.exitMs + delta : 0;
+    this.exitMs = holdingB ? this.exitMs + frameDelta() : 0;
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();
   }
 

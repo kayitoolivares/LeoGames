@@ -5,10 +5,10 @@ import { GAMES } from '../games.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
 
-const COLUMNS = 3;
-const CARD_W = 360;
+const COLUMNS = 4;
+const CARD_W = 280;
 const CARD_H = 190;
-const CARD_GAP_X = 24;
+const CARD_GAP_X = 18;
 const ROW_Y = [235, 440];
 
 // Menú de juegos en cuadrícula. Solo el Jugador 1 mueve la selección, para que nadie (¡el bebé!)
@@ -27,11 +27,13 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(width / 2, 50, '¿A qué jugamos?', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     this.hostText = this.add.text(width / 2, 104, '', textStyle(24)).setOrigin(0.5);
 
-    const totalW = COLUMNS * CARD_W + (COLUMNS - 1) * CARD_GAP_X;
-    const startX = (width - totalW) / 2 + CARD_W / 2;
-    this.cards = GAMES.map((game, i) =>
-      this.createCard(startX + (i % COLUMNS) * (CARD_W + CARD_GAP_X), ROW_Y[Math.floor(i / COLUMNS)], game),
-    );
+    // Cada fila se centra aunque tenga menos tarjetas.
+    this.cards = GAMES.map((game, i) => {
+      const row = Math.floor(i / COLUMNS);
+      const inRow = Math.min(COLUMNS, GAMES.length - row * COLUMNS);
+      const startX = (width - (inRow * CARD_W + (inRow - 1) * CARD_GAP_X)) / 2 + CARD_W / 2;
+      return this.createCard(startX + (i % COLUMNS) * (CARD_W + CARD_GAP_X), ROW_Y[row], game);
+    });
 
     this.toast = this.add.text(width / 2, 572, '', textStyle(26, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5).setAlpha(0);
     this.add.text(width / 2, height - 20, 'A = jugar   ·   B = cambiar jugadores', textStyle(20, TEXT.muted)).setOrigin(0.5);
@@ -121,13 +123,18 @@ export class MenuScene extends Phaser.Scene {
     const id = host.deviceId;
     if (controls.justPressed(id, 'left')) this.select(this.selected - 1);
     if (controls.justPressed(id, 'right')) this.select(this.selected + 1);
-    if (controls.justPressed(id, 'up')) this.select(this.selected - COLUMNS);
-    if (controls.justPressed(id, 'down')) this.select(this.selected + COLUMNS);
+    if (controls.justPressed(id, 'up') || controls.justPressed(id, 'down')) this.selectOtherRow();
     if (controls.justPressed(id, 'b')) {
       this.scene.start('Join');
       return;
     }
     if (controls.justPressed(id, 'a')) this.launch();
+  }
+
+  // Con dos filas, arriba y abajo hacen lo mismo: brincar a la otra fila, a la tarjeta más cercana.
+  selectOtherRow() {
+    const other = this.selected < COLUMNS ? this.selected + COLUMNS : this.selected - COLUMNS;
+    this.select(Math.min(other, GAMES.length - 1));
   }
 
   showToast(text) {

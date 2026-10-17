@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { controls } from '../shared/controls.js';
+import { frameDelta } from '../shared/clock.js';
 import { players, MAX_PLAYERS } from '../shared/players.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
@@ -97,7 +98,7 @@ export class JoinScene extends Phaser.Scene {
     }
   }
 
-  update(time, delta) {
+  update() {
     let changed = false;
     const justJoined = new Set();
 
@@ -144,7 +145,7 @@ export class JoinScene extends Phaser.Scene {
     }
 
     if (changed) this.refreshCards();
-    this.updateHoldToStart(delta, justJoined);
+    this.updateHoldToStart(frameDelta(), justJoined);
     this.updatePadInfo();
   }
 

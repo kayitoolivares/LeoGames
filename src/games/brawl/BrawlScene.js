@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
+import { frameDelta } from '../../shared/clock.js';
 import { players } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { ARENA } from './arena.js';
@@ -111,8 +112,8 @@ export class BrawlScene extends Phaser.Scene {
     this.showBanner(wave.title, index === 0 ? 'X o B para pegar   ·   A para saltar' : '', index === 0 ? 2200 : 1300);
   }
 
-  update(time, delta) {
-    const dt = Math.min(delta, 50);
+  update() {
+    const dt = frameDelta();
     this.updateExit(dt);
     if (this.phase === 'won' || this.phase === 'lost') this.updateEndScreen(dt);
 

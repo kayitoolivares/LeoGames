@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { controls } from '../shared/controls.js';
+import { frameDelta } from '../shared/clock.js';
 import { TEXT, textStyle } from '../ui/style.js';
 
 // Los juegos en 3D (Three.js) se abren encima de Phaser: esta escena descarga el juego,
@@ -39,9 +40,9 @@ export class ThreeGameScene extends Phaser.Scene {
       });
   }
 
-  update(time, delta) {
+  update() {
     if (this.game3d) {
-      this.game3d.update(delta);
+      this.game3d.update(frameDelta());
       return;
     }
     if (this.failed && controls.connectedDevices().some((device) => controls.justPressed(device.id, 'a'))) this.exit();

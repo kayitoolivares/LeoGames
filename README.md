@@ -33,6 +33,10 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Pelea en equipo**: todos contra 4 rondas de slimes, y al final el Rey Slime.
   **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén Y** = salir.
   Si alguien cae, un compañero se para junto a él para levantarlo.
+- **Bolitas Bros** (estilo Smash, fase 1): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
+  si te sacan de la pantalla pierdes una de tus 3 vidas. **A** = saltar (doble salto), **X** = golpe
+  (con ↑ golpe hacia arriba, con ↓ barrida o pisotón), **↓** = bajar de plataforma, **mantén Y** = salir.
+  Con un solo jugador aparece un CPU.
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
   **A / RT** = acelerar, **B / LT** = frenar y reversa, **stick** = girar, **RB** = nitro (3 cargas que se recargan),
   **X** = lanzar el poder de las cajitas "?" (🚀 cohete, 🍌 plátano, ⚡ súper turbo, 🛡️ burbuja).
@@ -60,7 +64,9 @@ se juega desde GitHub Pages:
 - `src/shared/players.js`: quién juega, con qué control y de qué color.
 - `src/games.js`: catálogo de juegos del menú.
 - `src/scenes/`: pantallas (unirse, menú, prueba de controles).
+- `src/shared/clock.js`: tiempo real entre cuadros (para que nada vaya en cámara lenta si baja el fps).
 - `src/games/brawl/`: Pelea en equipo (Phaser).
+- `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.
