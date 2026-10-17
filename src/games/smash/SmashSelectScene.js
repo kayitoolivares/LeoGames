@@ -4,17 +4,38 @@ import { players } from '../../shared/players.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { CHARACTERS, CHARACTER_KEYS, addAccessory } from './characters.js';
+import { STAGES, STAGE_KEYS } from './stages.js';
 
-const CARD_W = 280;
-const CARD_H = 470;
-const CARD_GAP = 20;
+const CARD_W = 270;
+const CARD_H = 420;
+const CARD_GAP = 18;
+const CARD_Y = 420;
 const START_DELAY_MS = 700;
+const LEVEL_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
 
-// Lo último que escogió cada control, para no tener que escogerlo otra vez.
+// Opciones de la pelea que escoge el Jugador 1 (↑ ↓ para elegir cuál, LB / RB para cambiarla).
+const OPTIONS = [
+  { key: 'stage', label: 'Escenario', values: () => STAGE_KEYS, show: (v) => STAGES[v].name },
+  { key: 'items', label: 'Objetos', values: () => [true, false], show: (v) => (v ? 'Sí' : 'No') },
+  { key: 'cpus', label: 'CPUs', values: (humans) => cpuChoices(humans), show: String },
+  { key: 'level', label: 'Nivel CPU', values: () => Object.keys(LEVEL_NAMES), show: (v) => LEVEL_NAMES[v] },
+];
+
+// Siempre hay al menos un rival, y entre todos no pasan de 4.
+function cpuChoices(humans) {
+  const list = [];
+  for (let n = humans < 2 ? 1 : 0; n <= 4 - humans; n += 1) list.push(n);
+  return list;
+}
+
+// Lo último que se escogió, para no tener que escogerlo otra vez.
 const lastPicks = new Map();
+const lastPeque = new Map();
+const lastSettings = { stage: 'castillo', items: true, cpus: null, level: 'normal' };
 
-// Antes de Bolitas Bros: cada jugador escoge su bolita con ◀ ▶ y aprieta A cuando está listo.
-// Cuando todos están listos empieza la pelea. B quita el "listo"; si no estaba listo, el Jugador 1 regresa al menú.
+// Antes de Bolitas Bros: cada jugador escoge su bolita con ◀ ▶, Y activa su modo peque y A = listo.
+// El Jugador 1 además escoge escenario, objetos y CPUs. B quita el "listo"; si no estaba listo,
+// el Jugador 1 regresa al menú.
 export class SmashSelectScene extends Phaser.Scene {
   constructor() {
     super('SmashSelect');
@@ -26,98 +47,198 @@ export class SmashSelectScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    this.add.text(width / 2, 50, 'Escoge tu bolita', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
-    this.add.text(width / 2, 100, '◀ ▶ cambiar   ·   A = ¡listo!   ·   B = regresar', textStyle(22, TEXT.accent)).setOrigin(0.5);
+    this.humans = players.sorted();
+    this.settings = { ...lastSettings };
+    const choices = cpuChoices(this.humans.length);
+    if (!choices.includes(this.settings.cpus)) this.settings.cpus = choices[0];
+    this.optionIndex = 0;
 
-    const list = players.sorted();
-    const total = list.length * CARD_W + (list.length - 1) * CARD_GAP;
-    const startX = (width - total) / 2 + CARD_W / 2;
-    this.slots = list.map((player, i) => {
-      const pick = lastPicks.get(player.deviceId) ?? CHARACTER_KEYS[player.slot % CHARACTER_KEYS.length];
-      return this.createCard(startX + i * (CARD_W + CARD_GAP), 395, player, pick);
+    this.add.text(width / 2, 36, 'Escoge tu bolita', textStyle(44, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.optionChips = OPTIONS.map((option, i) => {
+      const x = width / 2 + (i - (OPTIONS.length - 1) / 2) * 290;
+      const bg = this.add.rectangle(x, 96, 270, 46, COLORS.panel).setRounded(14);
+      const text = this.add.text(x, 96, '', textStyle(19, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+      return { option, bg, text };
     });
-    if (list.length === 1) {
-      this.add.text(width / 2, height - 24, 'Vas a pelear contra un CPU con un personaje al azar', textStyle(18, TEXT.muted)).setOrigin(0.5);
-    }
+    this.add
+      .text(width / 2, 140, 'Jugador 1:  ↑ ↓ elegir opción  ·  LB / RB cambiarla', textStyle(17, TEXT.muted))
+      .setOrigin(0.5);
+    this.add
+      .text(width / 2, height - 22, '◀ ▶ personaje   ·   Y = modo peque 🐣   ·   A = ¡listo!   ·   B = regresar', textStyle(19, TEXT.accent))
+      .setOrigin(0.5);
+
+    this.humanSlots = this.humans.map((player) => ({
+      player,
+      color: players.color(player).hex,
+      pick: lastPicks.get(player.deviceId) ?? CHARACTER_KEYS[player.slot % CHARACTER_KEYS.length],
+      peque: lastPeque.get(player.deviceId) ?? false,
+      ready: false,
+    }));
+    this.cards = [];
+    this.refreshOptions();
+    this.layoutCards();
     this.startMs = null;
   }
 
-  createCard(x, y, player, pick) {
-    const color = players.color(player).hex;
-    const top = y - CARD_H / 2;
-    const bg = this.add.rectangle(x, y, CARD_W, CARD_H, COLORS.panel).setRounded(24).setStrokeStyle(5, color);
-    this.add.text(x, top + 30, `Jugador ${player.slot + 1}`, textStyle(24, hexToCss(color), { fontStyle: 'bold' })).setOrigin(0.5);
-    const name = this.add.text(x, top + 220, '', textStyle(34, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
-    const blurb = this.add.text(x, top + 258, '', textStyle(18, TEXT.muted)).setOrigin(0.5);
-    const special = this.add.text(x, top + 288, '', textStyle(18, TEXT.accent)).setOrigin(0.5);
-    const statStyle = textStyle(18, TEXT.normal, { lineSpacing: 6 });
-    const statLabels = this.add.text(x - CARD_W / 2 + 40, top + 318, '', statStyle);
-    const statPips = this.add.text(x + 30, top + 318, '', statStyle);
-    const status = this.add.text(x, top + CARD_H - 34, '', textStyle(24, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
-    const slot = { player, color, x, top, bg, name, blurb, special, statLabels, statPips, status, pick, ready: false, blob: null };
-    this.showCharacter(slot);
-    return slot;
+  refreshOptions() {
+    this.optionChips.forEach(({ option, bg, text }, i) => {
+      const selected = i === this.optionIndex;
+      text.setText(`${option.label}: ${option.show(this.settings[option.key])}`);
+      bg.setStrokeStyle(selected ? 4 : 2, selected ? COLORS.accent : COLORS.panelBorder);
+    });
+  }
+
+  // Una tarjeta por jugador y una por cada CPU (se rehacen cuando cambia el número de CPUs).
+  layoutCards() {
+    for (const card of this.cards) card.container.destroy();
+    const { width } = this.scale;
+    const total = this.humanSlots.length + this.settings.cpus;
+    const startX = (width - (total * CARD_W + (total - 1) * CARD_GAP)) / 2 + CARD_W / 2;
+    this.cards = [];
+    this.humanSlots.forEach((slot, i) => this.cards.push(this.humanCard(startX + i * (CARD_W + CARD_GAP), slot)));
+    for (let i = 0; i < this.settings.cpus; i += 1) {
+      this.cards.push(this.cpuCard(startX + (this.humanSlots.length + i) * (CARD_W + CARD_GAP), i));
+    }
+  }
+
+  humanCard(x, slot) {
+    const container = this.add.container(x, CARD_Y);
+    const top = -CARD_H / 2;
+    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(24).setStrokeStyle(5, slot.color);
+    const title = this.add.text(0, top + 28, `Jugador ${slot.player.slot + 1}`, textStyle(22, hexToCss(slot.color), { fontStyle: 'bold' })).setOrigin(0.5);
+    const name = this.add.text(0, top + 196, '', textStyle(30, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    const blurb = this.add.text(0, top + 230, '', textStyle(17, TEXT.muted)).setOrigin(0.5);
+    const special = this.add.text(0, top + 256, '', textStyle(17, TEXT.accent)).setOrigin(0.5);
+    const statStyle = textStyle(16, TEXT.normal, { lineSpacing: 4 });
+    const statLabels = this.add.text(-CARD_W / 2 + 40, top + 280, '', statStyle);
+    const statPips = this.add.text(30, top + 280, '', statStyle);
+    const peque = this.add.text(0, top + 362, '', textStyle(17, '#4cd97b', { fontStyle: 'bold' })).setOrigin(0.5);
+    const status = this.add.text(0, top + CARD_H - 26, '', textStyle(22, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    container.add([bg, title, name, blurb, special, statLabels, statPips, peque, status]);
+    const card = { container, slot, bg, name, blurb, special, statLabels, statPips, peque, status, blob: null };
+    this.showCharacter(card);
+    return card;
+  }
+
+  cpuCard(x, i) {
+    const container = this.add.container(x, CARD_Y);
+    const top = -CARD_H / 2;
+    container.add([
+      this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(24).setStrokeStyle(3, COLORS.panelBorder),
+      this.add.text(0, top + 28, this.settings.cpus > 1 ? `CPU ${i + 1}` : 'CPU', textStyle(22, TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5),
+      // Bolita sin cara con un "?": el personaje del CPU se escoge al azar al empezar.
+      this.add.circle(0, top + 112, 50, 0x8a86b8),
+      this.add.text(0, top + 112, '?', textStyle(56, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5),
+      this.add.text(0, top + 196, 'Al azar', textStyle(30, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5),
+      this.add.text(0, top + 232, `Nivel: ${LEVEL_NAMES[this.settings.level]}`, textStyle(17, TEXT.muted)).setOrigin(0.5),
+      this.add.text(0, top + CARD_H - 26, '¡Listo!', textStyle(22, '#4cd97b', { fontStyle: 'bold' })).setOrigin(0.5),
+    ]);
+    return { container, cpu: true };
   }
 
   // Redibuja la bolita de vista previa con el accesorio del personaje escogido.
-  showCharacter(slot) {
+  showCharacter(card) {
+    const { slot } = card;
     const c = CHARACTERS[slot.pick];
-    slot.blob?.destroy();
-    slot.blob = new Blob(this, slot.x, slot.top + 125, slot.color, c.radius * 1.5);
-    addAccessory(this, slot.blob, slot.pick);
-    slot.name.setText(c.name);
-    slot.blurb.setText(c.blurb);
-    slot.special.setText(`B: ${c.special}`);
-    slot.statLabels.setText(Object.keys(c.stats).join('\n'));
-    slot.statPips.setText(Object.values(c.stats).map((value) => '●'.repeat(value) + '○'.repeat(3 - value)).join('\n'));
-    this.showStatus(slot);
+    card.blob?.destroy();
+    card.blob = new Blob(this, 0, -CARD_H / 2 + 112, slot.color, c.radius * 1.4);
+    addAccessory(this, card.blob, slot.pick);
+    card.container.add(card.blob);
+    card.name.setText(c.name);
+    card.blurb.setText(c.blurb);
+    card.special.setText(`B: ${c.special}`);
+    card.statLabels.setText(Object.keys(c.stats).join('\n'));
+    card.statPips.setText(Object.values(c.stats).map((value) => '●'.repeat(value) + '○'.repeat(3 - value)).join('\n'));
+    this.showStatus(card);
   }
 
-  showStatus(slot) {
-    slot.status.setText(slot.ready ? '¡Listo!' : 'A = listo').setColor(slot.ready ? '#4cd97b' : TEXT.muted);
-    slot.bg.setFillStyle(slot.ready ? 0x2b3d4a : COLORS.panel);
+  showStatus(card) {
+    const { slot } = card;
+    card.status.setText(slot.ready ? '¡Listo!' : 'A = listo').setColor(slot.ready ? '#4cd97b' : TEXT.muted);
+    card.peque.setText(slot.peque ? 'Modo peque 🐣' : '');
+    card.bg.setFillStyle(slot.ready ? 0x2b3d4a : COLORS.panel);
   }
 
   update() {
-    for (const slot of this.slots) {
+    if (this.updateOptions()) return;
+
+    for (const card of this.cards) {
+      if (card.cpu) continue;
+      const { slot } = card;
       const id = slot.player.deviceId;
       if (!controls.getDevice(id)?.connected) continue;
+      if (controls.justPressed(id, 'y')) {
+        slot.peque = !slot.peque;
+        this.showStatus(card);
+      }
       if (!slot.ready) {
         const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
         if (step !== 0) {
           const index = CHARACTER_KEYS.indexOf(slot.pick);
           slot.pick = CHARACTER_KEYS[(index + step + CHARACTER_KEYS.length) % CHARACTER_KEYS.length];
-          this.showCharacter(slot);
+          this.showCharacter(card);
         }
         if (controls.justPressed(id, 'a')) {
           slot.ready = true;
-          slot.blob.hop();
-          this.showStatus(slot);
+          card.blob.hop();
+          this.showStatus(card);
         } else if (controls.justPressed(id, 'b') && slot.player === players.host()) {
           this.scene.start('Menu', { selected: this.returnData.selected });
           return;
         }
       } else if (controls.justPressed(id, 'b')) {
         slot.ready = false;
-        this.showStatus(slot);
+        this.showStatus(card);
       } else if (controls.justPressed(id, 'a')) {
-        slot.blob.hop();
+        card.blob.hop();
       }
     }
 
     // Todos listos: un momento para ver las bolitas brincar y a pelear.
-    const allReady = this.slots.length > 0 && this.slots.every((slot) => slot.ready);
+    const allReady = this.humanSlots.length > 0 && this.humanSlots.every((slot) => slot.ready);
     if (!allReady) {
       this.startMs = null;
       return;
     }
     this.startMs ??= this.time.now;
     if (this.time.now - this.startMs < START_DELAY_MS) return;
-    const picks = {};
-    for (const slot of this.slots) {
-      lastPicks.set(slot.player.deviceId, slot.pick);
-      picks[slot.player.deviceId] = slot.pick;
+    this.start();
+  }
+
+  // ↑ ↓ y LB / RB del Jugador 1 cambian las opciones. Devuelve true si se rehicieron las tarjetas.
+  updateOptions() {
+    const host = players.host();
+    if (!host) return false;
+    const id = host.deviceId;
+    const move = (controls.justPressed(id, 'down') ? 1 : 0) - (controls.justPressed(id, 'up') ? 1 : 0);
+    if (move !== 0) {
+      this.optionIndex = (this.optionIndex + move + OPTIONS.length) % OPTIONS.length;
+      this.refreshOptions();
     }
-    this.scene.start('Smash', { selected: this.returnData.selected, picks });
+    const step = (controls.justPressed(id, 'rb') ? 1 : 0) - (controls.justPressed(id, 'lb') ? 1 : 0);
+    if (step === 0) return false;
+    const option = OPTIONS[this.optionIndex];
+    const values = option.values(this.humans.length);
+    const index = values.indexOf(this.settings[option.key]);
+    this.settings[option.key] = values[(index + step + values.length) % values.length];
+    this.refreshOptions();
+    if (option.key === 'cpus' || option.key === 'level') {
+      this.layoutCards();
+      return true;
+    }
+    return false;
+  }
+
+  start() {
+    const picks = {};
+    const peque = {};
+    for (const slot of this.humanSlots) {
+      lastPicks.set(slot.player.deviceId, slot.pick);
+      lastPeque.set(slot.player.deviceId, slot.peque);
+      picks[slot.player.deviceId] = slot.pick;
+      peque[slot.player.deviceId] = slot.peque;
+    }
+    Object.assign(lastSettings, this.settings);
+    this.scene.start('Smash', { selected: this.returnData.selected, picks, peque, settings: { ...this.settings } });
   }
 }
