@@ -1,0 +1,181 @@
+// Prepara el arte (hecho con Gemini u otra herramienta) para Bolitas Bros.
+//
+//   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella
+//                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
+//   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
+//   arte/smash/fondos/<escenario>.png              castillo | nubes | barco
+//
+// A personajes y objetos les quita el fondo liso (o de cuadritos, como sale a veces de Gemini),
+// los recorta y los achica; a los fondos solo los achica. Todo queda en public/smash/ y la lista
+// de lo que hay en src/games/smash/art.json, para que el juego sepa qué cargar.
+// Se aceptan .png, .jpg y .webp.  Uso: npm run arte   (o: node tools/prepare-art.mjs <otra carpeta>)
+import sharp from 'sharp';
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+const SOURCE = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'arte', 'smash');
+const OUTPUT = path.join(ROOT, 'public', 'smash');
+const MANIFEST = path.join(ROOT, 'src', 'games', 'smash', 'art.json');
+
+const CHARACTERS = ['tanque', 'rayo', 'resorte', 'estrella'];
+const POSES = ['normal', 'golpe', 'salto', 'dolor'];
+const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
+const STAGES = ['castillo', 'nubes', 'barco'];
+const IMAGE = /\.(png|jpe?g|webp)$/i;
+// Tamaños pensados para la memoria del Xbox One S.
+const CHARACTER_MAX = 256;
+const ITEM_MAX = 128;
+const BACKGROUND_MAX = 1600;
+// Qué tan parecido al fondo tiene que ser un pixel para borrarlo (distancia de color, 0-441).
+const TOLERANCE = 48;
+
+async function files(folder) {
+  try {
+    return (await readdir(path.join(SOURCE, folder))).filter((name) => IMAGE.test(name));
+  } catch {
+    return [];
+  }
+}
+
+function baseName(file) {
+  return file.replace(IMAGE, '').toLowerCase();
+}
+
+// Borra el fondo: toma los colores más comunes de la orilla y "rellena" desde la orilla hacia adentro
+// todo lo que se parezca a ellos. Luego recorta lo que quedó vacío.
+async function cutOut(input, output, maxSize) {
+  const { data, info } = await sharp(input).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  const at = (x, y) => (y * width + x) * 4;
+
+  const border = [];
+  for (let x = 0; x < width; x += 1) border.push(at(x, 0), at(x, height - 1));
+  for (let y = 0; y < height; y += 1) border.push(at(0, y), at(width - 1, y));
+  const groups = new Map();
+  for (const i of border) {
+    const key = `${data[i] >> 4},${data[i + 1] >> 4},${data[i + 2] >> 4}`;
+    const group = groups.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
+    group.count += 1;
+    group.r += data[i];
+    group.g += data[i + 1];
+    group.b += data[i + 2];
+    groups.set(key, group);
+  }
+  // Uno o dos colores de fondo (dos si es de cuadritos).
+  const backgrounds = [...groups.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 2)
+    .filter((group) => group.count > border.length * 0.1)
+    .map((group) => [group.r / group.count, group.g / group.count, group.b / group.count]);
+  const isBackground = (i) =>
+    data[i + 3] === 0 ||
+    backgrounds.some(([r, g, b]) => Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b) < TOLERANCE);
+
+  const seen = new Uint8Array(width * height);
+  const stack = border.map((i) => i / 4);
+  while (stack.length) {
+    const p = stack.pop();
+    if (seen[p]) continue;
+    seen[p] = 1;
+    if (!isBackground(p * 4)) continue;
+    data[p * 4 + 3] = 0;
+    const x = p % width;
+    const y = (p - x) / width;
+    if (x > 0) stack.push(p - 1);
+    if (x < width - 1) stack.push(p + 1);
+    if (y > 0) stack.push(p - width);
+    if (y < height - 1) stack.push(p + width);
+  }
+  softenEdges(data, width, height, backgrounds);
+
+  let [left, top, right, bottom] = [width, height, -1, -1];
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (data[at(x, y) + 3] === 0) continue;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y);
+    }
+  }
+  if (right < 0) throw new Error('la imagen quedó vacía (¿el personaje es del mismo color que el fondo?)');
+  await sharp(data, { raw: { width, height, channels: 4 } })
+    .extract({ left, top, width: right - left + 1, height: bottom - top + 1 })
+    .resize({ width: maxSize, height: maxSize, fit: 'inside', withoutEnlargement: true })
+    .png()
+    .toFile(output);
+}
+
+// Orillas: los pixeles que tocan el fondo borrado y todavía se le parecen quedan semitransparentes,
+// y si el fondo era verde se les quita ese tinte (para que no quede un borde verdoso).
+function softenEdges(data, width, height, backgrounds) {
+  const greenScreen = backgrounds.some(([r, g, b]) => g > r + 40 && g > b + 40);
+  const clear = (i) => data[i + 3] === 0;
+  for (let p = 0; p < width * height; p += 1) {
+    const i = p * 4;
+    if (clear(i)) continue;
+    const x = p % width;
+    const y = (p - x) / width;
+    const touches =
+      (x > 0 && clear(i - 4)) ||
+      (x < width - 1 && clear(i + 4)) ||
+      (y > 0 && clear(i - width * 4)) ||
+      (y < height - 1 && clear(i + width * 4));
+    if (!touches) continue;
+    const dist = Math.min(...backgrounds.map(([r, g, b]) => Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b)));
+    if (dist < TOLERANCE * 2) data[i + 3] = Math.max(1, Math.round(255 * Math.min(1, (dist - TOLERANCE) / TOLERANCE)));
+    if (greenScreen) data[i + 1] = Math.min(data[i + 1], Math.max(data[i], data[i + 2]));
+  }
+}
+
+async function main() {
+  await rm(OUTPUT, { recursive: true, force: true });
+  for (const folder of ['personajes', 'objetos', 'fondos']) await mkdir(path.join(OUTPUT, folder), { recursive: true });
+  const manifest = { characters: {}, items: [], backgrounds: [] };
+  const report = [];
+
+  for (const file of await files('personajes')) {
+    const [character, pose = 'normal'] = baseName(file).split('-');
+    if (!CHARACTERS.includes(character) || !POSES.includes(pose)) {
+      report.push(`  ? personajes/${file}: el nombre debe ser <${CHARACTERS.join('|')}>-<${POSES.join('|')}>`);
+      continue;
+    }
+    await cutOut(path.join(SOURCE, 'personajes', file), path.join(OUTPUT, 'personajes', `${character}-${pose}.png`), CHARACTER_MAX);
+    (manifest.characters[character] ??= []).push(pose);
+    report.push(`  ✓ ${character} (${pose})`);
+  }
+
+  for (const file of await files('objetos')) {
+    const item = baseName(file);
+    if (!ITEMS.includes(item)) {
+      report.push(`  ? objetos/${file}: el nombre debe ser ${ITEMS.join(', ')}`);
+      continue;
+    }
+    await cutOut(path.join(SOURCE, 'objetos', file), path.join(OUTPUT, 'objetos', `${item}.png`), ITEM_MAX);
+    manifest.items.push(item);
+    report.push(`  ✓ objeto: ${item}`);
+  }
+
+  for (const file of await files('fondos')) {
+    const stage = baseName(file);
+    if (!STAGES.includes(stage)) {
+      report.push(`  ? fondos/${file}: el nombre debe ser ${STAGES.join(', ')}`);
+      continue;
+    }
+    await sharp(path.join(SOURCE, 'fondos', file))
+      .resize({ width: BACKGROUND_MAX, withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toFile(path.join(OUTPUT, 'fondos', `${stage}.jpg`));
+    manifest.backgrounds.push(stage);
+    report.push(`  ✓ fondo: ${stage}`);
+  }
+
+  await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
+  console.log(report.length ? report.join('\n') : `No hay imágenes en ${path.relative(ROOT, SOURCE)}/`);
+}
+
+main().catch((error) => {
+  console.error(error.message);
+  process.exit(1);
+});

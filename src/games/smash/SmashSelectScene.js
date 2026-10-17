@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { players } from '../../shared/players.js';
+import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
+import { characterTexture, loadSmashArt } from './art.js';
 import { CHARACTERS, CHARACTER_KEYS, addAccessory } from './characters.js';
 import { STAGES, STAGE_KEYS } from './stages.js';
 
@@ -43,6 +45,10 @@ export class SmashSelectScene extends Phaser.Scene {
 
   init(data) {
     this.returnData = data ?? {};
+  }
+
+  preload() {
+    loadSmashArt(this);
   }
 
   create() {
@@ -136,13 +142,23 @@ export class SmashSelectScene extends Phaser.Scene {
     return { container, cpu: true };
   }
 
-  // Redibuja la bolita de vista previa con el accesorio del personaje escogido.
+  // Redibuja la vista previa del personaje escogido: su imagen si existe, o la bolita con su accesorio.
   showCharacter(card) {
     const { slot } = card;
     const c = CHARACTERS[slot.pick];
     card.blob?.destroy();
-    card.blob = new Blob(this, 0, -CARD_H / 2 + 112, slot.color, c.radius * 1.4);
-    addAccessory(this, card.blob, slot.pick);
+    const key = characterTexture(this, slot.pick);
+    if (key) {
+      const image = this.add.image(0, -CARD_H / 2 + 180, key).setOrigin(0.5, 1);
+      image.setScale(140 / image.height);
+      card.blob = image;
+      card.hop = () => this.tweens.add({ targets: image, y: image.y - 20, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
+    } else {
+      const blob = new Blob(this, 0, -CARD_H / 2 + 112, slot.color, c.radius * 1.4);
+      addAccessory(this, blob, slot.pick);
+      card.blob = blob;
+      card.hop = () => blob.hop();
+    }
     card.container.add(card.blob);
     card.name.setText(c.name);
     card.blurb.setText(c.blurb);
@@ -169,6 +185,7 @@ export class SmashSelectScene extends Phaser.Scene {
       if (!controls.getDevice(id)?.connected) continue;
       if (controls.justPressed(id, 'y')) {
         slot.peque = !slot.peque;
+        sfx.select();
         this.showStatus(card);
       }
       if (!slot.ready) {
@@ -176,21 +193,25 @@ export class SmashSelectScene extends Phaser.Scene {
         if (step !== 0) {
           const index = CHARACTER_KEYS.indexOf(slot.pick);
           slot.pick = CHARACTER_KEYS[(index + step + CHARACTER_KEYS.length) % CHARACTER_KEYS.length];
+          sfx.select();
           this.showCharacter(card);
         }
         if (controls.justPressed(id, 'a')) {
           slot.ready = true;
-          card.blob.hop();
+          sfx.confirm();
+          card.hop();
           this.showStatus(card);
         } else if (controls.justPressed(id, 'b') && slot.player === players.host()) {
+          sfx.back();
           this.scene.start('Menu', { selected: this.returnData.selected });
           return;
         }
       } else if (controls.justPressed(id, 'b')) {
         slot.ready = false;
+        sfx.back();
         this.showStatus(card);
       } else if (controls.justPressed(id, 'a')) {
-        card.blob.hop();
+        card.hop();
       }
     }
 
@@ -213,10 +234,12 @@ export class SmashSelectScene extends Phaser.Scene {
     const move = (controls.justPressed(id, 'down') ? 1 : 0) - (controls.justPressed(id, 'up') ? 1 : 0);
     if (move !== 0) {
       this.optionIndex = (this.optionIndex + move + OPTIONS.length) % OPTIONS.length;
+      sfx.select();
       this.refreshOptions();
     }
     const step = (controls.justPressed(id, 'rb') ? 1 : 0) - (controls.justPressed(id, 'lb') ? 1 : 0);
     if (step === 0) return false;
+    sfx.select();
     const option = OPTIONS[this.optionIndex];
     const values = option.values(this.humans.length);
     const index = values.indexOf(this.settings[option.key]);

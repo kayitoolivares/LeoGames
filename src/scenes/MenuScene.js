@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { controls } from '../shared/controls.js';
+import { sfx } from '../shared/sound.js';
 import { players } from '../shared/players.js';
 import { GAMES } from '../games.js';
 import { Blob } from '../ui/Blob.js';
@@ -121,10 +122,13 @@ export class MenuScene extends Phaser.Scene {
     }
 
     const id = host.deviceId;
+    const before = this.selected;
     if (controls.justPressed(id, 'left')) this.select(this.selected - 1);
     if (controls.justPressed(id, 'right')) this.select(this.selected + 1);
     if (controls.justPressed(id, 'up') || controls.justPressed(id, 'down')) this.selectOtherRow();
+    if (this.selected !== before) sfx.select();
     if (controls.justPressed(id, 'b')) {
+      sfx.back();
       this.scene.start('Join');
       return;
     }
@@ -145,6 +149,8 @@ export class MenuScene extends Phaser.Scene {
 
   launch() {
     const game = GAMES[this.selected];
+    if (game.scene || game.url) sfx.confirm();
+    else sfx.back();
     if (game.scene) {
       this.scene.start(game.scene, { selected: this.selected });
       return;

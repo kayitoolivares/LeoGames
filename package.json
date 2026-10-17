@@ -6,13 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "arte": "node tools/prepare-art.mjs"
   },
   "dependencies": {
     "phaser": "^4.2.1",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "sharp": "^0.35.5",
     "vite": "^8.3.4"
   }
 }

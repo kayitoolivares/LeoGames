@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { controls } from '../shared/controls.js';
 import { frameDelta } from '../shared/clock.js';
+import { audioReady, sfx } from '../shared/sound.js';
 import { players, MAX_PLAYERS } from '../shared/players.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
@@ -36,6 +37,10 @@ export class JoinScene extends Phaser.Scene {
     }
 
     this.padInfo = this.add.text(width / 2, height - 80, '', textStyle(20, TEXT.muted)).setOrigin(0.5);
+    // El navegador no deja sonar nada hasta un clic o una tecla (el control no cuenta).
+    this.soundHint = this.add
+      .text(width - 16, 14, '🔇 Para el sonido: haz clic en la página (en Xbox: A con el cursor)', textStyle(15, TEXT.muted))
+      .setOrigin(1, 0);
     this.add
       .text(
         width / 2,
@@ -118,6 +123,7 @@ export class JoinScene extends Phaser.Scene {
         if (controls.justPressed(id, 'a') && players.join(id)) {
           justJoined.add(id);
           changed = true;
+          sfx.confirm();
           this.cardFor(players.byDevice(id)).blob.hop();
         }
         continue;
@@ -126,15 +132,18 @@ export class JoinScene extends Phaser.Scene {
       if (controls.justPressed(id, 'b')) {
         players.leave(id);
         changed = true;
+        sfx.back();
         continue;
       }
       if (controls.justPressed(id, 'left')) {
         players.changeColor(player, -1);
         changed = true;
+        sfx.select();
       }
       if (controls.justPressed(id, 'right')) {
         players.changeColor(player, 1);
         changed = true;
+        sfx.select();
       }
 
       const card = this.cardFor(player);
@@ -169,7 +178,10 @@ export class JoinScene extends Phaser.Scene {
     }
 
     this.cardFor(host).holdBar.setScale(Math.min(1, this.holdMs / HOLD_TO_START_MS), 1);
-    if (this.holdMs >= HOLD_TO_START_MS) this.scene.start('Menu');
+    if (this.holdMs >= HOLD_TO_START_MS) {
+      sfx.confirm();
+      this.scene.start('Menu');
+    }
   }
 
   updatePadInfo() {
@@ -179,5 +191,6 @@ export class JoinScene extends Phaser.Scene {
         ? '¿No aparece tu control? Presiona cualquier botón.  En Xbox: mantén ≡ (Menú) → «Use game controls» → A'
         : `El navegador ve ${count} ${count === 1 ? 'control' : 'controles'}`;
     if (this.padInfo.text !== text) this.padInfo.setText(text);
+    this.soundHint.setVisible(!audioReady());
   }
 }

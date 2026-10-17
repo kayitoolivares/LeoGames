@@ -52,6 +52,24 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 Los juegos 3D usan [Three.js](https://threejs.org) y se descargan hasta que alguien entra a ellos.
 
+## Sonido
+
+Los sonidos se generan con el navegador (no hay archivos de audio). El navegador no deja sonar nada
+hasta que alguien hace **clic o aprieta una tecla** en la página; los botones del control no cuentan.
+En el Xbox: presiona **A en modo cursor** sobre la página antes de pasar a "controles de juego".
+
+## Arte de Bolitas Bros (imágenes de Gemini)
+
+Pon las imágenes en `arte/smash/` (esa carpeta no se sube a GitHub) y corre `npm run arte`:
+
+- `arte/smash/personajes/<tanque|rayo|resorte|estrella>-<normal|golpe|salto|dolor>.png`
+  (cuerpo completo, mirando a la derecha, fondo liso, de preferencia verde brillante, con contorno oscuro)
+- `arte/smash/objetos/<martillo|bomba|corazon|estrella>.png` (fondo liso)
+- `arte/smash/fondos/<castillo|nubes|barco>.png` (horizontal 16:9, sin personajes)
+
+El script quita el fondo, recorta y achica las imágenes (para la memoria del Xbox), las deja en `public/smash/`
+y anota en `src/games/smash/art.json` cuáles hay. Lo que falte se sigue dibujando con figuras.
+
 ## Jugar en el Xbox
 
 El navegador solo deja leer controles en páginas **HTTPS** (o `localhost`), así que en el Xbox
@@ -71,6 +89,8 @@ se juega desde GitHub Pages:
 - `src/games.js`: catálogo de juegos del menú.
 - `src/scenes/`: pantallas (unirse, menú, prueba de controles).
 - `src/shared/clock.js`: tiempo real entre cuadros (para que nada vaya en cámara lenta si baja el fps).
+- `src/shared/sound.js`: efectos de sonido sintetizados.
+- `tools/prepare-art.mjs`: prepara el arte de Bolitas Bros (`npm run arte`).
 - `src/games/brawl/`: Pelea en equipo (Phaser).
 - `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).

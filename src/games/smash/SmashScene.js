@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
+import { sfx } from '../../shared/sound.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
 import { CHARACTERS, CHARACTER_KEYS } from './characters.js';
 import { SmashFighter, STOCKS } from './SmashFighter.js';
+import { backgroundTexture, loadSmashArt } from './art.js';
 import { SmashItems, drawItem } from './items.js';
 import { STAGES, buildPlatforms, movePlatforms } from './stages.js';
 
@@ -48,6 +50,10 @@ export class SmashScene extends Phaser.Scene {
     this.settings = { ...DEFAULT_SETTINGS, ...(this.returnData.settings ?? {}) };
   }
 
+  preload() {
+    loadSmashArt(this);
+  }
+
   create() {
     const { width, height } = this.scale;
     this.stage = STAGES[this.settings.stage] ?? STAGES.castillo;
@@ -58,7 +64,7 @@ export class SmashScene extends Phaser.Scene {
     this.cameras.main.ignore(this.ui);
     this.uiCam.ignore(this.world);
 
-    this.stage.drawBackground(this, this.world);
+    this.drawBackground();
     this.platforms = buildPlatforms(this, this.world, this.stage);
     this.main = this.platforms.find((p) => p.main);
     this.stageMs = 0;
@@ -78,6 +84,20 @@ export class SmashScene extends Phaser.Scene {
     this.cam = { x: 1000, y: 600, zoom: 0.8 };
     this.updateCamera(0, true);
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
+  }
+
+  // Fondo: la imagen del escenario si existe (npm run arte), estirada para cubrir toda la zona de juego;
+  // si no, el fondo dibujado con figuras.
+  drawBackground() {
+    const key = backgroundTexture(this, this.settings.stage);
+    if (!key) {
+      this.stage.drawBackground(this, this.world);
+      return;
+    }
+    const zone = this.stage.blast;
+    const image = this.add.image((zone.left + zone.right) / 2, (zone.top + zone.bottom) / 2, key);
+    image.setScale(Math.max((zone.right - zone.left) / image.width, (zone.bottom - zone.top) / image.height));
+    this.world.add(image);
   }
 
   // Los jugadores con su personaje y, si se pidieron, CPUs con personaje al azar (siempre hay al menos un rival).
@@ -173,6 +193,8 @@ export class SmashScene extends Phaser.Scene {
       this.updateProjectiles(dt);
       this.items.update(dt, this.fighters, this.settings.items && this.phase === 'fight', (fighter, item) => {
         popText(this, item.x, item.y - 40, ITEM_NAMES[item.type], '#ffffff', this.world);
+        if (item.type === 'star') sfx.star();
+        else sfx.pickup();
       });
       this.resolveHits();
       this.checkBlastZones();
@@ -188,7 +210,10 @@ export class SmashScene extends Phaser.Scene {
   updateCountdown() {
     const step = Math.floor(this.phaseMs / COUNTDOWN_STEP_MS);
     const label = step < 3 ? String(3 - step) : '¡A pelear!';
-    if (this.banner.text !== label) this.showBanner(label, '', step < 3 ? 0 : 700);
+    if (this.banner.text !== label) {
+      this.showBanner(label, '', step < 3 ? 0 : 700);
+      sfx.countdown(step >= 3);
+    }
     if (step >= 3) {
       this.phase = 'fight';
       this.phaseMs = 0;
@@ -320,6 +345,7 @@ export class SmashScene extends Phaser.Scene {
         if (victim) {
           const result = victim.takeHit({ facing: p.dir, power: p.owner.power }, STAR.hit);
           burst(this, p.x, p.y, result.blocked ? 0x7fdcff : 0xffc93c, 6, this.world);
+          if (!result.blocked) sfx.hit(0.2);
         }
         if (victim || p.ageMs > STAR.lifeMs) {
           p.sprite.destroy();
@@ -360,6 +386,7 @@ export class SmashScene extends Phaser.Scene {
     burst(this, bomb.x, bomb.y, 0xffffff, 10, this.world);
     popText(this, bomb.x, bomb.y - 30, '¡BUM!', '#ff9a3c', this.world);
     this.cameras.main.shake(180, 0.008);
+    sfx.boom();
     for (const f of this.fighters) {
       if (f === bomb.owner || !f.isAlive() || f.isInvulnerable()) continue;
       if (Math.hypot(f.x - bomb.x, f.y - bomb.y) > BOMB.blast + f.radius) continue;
@@ -383,6 +410,7 @@ export class SmashScene extends Phaser.Scene {
         burst(this, box.x, box.y, 0xffffff, 6, this.world);
         popText(this, box.x, box.y - 40, HIT_WORDS[Math.floor(Math.random() * HIT_WORDS.length)], '#ffc93c', this.world);
         if (speed > STRONG_HIT_SPEED) this.cameras.main.shake(120, 0.006);
+        sfx.hit(Math.min(1, speed / 1500));
       }
     }
   }
@@ -398,6 +426,7 @@ export class SmashScene extends Phaser.Scene {
       burst(this, ex, ey, fighter.color, 16, this.world);
       popText(this, ex, ey, '¡KO!', '#ff5a5f', this.world);
       this.cameras.main.shake(200, 0.01);
+      sfx.ko();
       fighter.knockOut();
     }
   }
@@ -413,6 +442,7 @@ export class SmashScene extends Phaser.Scene {
       this.banner.setColor(hexToCss(winner.color));
       confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
     }
+    sfx.win();
   }
 
   updateEnd() {

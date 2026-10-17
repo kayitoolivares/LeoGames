@@ -1,4 +1,5 @@
 import { COLORS } from '../../ui/style.js';
+import { itemTexture } from './art.js';
 
 // Objetos que caen del cielo en Bolitas Bros. Se agarran tocándolos:
 // martillo y bomba se cargan (X los usa); corazón y estrella hacen efecto al instante.
@@ -10,9 +11,17 @@ const LIFE_MS = 12000;
 export const ITEM_RADIUS = 22;
 const GRAVITY = 1400;
 
-// Dibujo de cada objeto con figuras (sin imágenes ni emojis, para que se vea igual en el Xbox).
+// Dibujo de cada objeto: la imagen si existe (npm run arte); si no, con figuras (sin emojis,
+// para que se vea igual en el Xbox).
 export function drawItem(scene, type) {
   const box = scene.add.container(0, 0);
+  const art = itemTexture(scene, type);
+  if (art) {
+    const image = scene.add.image(0, 0, art);
+    image.setScale(48 / Math.max(image.width, image.height));
+    box.add(image);
+    return box;
+  }
   if (type === 'hammer') {
     box.add([
       scene.add.rectangle(0, 10, 9, 40, 0x8b5a2b).setStrokeStyle(2, COLORS.ink),

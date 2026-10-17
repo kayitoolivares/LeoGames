@@ -1,5 +1,8 @@
+import Phaser from 'phaser';
+import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
+import { characterTexture, hasPose } from './art.js';
 import { CHARACTERS, addAccessory } from './characters.js';
 import { drawItem } from './items.js';
 
@@ -80,6 +83,7 @@ export class SmashFighter {
 
     this.sprite = new Blob(scene, 0, 0, color, this.radius);
     addAccessory(scene, this.sprite, character);
+    this.setupArt(scene);
     this.fist = scene.add.circle(0, 0, 12, color).setStrokeStyle(3, COLORS.ink).setVisible(false);
     this.hammerSprite = drawItem(scene, 'hammer').setVisible(false);
     this.bombSprite = drawItem(scene, 'bomb').setScale(0.8).setVisible(false);
@@ -90,9 +94,30 @@ export class SmashFighter {
       .text(0, -this.radius - 34, label, textStyle(18, hexToCss(color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
       .setOrigin(0.5);
     this.dizzy = scene.add.text(0, -this.radius - 60, '💫', textStyle(30)).setOrigin(0.5).setVisible(false);
+    // La imagen es más alta que la bolita: el letrero y el mareo van arriba de ella.
+    if (this.image) {
+      const top = this.radius - this.image.displayHeight;
+      this.tag.setY(top - 14);
+      this.dizzy.setY(top - 40);
+    }
     this.sprite.add([this.shieldBubble, this.tag, this.dizzy]);
     layer.add(this.sprite);
     this.spawn(arena.respawn.x, arena.respawn.y, 0);
+  }
+
+  // Si hay imagen del personaje (npm run arte), se esconde la bolita dibujada y se usa la imagen,
+  // con los pies en el piso y un aro del color del jugador para saber quién es quién.
+  setupArt(scene) {
+    const key = characterTexture(scene, this.characterKey);
+    this.image = null;
+    if (!key) return;
+    for (const part of this.sprite.figure.list) part.setVisible(false);
+    this.image = scene.add.image(0, this.radius, key).setOrigin(0.5, 1);
+    this.image.setScale((this.radius * 2.8) / this.image.height);
+    this.sprite.figure.addAt(this.image, 0);
+    this.ring = scene.add.ellipse(0, this.radius - 2, this.radius * 2.4, this.radius * 0.6).setStrokeStyle(5, this.color);
+    this.sprite.addAt(this.ring, 1);
+    this.hasPunchArt = hasPose(scene, this.characterKey, 'golpe');
   }
 
   spawn(x, y, invulnerableMs = RESPAWN_INVULNERABLE_MS) {
@@ -121,6 +146,7 @@ export class SmashFighter {
     this.out = false;
     this.sprite.setVisible(true);
     this.sprite.ball.setFillStyle(this.color);
+    this.image?.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
   }
 
   isAlive() {
@@ -234,6 +260,7 @@ export class SmashFighter {
         dir: this.facing,
       };
       this.held = null;
+      sfx.throw();
     }
     if (attack.elapsed >= a.startup + a.active + a.recovery) this.attack = null;
   }
@@ -255,9 +282,11 @@ export class SmashFighter {
       if (this.grounded) {
         this.vy = -stats.jump;
         this.grounded = false;
+        sfx.jump();
       } else if (this.airJumps > 0) {
         this.vy = -stats.jump * 0.92;
         this.airJumps -= 1;
+        sfx.jump();
       }
     }
     // Bajar de una plataforma delgada: ↓ estando parado en ella.
@@ -287,6 +316,7 @@ export class SmashFighter {
     if (input.y < -0.5 || key === 'resorte') {
       if (this.rescueUsed) return;
       this.rescueUsed = true;
+      sfx.special();
       this.grounded = false;
       this.platform = null;
       if (key === 'resorte') {
@@ -305,10 +335,14 @@ export class SmashFighter {
     } else if (key === 'estrella' && this.starCooldownMs === 0) {
       this.attack = { type: 'cast', elapsed: 0, hit: new Set() };
       this.starCooldownMs = STAR_COOLDOWN_MS;
+    } else {
+      return;
     }
+    sfx.special();
   }
 
   breakShield() {
+    sfx.shieldBreak();
     this.shielding = false;
     this.shieldHp = SHIELD_MAX * 0.4;
     this.stunMs = SHIELD_BREAK_STUN_MS;
@@ -364,6 +398,7 @@ export class SmashFighter {
       this.shieldHp -= data.damage * source.power * SHIELD_HIT_FACTOR;
       this.vx = source.facing * SHIELD_PUSHBACK;
       if (this.shieldHp <= 0) this.breakShield();
+      else sfx.block();
       return { blocked: true, speed: 0 };
     }
     const peque = this.peque ? PEQUE_DAMAGE : 1;
@@ -380,7 +415,32 @@ export class SmashFighter {
     this.attack = null;
     this.sprite.flash();
     this.sprite.squish();
+    this.flashImage();
     return { blocked: false, speed };
+  }
+
+  // Con imagen, el destello del golpe es pintarla de blanco un instante.
+  flashImage() {
+    if (!this.image) return;
+    this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    this.scene.time.delayedCall(70, () => {
+      if (this.image.active) this.image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
+    });
+  }
+
+  // Pose de la imagen según lo que esté haciendo. La imagen mira a la derecha: se voltea si va a la izquierda.
+  renderArt() {
+    if (!this.image) return;
+    let pose = 'normal';
+    if (this.hitstunMs > 0 || this.stunMs > 0) pose = 'dolor';
+    else if (this.attack) pose = 'golpe';
+    else if (!this.grounded) pose = 'salto';
+    const key = characterTexture(this.scene, this.characterKey, pose);
+    if (this.image.texture.key !== key) {
+      this.image.setTexture(key);
+      this.image.setScale((this.radius * 2.8) / this.image.height);
+    }
+    this.image.setFlipX(this.facing < 0);
   }
 
   render() {
@@ -393,9 +453,16 @@ export class SmashFighter {
     const blinking = this.invulnerableMs > 0 && Math.floor(this.invulnerableMs / 90) % 2 === 1;
     s.setAlpha(blinking ? 0.35 : 1);
     // Con la estrella cambia de colores como arcoíris.
-    if (this.starPowerMs > 0) s.ball.setFillStyle(RAINBOW[Math.floor(this.starPowerMs / 80) % RAINBOW.length]);
-    else if (this.wasStar) s.ball.setFillStyle(this.color);
+    const rainbow = RAINBOW[Math.floor(this.starPowerMs / 80) % RAINBOW.length];
+    if (this.starPowerMs > 0) {
+      s.ball.setFillStyle(rainbow);
+      this.image?.setTint(rainbow);
+    } else if (this.wasStar) {
+      s.ball.setFillStyle(this.color);
+      this.image?.clearTint();
+    }
     this.wasStar = this.starPowerMs > 0;
+    this.renderArt();
 
     this.shieldBubble.setVisible(this.shielding);
     if (this.shielding) this.shieldBubble.setScale(0.55 + (0.45 * this.shieldHp) / SHIELD_MAX);
@@ -404,8 +471,8 @@ export class SmashFighter {
     const box = this.hitbox();
     const a = this.attack && ATTACKS[this.attack.type];
     const type = this.attack?.type;
-    // El puño sale en los golpes normales y en el puñetazo cargado.
-    const showFist = Boolean(a) && !['dash', 'spring', 'hammer', 'throw'].includes(type);
+    // El puño sale en los golpes normales y en el puñetazo cargado (si la imagen no trae su pose de golpe).
+    const showFist = Boolean(a) && !['dash', 'spring', 'hammer', 'throw'].includes(type) && !this.hasPunchArt;
     this.fist.setVisible(showFist);
     if (showFist) {
       const reach = box ? 1 : 0.55;
