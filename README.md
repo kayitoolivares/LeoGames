@@ -25,6 +25,12 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Cambiar color:** ◀ ▶ en la pantalla de jugadores.
 - Los botones **Menú** y **Vista** no se usan a propósito: en Edge del Xbox fallan.
 
+## Juegos
+
+- **Pelea en equipo**: todos contra 4 rondas de slimes, y al final el Rey Slime.
+  **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén Y** = salir.
+  Si alguien cae, un compañero se para junto a él para levantarlo.
+
 ## Jugar en el Xbox
 
 El navegador solo deja leer controles en páginas **HTTPS** (o `localhost`), así que en el Xbox
