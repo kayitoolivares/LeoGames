@@ -4,6 +4,7 @@ import { JoinScene } from './scenes/JoinScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { PadTestScene } from './scenes/PadTestScene.js';
 import { BrawlScene } from './games/brawl/BrawlScene.js';
+import { ThreeGameScene } from './games/ThreeGameScene.js';
 import { COLORS } from './ui/style.js';
 
 // 1280x720 escalado para llenar la pantalla: ligero para el Xbox One S y se ve bien en una tele.
@@ -17,7 +18,15 @@ const game = new Phaser.Game({
     width: 1280,
     height: 720,
   },
-  scene: [JoinScene, MenuScene, PadTestScene, BrawlScene],
+  scene: [
+    JoinScene,
+    MenuScene,
+    PadTestScene,
+    BrawlScene,
+    // Los juegos 3D se descargan hasta que alguien entra a ellos.
+    new ThreeGameScene('Race', () => import('./games/race/RaceGame.js').then((m) => m.RaceGame)),
+    new ThreeGameScene('Kart', () => import('./games/kart/KartGame.js').then((m) => m.KartGame)),
+  ],
 });
 
 // Los controles se leen una sola vez por cuadro, antes de que corran las escenas.

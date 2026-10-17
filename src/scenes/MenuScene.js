@@ -5,12 +5,14 @@ import { GAMES } from '../games.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
 
-const CARD_W = 270;
-const CARD_H = 330;
-const CARD_GAP = 26;
+const COLUMNS = 3;
+const CARD_W = 360;
+const CARD_H = 190;
+const CARD_GAP_X = 24;
+const ROW_Y = [235, 440];
 
-// Menú de juegos. Solo el Jugador 1 mueve la selección, para que nadie (¡el bebé!) la cambie por accidente;
-// los demás pueden hacer saltar a su bolita mientras esperan.
+// Menú de juegos en cuadrícula. Solo el Jugador 1 mueve la selección, para que nadie (¡el bebé!)
+// la cambie por accidente; los demás pueden hacer saltar a su bolita mientras esperan.
 export class MenuScene extends Phaser.Scene {
   constructor() {
     super('Menu');
@@ -22,34 +24,36 @@ export class MenuScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
-    this.add.text(width / 2, 64, '¿A qué jugamos?', textStyle(56, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
-    this.hostText = this.add.text(width / 2, 124, '', textStyle(24)).setOrigin(0.5);
+    this.add.text(width / 2, 50, '¿A qué jugamos?', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.hostText = this.add.text(width / 2, 104, '', textStyle(24)).setOrigin(0.5);
 
-    const totalW = GAMES.length * CARD_W + (GAMES.length - 1) * CARD_GAP;
+    const totalW = COLUMNS * CARD_W + (COLUMNS - 1) * CARD_GAP_X;
     const startX = (width - totalW) / 2 + CARD_W / 2;
-    this.cards = GAMES.map((game, i) => this.createCard(startX + i * (CARD_W + CARD_GAP), 340, game));
+    this.cards = GAMES.map((game, i) =>
+      this.createCard(startX + (i % COLUMNS) * (CARD_W + CARD_GAP_X), ROW_Y[Math.floor(i / COLUMNS)], game),
+    );
 
-    this.toast = this.add.text(width / 2, 545, '', textStyle(28, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5).setAlpha(0);
-    this.add.text(width / 2, height - 28, 'A = jugar   ·   B = cambiar jugadores', textStyle(20, TEXT.muted)).setOrigin(0.5);
+    this.toast = this.add.text(width / 2, 572, '', textStyle(26, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5).setAlpha(0);
+    this.add.text(width / 2, height - 20, 'A = jugar   ·   B = cambiar jugadores', textStyle(20, TEXT.muted)).setOrigin(0.5);
 
     this.drawPlayers();
     this.select(this.selected, false);
   }
 
   createCard(x, y, game) {
-    const available = Boolean(game.scene);
+    const kind = game.scene ? 'play' : game.url ? 'link' : 'soon';
     const card = this.add.container(x, y);
     // `inner` es lo que se sacude con "¡muy pronto!", sin pelear con el zoom de la selección.
     const inner = this.add.container(0, 0);
-    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(24);
-    const emoji = this.add.text(0, -88, game.emoji, textStyle(78)).setOrigin(0.5);
-    const title = this.add
-      .text(0, 8, game.title, textStyle(25, TEXT.normal, { fontStyle: 'bold', align: 'center', wordWrap: { width: CARD_W - 40 } }))
-      .setOrigin(0.5);
-    const description = this.add.text(0, 76, game.description, textStyle(19, TEXT.muted, { align: 'center' })).setOrigin(0.5);
-    const badge = this.add.rectangle(0, CARD_H / 2 - 32, 170, 36, available ? COLORS.ok : COLORS.panelBorder).setRounded(18);
+    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(22);
+    const emoji = this.add.text(0, -54, game.emoji, textStyle(52)).setOrigin(0.5);
+    const title = this.add.text(0, -2, game.title, textStyle(24, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    const description = this.add.text(0, 34, game.description, textStyle(16, TEXT.muted, { align: 'center' })).setOrigin(0.5);
+    const badgeColor = { play: COLORS.ok, link: COLORS.accent, soon: COLORS.panelBorder }[kind];
+    const badgeLabel = { play: 'Jugar', link: 'Abrir', soon: 'Próximamente' }[kind];
+    const badge = this.add.rectangle(0, 74, 160, 28, badgeColor).setRounded(14);
     const badgeText = this.add
-      .text(0, CARD_H / 2 - 32, available ? 'Jugar' : 'Próximamente', textStyle(18, available ? TEXT.ink : TEXT.muted, { fontStyle: 'bold' }))
+      .text(0, 74, badgeLabel, textStyle(16, kind === 'soon' ? TEXT.muted : TEXT.ink, { fontStyle: 'bold' }))
       .setOrigin(0.5);
 
     inner.add([bg, emoji, title, description, badge, badgeText]);
@@ -60,12 +64,12 @@ export class MenuScene extends Phaser.Scene {
   drawPlayers() {
     this.playersRow?.destroy();
     const list = players.sorted();
-    this.playersRow = this.add.container(this.scale.width / 2, 600);
+    this.playersRow = this.add.container(this.scale.width / 2, 625);
     this.playerBlobs = new Map();
     list.forEach((player, i) => {
       const x = (i - (list.length - 1) / 2) * 110;
-      const blob = new Blob(this, x, 0, players.color(player).hex, 26);
-      const label = this.add.text(x, 46, `J${player.slot + 1}`, textStyle(18, TEXT.muted)).setOrigin(0.5);
+      const blob = new Blob(this, x, 0, players.color(player).hex, 22);
+      const label = this.add.text(x, 38, `J${player.slot + 1}`, textStyle(16, TEXT.muted)).setOrigin(0.5);
       this.playersRow.add([blob, label]);
       this.playerBlobs.set(player.deviceId, blob);
     });
@@ -78,7 +82,7 @@ export class MenuScene extends Phaser.Scene {
     this.cards.forEach(({ card, bg }, i) => {
       const isSelected = i === this.selected;
       bg.setStrokeStyle(isSelected ? 8 : 4, isSelected ? highlight : COLORS.panelBorder);
-      const scale = isSelected ? 1.08 : 1;
+      const scale = isSelected ? 1.06 : 1;
       this.tweens.killTweensOf(card);
       if (animate) this.tweens.add({ targets: card, scale, duration: 120, ease: 'Quad.easeOut' });
       else card.setScale(scale);
@@ -117,11 +121,19 @@ export class MenuScene extends Phaser.Scene {
     const id = host.deviceId;
     if (controls.justPressed(id, 'left')) this.select(this.selected - 1);
     if (controls.justPressed(id, 'right')) this.select(this.selected + 1);
+    if (controls.justPressed(id, 'up')) this.select(this.selected - COLUMNS);
+    if (controls.justPressed(id, 'down')) this.select(this.selected + COLUMNS);
     if (controls.justPressed(id, 'b')) {
       this.scene.start('Join');
       return;
     }
     if (controls.justPressed(id, 'a')) this.launch();
+  }
+
+  showToast(text) {
+    this.tweens.killTweensOf(this.toast);
+    this.toast.setText(text).setAlpha(1);
+    this.tweens.add({ targets: this.toast, alpha: 0, delay: 1400, duration: 400 });
   }
 
   launch() {
@@ -130,14 +142,17 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start(game.scene, { selected: this.selected });
       return;
     }
+    if (game.url) {
+      // Sale de LeoGames: para volver en el Xbox, B en modo navegador regresa a esta página.
+      this.showToast(`Abriendo ${game.title}…`);
+      this.time.delayedCall(400, () => window.location.assign(game.url));
+      return;
+    }
 
     const { inner } = this.cards[this.selected];
     this.tweens.killTweensOf(inner);
     inner.setAngle(0);
     this.tweens.add({ targets: inner, angle: 3, duration: 60, yoyo: true, repeat: 3 });
-
-    this.tweens.killTweensOf(this.toast);
-    this.toast.setText(`${game.title}: ¡muy pronto!`).setAlpha(1);
-    this.tweens.add({ targets: this.toast, alpha: 0, delay: 1200, duration: 400 });
+    this.showToast(`${game.title}: ¡muy pronto!`);
   }
 }

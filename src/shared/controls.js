@@ -13,7 +13,18 @@ const PAD_DPAD = { up: 12, down: 13, left: 14, right: 15 };
 const KEYBOARDS = {
   kb1: {
     label: 'Teclado 1',
-    keys: { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', a: 'Space', b: 'KeyQ', x: 'KeyE', y: 'KeyR' },
+    keys: {
+      up: 'KeyW',
+      down: 'KeyS',
+      left: 'KeyA',
+      right: 'KeyD',
+      a: 'Space',
+      b: 'KeyQ',
+      x: 'KeyE',
+      y: 'KeyR',
+      lb: 'KeyZ',
+      rb: 'ShiftLeft',
+    },
   },
   kb2: {
     label: 'Teclado 2',
@@ -26,6 +37,8 @@ const KEYBOARDS = {
       b: 'ShiftRight',
       x: 'Period',
       y: 'Slash',
+      lb: 'Comma',
+      rb: 'ControlRight',
     },
   },
 };

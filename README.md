@@ -19,6 +19,9 @@ Abre http://localhost:5173 en Edge o Chrome.
 | Moverse | Stick izquierdo o cruceta | W A S D | Flechas |
 | A (unirse / aceptar) | A | Espacio | Enter |
 | B (salir / regresar) | B | Q | Shift derecho |
+| X | X | E | . (punto) |
+| Y | Y | R | - (guion) |
+| RB (nitro en karts) | RB | Shift izquierdo | Ctrl derecho |
 
 - **Unirse:** cada quien presiona A en su control (hasta 4 jugadores).
 - **Empezar:** el Jugador 1 *mantiene* A.
@@ -30,6 +33,14 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Pelea en equipo**: todos contra 4 rondas de slimes, y al final el Rey Slime.
   **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén Y** = salir.
   Si alguien cae, un compañero se para junto a él para levantarlo.
+- **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
+  **A / RT** = acelerar, **B / LT** = frenar y reversa, **stick** = girar, **RB** = nitro (3 cargas que se recargan),
+  **X** = lanzar el poder de las cajitas "?" (🚀 cohete, 🍌 plátano, ⚡ súper turbo, 🛡️ burbuja).
+- **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
+- **Halcón de Acero**: abre https://hda.grupomegarey.mx (es otro proyecto; para volver, B en modo navegador).
+- **Prueba de controles**: muestra lo que el navegador ve de cada control, botón por botón.
+
+Los juegos 3D usan [Three.js](https://threejs.org) y se descargan hasta que alguien entra a ellos.
 
 ## Jugar en el Xbox
 
@@ -49,4 +60,8 @@ se juega desde GitHub Pages:
 - `src/shared/players.js`: quién juega, con qué control y de qué color.
 - `src/games.js`: catálogo de juegos del menú.
 - `src/scenes/`: pantallas (unirse, menú, prueba de controles).
+- `src/games/brawl/`: Pelea en equipo (Phaser).
+- `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
+- `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
+- `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.
 - `src/ui/`: estilos y el personaje (la bolita).
