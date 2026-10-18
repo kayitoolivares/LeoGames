@@ -27,6 +27,7 @@ export const STICKERS = [
 // Lo que se desbloquea con cada calcomanía (los juegos preguntan con `rewards.unlocked()`).
 export const UNLOCKS = {
   'smash-espacio': { sticker: 'smash-gana', label: 'Gana una pelea en Bolitas Bros' },
+  'smash-volcan': { sticker: 'smash-super', label: 'Transfórmate en súper en Bolitas Bros' },
   'kart-nieve': { sticker: 'kart-gana', label: 'Gana una carrera de Karts locos' },
   'pelea-mundo-2': { sticker: 'pelea-gana', label: 'Gana el primer mundo' },
   'pelea-mundo-3': { sticker: 'pelea-hongos', label: 'Gana el mundo del bosque' },

@@ -106,7 +106,7 @@ export class SmashItems {
       return;
     }
     const prevBottom = item.y + ITEM_RADIUS;
-    item.vy = Math.min(900, item.vy + GRAVITY * dt);
+    item.vy = Math.min(900, item.vy + GRAVITY * (this.area.gravity ?? 1) * dt);
     item.y += item.vy * dt;
     const bottom = item.y + ITEM_RADIUS;
     for (const p of this.platforms) {

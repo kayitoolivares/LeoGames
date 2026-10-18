@@ -11,6 +11,7 @@ import { CHARACTERS, CHARACTER_KEYS } from './characters.js';
 import { METER_MAX, SUPER_MS, SmashFighter, STOCKS } from './SmashFighter.js';
 import { backgroundTexture, loadSmashArt } from './art.js';
 import { SmashItems, drawItem } from './items.js';
+import { Geysers } from './geysers.js';
 import { STAGES, buildPlatforms, movePlatforms } from './stages.js';
 
 const COUNTDOWN_STEP_MS = 800;
@@ -75,12 +76,14 @@ export class SmashScene extends Phaser.Scene {
     this.drawBackground();
     this.platforms = buildPlatforms(this, this.world, this.stage);
     this.main = this.platforms.find((p) => p.main);
+    this.geysers = this.stage.geysers ? new Geysers(this, this.world, this.main, this.stage.geysers) : null;
     this.stageMs = 0;
     this.items = new SmashItems(this, this.world, this.platforms, {
       minX: this.main.left + 100,
       maxX: this.main.right - 100,
       spawnY: this.stage.respawn.y - 120,
       bottom: this.stage.blast.bottom,
+      gravity: this.stage.gravity,
     });
     this.projectiles = [];
     this.fighters = this.createFighters();
@@ -114,7 +117,7 @@ export class SmashScene extends Phaser.Scene {
     const humans = players.sorted();
     const picks = this.returnData.picks ?? {};
     const peque = this.returnData.peque ?? {};
-    const arena = { platforms: this.platforms, respawn: this.stage.respawn };
+    const arena = { platforms: this.platforms, respawn: this.stage.respawn, gravity: this.stage.gravity };
     const list = humans.map(
       (player) =>
         new SmashFighter(this, this.world, {
@@ -220,6 +223,7 @@ export class SmashScene extends Phaser.Scene {
         else sfx.pickup();
       });
       this.resolveHits();
+      this.geysers?.update(dt, this.fighters, this.phase === 'fight');
       this.checkBlastZones();
       if (this.phase === 'fight') this.checkWinner();
       else this.updateEnd();
@@ -468,7 +472,7 @@ export class SmashScene extends Phaser.Scene {
 
       // Bomba: vuela en arco y explota al tocar a alguien, al caer en una plataforma o al acabarse la mecha.
       const prevY = p.y;
-      p.vy += BOMB.gravity * dt;
+      p.vy += BOMB.gravity * (this.stage.gravity ?? 1) * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.sprite.setPosition(p.x, p.y).setAngle(p.ageMs * 0.5);

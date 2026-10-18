@@ -81,7 +81,7 @@ export const ATTACKS = {
 
 // Un peleador estilo Smash: corre, salta, golpea según la dirección, usa su especial con B,
 // se cubre con el escudo, agarra objetos y sale volando más lejos mientras más % de daño lleva.
-// `arena` = { platforms, respawn } del escenario de la pelea.
+// `arena` = { platforms, respawn, gravity } del escenario de la pelea.
 export class SmashFighter {
   constructor(scene, layer, { color, label, deviceId = null, character = 'resorte', arena, peque = false, cpuLevel = 'normal' }) {
     this.scene = scene;
@@ -326,8 +326,8 @@ export class SmashFighter {
     if (!this.shielding) this.shieldHp = Math.min(SHIELD_MAX, this.shieldHp + SHIELD_REGEN * dt);
 
     // Durante la embestida de Rayo no hay gravedad: va en línea recta.
-    // Dragoncito y Fantasma caen más despacio (gravity < 1).
-    const gravity = this.stats.gravity ?? 1;
+    // Dragoncito y Fantasma caen más despacio (gravity < 1), y en el Espacio todos.
+    const gravity = (this.stats.gravity ?? 1) * (this.arena.gravity ?? 1);
     if (this.dashMs > 0) this.vy = 0;
     else this.vy = Math.min(MAX_FALL * gravity, this.vy + GRAVITY * gravity * dt);
     const prevFeet = this.y + this.radius;

@@ -209,6 +209,57 @@ test('bolitas bros: pelea contra el CPU, revancha y salir', { timeout: ms(120000
   await p.context.close();
 });
 
+test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  const fightOn = (stage) =>
+    p.until(
+      new Function(`const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight' && s.settings.stage === '${stage}';`),
+      ms(15000),
+      `pelear en ${stage}`,
+    );
+  const openSelect = async () => {
+    await p.openGameCard('Bolitas Bros');
+    await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
+  };
+  const stageChoices = async () => {
+    const choices = [];
+    for (let i = 0; i < 6; i += 1) {
+      choices.push(await p.page.evaluate(() => window.leogames.scene.getScene('SmashSelect').settings.stage));
+      await p.tap(0, BUTTON.RB);
+    }
+    return choices;
+  };
+
+  // Sin calcomanías solo están los 3 de siempre.
+  await openSelect();
+  assert.deepEqual(await stageChoices(), ['castillo', 'nubes', 'barco', 'castillo', 'nubes', 'barco']);
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'regresar al menú');
+
+  // Con "Campeón" y "¡Súper!" aparecen el Espacio (gravedad baja) y el Volcán.
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['smash-gana', 'smash-super'])));
+  await openSelect();
+  assert.deepEqual((await stageChoices()).slice(0, 5), ['castillo', 'nubes', 'barco', 'espacio', 'volcan']);
+  // Después de 6 toques va en Nubes: 2 más para el Espacio.
+  await p.tap(0, BUTTON.RB);
+  await p.tap(0, BUTTON.RB);
+  await p.tap(0, BUTTON.A);
+  await fightOn('espacio');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].arena.gravity), 0.55);
+  await p.holdToMenu(0, [BUTTON.Y], 'salir del Espacio');
+
+  // En el Volcán, los géiseres avisan y hacen erupción.
+  await openSelect();
+  await p.tap(0, BUTTON.RB);
+  await p.tap(0, BUTTON.A);
+  await fightOn('volcan');
+  await p.until(() => window.leogames.scene.getScene('Smash').geysers.eruptions > 0, ms(20000), 'que un géiser haga erupción');
+  await p.holdToMenu(0, [BUTTON.Y], 'salir del Volcán');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { timeout: ms(180000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(2);

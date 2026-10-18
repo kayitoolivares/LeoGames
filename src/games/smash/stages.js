@@ -3,7 +3,9 @@ import Phaser from 'phaser';
 // Escenarios de Bolitas Bros (coordenadas del mundo, que es más grande que la pantalla).
 // Plataformas: `soft` se atraviesan desde abajo y se bajan con ↓; `main` es la principal;
 // `move` = { x, y (cuánto se mueven), periodMs, phase } para las que van y vienen;
-// `look` = cómo se dibujan ('island', 'plank', 'cloud', 'deck', 'barrel').
+// `look` = cómo se dibujan ('island', 'plank', 'cloud', 'deck', 'barrel', 'moon', 'asteroid', 'rock', 'stone').
+// `unlock`: qué hay que ganar para que aparezca (ver UNLOCKS en rewards.js). `gravity`: multiplica la gravedad.
+// `geysers`: géiseres de lava en la plataforma principal (ver geysers.js).
 export const STAGES = {
   castillo: {
     name: 'Castillo',
@@ -48,6 +50,41 @@ export const STAGES = {
     drawBackground: drawSea,
     // El barco se dibuja aunque haya imagen de fondo: sin él, la cubierta flotaría en el mar.
     drawProps: drawShip,
+  },
+  espacio: {
+    name: 'Espacio',
+    sky: 0x14112b,
+    unlock: 'smash-espacio',
+    // Gravedad baja: se salta altísimo y se cae despacito.
+    gravity: 0.55,
+    platforms: [
+      { left: 480, right: 1520, top: 800, main: true, look: 'moon' },
+      { left: 280, right: 500, top: 580, soft: true, look: 'asteroid', move: { x: 50, y: 40, periodMs: 7000, phase: 0 } },
+      { left: 1500, right: 1720, top: 580, soft: true, look: 'asteroid', move: { x: 50, y: 40, periodMs: 7000, phase: Math.PI } },
+      { left: 870, right: 1130, top: 400, soft: true, look: 'asteroid', move: { y: 70, periodMs: 5000, phase: 0 } },
+    ],
+    blast: { left: -350, right: 2350, top: -700, bottom: 1400 },
+    respawn: { x: 1000, y: 260 },
+    spawns: [650, 1350, 850, 1150],
+    drawBackground: drawSpace,
+  },
+  volcan: {
+    name: 'Volcán',
+    sky: 0x3a1420,
+    unlock: 'smash-volcan',
+    platforms: [
+      { left: 400, right: 1600, top: 800, main: true, look: 'rock' },
+      { left: 540, right: 820, top: 620, soft: true, look: 'stone' },
+      { left: 1180, right: 1460, top: 620, soft: true, look: 'stone' },
+      { left: 860, right: 1140, top: 440, soft: true, look: 'stone', move: { x: 170, periodMs: 6000, phase: 0 } },
+    ],
+    geysers: { xs: [620, 1000, 1380], everyMs: 5200, warnMs: 1400, eruptMs: 900 },
+    blast: { left: -300, right: 2300, top: -450, bottom: 1300 },
+    respawn: { x: 1000, y: 250 },
+    spawns: [600, 1400, 850, 1150],
+    drawBackground: drawVolcano,
+    // La lava de abajo se ve aunque haya imagen de fondo.
+    drawProps: drawLava,
   },
 };
 
@@ -104,6 +141,24 @@ function drawPlatform(scene, p) {
     for (let x = -width / 2 + 80; x < width / 2; x += 80) parts.push(scene.add.rectangle(x, 20, 3, 40, 0x6b4223));
     for (let x = -width / 2 + 20; x <= width / 2 - 20; x += 120) parts.push(scene.add.rectangle(x, -22, 8, 44, 0x6b4223));
     parts.push(scene.add.rectangle(0, -44, width - 30, 8, 0x6b4223));
+  } else if (p.look === 'moon') {
+    parts.push(scene.add.ellipse(0, 70, width, 180, 0x8f8aa8).setStrokeStyle(5, 0x5d5878));
+    parts.push(scene.add.rectangle(0, 12, width - 10, 28, 0xc9c5dd).setRounded(14));
+    for (const [cx, cy, r] of [[-0.3, 70, 26], [0.05, 100, 18], [0.32, 64, 30], [-0.1, 130, 14]]) {
+      parts.push(scene.add.circle(cx * width, cy, r, 0x6f6a8c));
+    }
+  } else if (p.look === 'asteroid') {
+    parts.push(scene.add.ellipse(0, 34, width, 76, 0x8a7a6e).setStrokeStyle(4, 0x5c4f46));
+    parts.push(scene.add.circle(-width * 0.22, 36, 11, 0x6e6058));
+    parts.push(scene.add.circle(width * 0.2, 46, 8, 0x6e6058));
+  } else if (p.look === 'rock') {
+    parts.push(scene.add.triangle(0, 40, 0, 0, width, 0, width / 2, 240, 0x3a2a2e).setOrigin(0.5, 0));
+    parts.push(scene.add.rectangle(0, 40, width, 80, 0x4a3438).setRounded(18));
+    parts.push(scene.add.rectangle(0, 10, width + 10, 24, 0x6e4a44).setRounded(12));
+    for (const x of [-0.35, -0.05, 0.28]) parts.push(scene.add.rectangle(x * width, 52, 90, 6, 0xff7a2f).setAngle(12));
+  } else if (p.look === 'stone') {
+    parts.push(scene.add.rectangle(0, 14, width, 28, 0x5a4448).setRounded(12).setStrokeStyle(4, 0x2e2024));
+    parts.push(scene.add.rectangle(width * 0.15, 16, 50, 4, 0xff7a2f));
   } else if (p.look === 'barrel') {
     parts.push(scene.add.rectangle(0, 30, width, 60, 0x9c6b3c).setRounded(24).setStrokeStyle(4, 0x6b4223));
     for (const x of [-width / 4, width / 4]) parts.push(scene.add.rectangle(x, 30, 10, 60, 0x5a5a6e));
@@ -170,6 +225,41 @@ function drawSea(scene, layer) {
     ...clouds(scene, [[300, 180, 0.9], [1300, 120, 1.1], [1900, 260, 0.8]], 0.7),
     scene.add.rectangle(1000, 1300, 4000, 700, 0x2f7fc1),
     ...waves,
+  ]);
+}
+
+function drawSpace(scene, layer) {
+  const stars = [];
+  for (let i = 0; i < 120; i += 1) {
+    stars.push(scene.add.circle(-300 + Math.random() * 2600, -650 + Math.random() * 2000, 1 + Math.random() * 3, 0xffffff, 0.4 + Math.random() * 0.6));
+  }
+  addAll(layer, [
+    ...stars,
+    scene.add.circle(1650, 200, 160, 0xff9a3c),
+    scene.add.ellipse(1650, 200, 460, 70, 0xffc93c, 0).setStrokeStyle(10, 0xffc93c, 0.8),
+    scene.add.circle(320, 300, 70, 0x3fa7ff),
+  ]);
+}
+
+function drawVolcano(scene, layer) {
+  addAll(layer, [
+    scene.add.triangle(1000, 900, 0, 600, 500, 0, 1000, 600, 0x5a1f22).setOrigin(0.5, 1),
+    scene.add.triangle(1000, 330, 0, 60, 40, 0, 80, 60, 0xff7a2f).setOrigin(0.5, 1),
+    ...clouds(scene, [[600, 150, 1], [1400, 220, 0.9]], 0.25),
+  ]);
+}
+
+function drawLava(scene, layer) {
+  const bubbles = [];
+  for (let i = 0; i < 8; i += 1) {
+    const bubble = scene.add.circle(-100 + i * 300, 1160, 26, 0xffb13c, 0.8);
+    scene.tweens.add({ targets: bubble, y: 1135, alpha: 0.2, duration: 900 + i * 130, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    bubbles.push(bubble);
+  }
+  addAll(layer, [
+    scene.add.rectangle(1000, 1420, 4000, 560, 0xe8501f),
+    scene.add.rectangle(1000, 1150, 4000, 24, 0xffb13c),
+    ...bubbles,
   ]);
 }
 

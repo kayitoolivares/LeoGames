@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { players } from '../../shared/players.js';
+import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
@@ -17,11 +18,16 @@ const LEVEL_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
 
 // Opciones de la pelea que escoge el Jugador 1 (↑ ↓ para elegir cuál, LB / RB para cambiarla).
 const OPTIONS = [
-  { key: 'stage', label: 'Escenario', values: () => STAGE_KEYS, show: (v) => STAGES[v].name },
+  { key: 'stage', label: 'Escenario', values: () => openStages(), show: (v) => STAGES[v].name },
   { key: 'items', label: 'Objetos', values: () => [true, false], show: (v) => (v ? 'Sí' : 'No') },
   { key: 'cpus', label: 'CPUs', values: (humans) => cpuChoices(humans), show: String },
   { key: 'level', label: 'Nivel CPU', values: () => Object.keys(LEVEL_NAMES), show: (v) => LEVEL_NAMES[v] },
 ];
+
+// Los escenarios que ya se ganaron (los demás salen abajo con su candado).
+function openStages() {
+  return STAGE_KEYS.filter((key) => rewards.unlocked(STAGES[key].unlock));
+}
 
 // Siempre hay al menos un rival, y entre todos no pasan de 4.
 function cpuChoices(humans) {
@@ -57,6 +63,7 @@ export class SmashSelectScene extends Phaser.Scene {
     this.settings = { ...lastSettings };
     const choices = cpuChoices(this.humans.length);
     if (!choices.includes(this.settings.cpus)) this.settings.cpus = choices[0];
+    if (!openStages().includes(this.settings.stage)) this.settings.stage = 'castillo';
     this.optionIndex = 0;
 
     this.add.text(width / 2, 36, 'Escoge tu bolita', textStyle(44, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
@@ -69,6 +76,9 @@ export class SmashSelectScene extends Phaser.Scene {
     this.add
       .text(width / 2, 140, 'Jugador 1:  ↑ ↓ elegir opción  ·  LB / RB cambiarla', textStyle(17, TEXT.muted))
       .setOrigin(0.5);
+    const locked = STAGE_KEYS.filter((key) => !rewards.unlocked(STAGES[key].unlock));
+    const lockText = locked.map((key) => `🔒 ${STAGES[key].name}: ${UNLOCKS[STAGES[key].unlock].label}`).join('   ·   ');
+    this.add.text(width / 2, 166, lockText, textStyle(15, TEXT.muted)).setOrigin(0.5);
     this.add
       .text(width / 2, height - 22, '◀ ▶ personaje   ·   Y = modo peque 🐣   ·   A = ¡listo!   ·   B = regresar', textStyle(19, TEXT.accent))
       .setOrigin(0.5);
