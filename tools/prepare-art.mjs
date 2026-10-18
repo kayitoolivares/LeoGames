@@ -1,6 +1,7 @@
 // Prepara el arte (hecho con Gemini u otra herramienta) para Bolitas Bros.
 //
-//   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella
+//   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella | ninja | robot | dragon | fantasma
+//                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
 //   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
 //   arte/smash/fondos/<escenario>.png              castillo | nubes | barco
@@ -18,7 +19,7 @@ const SOURCE = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT,
 const OUTPUT = path.join(ROOT, 'public', 'smash');
 const MANIFEST = path.join(ROOT, 'src', 'games', 'smash', 'art.json');
 
-const CHARACTERS = ['tanque', 'rayo', 'resorte', 'estrella'];
+const CHARACTERS = ['tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma'];
 const POSES = ['normal', 'golpe', 'salto', 'dolor'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
 const STAGES = ['castillo', 'nubes', 'barco'];
@@ -119,7 +120,8 @@ async function cutOut(input, output, maxSize) {
   await sharp(data, { raw: { width, height, channels: 4 } })
     .extract({ left, top, width: right - left + 1, height: bottom - top + 1 })
     .resize({ width: maxSize, height: maxSize, fit: 'inside', withoutEnlargement: true })
-    .png()
+    // Con paleta (256 colores) pesa ~3 veces menos y en dibujos de caricatura no se nota.
+    .png({ palette: true, quality: 90, effort: 10 })
     .toFile(output);
 }
 
@@ -152,8 +154,8 @@ async function main() {
 
   for (const file of await files('personajes')) {
     const [character, pose = 'normal'] = baseName(file).split('-');
-    if (!CHARACTERS.includes(character) || !POSES.includes(pose)) {
-      report.push(`  ? personajes/${file}: el nombre debe ser <${CHARACTERS.join('|')}>-<${POSES.join('|')}>`);
+    if (!CHARACTERS.includes(character.replace(/_super$/, '')) || !POSES.includes(pose)) {
+      report.push(`  ? personajes/${file}: el nombre debe ser <${CHARACTERS.join('|')}>[_super]-<${POSES.join('|')}>`);
       continue;
     }
     await cutOut(path.join(SOURCE, 'personajes', file), path.join(OUTPUT, 'personajes', `${character}-${pose}.png`), CHARACTER_MAX);

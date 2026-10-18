@@ -30,6 +30,13 @@ export function hasPose(scene, character, pose) {
   return scene.textures.exists(`smash:${character}-${pose}`);
 }
 
+// La súper forma tiene sus propias imágenes (<personaje>_super-<pose>). Devuelve ese nombre
+// para usarlo con characterTexture(), o null si no hay (entonces se usa la normal con brillo dorado).
+export function superArtKey(scene, character) {
+  const key = `${character}_super`;
+  return characterTexture(scene, key) ? key : null;
+}
+
 export function itemTexture(scene, type) {
   const key = `smash:objeto-${ITEM_ART[type]}`;
   return scene.textures.exists(key) ? key : null;

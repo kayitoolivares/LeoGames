@@ -6,7 +6,7 @@ import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
 import { CHARACTERS, CHARACTER_KEYS } from './characters.js';
-import { SmashFighter, STOCKS } from './SmashFighter.js';
+import { METER_MAX, SUPER_MS, SmashFighter, STOCKS } from './SmashFighter.js';
 import { backgroundTexture, loadSmashArt } from './art.js';
 import { SmashItems, drawItem } from './items.js';
 import { STAGES, buildPlatforms, movePlatforms } from './stages.js';
@@ -19,19 +19,25 @@ const ZOOM_MAX = 1.15;
 const CAMERA_MARGIN = 220;
 const STRONG_HIT_SPEED = 900;
 const HIT_WORDS = ['¡PAM!', '¡ZAS!', '¡POW!', '¡BAM!'];
-const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false };
+const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false, transform: false };
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
-// La estrella de Estrella: poco daño, pero pega de lejos.
-const STAR = { speed: 700, lifeMs: 900, radius: 16, hit: { damage: 5, base: 160, scale: 5, angle: 30 } };
+// Disparos en línea recta: la estrella de Estrella (poco daño, pero pega de lejos) y el láser de Robot (rápido).
+const SHOTS = {
+  star: { speed: 700, lifeMs: 900, radius: 16, color: 0xffc93c, hit: { damage: 5, base: 160, scale: 5, angle: 30 } },
+  laser: { speed: 1150, lifeMs: 650, radius: 14, color: 0xff4d6d, hit: { damage: 8, base: 220, scale: 6, angle: 15 } },
+};
+// Ninja aparece detrás del rival más cercano si está a esta distancia; si no, avanza un poco.
+const TELEPORT_RANGE = 700;
+const TELEPORT_HOP = 220;
 // La bomba explota al tocar a alguien, al caer o a los 1.5 s; quien la lanzó no recibe daño.
 const BOMB = { gravity: 1400, fuseMs: 1500, blast: 130, hit: { damage: 15, base: 380, scale: 10, angle: 50 } };
 const ITEM_NAMES = { hammer: '¡Martillo!', bomb: '¡Bomba!', heart: '-40%', star: '¡Estrella!' };
 
-// Qué tan bueno es el CPU. attack/shield/special/jump: probabilidad por cuadro de hacerlo cuando conviene.
+// Qué tan bueno es el CPU. attack/shield/special/jump/transform: probabilidad por cuadro de hacerlo cuando conviene.
 const CPU_LEVELS = {
-  facil: { attack: 0.04, shield: 0.02, special: 0.004, jump: 0.04, items: false, smart: false },
-  normal: { attack: 0.08, shield: 0.06, special: 0.01, jump: 0.08, items: true, smart: true },
-  dificil: { attack: 0.16, shield: 0.15, special: 0.02, jump: 0.12, items: true, smart: true },
+  facil: { attack: 0.04, shield: 0.02, special: 0.004, jump: 0.04, transform: 0.003, items: false, smart: false },
+  normal: { attack: 0.08, shield: 0.06, special: 0.01, jump: 0.08, transform: 0.01, items: true, smart: true },
+  dificil: { attack: 0.16, shield: 0.15, special: 0.02, jump: 0.12, transform: 0.03, items: true, smart: true },
 };
 
 const DEFAULT_SETTINGS = { stage: 'castillo', items: true, cpus: 1, level: 'normal' };
@@ -143,16 +149,23 @@ export class SmashScene extends Phaser.Scene {
     const startX = (width - (this.fighters.length * panelW + (this.fighters.length - 1) * gap)) / 2 + panelW / 2;
     this.hud = this.fighters.map((fighter, i) => {
       const x = startX + i * (panelW + gap);
-      const y = height - 62;
-      const bg = this.add.rectangle(x, y, panelW, 96, 0x1b1530, 0.6).setRounded(18).setStrokeStyle(4, fighter.color);
+      const y = height - 70;
+      const left = x - panelW / 2;
+      const bg = this.add.rectangle(x, y, panelW, 112, 0x1b1530, 0.6).setRounded(18).setStrokeStyle(4, fighter.color);
       const title = `${fighter.label} · ${CHARACTERS[fighter.characterKey].name}${fighter.peque ? ' · peque' : ''}`;
-      const name = this.add.text(x - panelW / 2 + 16, y - 40, title, textStyle(17, hexToCss(fighter.color), { fontStyle: 'bold', ...OUTLINE }));
-      const damage = this.add.text(x + 30, y + 2, '0%', textStyle(46, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5);
+      const name = this.add.text(left + 16, y - 48, title, textStyle(17, hexToCss(fighter.color), { fontStyle: 'bold', ...OUTLINE }));
+      const damage = this.add.text(x + 30, y - 6, '0%', textStyle(46, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5);
       const stocks = Array.from({ length: STOCKS }, (_, k) =>
-        this.add.circle(x - panelW / 2 + 24 + k * 22, y + 30, 8, fighter.color).setStrokeStyle(2, 0xffffff),
+        this.add.circle(left + 24 + k * 22, y + 28, 8, fighter.color).setStrokeStyle(2, 0xffffff),
       );
-      this.ui.add([bg, name, damage, ...stocks]);
-      return { fighter, damage, stocks, shown: null };
+      // Barra de poder: se llena con los golpes; llena = LB + RB para transformarse.
+      // En súper modo muestra cuánto le queda.
+      const meterW = panelW - 32;
+      const meterBg = this.add.rectangle(left + 16, y + 44, meterW, 8, 0xffffff, 0.15).setOrigin(0, 0.5);
+      const meter = this.add.rectangle(left + 16, y + 44, meterW, 8, 0xffd84d).setOrigin(0, 0.5).setScale(0, 1);
+      const meterText = this.add.text(left + panelW - 14, y + 28, '', textStyle(15, '#ffd84d', { fontStyle: 'bold', ...OUTLINE })).setOrigin(1, 0.5);
+      this.ui.add([bg, name, damage, ...stocks, meterBg, meter, meterText]);
+      return { fighter, damage, stocks, meter, meterText, shown: null };
     });
 
     const bannerStyle = { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 10, align: 'center' };
@@ -162,7 +175,7 @@ export class SmashScene extends Phaser.Scene {
       .text(
         width / 2,
         22,
-        'A = saltar  ·  X = golpe (↑ ↓ cambian)  ·  B = especial (B + ↑ = rescate)  ·  RB / LB = escudo  ·  ↓ = bajar  ·  Mantén Y = salir',
+        'A = saltar  ·  X = golpe (↑ ↓ cambian)  ·  B = especial (B + ↑ = rescate)  ·  RB / LB = escudo  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén Y = salir',
         textStyle(16, TEXT.normal, OUTLINE),
       )
       .setOrigin(0.5);
@@ -170,9 +183,9 @@ export class SmashScene extends Phaser.Scene {
     this.ui.add([this.banner, this.subBanner, help, this.exitBar]);
   }
 
-  showBanner(title, subtitle = '', holdMs = 0) {
+  showBanner(title, subtitle = '', holdMs = 0, color = TEXT.accent) {
     this.tweens.killTweensOf([this.banner, this.subBanner]);
-    this.banner.setText(title).setAlpha(1).setScale(0.6);
+    this.banner.setText(title).setColor(color).setAlpha(1).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(subtitle ? 1 : 0);
     this.tweens.add({ targets: this.banner, scale: 1, duration: 220, ease: 'Back.easeOut' });
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
@@ -189,7 +202,13 @@ export class SmashScene extends Phaser.Scene {
       this.updateCountdown();
       for (const fighter of this.fighters) fighter.update(dt, IDLE);
     } else {
-      for (const fighter of this.fighters) fighter.update(dt, this.inputFor(fighter));
+      for (const fighter of this.fighters) {
+        const input = this.inputFor(fighter);
+        const wantsSuper = fighter.isCpu ? this.cpuWantsSuper(fighter) : input.transform;
+        if (wantsSuper && fighter.transform()) this.celebrateSuper(fighter);
+        fighter.update(dt, input);
+      }
+      this.announceFullMeters();
       this.spawnProjectiles();
       this.updateProjectiles(dt);
       this.items.update(dt, this.fighters, this.settings.items && this.phase === 'fight', (fighter, item) => {
@@ -225,6 +244,12 @@ export class SmashScene extends Phaser.Scene {
     if (fighter.isCpu) return this.cpuInput(fighter);
     const id = fighter.deviceId;
     const stick = controls.getStick(id);
+    // Con la barra llena, LB + RB juntos transforman (en vez de subir el escudo ese cuadro).
+    const transform =
+      fighter.canTransform() &&
+      controls.isDown(id, 'lb') &&
+      controls.isDown(id, 'rb') &&
+      (controls.justPressed(id, 'lb') || controls.justPressed(id, 'rb'));
     return {
       x: stick.x,
       y: stick.y,
@@ -232,8 +257,53 @@ export class SmashScene extends Phaser.Scene {
       attack: controls.justPressed(id, 'x'),
       special: controls.justPressed(id, 'b'),
       // Escudo con cualquier botón de arriba (bumpers o gatillos), para que sea fácil de encontrar.
-      shield: ['rb', 'lb', 'rt', 'lt'].some((button) => controls.isDown(id, button)),
+      shield: !transform && ['rb', 'lb', 'rt', 'lt'].some((button) => controls.isDown(id, button)),
+      transform,
     };
+  }
+
+  // El CPU se transforma un ratito después de llenar su barra, si tiene a alguien cerca.
+  cpuWantsSuper(fighter) {
+    if (!fighter.canTransform() || this.phase !== 'fight' || fighter.hitstunMs > 0) return false;
+    const level = CPU_LEVELS[fighter.cpuLevel] ?? CPU_LEVELS.normal;
+    const rival = this.nearestRival(fighter, 500);
+    return Boolean(rival) && Math.random() < level.transform;
+  }
+
+  // ¡Se transformó! Letrero con su súper nombre, destello y un aro que crece.
+  celebrateSuper(fighter) {
+    this.showBanner(`¡${CHARACTERS[fighter.characterKey].superName}!`, '', 900, hexToCss(fighter.color));
+    burst(this, fighter.x, fighter.y, 0xffd84d, 16, this.world);
+    burst(this, fighter.x, fighter.y, fighter.color, 12, this.world);
+    const ring = this.add.circle(fighter.x, fighter.y, 40).setStrokeStyle(8, 0xffd84d);
+    this.world.add(ring);
+    this.tweens.add({ targets: ring, scale: 5, alpha: 0, duration: 600, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    this.cameras.main.flash(200, 255, 236, 160);
+    this.cameras.main.shake(200, 0.006);
+  }
+
+  // Avisa una vez cuando a alguien se le llena la barra.
+  announceFullMeters() {
+    for (const fighter of this.fighters) {
+      const full = fighter.canTransform();
+      if (full && !fighter.fullAnnounced) {
+        popText(this, fighter.x, fighter.y - 90, fighter.isCpu ? '¡Barra llena!' : '¡LB + RB!', '#ffd84d', this.world);
+        sfx.meterFull();
+      }
+      fighter.fullAnnounced = full;
+    }
+  }
+
+  // Rival vivo más cercano a menos de `maxDist` (o null).
+  nearestRival(fighter, maxDist = Infinity) {
+    let best = null;
+    let bestDist = maxDist;
+    for (const other of this.fighters) {
+      if (other === fighter || !other.isAlive()) continue;
+      const dist = Math.hypot(other.x - fighter.x, other.y - fighter.y);
+      if (dist < bestDist) [best, bestDist] = [other, dist];
+    }
+    return best;
   }
 
   // CPU: persigue al rival más cercano, escoge el golpe según dónde está, se cubre, usa su especial,
@@ -294,6 +364,10 @@ export class SmashScene extends Phaser.Scene {
     const close = Math.abs(dx) < 85 && Math.abs(tdy) < 80;
     // Se cubre a veces cuando el otro está por pegarle.
     const threatened = close && target.attack && fighter.grounded && fighter.shieldHp > 40;
+    // Fantasma en vez de cubrirse se vuelve invisible (si ya puede).
+    if (threatened && fighter.characterKey === 'fantasma' && fighter.cooldownMs === 0 && Math.random() < level.shield) {
+      return { ...IDLE, special: true };
+    }
     if (threatened && (fighter.shielding || Math.random() < level.shield)) return { ...IDLE, shield: true };
 
     // Con la bomba en la mano, la lanza cuando el rival está a buena distancia y a su altura.
@@ -305,50 +379,82 @@ export class SmashScene extends Phaser.Scene {
     // Golpe según dónde está el rival: arriba → hacia arriba; abajo estando en el aire → pisotón.
     let aim = climb.y;
     if (level.smart && close) aim = tdy < -40 ? -1 : !fighter.grounded && tdy > 30 ? 1 : 0;
-    // Estrella dispara de lejos si el otro está a su altura.
-    const lined = fighter.characterKey === 'estrella' && Math.abs(tdy) < 40 && Math.abs(dx) > 150 && Math.abs(dx) < 600;
+    // Estrella y Robot disparan de lejos si el otro está a su altura; Ninja se le aparece por detrás.
+    const key = fighter.characterKey;
+    const lined = (key === 'estrella' || key === 'robot') && Math.abs(tdy) < 40 && Math.abs(dx) > 150 && Math.abs(dx) < 600;
+    const ambush = key === 'ninja' && best > 200 && best < TELEPORT_RANGE;
     return {
       x,
       y: aim,
       jump: climb.jump,
       attack: close && Math.random() < level.attack,
       special:
-        (lined && Math.random() < level.special * 3) ||
-        (close && fighter.characterKey !== 'resorte' && Math.random() < level.special) ||
+        ((lined || ambush) && Math.random() < level.special * 3) ||
+        (close && key !== 'resorte' && key !== 'fantasma' && Math.random() < level.special) ||
         (needsRescue && Math.random() < 0.1),
       shield: false,
+      transform: false,
     };
   }
 
-  // Estrellas y bombas que pidió lanzar algún peleador este cuadro.
+  // Estrellas, láseres y bombas que pidió lanzar algún peleador este cuadro (y el teletransporte de Ninja).
   spawnProjectiles() {
     for (const fighter of this.fighters) {
       const request = fighter.projectileRequest;
       if (!request) continue;
       fighter.projectileRequest = null;
-      const sprite =
-        request.kind === 'bomb'
-          ? drawItem(this, 'bomb')
-          : this.add.star(request.x, request.y, 5, 9, 20, 0xffc93c).setStrokeStyle(3, 0xffffff);
+      if (request.kind === 'teleport') {
+        this.teleport(fighter);
+        continue;
+      }
+      let sprite;
+      if (request.kind === 'bomb') sprite = drawItem(this, 'bomb');
+      else if (request.kind === 'laser') sprite = this.add.rectangle(request.x, request.y, 80, 12, SHOTS.laser.color).setStrokeStyle(3, 0xffffff);
+      else sprite = this.add.star(request.x, request.y, 5, 9, 20, SHOTS.star.color).setStrokeStyle(3, 0xffffff);
+      // En súper modo los disparos salen más grandes.
+      sprite.setScale(fighter.radius / fighter.baseRadius);
       this.world.add(sprite);
       this.projectiles.push({ ...request, sprite, owner: fighter, ageMs: 0 });
     }
+  }
+
+  // Ninja: humo, y aparece detrás del rival más cercano (al lado contrario de donde mira) o un poco más adelante.
+  teleport(fighter) {
+    burst(this, fighter.x, fighter.y, 0x8a86b8, 10, this.world);
+    const target = this.nearestRival(fighter, TELEPORT_RANGE);
+    if (target) {
+      const behind = -target.facing;
+      fighter.x = target.x + behind * (target.radius + fighter.radius + 12);
+      // Con los pies un poquito arriba de los del rival, para caer en su misma plataforma.
+      fighter.y = target.y + target.radius - fighter.radius - 2;
+      fighter.facing = -behind;
+    } else {
+      fighter.x += fighter.facing * TELEPORT_HOP;
+    }
+    fighter.vx = 0;
+    fighter.vy = 0;
+    fighter.grounded = false;
+    fighter.platform = null;
+    burst(this, fighter.x, fighter.y, 0x8a86b8, 10, this.world);
   }
 
   updateProjectiles(dtMs) {
     const dt = dtMs / 1000;
     this.projectiles = this.projectiles.filter((p) => {
       p.ageMs += dtMs;
-      if (p.kind === 'star') {
-        p.x += p.dir * STAR.speed * dt;
-        p.sprite.setPosition(p.x, p.y).setAngle(p.ageMs * 0.8);
-        const victim = this.touching(p, STAR.radius);
+      const shot = SHOTS[p.kind];
+      if (shot) {
+        p.x += p.dir * shot.speed * dt;
+        p.sprite.setPosition(p.x, p.y);
+        if (p.kind === 'star') p.sprite.setAngle(p.ageMs * 0.8);
+        const victim = this.touching(p, shot.radius);
         if (victim) {
-          const result = victim.takeHit({ facing: p.dir, power: p.owner.power }, STAR.hit);
-          burst(this, p.x, p.y, result.blocked ? 0x7fdcff : 0xffc93c, 6, this.world);
+          const result = victim.takeHit({ facing: p.dir, power: p.owner.power }, shot.hit);
+          p.owner.dealtDamage(result.dealt);
+          burst(this, p.x, p.y, result.blocked ? 0x7fdcff : shot.color, 6, this.world);
           if (!result.blocked) sfx.hit(0.2);
         }
-        if (victim || p.ageMs > STAR.lifeMs) {
+        if (victim || p.ageMs > shot.lifeMs) {
           p.sprite.destroy();
           return false;
         }
@@ -391,7 +497,8 @@ export class SmashScene extends Phaser.Scene {
     for (const f of this.fighters) {
       if (f === bomb.owner || !f.isAlive() || f.isInvulnerable()) continue;
       if (Math.hypot(f.x - bomb.x, f.y - bomb.y) > BOMB.blast + f.radius) continue;
-      f.takeHit({ facing: Math.sign(f.x - bomb.x) || 1, power: 1 }, BOMB.hit);
+      const { dealt } = f.takeHit({ facing: Math.sign(f.x - bomb.x) || 1, power: 1 }, BOMB.hit);
+      bomb.owner.dealtDamage(dealt);
     }
   }
 
@@ -403,7 +510,8 @@ export class SmashScene extends Phaser.Scene {
         if (victim === attacker || !victim.isAlive() || victim.isInvulnerable() || attacker.attack.hit.has(victim)) continue;
         if (Math.hypot(victim.x - box.x, victim.y - box.y) > box.radius + victim.radius) continue;
         attacker.attack.hit.add(victim);
-        const { blocked, speed } = victim.takeHit(attacker, box.data);
+        const { blocked, speed, dealt } = victim.takeHit(attacker, box.data);
+        attacker.dealtDamage(dealt);
         if (blocked) {
           burst(this, box.x, box.y, 0x7fdcff, 6, this.world);
           continue;
@@ -477,8 +585,19 @@ export class SmashScene extends Phaser.Scene {
   }
 
   updateHud() {
+    const blink = Math.floor(this.time.now / 250) % 2 === 0;
     for (const slot of this.hud) {
       const { fighter } = slot;
+      // Barra: se llena dorada; llena, parpadea; en súper modo se va vaciando (lo que le queda).
+      const full = fighter.canTransform();
+      const isSuper = fighter.superMs > 0;
+      slot.meter.setScale(isSuper ? fighter.superMs / SUPER_MS : fighter.meter / METER_MAX, 1);
+      slot.meter.setFillStyle(isSuper ? fighter.color : full && blink ? 0xffffff : 0xffd84d);
+      let meterLabel = '';
+      if (isSuper) meterLabel = '¡SÚPER!';
+      else if (full) meterLabel = fighter.isCpu ? '¡Llena!' : '¡LB + RB!';
+      if (slot.meterText.text !== meterLabel) slot.meterText.setText(meterLabel);
+
       const key = `${Math.round(fighter.damage)}|${fighter.stocks}`;
       if (slot.shown === key) continue;
       slot.shown = key;

@@ -1,6 +1,48 @@
 {
   "characters": {
+    "dragon": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "dragon_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "estrella": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "estrella_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "fantasma": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "fantasma_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "ninja": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "ninja_super": [
       "dolor",
       "golpe",
       "normal",
@@ -12,13 +54,43 @@
       "normal",
       "salto"
     ],
+    "rayo_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "resorte": [
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
+    "resorte_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "robot": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "robot_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "tanque": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "tanque_super": [
       "dolor",
       "golpe",
       "normal",

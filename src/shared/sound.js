@@ -106,6 +106,20 @@ export const sfx = {
     tone({ freq: 620, to: 90, ms: 650, type: 'sawtooth', volume: 0.18 });
   },
   win: () => melody([523, 659, 784, 659, 784, 1047], { ms: 170, gap: 150, volume: 0.13 }),
+  // Bolitas Bros: especiales de los personajes nuevos y la transformación.
+  laser: () => tone({ freq: 1600, to: 300, ms: 200, type: 'sawtooth', volume: 0.08 }),
+  fire: () => noise({ ms: 480, volume: 0.22, filter: 1800 }),
+  poof: () => {
+    noise({ ms: 160, volume: 0.25, filter: 3000 });
+    tone({ freq: 500, to: 1200, ms: 120, type: 'sine', volume: 0.1 });
+  },
+  ghost: () => tone({ freq: 520, to: 240, ms: 500, type: 'sine', volume: 0.15 }),
+  meterFull: () => melody([880, 1175, 1760], { ms: 110, gap: 70, type: 'sine', volume: 0.12 }),
+  transform: () => {
+    noise({ ms: 600, volume: 0.25, filter: 5000 });
+    melody([392, 523, 659, 784, 1047, 1319], { ms: 150, gap: 70, type: 'sawtooth', volume: 0.08 });
+  },
+  powerDown: () => tone({ freq: 700, to: 180, ms: 450, type: 'triangle', volume: 0.15 }),
   // Modo Bebé: sonidos suaves (triángulo y seno, nada chillón).
   note: (step) => {
     const freq = PENTATONIC[Math.min(Math.max(step, 0), PENTATONIC.length - 1)];
