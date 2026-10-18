@@ -90,14 +90,15 @@ export class SmashScene extends Phaser.Scene {
   // si no, el fondo dibujado con figuras.
   drawBackground() {
     const key = backgroundTexture(this, this.settings.stage);
-    if (!key) {
+    if (key) {
+      const zone = this.stage.blast;
+      const image = this.add.image((zone.left + zone.right) / 2, (zone.top + zone.bottom) / 2, key);
+      image.setScale(Math.max((zone.right - zone.left) / image.width, (zone.bottom - zone.top) / image.height));
+      this.world.add(image);
+    } else {
       this.stage.drawBackground(this, this.world);
-      return;
     }
-    const zone = this.stage.blast;
-    const image = this.add.image((zone.left + zone.right) / 2, (zone.top + zone.bottom) / 2, key);
-    image.setScale(Math.max((zone.right - zone.left) / image.width, (zone.bottom - zone.top) / image.height));
-    this.world.add(image);
+    this.stage.drawProps?.(this, this.world);
   }
 
   // Los jugadores con su personaje y, si se pidieron, CPUs con personaje al azar (siempre hay al menos un rival).

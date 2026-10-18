@@ -71,6 +71,7 @@ async function cutOut(input, output, maxSize) {
   const isBackground = (i) =>
     data[i + 3] === 0 ||
     backgrounds.some(([r, g, b]) => Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b) < TOLERANCE);
+  const greenScreen = backgrounds.some(([r, g, b]) => g > r + 40 && g > b + 40);
 
   const seen = new Uint8Array(width * height);
   const stack = border.map((i) => i / 4);
@@ -87,7 +88,22 @@ async function cutOut(input, output, maxSize) {
     if (y > 0) stack.push(p - width);
     if (y < height - 1) stack.push(p + width);
   }
-  softenEdges(data, width, height, backgrounds);
+  // Con fondo verde también se borran las "bolsitas" de verde encerradas por el dibujo (entre un brazo
+  // y el cuerpo, entre las orejas) que el relleno desde la orilla no alcanza. Ningún personaje ni objeto
+  // lleva verde, así que no se borra nada del dibujo.
+  if (greenScreen) {
+    for (let i = 0; i < data.length; i += 4) {
+      const g = data[i + 1];
+      if (g > 140 && g - Math.max(data[i], data[i + 2]) > 70) data[i + 3] = 0;
+    }
+  }
+  softenEdges(data, width, height, backgrounds, greenScreen);
+  for (let i = 0; i < data.length; i += 4) {
+    // Los pixeles transparentes se vacían para que al achicar no "sangre" su color en las orillas.
+    if (data[i + 3] === 0) data[i] = data[i + 1] = data[i + 2] = 0;
+    // Sin verde en el dibujo: se le quita a todo el tinte verde que deja el fondo (el JPEG lo esparce).
+    else if (greenScreen) data[i + 1] = Math.min(data[i + 1], Math.max(data[i], data[i + 2]));
+  }
 
   let [left, top, right, bottom] = [width, height, -1, -1];
   for (let y = 0; y < height; y += 1) {
@@ -109,8 +125,7 @@ async function cutOut(input, output, maxSize) {
 
 // Orillas: los pixeles que tocan el fondo borrado y todavía se le parecen quedan semitransparentes,
 // y si el fondo era verde se les quita ese tinte (para que no quede un borde verdoso).
-function softenEdges(data, width, height, backgrounds) {
-  const greenScreen = backgrounds.some(([r, g, b]) => g > r + 40 && g > b + 40);
+function softenEdges(data, width, height, backgrounds, greenScreen) {
   const clear = (i) => data[i + 3] === 0;
   for (let p = 0; p < width * height; p += 1) {
     const i = p * 4;

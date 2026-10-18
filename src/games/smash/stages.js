@@ -46,6 +46,8 @@ export const STAGES = {
     respawn: { x: 1000, y: 250 },
     spawns: [600, 1400, 850, 1150],
     drawBackground: drawSea,
+    // El barco se dibuja aunque haya imagen de fondo: sin él, la cubierta flotaría en el mar.
+    drawProps: drawShip,
   },
 };
 
@@ -157,15 +159,6 @@ function drawSky(scene, layer) {
 }
 
 function drawSea(scene, layer) {
-  const hull = scene.add.graphics();
-  hull.fillStyle(0x7a4a24, 1);
-  hull.fillPoints([{ x: 330, y: 840 }, { x: 1670, y: 840 }, { x: 1520, y: 1040 }, { x: 480, y: 1040 }], true);
-  hull.fillStyle(0x5c361a, 1);
-  hull.fillRect(400, 900, 1200, 16);
-  const sail = scene.add.graphics();
-  sail.fillStyle(0xfff6e5, 1);
-  sail.fillTriangle(990, 470, 990, 730, 1200, 730);
-  sail.fillTriangle(950, 500, 950, 730, 780, 730);
   const waves = [];
   for (let i = 0; i < 9; i += 1) {
     const wave = scene.add.ellipse(-200 + i * 300, 985, 220, 40, 0xffffff, 0.35);
@@ -177,6 +170,20 @@ function drawSea(scene, layer) {
     ...clouds(scene, [[300, 180, 0.9], [1300, 120, 1.1], [1900, 260, 0.8]], 0.7),
     scene.add.rectangle(1000, 1300, 4000, 700, 0x2f7fc1),
     ...waves,
+  ]);
+}
+
+function drawShip(scene, layer) {
+  const hull = scene.add.graphics();
+  hull.fillStyle(0x7a4a24, 1);
+  hull.fillPoints([{ x: 330, y: 840 }, { x: 1670, y: 840 }, { x: 1520, y: 1040 }, { x: 480, y: 1040 }], true);
+  hull.fillStyle(0x5c361a, 1);
+  hull.fillRect(400, 900, 1200, 16);
+  const sail = scene.add.graphics();
+  sail.fillStyle(0xfff6e5, 1);
+  sail.fillTriangle(990, 470, 990, 730, 1200, 730);
+  sail.fillTriangle(950, 500, 950, 730, 780, 730);
+  addAll(layer, [
     hull,
     scene.add.rectangle(970, 610, 26, 380, 0x6b4223),
     sail,

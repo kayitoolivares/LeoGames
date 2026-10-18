@@ -1,5 +1,39 @@
 {
-  "characters": {},
-  "items": [],
-  "backgrounds": []
+  "characters": {
+    "estrella": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "rayo": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "resorte": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "tanque": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ]
+  },
+  "items": [
+    "bomba",
+    "corazon",
+    "estrella",
+    "martillo"
+  ],
+  "backgrounds": [
+    "barco",
+    "castillo",
+    "nubes"
+  ]
 }

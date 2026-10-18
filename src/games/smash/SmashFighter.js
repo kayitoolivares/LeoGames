@@ -456,10 +456,11 @@ export class SmashFighter {
     const rainbow = RAINBOW[Math.floor(this.starPowerMs / 80) % RAINBOW.length];
     if (this.starPowerMs > 0) {
       s.ball.setFillStyle(rainbow);
-      this.image?.setTint(rainbow);
+      // En "pantalla" la imagen se aclara con el color (multiplicar la oscurecería casi a negro).
+      this.image?.setTintMode(Phaser.TintModes.SCREEN).setTint(rainbow);
     } else if (this.wasStar) {
       s.ball.setFillStyle(this.color);
-      this.image?.clearTint();
+      this.image?.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
     }
     this.wasStar = this.starPowerMs > 0;
     this.renderArt();
