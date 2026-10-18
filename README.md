@@ -30,6 +30,8 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 ## Juegos
 
+- Antes de **Pelea en equipo** y **Fútbol de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
+  lo que escojas se recuerda en los demás juegos mientras la página siga abierta.
 - **Pelea en equipo**: todos contra los monstruos en 3 mundos (Pradera, Bosque de hongos y Volcán), de 4 rondas
   cada uno y con su jefe: el Rey Slime, el Gran Hongo (llama ayudantes) y el Dragón de lava (lanza bolas de
   fuego; se esquivan saltando). Ganar un mundo desbloquea el siguiente.

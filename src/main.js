@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { controls } from './shared/controls.js';
 import { tickClock } from './shared/clock.js';
 import { music } from './shared/music.js';
+import { CharacterSelectScene } from './scenes/CharacterSelectScene.js';
 import { JoinScene } from './scenes/JoinScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { PadTestScene } from './scenes/PadTestScene.js';
@@ -30,6 +31,7 @@ const game = new Phaser.Game({
     MenuScene,
     PadTestScene,
     PrizesScene,
+    CharacterSelectScene,
     BrawlScene,
     SmashSelectScene,
     SmashScene,
@@ -53,6 +55,7 @@ const SCENE_MUSIC = {
   Menu: 'menu',
   SmashSelect: 'menu',
   Premios: 'menu',
+  Personajes: 'menu',
   Brawl: 'brawl',
   Smash: 'smash',
   Race: 'race',

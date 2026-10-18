@@ -24,6 +24,7 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   console.log(`  (el juego va a ${Math.round(await p.page.evaluate(() => window.leogames.loop.actualFps))} cuadros por segundo)`);
 
   await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(1);
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
   await p.holdToMenu(0, [BUTTON.Y], 'salir de Pelea en equipo');
 
@@ -40,6 +41,7 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   }
 
   await p.openGameCard('Fútbol de bolitas');
+  await p.pickCharacters(1);
   await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir del fútbol');
@@ -110,6 +112,7 @@ test('pelea en equipo: dos bots ganan las rondas', { timeout: ms(240000) }, asyn
   const p = await openPage(game);
   await p.joinPlayers(2);
   await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(2);
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
   // Sin calcomanías no hay nada que escoger: empieza directo en la Pradera.
   assert.equal((await brawl(p.page)).world, 0);
@@ -136,6 +139,7 @@ test('pelea en equipo: escoger mundo y los jefes del bosque y del volcán', { ti
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['pelea-gana', 'pelea-hongos'])));
   await p.joinPlayers(2);
   await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(2);
   await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'choose', ms(8000), 'ver los mundos');
   // Se anotan los poderes que usan los jefes.
   await p.page.evaluate(() => {
@@ -176,6 +180,43 @@ test('pelea en equipo: escoger mundo y los jefes del bosque y del volcán', { ti
     assert.ok((await stickers(p.page)).includes('pelea-volcan'));
   }
   await stopBot(p.page);
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('personajes: lo que escoges se usa en la pelea, el fútbol y Bolitas Bros', { timeout: ms(90000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Pelea en equipo');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Personajes'), null, { timeout: ms(8000) });
+  // El Jugador 1 empieza en Tanque: dos a la derecha es Resorte. El Jugador 2 se queda con Rayo.
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.tap(1, BUTTON.A);
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
+  const looks = await p.page.evaluate(() =>
+    window.leogames.scene.getScene('Brawl').fighters.map((f) => [f.look.character, f.look.image?.texture.key ?? null]),
+  );
+  assert.deepEqual(looks, [['resorte', 'smash:resorte-normal'], ['rayo', 'smash:rayo-normal']]);
+  await p.holdToMenu(0, [BUTTON.Y], 'salir de Pelea en equipo');
+
+  // En el fútbol ya salen escogidos.
+  await p.openGameCard('Fútbol de bolitas');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Personajes'), null, { timeout: ms(8000) });
+  assert.deepEqual(await p.page.evaluate(() => window.leogames.scene.getScene('Personajes').cards.map((c) => c.pick)), ['resorte', 'rayo']);
+  await p.pickCharacters(2);
+  await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
+  assert.match(await p.page.evaluate(() => window.leogames.scene.getScene('Futbol').rosterText[0].text), /J1 · Resorte/);
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir del fútbol');
+
+  // Y en Bolitas Bros también.
+  await p.openGameCard('Bolitas Bros');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('SmashSelect').humanSlots[0].pick), 'resorte');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir de la selección');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -342,6 +383,7 @@ test('fútbol de bolitas: meter gol, ganar el partido y revancha', { timeout: ms
   const p = await openPage(game);
   await p.joinPlayers(1);
   await p.openGameCard('Fútbol de bolitas');
+  await p.pickCharacters(1);
   await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), 'empezar el partido');
@@ -442,6 +484,7 @@ test('música, voz y premios', { timeout: ms(60000) }, async () => {
   const music = () => p.page.evaluate(() => import('/src/shared/music.js').then((m) => m.music.name));
   assert.equal(await music(), 'menu');
   await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(1);
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
   assert.equal(await music(), 'brawl');
   assert.ok((await stickers(p.page)).includes('unirse'));

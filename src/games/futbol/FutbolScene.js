@@ -1,5 +1,9 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
+import { characterPicks } from '../../shared/picks.js';
+import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
+import { loadSmashArt } from '../smash/art.js';
+import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { rewards } from '../../shared/rewards.js';
@@ -42,6 +46,7 @@ export class FutbolScene extends Phaser.Scene {
   }
 
   preload() {
+    loadSmashArt(this);
     for (const name of manifest.fondos) {
       if (!this.textures.exists(`futbol:fondo-${name}`)) this.load.image(`futbol:fondo-${name}`, `futbol/fondos/${name}.jpg`);
     }
@@ -57,6 +62,10 @@ export class FutbolScene extends Phaser.Scene {
     this.createHud();
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
     this.humans = players.sorted();
+    this.picks = this.humans.map((player) => characterPicks.get(player.deviceId, defaultCharacter(player)));
+    // La compu juega con personajes al azar que no escogió nadie (si alcanzan).
+    const free = CHARACTER_KEYS.filter((key) => !this.picks.includes(key));
+    this.cpuCharacters = Phaser.Utils.Array.Shuffle(free.length >= 2 ? free : [...CHARACTER_KEYS]);
     this.setup = { ...lastSetup };
     if (this.humans.length < 2) this.setup.mode = 'juntos';
     if (this.returnData.rematch) this.startMatch();
@@ -129,16 +138,18 @@ export class FutbolScene extends Phaser.Scene {
     if (counts[1] + cpus[1] === 0) cpus[1] = 1;
     const taken = new Set(this.humans.map((player) => player.colorIndex));
     const cpuColors = PLAYER_COLORS.filter((_, i) => !taken.has(i));
-    const roster = humans.map(({ player, team }) => ({
+    const roster = humans.map(({ player, team }, i) => ({
       team,
       color: players.color(player).hex,
       label: `J${player.slot + 1}`,
+      character: this.picks[i],
       deviceId: player.deviceId,
     }));
     let k = 0;
     for (const team of [0, 1]) {
       for (let i = 0; i < cpus[team]; i += 1) {
-        roster.push({ team, color: cpuColors[k % cpuColors.length].hex, label: 'CPU', deviceId: null });
+        const character = this.cpuCharacters[k % this.cpuCharacters.length];
+        roster.push({ team, color: cpuColors[k % cpuColors.length].hex, label: 'CPU', character, deviceId: null });
         k += 1;
       }
     }
@@ -187,7 +198,12 @@ export class FutbolScene extends Phaser.Scene {
     });
     const roster = this.buildRoster();
     this.rosterText.forEach((list, team) => {
-      list.setText(roster.filter((entry) => entry.team === team).map((entry) => entry.label).join('\n'));
+      list.setText(
+        roster
+          .filter((entry) => entry.team === team)
+          .map((entry) => `${entry.label} · ${CHARACTERS[entry.character].name}`)
+          .join('\n'),
+      );
     });
   }
 

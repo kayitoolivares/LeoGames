@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
+import { characterPicks } from '../../shared/picks.js';
+import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
+import { loadSmashArt } from '../smash/art.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players } from '../../shared/players.js';
 import { UNLOCKS, rewards } from '../../shared/rewards.js';
@@ -41,11 +44,14 @@ export class BrawlScene extends Phaser.Scene {
 
   preload() {
     loadBrawlArt(this);
+    loadSmashArt(this);
   }
 
   create() {
     this.backgroundLayer = this.add.container(0, 0).setDepth(-100);
-    this.fighters = players.sorted().map((player, i) => new Fighter(this, player, 320 + i * 80, 470 + (i % 2) * 80));
+    this.fighters = players
+      .sorted()
+      .map((player, i) => new Fighter(this, player, 320 + i * 80, 470 + (i % 2) * 80, characterPicks.get(player.deviceId, defaultCharacter(player))));
     this.monsters = [];
     this.hearts = [];
     this.fireballs = [];

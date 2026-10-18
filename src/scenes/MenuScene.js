@@ -177,6 +177,10 @@ export class MenuScene extends Phaser.Scene {
     const game = GAMES[this.selected];
     if (game.scene || game.url) sfx.confirm();
     else sfx.back();
+    if (game.scene && game.pick) {
+      this.scene.start('Personajes', { selected: this.selected, next: game.scene, title: game.title });
+      return;
+    }
     if (game.scene) {
       this.scene.start(game.scene, { selected: this.selected });
       return;

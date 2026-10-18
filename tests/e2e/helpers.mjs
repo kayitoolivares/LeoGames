@@ -114,5 +114,10 @@ export async function openPage(game, { touch = false } = {}) {
     }
     await tap(0, BUTTON.A);
   };
-  return { page, context, errors, wait, frames, tap, scenes, until, holdUntil, holdToMenu, joinPlayers, openGameCard };
+  // En la pantalla "Personajes" (antes de Pelea en equipo y Fútbol) los primeros `count` controles dan A.
+  const pickCharacters = async (count) => {
+    await page.waitForFunction(() => window.leogames.scene.isActive('Personajes'), null, { timeout: 30000 });
+    for (let i = 0; i < count; i += 1) await tap(i, BUTTON.A);
+  };
+  return { page, context, errors, wait, frames, tap, scenes, until, holdUntil, holdToMenu, joinPlayers, openGameCard, pickCharacters };
 }

@@ -1,6 +1,7 @@
 import { controls } from '../../shared/controls.js';
 import { players } from '../../shared/players.js';
 import { Blob } from '../../ui/Blob.js';
+import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { ARENA } from './arena.js';
 
@@ -23,8 +24,9 @@ const REVIVE_HP = 3;
 
 // Un jugador en la pelea: se mueve con el stick, salta con A y pega con X o B.
 // Si se queda sin corazones cae, y otro jugador lo levanta parándose junto a él.
+// Se ve como el personaje que escogió (`character`, de Bolitas Bros).
 export class Fighter {
-  constructor(scene, player, x, y) {
+  constructor(scene, player, x, y, character) {
     this.scene = scene;
     this.player = player;
     this.deviceId = player.deviceId;
@@ -45,12 +47,15 @@ export class Fighter {
     this.hitThisAttack = new Set();
 
     this.sprite = new Blob(scene, x, y, this.color, RADIUS);
+    this.look = new CharacterLook(scene, this.sprite, character);
+    // Con imagen, un aro del color del jugador en el piso dice quién es quién.
+    if (this.look.hasArt) this.sprite.addAt(scene.add.ellipse(0, RADIUS - 2, RADIUS * 2.4, RADIUS * 0.6).setStrokeStyle(5, this.color), 1);
     this.fist = scene.add.circle(0, 6, 11, this.color).setStrokeStyle(3, COLORS.ink).setVisible(false);
     this.tag = scene.add
-      .text(0, -RADIUS - 22, `J${player.slot + 1}`, textStyle(16, hexToCss(this.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
+      .text(0, this.look.top - 14, `J${player.slot + 1}`, textStyle(16, hexToCss(this.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
       .setOrigin(0.5);
     this.sprite.figure.add([this.fist, this.tag]);
-    this.stars = scene.add.text(0, -RADIUS - 14, '✦ ¡Ayuda! ✦', textStyle(18, '#ffc93c', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }));
+    this.stars = scene.add.text(0, this.look.top - 6, '✦ ¡Ayuda! ✦', textStyle(18, '#ffc93c', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }));
     this.stars.setOrigin(0.5).setVisible(false);
     this.sprite.add(this.stars);
     this.reviveRing = scene.add.graphics();
@@ -120,7 +125,7 @@ export class Fighter {
     this.hp -= 1;
     this.invulnerableMs = INVULNERABLE_MS;
     this.knockback = (Math.sign(this.x - fromX) || 1) * 420;
-    this.sprite.flash();
+    this.look.flash();
     this.sprite.squish();
     if (this.hp <= 0) {
       this.down = true;
@@ -156,12 +161,15 @@ export class Fighter {
     const blinking = this.invulnerableMs > 0 && !this.down && Math.floor(this.invulnerableMs / 90) % 2 === 1;
     s.setAlpha(this.down ? 0.75 : blinking ? 0.35 : 1);
     s.look(this.facing * 0.9, 0);
+    const hurting = this.down || (this.invulnerableMs > INVULNERABLE_MS - 350 && this.knockback !== 0);
+    const pose = hurting ? 'dolor' : this.attackMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : 'normal';
+    this.look.show(pose, this.facing);
     this.tag.setVisible(!this.down);
     this.stars.setVisible(this.down);
 
     // El puño sale y regresa durante el golpe.
     const progress = this.attackMs > 0 ? 1 - this.attackMs / ATTACK_MS : 0;
-    this.fist.setVisible(this.attackMs > 0);
+    this.fist.setVisible(this.attackMs > 0 && !this.look.punchArt);
     this.fist.setPosition(this.facing * (this.radius * 0.6 + Math.sin(progress * Math.PI) * 34), 6);
 
     const ring = this.reviveRing;

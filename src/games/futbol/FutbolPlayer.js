@@ -1,5 +1,6 @@
 import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
+import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { FIELD, TEAM_COLORS, attackDir } from './field.js';
 
@@ -19,10 +20,10 @@ const KICKS = {
   volley: { vx: 900, vy: -220 },
 };
 
-// Un jugador: una bolita con el anillo del color de su equipo. Corre, salta y patea.
+// Un jugador: el personaje que escogió (de Bolitas Bros) con un aro del color de su equipo. Corre, salta y patea.
 // `input` = { x (-1 a 1), jump, kick, up, down, power? }: de un control o de la compu (cpu.js).
 export class FutbolPlayer {
-  constructor(scene, { team, color, label, deviceId = null }) {
+  constructor(scene, { team, color, label, character, deviceId = null }) {
     this.scene = scene;
     this.team = team;
     this.color = color;
@@ -33,9 +34,13 @@ export class FutbolPlayer {
     this.blob = new Blob(scene, 0, FIELD.ground - PLAYER_RADIUS, color, PLAYER_RADIUS);
     this.blob.ball.setStrokeStyle(6, TEAM_COLORS[team]);
     this.blob.setDepth(100);
+    this.look = new CharacterLook(scene, this.blob, character);
+    if (this.look.hasArt) {
+      this.blob.addAt(scene.add.ellipse(0, PLAYER_RADIUS - 2, PLAYER_RADIUS * 2.4, PLAYER_RADIUS * 0.6).setStrokeStyle(6, TEAM_COLORS[team]), 1);
+    }
     this.foot = scene.add.ellipse(0, PLAYER_RADIUS * 0.75, 30, 18, COLORS.ink).setVisible(false);
     const tag = scene.add
-      .text(0, -PLAYER_RADIUS - 22, label, textStyle(18, hexToCss(color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 }))
+      .text(0, this.look.top - 14, label, textStyle(18, hexToCss(color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 }))
       .setOrigin(0.5);
     this.blob.figure.add([this.foot, tag]);
     this.reset(FIELD.width / 2);
@@ -110,7 +115,8 @@ export class FutbolPlayer {
     this.blob.setPosition(this.x, FIELD.ground - this.radius);
     this.blob.figure.y = -this.z;
     this.blob.look(this.facing * 0.9, 0.1);
-    this.foot.setVisible(this.kickMs > 0).setX(this.facing * this.radius * 0.95);
+    this.look.show(this.kickMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : 'normal', this.facing);
+    this.foot.setVisible(this.kickMs > 0 && !this.look.punchArt).setX(this.facing * this.radius * 0.95);
     // La sombra se achica cuando va en el aire.
     const shadow = this.blob.list[0];
     shadow.setScale(Math.max(0.5, 1 - this.z / 300));

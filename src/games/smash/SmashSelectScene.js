@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
+import { characterPicks } from '../../shared/picks.js';
 import { players } from '../../shared/players.js';
 import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { sfx } from '../../shared/sound.js';
+import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { characterTexture, loadSmashArt } from './art.js';
@@ -36,8 +38,7 @@ function cpuChoices(humans) {
   return list;
 }
 
-// Lo último que se escogió, para no tener que escogerlo otra vez.
-const lastPicks = new Map();
+// Lo último que se escogió, para no tener que escogerlo otra vez (el personaje se comparte con los demás juegos).
 const lastPeque = new Map();
 const lastSettings = { stage: 'castillo', items: true, cpus: null, level: 'normal' };
 
@@ -86,7 +87,7 @@ export class SmashSelectScene extends Phaser.Scene {
     this.humanSlots = this.humans.map((player) => ({
       player,
       color: players.color(player).hex,
-      pick: lastPicks.get(player.deviceId) ?? CHARACTER_KEYS[player.slot % CHARACTER_KEYS.length],
+      pick: characterPicks.get(player.deviceId, defaultCharacter(player)),
       peque: lastPeque.get(player.deviceId) ?? false,
       ready: false,
     }));
@@ -266,7 +267,7 @@ export class SmashSelectScene extends Phaser.Scene {
     const picks = {};
     const peque = {};
     for (const slot of this.humanSlots) {
-      lastPicks.set(slot.player.deviceId, slot.pick);
+      characterPicks.set(slot.player.deviceId, slot.pick);
       lastPeque.set(slot.player.deviceId, slot.peque);
       picks[slot.player.deviceId] = slot.pick;
       peque[slot.player.deviceId] = slot.peque;
