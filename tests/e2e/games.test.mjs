@@ -56,19 +56,17 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   await p.context.close();
 });
 
-test('pelea en equipo: dos bots ganan las rondas', { timeout: ms(240000) }, async () => {
-  const p = await openPage(game);
-  await p.joinPlayers(2);
-  await p.openGameCard('Pelea en equipo');
-  await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
-  // Cada bot va hacia el monstruo más cercano, le pega y salta cuando avisa con "!".
-  await p.page.evaluate(() => {
+// Bot de Pelea en equipo: cada luchador va hacia el monstruo más cercano, le pega y salta cuando avisa con "!".
+// Con `invincible`, nadie cae (para probar a los jefes sin depender de la suerte).
+function startBrawlBot(page, { invincible = false } = {}) {
+  return page.evaluate((invincibleBots) => {
     let tick = 0;
     window.__bot = setInterval(() => {
       const s = window.leogames.scene.getScene('Brawl');
       if (!s.sys.isActive() || !s.fighters) return;
       tick += 1;
       for (const f of s.fighters) {
+        if (invincibleBots) f.invulnerableMs = 1000;
         const pad = window.__pads[Number(f.deviceId.replace('pad', ''))];
         const set = (b, v) => ((pad.buttons[b].pressed = v), (pad.buttons[b].value = v ? 1 : 0));
         set(0, false);
@@ -94,15 +92,85 @@ test('pelea en equipo: dos bots ganan las rondas', { timeout: ms(240000) }, asyn
         set(0, s.monsters.some((m) => m.state === 'windup' && Math.hypot(m.x - f.x, m.y - f.y) < 120) && tick % 6 === 0);
       }
     }, 50);
-  });
+  }, invincible);
+}
+
+const stopBot = (page) => page.evaluate(() => clearInterval(window.__bot));
+const brawl = (page) => page.evaluate(() => {
+  const s = window.leogames.scene.getScene('Brawl');
+  return { phase: s.phase, world: s.worldIndex, wave: s.waveIndex };
+});
+
+test('pelea en equipo: dos bots ganan las rondas', { timeout: ms(240000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Pelea en equipo');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
+  // Sin calcomanías no hay nada que escoger: empieza directo en la Pradera.
+  assert.equal((await brawl(p.page)).world, 0);
+  await startBrawlBot(p.page);
   if (process.env.CI) {
     // En GitHub va lento: basta con que pasen la primera ronda.
     await p.until(() => JSON.parse(localStorage.getItem('leogames:stickers') ?? '[]').includes('pelea-ronda'), ms(60000), 'pasar la primera ronda');
   } else {
-    await p.until(() => ['won', 'worldWon'].includes(window.leogames.scene.getScene('Brawl').phase), 200000, 'ganar las 4 rondas');
+    await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'worldWon', 200000, 'ganar las 4 rondas');
     assert.ok((await stickers(p.page)).includes('pelea-gana'));
+    // Con A se sigue al Bosque de hongos.
+    await stopBot(p.page);
+    await p.wait(1300);
+    await p.holdUntil(0, [BUTTON.A], () => window.leogames.scene.getScene('Brawl').worldIndex === 1, 'pasar al segundo mundo');
+    assert.deepEqual(await brawl(p.page), { phase: 'fight', world: 1, wave: 0 });
   }
-  await p.page.evaluate(() => clearInterval(window.__bot));
+  await stopBot(p.page);
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('pelea en equipo: escoger mundo y los jefes del bosque y del volcán', { timeout: ms(240000) }, async () => {
+  const p = await openPage(game);
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['pelea-gana', 'pelea-hongos'])));
+  await p.joinPlayers(2);
+  await p.openGameCard('Pelea en equipo');
+  await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'choose', ms(8000), 'ver los mundos');
+  // Se anotan los poderes que usan los jefes.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    window.__powers = new Set();
+    const original = s.handleMonsterRequests.bind(s);
+    s.handleMonsterRequests = () => {
+      for (const m of s.monsters) if (m.request) window.__powers.add(m.request.kind);
+      if (s.fireballs.length > 0) window.__powers.add('fuego en pantalla');
+      original();
+    };
+  });
+  // Directo a la ronda del jefe, con los bots jugando.
+  const bossWave = async () => {
+    await p.page.evaluate(() => {
+      const s = window.leogames.scene.getScene('Brawl');
+      s.clearEnemies();
+      s.startWave(3);
+    });
+    await startBrawlBot(p.page, { invincible: true });
+  };
+
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Brawl').worldIndex === 1, ms(6000), 'entrar al bosque');
+  await bossWave();
+  await p.until(() => window.__powers.has('summon'), ms(90000), 'el Gran Hongo llama ayudantes');
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'worldWon', ms(120000), 'vencer al Gran Hongo');
+
+  // El Volcán ya está desbloqueado: se sigue con A y se vence al dragón.
+  await stopBot(p.page);
+  await p.wait(1300);
+  await p.holdUntil(0, [BUTTON.A], () => window.leogames.scene.getScene('Brawl').worldIndex === 2, 'pasar al volcán');
+  await bossWave();
+  await p.until(() => window.__powers.has('fuego en pantalla'), ms(90000), 'el dragón lanza fuego');
+  if (!process.env.CI) {
+    await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'won', 150000, 'vencer al dragón');
+    assert.ok((await stickers(p.page)).includes('pelea-volcan'));
+  }
+  await stopBot(p.page);
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -194,7 +262,7 @@ test('carreras desde arriba: el carro avanza por la pista', { timeout: ms(90000)
     }, 50);
   });
   await p.until(() => window.leogames.scene.getScene('Race').game3d.humans[0].progress > 0.15, ms(60000), 'avanzar en la pista');
-  await p.page.evaluate(() => clearInterval(window.__bot));
+  await stopBot(p.page);
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

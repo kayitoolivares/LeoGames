@@ -1,12 +1,40 @@
+import Phaser from 'phaser';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, textStyle } from '../../ui/style.js';
+import { monsterTexture } from './art.js';
 import { ARENA } from './arena.js';
 
+// Los monstruos de los mundos. `art` es su imagen (npm run arte); sin ella se dibuja una bolita enojada.
+//   small: los que aumentan con más jugadores.  stagger: los golpes lo aturden (los jefes no).
+//   hop: avanza dando saltitos.  summon: llama ayudantes cada tanto.  fireball: lanza bolas de fuego.
 export const MONSTER_TYPES = {
-  small: { radius: 28, hp: 3, speed: 95, color: 0x7bd96b, windupMs: 650, stagger: true },
-  big: { radius: 44, hp: 7, speed: 75, color: 0x5fc2b8, windupMs: 750, stagger: true },
-  // El jefe no se aturde con los golpes: hay que esquivarlo.
-  boss: { radius: 76, hp: 22, speed: 62, color: 0x9a6bff, windupMs: 850, stagger: false, crown: true },
+  slime: { name: 'Slime', art: 'slime', radius: 28, hp: 3, speed: 95, color: 0x7bd96b, windupMs: 650, stagger: true, small: true },
+  slimeGrande: { name: 'Slime grande', art: 'slime-grande', radius: 44, hp: 7, speed: 75, color: 0x5fc2b8, windupMs: 750, stagger: true },
+  reySlime: { name: 'Rey Slime', art: 'rey-slime', radius: 76, hp: 22, speed: 62, color: 0x9a6bff, windupMs: 850, crown: true, boss: true },
+  hongo: { name: 'Hongo', art: 'hongo', radius: 30, hp: 3, speed: 105, color: 0xff5a5f, windupMs: 600, stagger: true, small: true, hop: true },
+  granHongo: {
+    name: 'Gran Hongo',
+    art: 'gran-hongo',
+    radius: 80,
+    hp: 26,
+    speed: 55,
+    color: 0xb07cff,
+    windupMs: 850,
+    boss: true,
+    summon: { type: 'hongo', firstMs: 2500, everyMs: 6500, count: 2 },
+  },
+  slimeLava: { name: 'Slime de lava', art: 'slime-lava', radius: 30, hp: 4, speed: 120, color: 0xff7a2f, windupMs: 520, stagger: true, small: true },
+  dragonLava: {
+    name: 'Dragón de lava',
+    art: 'dragon-lava',
+    radius: 84,
+    hp: 30,
+    speed: 58,
+    color: 0xc0392b,
+    windupMs: 900,
+    boss: true,
+    fireball: { firstMs: 2000, everyMs: 3800, aimMs: 700 },
+  },
 };
 
 const LUNGE_MS = 220;
@@ -14,9 +42,12 @@ const LUNGE_SPEED = 420;
 const REST_MS = 700;
 const HURT_MS = 320;
 const RETARGET_MS = 500;
+const HOP_HEIGHT = 18;
 
 // Un monstruo: persigue al jugador más cercano, avisa con "!" y luego se lanza.
 // Estados: chase (perseguir) → windup (aviso) → lunge (embestida) → rest (descanso). Un golpe lo manda a hurt.
+// Los jefes con fuego tienen además "aim" (apunta con "!" y lanza la bola). Para llamar ayudantes o lanzar
+// fuego deja una petición en `request` que atiende la escena.
 export class Monster {
   constructor(scene, typeKey, x, y) {
     this.scene = scene;
@@ -36,14 +67,29 @@ export class Monster {
     this.entered = false;
     this.dead = false;
     this.hitDuringLunge = new Set();
+    this.request = null;
+    this.summonMs = this.type.summon?.firstMs ?? 0;
+    this.fireMs = this.type.fireball?.firstMs ?? 0;
+    this.hopMs = Math.random() * 1000;
 
     this.sprite = new Blob(scene, x, y, this.type.color, this.radius, { angry: true });
+    this.image = null;
+    const key = monsterTexture(scene, this.type.art);
+    if (key) {
+      // Con imagen: se esconde la bolita y la imagen se apoya en el piso (mira a la derecha).
+      for (const part of this.sprite.figure.list) part.setVisible(false);
+      this.image = scene.add.image(0, this.radius, key).setOrigin(0.5, 1);
+      this.image.setScale((this.radius * 2.6) / Math.max(this.image.width, this.image.height));
+      this.sprite.figure.addAt(this.image, 0);
+    } else if (this.type.crown) {
+      this.sprite.figure.add(drawCrown(scene, this.radius));
+    }
+    const top = this.image ? this.radius - this.image.displayHeight : -this.radius;
     this.alert = scene.add
-      .text(0, -this.radius - 30, '!', textStyle(40, '#ffc93c', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 6 }))
+      .text(0, top - 26, '!', textStyle(40, '#ffc93c', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 6 }))
       .setOrigin(0.5)
       .setVisible(false);
-    this.sprite.figure.add(this.alert);
-    if (this.type.crown) this.sprite.figure.add(drawCrown(scene, this.radius));
+    this.sprite.add(this.alert);
   }
 
   setState(state, ms) {
@@ -56,6 +102,7 @@ export class Monster {
     const dt = dtMs / 1000;
     this.stateMs -= dtMs;
     this.retargetMs -= dtMs;
+    this.hopMs += dtMs;
     this.x += this.knockback * dt;
     const next = this.knockback * Math.pow(0.002, dt);
     this.knockback = Math.abs(next) < 5 ? 0 : next;
@@ -64,10 +111,14 @@ export class Monster {
       this.target = nearest(this, fighters.filter((f) => !f.down));
       this.retargetMs = RETARGET_MS;
     }
+    this.updatePowers(dtMs);
 
     if (this.state === 'chase') this.chase(dt);
     else if (this.state === 'windup' && this.stateMs <= 0) this.setState('lunge', LUNGE_MS);
-    else if (this.state === 'lunge') {
+    else if (this.state === 'aim' && this.stateMs <= 0) {
+      this.request = { kind: 'fireball', x: this.x + this.facing * this.radius, y: this.y, dir: this.facing };
+      this.setState('rest', REST_MS);
+    } else if (this.state === 'lunge') {
       this.x += this.facing * LUNGE_SPEED * dt;
       if (this.stateMs <= 0) this.setState('rest', REST_MS);
     } else if ((this.state === 'rest' || this.state === 'hurt') && this.stateMs <= 0) this.setState('chase', 0);
@@ -78,6 +129,30 @@ export class Monster {
     if (!this.entered && this.x > minX && this.x < maxX) this.entered = true;
     if (this.entered) this.x = Math.min(maxX, Math.max(minX, this.x));
     this.y = Math.min(ARENA.bottom, Math.max(ARENA.top, this.y));
+  }
+
+  // Poderes de los jefes: llamar ayudantes y apuntar una bola de fuego. El reloj corre siempre, pero el
+  // poder sale solo cuando no está atacando (si no, con todos pegándole nunca lo usaría).
+  updatePowers(dtMs) {
+    if (!this.entered) return;
+    const ready = this.state === 'chase' || this.state === 'rest';
+    if (this.type.summon) {
+      this.summonMs -= dtMs;
+      if (this.summonMs <= 0 && ready) {
+        this.summonMs = this.type.summon.everyMs;
+        this.request = { kind: 'summon', type: this.type.summon.type, count: this.type.summon.count };
+      }
+    }
+    if (this.type.fireball && this.target) {
+      this.fireMs -= dtMs;
+      if (this.fireMs <= 0 && ready) {
+        this.fireMs = this.type.fireball.everyMs;
+        this.facing = this.target.x > this.x ? 1 : -1;
+        // Se pone a la altura del jugador antes de lanzar, para que la bola vaya por su carril.
+        this.y = this.target.y;
+        this.setState('aim', this.type.fireball.aimMs);
+      }
+    }
   }
 
   chase(dt) {
@@ -108,15 +183,25 @@ export class Monster {
     const dir = Math.sign(this.x - fromX) || 1;
     this.knockback = dir * (this.type.stagger ? 320 : 120);
     this.sprite.flash();
+    if (this.image) {
+      this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+      this.scene.time.delayedCall(70, () => {
+        if (this.image.active) this.image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
+      });
+    }
     if (this.type.stagger) this.setState('hurt', HURT_MS);
     if (this.hp <= 0) this.dead = true;
   }
 
   render() {
-    const shake = this.state === 'windup' ? (Math.random() - 0.5) * 6 : 0;
+    const warning = this.state === 'windup' || this.state === 'aim';
+    const shake = warning ? (Math.random() - 0.5) * 6 : 0;
     this.sprite.setPosition(this.x + shake, this.y).setDepth(this.y);
     this.sprite.look(this.facing * 0.9, 0.2);
-    this.alert.setVisible(this.state === 'windup');
+    this.alert.setVisible(warning);
+    this.image?.setFlipX(this.facing < 0);
+    // Los hongos avanzan dando saltitos.
+    this.sprite.figure.y = this.type.hop && this.state === 'chase' ? -Math.abs(Math.sin(this.hopMs / 180)) * HOP_HEIGHT : 0;
   }
 
   destroy() {

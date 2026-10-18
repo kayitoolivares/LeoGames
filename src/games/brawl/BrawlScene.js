@@ -2,18 +2,21 @@ import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players } from '../../shared/players.js';
+import { UNLOCKS, rewards } from '../../shared/rewards.js';
+import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
-import { rewards } from '../../shared/rewards.js';
-import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
+import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { ARENA } from './arena.js';
+import { backgroundTexture, loadBrawlArt } from './art.js';
 import { Fighter, MAX_HP } from './Fighter.js';
-import { Monster } from './Monster.js';
-import { WAVES, buildSpawnQueue } from './waves.js';
+import { MONSTER_TYPES, Monster } from './Monster.js';
+import { WORLDS, buildSpawnQueue } from './worlds.js';
 import { burst, confetti, popText, randomPow } from './effects.js';
 
 const SPAWN_INTERVAL_MS = 1100;
 const FIRST_SPAWN_MS = 1500;
 const MAX_ALIVE = 6;
+const BOSS_HP_PER_PLAYER = 0.35;
 const HEART_DROP_CHANCE = 0.25;
 const MAX_HEARTS_ON_FLOOR = 4;
 const HEART_LIFETIME_MS = 8000;
@@ -22,8 +25,11 @@ const EXIT_HOLD_MS = 1200;
 const END_SCREEN_DELAY_MS = 1200;
 const HUD_DEPTH = 10000;
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 4 };
+// La bola de fuego del dragón va por el carril del jugador: se esquiva saltando o cambiándose de carril.
+const FIREBALL = { speed: 430, radius: 18, lane: 30 };
 
-// "Pelea en equipo": todos los jugadores contra rondas de slimes, y al final el Rey Slime.
+// "Pelea en equipo": todos los jugadores contra rondas de monstruos en 3 mundos (Pradera, Bosque de hongos
+// y Volcán), cada uno con su jefe. Los mundos 2 y 3 se desbloquean ganando el anterior.
 export class BrawlScene extends Phaser.Scene {
   constructor() {
     super('Brawl');
@@ -33,30 +39,48 @@ export class BrawlScene extends Phaser.Scene {
     this.returnData = data ?? {};
   }
 
+  preload() {
+    loadBrawlArt(this);
+  }
+
   create() {
-    this.drawBackground();
+    this.backgroundLayer = this.add.container(0, 0).setDepth(-100);
     this.fighters = players.sorted().map((player, i) => new Fighter(this, player, 320 + i * 80, 470 + (i % 2) * 80));
     this.monsters = [];
     this.hearts = [];
+    this.fireballs = [];
     this.boss = null;
     this.exitMs = 0;
     this.endMs = 0;
     this.exiting = false;
     this.createHud();
-    this.startWave(0);
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
+    // Si ya hay mundos desbloqueados se escoge; si no, se empieza en la Pradera.
+    if (WORLDS.some((world, i) => i > 0 && rewards.unlocked(world.unlock))) this.showWorldChooser();
+    else this.startWorld(0);
   }
 
-  drawBackground() {
+  drawBackground(world) {
+    this.backgroundLayer.removeAll(true);
     const { width, height } = this.scale;
+    const key = backgroundTexture(this, world.background);
+    if (key) {
+      const image = this.add.image(width / 2, height / 2, key);
+      image.setScale(Math.max(width / image.width, height / image.height));
+      this.backgroundLayer.add(image);
+      return;
+    }
+    const { sky, hill, floor, stripe } = world.colors;
     const floorTop = ARENA.top - 40;
-    this.add.rectangle(width / 2, floorTop / 2, width, floorTop, 0x2a2357);
-    this.add.circle(1080, 120, 50, 0xfff1b8, 0.9);
-    this.add.ellipse(160, floorTop, 520, 260, 0x3a2f6e);
-    this.add.ellipse(640, floorTop + 10, 640, 300, 0x34295f);
-    this.add.ellipse(1100, floorTop, 560, 240, 0x3a2f6e);
-    this.add.rectangle(width / 2, (floorTop + height) / 2, width, height - floorTop, 0x4b3d86);
-    for (let i = 0; i < 4; i += 1) this.add.rectangle(width / 2, floorTop + 30 + i * 90, width, 4, 0x5a4b9a, 0.6);
+    this.backgroundLayer.add([
+      this.add.rectangle(width / 2, floorTop / 2, width, floorTop, sky),
+      this.add.circle(1080, 120, 50, 0xfff1b8, 0.9),
+      this.add.ellipse(160, floorTop, 520, 260, hill),
+      this.add.ellipse(640, floorTop + 10, 640, 300, hill),
+      this.add.ellipse(1100, floorTop, 560, 240, hill),
+      this.add.rectangle(width / 2, (floorTop + height) / 2, width, height - floorTop, floor),
+      ...[0, 1, 2, 3].map((i) => this.add.rectangle(width / 2, floorTop + 30 + i * 90, width, 4, stripe, 0.6)),
+    ]);
   }
 
   createHud() {
@@ -83,7 +107,7 @@ export class BrawlScene extends Phaser.Scene {
     this.subBanner.setAlpha(0);
 
     this.add
-      .text(width / 2, height - 24, 'X o B = pegar   ·   A = saltar   ·   Mantén Y = salir', textStyle(16, TEXT.muted, OUTLINE))
+      .text(width / 2, height - 24, 'X o B = pegar   ·   A = saltar   ·   Mantén Y = salir', textStyle(17, TEXT.normal, OUTLINE))
       .setOrigin(0.5)
       .setDepth(HUD_DEPTH);
     this.exitBar = this.add
@@ -103,26 +127,106 @@ export class BrawlScene extends Phaser.Scene {
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
   }
 
+  // Tarjetas para escoger mundo (los bloqueados dicen qué hay que ganar).
+  showWorldChooser() {
+    this.phase = 'choose';
+    this.chosen = 0;
+    const { width } = this.scale;
+    this.drawBackground(WORLDS[0]);
+    this.chooser = this.add.container(0, 0).setDepth(HUD_DEPTH + 2);
+    this.chooser.add(this.add.rectangle(width / 2, 360, width, 720, 0x14112b, 0.75));
+    this.chooser.add(this.add.text(width / 2, 140, 'Escoge mundo', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
+    this.worldCards = WORLDS.map((world, i) => {
+      const x = width / 2 + (i - 1) * 330;
+      const open = rewards.unlocked(world.unlock);
+      const bg = this.add.rectangle(x, 360, 300, 260, COLORS.panel).setRounded(24);
+      const lock = open ? '' : `🔒 ${UNLOCKS[world.unlock].label}`;
+      this.chooser.add([
+        bg,
+        this.add.text(x, 300, world.emoji, textStyle(72)).setOrigin(0.5),
+        this.add.text(x, 380, world.name, textStyle(28, open ? TEXT.normal : TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5),
+        this.add.text(x, 440, lock, textStyle(16, TEXT.muted, { align: 'center', wordWrap: { width: 260 } })).setOrigin(0.5),
+      ]);
+      return { bg, open };
+    });
+    this.chooser.add(this.add.text(width / 2, 560, '◀ ▶ escoger   ·   A = ¡a pelear!   ·   B = regresar', textStyle(22, TEXT.accent)).setOrigin(0.5));
+    this.highlightWorld();
+  }
+
+  highlightWorld() {
+    this.worldCards.forEach(({ bg }, i) => bg.setStrokeStyle(i === this.chosen ? 8 : 3, i === this.chosen ? COLORS.accent : COLORS.panelBorder));
+    const world = WORLDS[this.chosen];
+    say(this.worldCards[this.chosen].open ? world.name : `${world.name}. Todavía no: ${UNLOCKS[world.unlock].label}`);
+  }
+
+  updateWorldChooser() {
+    const host = players.host();
+    if (!host) return;
+    const id = host.deviceId;
+    const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
+    if (step !== 0) {
+      this.chosen = (this.chosen + step + WORLDS.length) % WORLDS.length;
+      sfx.select();
+      this.highlightWorld();
+    }
+    if (controls.justPressed(id, 'a')) {
+      if (!this.worldCards[this.chosen].open) {
+        sfx.back();
+        return;
+      }
+      sfx.confirm();
+      this.chooser.destroy();
+      this.startWorld(this.chosen);
+    } else if (controls.justPressed(id, 'b')) {
+      this.exit();
+    }
+  }
+
+  startWorld(index) {
+    this.worldIndex = index;
+    this.world = WORLDS[index];
+    this.drawBackground(this.world);
+    this.clearEnemies();
+    for (const fighter of this.fighters) fighter.reset();
+    this.startWave(0);
+  }
+
   startWave(index) {
     this.waveIndex = index;
-    const wave = WAVES[index];
-    this.spawnQueue = buildSpawnQueue(wave, this.fighters.length);
+    const wave = this.world.waves[index];
+    this.spawnQueue = buildSpawnQueue(wave, this.fighters.length, MONSTER_TYPES);
     this.spawnMs = FIRST_SPAWN_MS;
     this.phase = 'fight';
     // Al empezar cada ronda, los que estaban caídos se levantan.
     for (const fighter of this.fighters) if (fighter.down) fighter.reset();
-    this.waveText.setText(`Ronda ${index + 1} de ${WAVES.length}`);
-    this.showBanner(wave.title, index === 0 ? 'X o B para pegar   ·   A para saltar' : '', index === 0 ? 2200 : 1300);
+    this.waveText.setText(`${this.world.name} · Ronda ${index + 1} de ${this.world.waves.length}`);
+    const firstEver = this.worldIndex === 0 && index === 0;
+    this.showBanner(wave.title, firstEver ? 'X o B para pegar   ·   A para saltar' : index === 0 ? this.world.name : '', firstEver ? 2200 : 1300);
+  }
+
+  clearEnemies() {
+    for (const monster of this.monsters) monster.destroy();
+    for (const ball of this.fireballs) ball.sprite.destroy();
+    this.monsters = [];
+    this.fireballs = [];
+    this.hideBossBar();
   }
 
   update() {
     const dt = frameDelta();
     this.updateExit(dt);
-    if (this.phase === 'won' || this.phase === 'lost') this.updateEndScreen(dt);
+    if (this.phase === 'choose') {
+      this.updateWorldChooser();
+      for (const fighter of this.fighters) fighter.render();
+      return;
+    }
+    if (['won', 'lost', 'worldWon'].includes(this.phase)) this.updateEndScreen(dt);
 
     for (const fighter of this.fighters) fighter.update(dt, this.fighters);
     if (this.phase === 'fight') this.updateSpawns(dt);
     for (const monster of this.monsters) monster.update(dt, this.fighters);
+    this.handleMonsterRequests();
+    this.updateFireballs(dt);
     this.separateMonsters();
     this.resolveHits();
     this.updateHearts(dt);
@@ -144,8 +248,60 @@ export class BrawlScene extends Phaser.Scene {
     const y = Phaser.Math.Between(ARENA.top + 20, ARENA.bottom - 20);
     const monster = new Monster(this, type, x, y);
     this.monsters.push(monster);
-    if (type === 'boss') this.showBossBar(monster);
+    if (monster.type.boss) {
+      // Con más jugadores el jefe aguanta más, para que no se acabe en un suspiro.
+      monster.hp = monster.maxHp = Math.round(monster.type.hp * (1 + BOSS_HP_PER_PLAYER * (this.fighters.length - 1)));
+      this.showBossBar(monster);
+    }
     this.spawnMs = SPAWN_INTERVAL_MS;
+  }
+
+  // Lo que pidieron los jefes este cuadro: ayudantes o una bola de fuego.
+  handleMonsterRequests() {
+    for (const monster of [...this.monsters]) {
+      const request = monster.request;
+      if (!request) continue;
+      monster.request = null;
+      if (request.kind === 'summon') {
+        const room = MAX_ALIVE + 2 - this.monsters.length;
+        for (let i = 0; i < Math.min(request.count, room); i += 1) {
+          const helper = new Monster(this, request.type, monster.x + (i === 0 ? -1 : 1) * (monster.radius + 40), monster.y);
+          helper.entered = true;
+          this.monsters.push(helper);
+          burst(this, helper.x, helper.y, helper.type.color, 8);
+        }
+        popText(this, monster.x, monster.y - monster.radius - 40, '¡A mí, hongos!', '#ffffff');
+      } else if (request.kind === 'fireball') {
+        const sprite = this.add.container(request.x, request.y - 30, [
+          this.add.circle(0, 0, FIREBALL.radius + 8, 0xff9a3c, 0.45),
+          this.add.circle(0, 0, FIREBALL.radius, 0xffd84d).setStrokeStyle(4, 0xff5a2f),
+        ]);
+        sprite.setDepth(request.y + 1);
+        this.fireballs.push({ x: request.x, y: request.y, dir: request.dir, sprite });
+        sfx.special();
+      }
+    }
+  }
+
+  updateFireballs(dt) {
+    this.fireballs = this.fireballs.filter((ball) => {
+      ball.x += ball.dir * FIREBALL.speed * (dt / 1000);
+      ball.sprite.setPosition(ball.x, ball.y - 30).setAngle(ball.x);
+      const victim = this.fighters.find(
+        (f) => !f.down && Math.abs(f.x - ball.x) < f.radius + FIREBALL.radius && Math.abs(f.y - ball.y) < FIREBALL.lane,
+      );
+      if (victim && victim.hurt(ball.x)) {
+        popText(this, victim.x, victim.y - 90, '¡Quema!', '#ff9a3c');
+        burst(this, ball.x, ball.y - 30, 0xff9a3c, 10);
+        ball.sprite.destroy();
+        return false;
+      }
+      if (ball.x < -60 || ball.x > this.scale.width + 60) {
+        ball.sprite.destroy();
+        return false;
+      }
+      return true;
+    });
   }
 
   // Empuja a los monstruos que se enciman para que no se vuelvan uno solo.
@@ -194,8 +350,8 @@ export class BrawlScene extends Phaser.Scene {
   removeDefeated() {
     this.monsters = this.monsters.filter((monster) => {
       if (!monster.dead) return true;
-      burst(this, monster.x, monster.y - monster.radius * 0.5, monster.type.color, monster.typeKey === 'boss' ? 16 : 8);
-      if (monster.typeKey !== 'small' || Math.random() < HEART_DROP_CHANCE) this.dropHeart(monster.x, monster.y);
+      burst(this, monster.x, monster.y - monster.radius * 0.5, monster.type.color, monster.type.boss ? 16 : 8);
+      if (!monster.type.small || Math.random() < HEART_DROP_CHANCE) this.dropHeart(monster.x, monster.y);
       monster.destroy();
       return false;
     });
@@ -237,7 +393,7 @@ export class BrawlScene extends Phaser.Scene {
     const { width } = this.scale;
     this.boss = monster;
     this.bossBar = [
-      this.add.text(width / 2, 52, 'Rey Slime', textStyle(18, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5),
+      this.add.text(width / 2, 52, monster.type.name, textStyle(18, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5),
       this.add.rectangle(width / 2, 78, 420, 18, 0x000000, 0.4),
     ];
     this.bossBarFill = this.add.rectangle(width / 2 - 210, 78, 420, 18, monster.type.color).setOrigin(0, 0.5);
@@ -275,16 +431,22 @@ export class BrawlScene extends Phaser.Scene {
     if (this.spawnQueue.length > 0 || this.monsters.length > 0) return;
 
     rewards.earn('pelea-ronda');
-    if (this.waveIndex + 1 < WAVES.length) {
+    if (this.waveIndex + 1 < this.world.waves.length) {
       this.phase = 'between';
       this.showBanner('¡Bien hecho!', '', 900);
       this.time.delayedCall(1600, () => this.startWave(this.waveIndex + 1));
+      return;
+    }
+    // Ganaron el mundo: calcomanía (que desbloquea el siguiente) y a seguir, o fin del juego.
+    rewards.earn(this.world.sticker);
+    this.endMs = 0;
+    confetti(this, this.fighters.map((f) => f.color));
+    if (this.worldIndex + 1 < WORLDS.length) {
+      this.phase = 'worldWon';
+      this.showBanner('¡Mundo superado!', `A = seguir al ${WORLDS[this.worldIndex + 1].name}   ·   Mantén Y = salir`, 0);
     } else {
       this.phase = 'won';
-      this.endMs = 0;
-      this.showBanner('¡GANARON!', 'Presiona A para volver al menú', 0);
-      confetti(this, this.fighters.map((f) => f.color));
-      rewards.earn('pelea-gana');
+      this.showBanner('¡GANARON TODO!', 'Presiona A para volver al menú', 0);
     }
   }
 
@@ -296,9 +458,11 @@ export class BrawlScene extends Phaser.Scene {
       this.exit();
       return;
     }
-    for (const monster of this.monsters) monster.destroy();
-    this.monsters = [];
-    this.hideBossBar();
+    if (this.phase === 'worldWon') {
+      this.startWorld(this.worldIndex + 1);
+      return;
+    }
+    this.clearEnemies();
     for (const fighter of this.fighters) fighter.reset();
     this.startWave(this.waveIndex);
   }

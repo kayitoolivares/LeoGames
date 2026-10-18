@@ -30,7 +30,9 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 ## Juegos
 
-- **Pelea en equipo**: todos contra 4 rondas de slimes, y al final el Rey Slime.
+- **Pelea en equipo**: todos contra los monstruos en 3 mundos (Pradera, Bosque de hongos y Volcán), de 4 rondas
+  cada uno y con su jefe: el Rey Slime, el Gran Hongo (llama ayudantes) y el Dragón de lava (lanza bolas de
+  fuego; se esquivan saltando). Ganar un mundo desbloquea el siguiente.
   **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén Y** = salir.
   Si alguien cae, un compañero se para junto a él para levantarlo.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
