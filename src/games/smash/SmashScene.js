@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
 import { sfx } from '../../shared/sound.js';
+import { say } from '../../shared/voice.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
@@ -184,6 +185,7 @@ export class SmashScene extends Phaser.Scene {
   }
 
   showBanner(title, subtitle = '', holdMs = 0, color = TEXT.accent) {
+    say(title);
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setColor(color).setAlpha(1).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(subtitle ? 1 : 0);

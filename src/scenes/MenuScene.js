@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { controls } from '../shared/controls.js';
+import { music } from '../shared/music.js';
 import { sfx } from '../shared/sound.js';
+import { say, setVoiceEnabled, voiceEnabled } from '../shared/voice.js';
 import { players } from '../shared/players.js';
 import { GAMES } from '../games.js';
 import { Blob } from '../ui/Blob.js';
@@ -37,10 +39,19 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.toast = this.add.text(width / 2, 572, '', textStyle(26, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5).setAlpha(0);
-    this.add.text(width / 2, height - 20, 'A = jugar   ·   B = cambiar jugadores', textStyle(20, TEXT.muted)).setOrigin(0.5);
+    this.footer = this.add.text(width / 2, height - 20, '', textStyle(20, TEXT.muted)).setOrigin(0.5);
+    this.refreshFooter();
 
     this.drawPlayers();
     this.select(this.selected, false);
+    say('¿A qué jugamos?');
+  }
+
+  refreshFooter() {
+    const onOff = (value) => (value ? 'Sí' : 'No');
+    this.footer.setText(
+      `A = jugar   ·   B = cambiar jugadores   ·   X = voz: ${onOff(voiceEnabled())}   ·   Y = música: ${onOff(music.enabled())}`,
+    );
   }
 
   createCard(x, y, game) {
@@ -126,7 +137,22 @@ export class MenuScene extends Phaser.Scene {
     if (controls.justPressed(id, 'left')) this.select(this.selected - 1);
     if (controls.justPressed(id, 'right')) this.select(this.selected + 1);
     if (controls.justPressed(id, 'up') || controls.justPressed(id, 'down')) this.selectOtherRow();
-    if (this.selected !== before) sfx.select();
+    if (this.selected !== before) {
+      sfx.select();
+      say(GAMES[this.selected].title);
+    }
+    if (controls.justPressed(id, 'x')) {
+      setVoiceEnabled(!voiceEnabled());
+      sfx.select();
+      say('Voz encendida');
+      this.refreshFooter();
+    }
+    if (controls.justPressed(id, 'y')) {
+      music.setEnabled(!music.enabled());
+      sfx.select();
+      say(music.enabled() ? 'Música encendida' : 'Música apagada');
+      this.refreshFooter();
+    }
     if (controls.justPressed(id, 'b')) {
       sfx.back();
       this.scene.start('Join');
@@ -167,5 +193,6 @@ export class MenuScene extends Phaser.Scene {
     inner.setAngle(0);
     this.tweens.add({ targets: inner, angle: 3, duration: 60, yoyo: true, repeat: 3 });
     this.showToast(`${game.title}: ¡muy pronto!`);
+    say('¡Muy pronto!');
   }
 }

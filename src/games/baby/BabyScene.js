@@ -4,6 +4,7 @@ import { frameDelta } from '../../shared/clock.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { audioReady, sfx } from '../../shared/sound.js';
 import { touchPad } from '../../shared/touch.js';
+import { say } from '../../shared/voice.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
@@ -37,6 +38,7 @@ const IDLE_HINT_MS = 10000;
 // En los otros juegos se sale manteniendo Y, pero el bebé lo haría sin querer:
 // aquí hay que mantener LB + RB juntos (o Esc) 3 segundos.
 const EXIT_HOLD_MS = 3000;
+const VOICE_EVERY_MS = 1200;
 const DEPTH = { trail: 1, shape: 2, animal: 3, friend: 4, firework: 5, ui: 10 };
 
 // Modo Bebé: cualquier botón hace algo bonito. No se gana ni se pierde.
@@ -176,6 +178,11 @@ export class BabyScene extends Phaser.Scene {
     sfx.note(note + (Math.random() < 0.5 ? 0 : 5));
     this.spawnShape(x, y, color, name);
     this.idleMs = 0;
+    // La voz dice el color, pero sin amontonarse cuando el bebé machaca los botones.
+    if (this.time.now - (this.lastSpokenAt ?? -Infinity) > VOICE_EVERY_MS) {
+      this.lastSpokenAt = this.time.now;
+      say(name);
+    }
   }
 
   spawnShape(x, y, color, name) {

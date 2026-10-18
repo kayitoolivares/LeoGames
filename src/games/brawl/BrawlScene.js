@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players } from '../../shared/players.js';
+import { say } from '../../shared/voice.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { ARENA } from './arena.js';
 import { Fighter, MAX_HP } from './Fighter.js';
@@ -92,6 +93,7 @@ export class BrawlScene extends Phaser.Scene {
   }
 
   showBanner(title, subtitle = '', holdMs = 1300) {
+    say(title);
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setAlpha(0).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(0);

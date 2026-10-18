@@ -27,6 +27,11 @@ export function audioReady() {
   return ctx?.state === 'running';
 }
 
+// Para la música (music.js), que usa el mismo contexto de audio pero su propio volumen.
+export function audioContext() {
+  return audioReady() ? ctx : null;
+}
+
 for (const type of ['pointerdown', 'keydown', 'touchend']) window.addEventListener(type, unlockAudio, { capture: true });
 
 // Un tono que puede deslizarse de `freq` a `to` y se apaga solo.

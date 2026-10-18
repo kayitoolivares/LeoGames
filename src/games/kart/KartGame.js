@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
+import { say } from '../../shared/voice.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
@@ -151,6 +152,8 @@ export class KartGame {
     this.raceMs = 0;
     this.finishOrder = [];
     this.firstHumanFinishMs = null;
+    this.spokenStep = null;
+    this.lastLapSaid = false;
     this.hud.hideResults();
     this.hud.showHelp(true);
     this.updateCameras(0, true);
@@ -174,6 +177,10 @@ export class KartGame {
 
   updateCountdown() {
     const step = Math.floor(this.phaseMs / COUNTDOWN_STEP_MS);
+    if (step !== this.spokenStep) {
+      this.spokenStep = step;
+      say(step < 3 ? String(3 - step) : '¡Ya!');
+    }
     if (step < 3) {
       this.hud.setCenter(String(3 - step));
       return;
@@ -316,6 +323,10 @@ export class KartGame {
       return;
     }
     if (!racer.isCpu && racer.lap > 0) racer.say(racer.lap === LAPS - 1 ? '¡Última vuelta!' : `Vuelta ${racer.lap + 1}`);
+    if (!racer.isCpu && racer.lap === LAPS - 1 && !this.lastLapSaid) {
+      this.lastLapSaid = true;
+      say('¡Última vuelta!');
+    }
   }
 
   updateWrongWay(racer, dtMs) {
@@ -355,7 +366,9 @@ export class KartGame {
     this.phase = 'results';
     this.phaseMs = 0;
     this.hud.setCenter('');
-    this.hud.showResults(this.ranking().map((racer) => ({ label: racer.label, color: hexToCss(racer.color) })));
+    const ranking = this.ranking();
+    this.hud.showResults(ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color) })));
+    say(`¡Ganó ${ranking[0].label}!`);
   }
 
   updateResults() {

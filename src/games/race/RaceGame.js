@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
+import { say } from '../../shared/voice.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
@@ -81,6 +82,7 @@ export class RaceGame {
     this.raceMs = 0;
     this.finishOrder = [];
     this.firstHumanFinishMs = null;
+    this.spokenStep = null;
     this.announcedLap = 0;
     this.hud.hideResults();
     this.updateCamera(0, true);
@@ -104,6 +106,10 @@ export class RaceGame {
 
   updateCountdown() {
     const step = Math.floor(this.phaseMs / COUNTDOWN_STEP_MS);
+    if (step !== this.spokenStep) {
+      this.spokenStep = step;
+      say(step < 3 ? String(3 - step) : '¡Ya!');
+    }
     if (step < 3) {
       this.hud.setCenter(String(3 - step));
       return;
@@ -191,14 +197,18 @@ export class RaceGame {
       this.finishOrder.push(kart);
       if (!kart.isCpu) {
         if (this.firstHumanFinishMs === null) this.firstHumanFinishMs = this.raceMs;
-        this.hud.flash(`¡${kart.label} llegó en ${this.finishOrder.length}° lugar!`);
+        const message = `¡${kart.label} llegó en ${this.finishOrder.length}° lugar!`;
+        this.hud.flash(message);
+        say(message);
       }
       return;
     }
     // Anuncia la vuelta cuando el primer jugador la empieza.
     if (!kart.isCpu && kart.lap > this.announcedLap && kart.lap < LAPS) {
       this.announcedLap = kart.lap;
-      this.hud.flash(kart.lap === LAPS - 1 ? '¡Última vuelta!' : `Vuelta ${kart.lap + 1} de ${LAPS}`);
+      const message = kart.lap === LAPS - 1 ? '¡Última vuelta!' : `Vuelta ${kart.lap + 1} de ${LAPS}`;
+      this.hud.flash(message);
+      say(message);
     }
   }
 
@@ -264,7 +274,9 @@ export class RaceGame {
   showResults() {
     this.phase = 'results';
     this.phaseMs = 0;
-    this.hud.showResults(this.ranking().map((kart) => ({ label: kart.label, color: hexToCss(kart.color) })));
+    const ranking = this.ranking();
+    this.hud.showResults(ranking.map((kart) => ({ label: kart.label, color: hexToCss(kart.color) })));
+    say(`¡Ganó ${ranking[0].label}!`);
   }
 
   updateResults() {

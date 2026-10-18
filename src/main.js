@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { controls } from './shared/controls.js';
 import { tickClock } from './shared/clock.js';
+import { music } from './shared/music.js';
 import { JoinScene } from './scenes/JoinScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { PadTestScene } from './scenes/PadTestScene.js';
@@ -40,6 +41,24 @@ const game = new Phaser.Game({
 game.events.on(Phaser.Core.Events.PRE_STEP, () => {
   tickClock(game.loop.rawDelta);
   controls.update();
+});
+
+// La música de cada pantalla. Las que no aparecen aquí (como la prueba de controles) van en silencio.
+const SCENE_MUSIC = {
+  Join: 'menu',
+  Menu: 'menu',
+  SmashSelect: 'menu',
+  Brawl: 'brawl',
+  Smash: 'smash',
+  Race: 'race',
+  Kart: 'race',
+  Futbol: 'futbol',
+  Baby: 'baby',
+};
+game.events.once(Phaser.Core.Events.READY, () => {
+  for (const scene of game.scene.scenes) {
+    scene.events.on(Phaser.Scenes.Events.CREATE, () => music.play(SCENE_MUSIC[scene.sys.settings.key] ?? null));
+  }
 });
 
 // Para depurar desde la consola del navegador (solo con `npm run dev`).
