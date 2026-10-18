@@ -5,6 +5,7 @@ import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { audioReady, sfx } from '../../shared/sound.js';
 import { touchPad } from '../../shared/touch.js';
 import { say } from '../../shared/voice.js';
+import { rewards } from '../../shared/rewards.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
@@ -88,6 +89,7 @@ export class BabyScene extends Phaser.Scene {
     });
     // En el celular toda la pantalla es para tocar: de los botones táctiles solo quedan LB y RB (para salir).
     touchPad.setMode('bumpers');
+    rewards.earn('bebe');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => touchPad.setMode('full'));
   }
 

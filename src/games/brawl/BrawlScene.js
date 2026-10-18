@@ -3,6 +3,7 @@ import { controls } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
+import { rewards } from '../../shared/rewards.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { ARENA } from './arena.js';
 import { Fighter, MAX_HP } from './Fighter.js';
@@ -273,6 +274,7 @@ export class BrawlScene extends Phaser.Scene {
     }
     if (this.spawnQueue.length > 0 || this.monsters.length > 0) return;
 
+    rewards.earn('pelea-ronda');
     if (this.waveIndex + 1 < WAVES.length) {
       this.phase = 'between';
       this.showBanner('¡Bien hecho!', '', 900);
@@ -282,6 +284,7 @@ export class BrawlScene extends Phaser.Scene {
       this.endMs = 0;
       this.showBanner('¡GANARON!', 'Presiona A para volver al menú', 0);
       confetti(this, this.fighters.map((f) => f.color));
+      rewards.earn('pelea-gana');
     }
   }
 

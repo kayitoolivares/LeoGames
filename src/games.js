@@ -7,5 +7,6 @@ export const GAMES = [
   { title: 'Carreras', emoji: '🏎️', description: 'Vista desde arriba,\n¡a toda velocidad!', scene: 'Race' },
   { title: 'Halcón de Acero', emoji: '✈️', description: 'Combate aéreo 3D\n(se abre aparte)', url: 'https://hda.grupomegarey.mx/' },
   { title: 'Modo Bebé', emoji: '👶', description: 'Aprieta botones:\ncolores y sonidos', scene: 'Baby' },
+  { title: 'Mis premios', emoji: '🏆', description: 'Tus calcomanías\ny lo que desbloqueas', scene: 'Premios', badge: 'Ver' },
   { title: 'Prueba de controles', emoji: '🔧', description: 'Revisa que se vean\ntodos los controles', scene: 'PadTest' },
 ];

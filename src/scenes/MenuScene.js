@@ -8,10 +8,10 @@ import { GAMES } from '../games.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
 
-const COLUMNS = 4;
-const CARD_W = 280;
+const COLUMNS = 5;
+const CARD_W = 232;
 const CARD_H = 190;
-const CARD_GAP_X = 18;
+const CARD_GAP_X = 14;
 const ROW_Y = [235, 440];
 
 // Menú de juegos en cuadrícula. Solo el Jugador 1 mueve la selección, para que nadie (¡el bebé!)
@@ -61,10 +61,10 @@ export class MenuScene extends Phaser.Scene {
     const inner = this.add.container(0, 0);
     const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(22);
     const emoji = this.add.text(0, -54, game.emoji, textStyle(52)).setOrigin(0.5);
-    const title = this.add.text(0, -2, game.title, textStyle(24, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    const title = this.add.text(0, -2, game.title, textStyle(22, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     const description = this.add.text(0, 34, game.description, textStyle(16, TEXT.muted, { align: 'center' })).setOrigin(0.5);
     const badgeColor = { play: COLORS.ok, link: COLORS.accent, soon: COLORS.panelBorder }[kind];
-    const badgeLabel = { play: 'Jugar', link: 'Abrir', soon: 'Próximamente' }[kind];
+    const badgeLabel = game.badge ?? { play: 'Jugar', link: 'Abrir', soon: 'Próximamente' }[kind];
     const badge = this.add.rectangle(0, 74, 160, 28, badgeColor).setRounded(14);
     const badgeText = this.add
       .text(0, 74, badgeLabel, textStyle(16, kind === 'soon' ? TEXT.muted : TEXT.ink, { fontStyle: 'bold' }))

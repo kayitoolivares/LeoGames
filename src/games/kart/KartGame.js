@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
+import { rewards } from '../../shared/rewards.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
@@ -275,7 +276,10 @@ export class KartGame {
   onProjectileHit(victim, projectile) {
     const hurt = victim.hit();
     if (!victim.isCpu) victim.say(hurt ? '¡Te dieron! 💫' : '¡La burbuja te salvó!');
-    if (hurt && projectile.owner !== victim && !projectile.owner.isCpu) projectile.owner.say('¡Le diste! 🎯');
+    if (hurt && projectile.owner !== victim && !projectile.owner.isCpu) {
+      projectile.owner.say('¡Le diste! 🎯');
+      rewards.earn('kart-poder');
+    }
   }
 
   // Las llantas de la orilla no dejan salir a nadie: rozarlas frena un poco.
@@ -316,6 +320,7 @@ export class KartGame {
     if (racer.lap >= LAPS && !racer.finished) {
       racer.finished = true;
       this.finishOrder.push(racer);
+      if (!racer.isCpu && this.finishOrder.length === 1) rewards.earn('kart-gana');
       if (!racer.isCpu) {
         if (this.firstHumanFinishMs === null) this.firstHumanFinishMs = this.raceMs;
         racer.say(`¡Meta! ${this.finishOrder.length}° lugar`, 5000);

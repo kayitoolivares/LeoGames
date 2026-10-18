@@ -4,6 +4,7 @@ import { frameDelta } from '../shared/clock.js';
 import { audioReady, sfx } from '../shared/sound.js';
 import { touchEnabled } from '../shared/touch.js';
 import { say } from '../shared/voice.js';
+import { rewards } from '../shared/rewards.js';
 import { players, MAX_PLAYERS } from '../shared/players.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
@@ -129,6 +130,8 @@ export class JoinScene extends Phaser.Scene {
           const joined = players.byDevice(id);
           this.cardFor(joined).blob.hop();
           say(`¡Jugador ${joined.slot + 1}, ${players.color(joined).name}!`);
+          rewards.earn('unirse');
+          if (players.list.length === MAX_PLAYERS) rewards.earn('todos');
         }
         continue;
       }

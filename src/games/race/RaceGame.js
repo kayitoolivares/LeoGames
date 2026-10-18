@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
+import { rewards } from '../../shared/rewards.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
@@ -195,6 +196,7 @@ export class RaceGame {
     if (kart.lap >= LAPS && !kart.finished) {
       kart.finished = true;
       this.finishOrder.push(kart);
+      if (!kart.isCpu && this.finishOrder.length === 1) rewards.earn('carrera-gana');
       if (!kart.isCpu) {
         if (this.firstHumanFinishMs === null) this.firstHumanFinishMs = this.raceMs;
         const message = `¡${kart.label} llegó en ${this.finishOrder.length}° lugar!`;

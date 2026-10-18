@@ -3,6 +3,7 @@ import { controls } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
+import { rewards } from '../../shared/rewards.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
@@ -274,6 +275,7 @@ export class SmashScene extends Phaser.Scene {
 
   // ¡Se transformó! Letrero con su súper nombre, destello y un aro que crece.
   celebrateSuper(fighter) {
+    if (!fighter.isCpu) rewards.earn('smash-super');
     this.showBanner(`¡${CHARACTERS[fighter.characterKey].superName}!`, '', 900, hexToCss(fighter.color));
     burst(this, fighter.x, fighter.y, 0xffd84d, 16, this.world);
     burst(this, fighter.x, fighter.y, fighter.color, 12, this.world);
@@ -410,6 +412,7 @@ export class SmashScene extends Phaser.Scene {
         continue;
       }
       let sprite;
+      if (request.kind === 'bomb' && !fighter.isCpu) rewards.earn('smash-bomba');
       if (request.kind === 'bomb') sprite = drawItem(this, 'bomb');
       else if (request.kind === 'laser') sprite = this.add.rectangle(request.x, request.y, 80, 12, SHOTS.laser.color).setStrokeStyle(3, 0xffffff);
       else sprite = this.add.star(request.x, request.y, 5, 9, 20, SHOTS.star.color).setStrokeStyle(3, 0xffffff);
@@ -552,6 +555,7 @@ export class SmashScene extends Phaser.Scene {
     if (winner) {
       this.banner.setColor(hexToCss(winner.color));
       confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
+      if (!winner.isCpu) rewards.earn('smash-gana');
     }
     sfx.win();
   }
