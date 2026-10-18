@@ -26,6 +26,8 @@ const SCRATCH_LUNGE = 260;
 const SLIDE_SPEED = 720;
 const SLIDE_MS = 420;
 const CANNON_THROW = { vx: 640, vy: -260 };
+const ROCKET = { vx: 420, rise: 380, ms: 520 };
+const STING_MS = 200;
 // Cada cuánto se puede repetir el especial (los que no están aquí no esperan).
 const SPECIAL_COOLDOWN_MS = {
   estrella: 700,
@@ -37,6 +39,10 @@ const SPECIAL_COOLDOWN_MS = {
   gatito: 500,
   pinguino: 900,
   pirata: 1100,
+  hada: 700,
+  astronauta: 1500,
+  abeja: 700,
+  bombero: 900,
 };
 const GHOST_MS = 1500;
 export const SHIELD_MAX = 100;
@@ -100,6 +106,14 @@ export const ATTACKS = {
   slide: { startup: 40, active: 420, recovery: 200, damage: 9, base: 300, scale: 8, angle: 30, hx: 30, hy: 16, radius: 38 },
   // Pirata: dispara una bala de cañón que cae en arco (la crea la escena).
   cannon: { startup: 140, active: 0, recovery: 260 },
+  // Hada: lanza polvo mágico que flota hacia adelante (lo crea la escena).
+  wand: { startup: 90, active: 0, recovery: 200 },
+  // Astronauta: la mochila cohete lo sube y lo lleva hacia adelante, y pega con el cuerpo.
+  rocket: { startup: 60, active: 460, recovery: 200, damage: 8, base: 320, scale: 8, angle: 55, hx: 12, hy: 0, radius: 46 },
+  // Abeja: aguijonazo en línea recta.
+  sting: { startup: 60, active: 200, recovery: 220, damage: 10, base: 340, scale: 9, angle: 40, hx: 40, hy: 6, radius: 30 },
+  // Bombero: chorro de agua que casi no hace daño pero empuja mucho.
+  water: { startup: 100, active: 600, recovery: 240, damage: 1, base: 270, scale: 2, angle: 12, hx: 90, hy: -4, radius: 46, multi: 120 },
 };
 
 // Un peleador estilo Smash: corre, salta, golpea según la dirección, usa su especial con B,
@@ -141,7 +155,14 @@ export class SmashFighter {
         scene.add.ellipse(-18, 0, 28, 14, 0xffffff, 0.9),
       ])
       .setVisible(false);
-    this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.flames]);
+    this.water = scene.add
+      .container(0, 0, [
+        scene.add.ellipse(0, 0, 110, 40, 0x3fa7ff, 0.8),
+        scene.add.ellipse(-8, 0, 76, 24, 0x9fd8ff, 0.9),
+        scene.add.ellipse(-16, 0, 36, 10, 0xffffff, 0.9),
+      ])
+      .setVisible(false);
+    this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.flames, this.water]);
     // Brillo detrás del personaje en súper modo.
     this.aura = scene.add.circle(0, 0, this.radius * 1.5, 0xffd84d, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.sprite.addAt(this.aura, 0);
@@ -192,6 +213,7 @@ export class SmashFighter {
     this.stunMs = 0;
     this.dashMs = 0;
     this.slideMs = 0;
+    this.rocketMs = 0;
     this.cooldownMs = 0;
     this.ghostMs = 0;
     this.transformMs = 0;
@@ -271,6 +293,7 @@ export class SmashFighter {
     this.attack = null;
     this.dashMs = 0;
     this.slideMs = 0;
+    this.rocketMs = 0;
     this.shielding = false;
     this.setSuper(true);
     sfx.transform();
@@ -309,6 +332,7 @@ export class SmashFighter {
     this.stunMs = Math.max(0, this.stunMs - dtMs);
     this.dashMs = Math.max(0, this.dashMs - dtMs);
     this.slideMs = Math.max(0, this.slideMs - dtMs);
+    this.rocketMs = Math.max(0, this.rocketMs - dtMs);
     this.cooldownMs = Math.max(0, this.cooldownMs - dtMs);
     this.ghostMs = Math.max(0, this.ghostMs - dtMs);
     this.transformMs = Math.max(0, this.transformMs - dtMs);
@@ -355,6 +379,7 @@ export class SmashFighter {
     // Dragoncito y Fantasma caen más despacio (gravity < 1), y en el Espacio todos.
     const gravity = (this.stats.gravity ?? 1) * (this.arena.gravity ?? 1);
     if (this.dashMs > 0) this.vy = 0;
+    else if (this.rocketMs > 0) this.vy = -ROCKET.rise;
     else this.vy = Math.min(MAX_FALL * gravity, this.vy + GRAVITY * gravity * dt);
     const prevFeet = this.y + this.radius;
     this.x += this.vx * dt;
@@ -372,6 +397,15 @@ export class SmashFighter {
     if (justActive && attack.type === 'charge') this.vx = this.facing * CHARGE_LUNGE;
     if (justActive && attack.type === 'scratch') this.vx = this.facing * SCRATCH_LUNGE;
     if (justActive && attack.type === 'slide') this.slideMs = SLIDE_MS;
+    if (justActive && attack.type === 'rocket') {
+      this.rocketMs = ROCKET.ms;
+      this.grounded = false;
+      this.platform = null;
+    }
+    if (justActive && attack.type === 'wand') {
+      this.projectileRequest = { kind: 'dust', x: this.x + this.facing * (this.radius + 14), y: this.y - 8, dir: this.facing };
+      sfx.star();
+    }
     if (justActive && attack.type === 'cannon') {
       this.projectileRequest = {
         kind: 'cannon',
@@ -423,6 +457,8 @@ export class SmashFighter {
       this.vx = this.facing * DASH_SPEED;
     } else if (this.slideMs > 0) {
       this.vx = this.facing * SLIDE_SPEED;
+    } else if (this.rocketMs > 0) {
+      this.vx = this.facing * ROCKET.vx;
     } else if (this.grounded) {
       const slow = this.attack ? 0.3 : 1;
       this.vx = approach(this.vx, input.x * stats.run * slow * speedBonus, GROUND_FRICTION * dt);
@@ -514,6 +550,18 @@ export class SmashFighter {
     } else if (key === 'pirata') {
       attack('cannon');
       sound = null;
+    } else if (key === 'hada') {
+      attack('wand');
+      sound = null;
+    } else if (key === 'astronauta') {
+      attack('rocket');
+      sound = sfx.fire;
+    } else if (key === 'abeja') {
+      attack('sting');
+      this.dashMs = STING_MS;
+    } else if (key === 'bombero') {
+      attack('water');
+      sound = sfx.fire;
     } else {
       return;
     }
@@ -597,6 +645,7 @@ export class SmashFighter {
     this.stunMs = 0;
     this.dashMs = 0;
     this.slideMs = 0;
+    this.rocketMs = 0;
     this.grounded = false;
     this.platform = null;
     this.attack = null;
@@ -669,7 +718,8 @@ export class SmashFighter {
     const a = this.attack && ATTACKS[this.attack.type];
     const type = this.attack?.type;
     // El puño sale en los golpes normales y en el puñetazo cargado (si la imagen no trae su pose de golpe).
-    const showFist = Boolean(a) && !['dash', 'spring', 'hammer', 'throw', 'fire', 'laser'].includes(type) && !this.punchArt;
+    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water'];
+    const showFist = Boolean(a) && !noFist.includes(type) && !this.punchArt;
     this.fist.setVisible(showFist);
     if (showFist) {
       const reach = box ? 1 : 0.55;
@@ -677,13 +727,17 @@ export class SmashFighter {
       this.fist.setScale(type === 'charge' ? 1.6 : 1);
     }
 
-    // El fuego de Dragoncito tiembla mientras está activo.
+    // El fuego de Dragoncito tiembla mientras está activo; con la mochila cohete sale chiquito por abajo.
     const fire = type === 'fire' && Boolean(box);
-    this.flames.setVisible(fire);
-    if (fire) {
-      const flicker = 0.85 + Math.random() * 0.3;
-      this.flames.setPosition(a.hx * this.facing, -4).setScale(this.facing * flicker, flicker);
-    }
+    const rocket = this.rocketMs > 0;
+    this.flames.setVisible(fire || rocket);
+    const flicker = 0.85 + Math.random() * 0.3;
+    if (fire) this.flames.setPosition(a.hx * this.facing, -4).setScale(this.facing * flicker, flicker).setAngle(0);
+    else if (rocket) this.flames.setPosition(-this.facing * this.baseRadius * 0.5, this.baseRadius * 0.9).setScale(0.45 * flicker).setAngle(90);
+    // El chorro de agua de Bombero.
+    const water = type === 'water' && Boolean(box);
+    this.water.setVisible(water);
+    if (water) this.water.setPosition(a.hx * this.facing, -4).setScale(this.facing * flicker, 1);
 
     // El martillo se mueve de atrás hacia adelante al pegar.
     const hasHammer = this.held?.type === 'hammer';

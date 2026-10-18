@@ -61,7 +61,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(24).setStrokeStyle(5, color);
     const title = this.add.text(0, top + 28, `Jugador ${player.slot + 1}`, textStyle(22, hexToCss(color), { fontStyle: 'bold' })).setOrigin(0.5);
     const name = this.add.text(0, top + 236, '', textStyle(30, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
-    const arrows = this.add.text(0, top + 276, '◀           ▶', textStyle(26, TEXT.muted)).setOrigin(0.5);
+    const arrows = this.add.text(0, top + 276, '', textStyle(24, TEXT.muted)).setOrigin(0.5);
     const status = this.add.text(0, top + CARD_H - 30, '', textStyle(22, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     container.add([bg, title, name, arrows, status]);
     const card = { player, color, container, bg, name, arrows, status, pick: characterPicks.get(player.deviceId, defaultCharacter(player)), ready: false };
@@ -78,6 +78,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     card.preview = blob;
     card.container.add(blob);
     card.name.setText(CHARACTERS[card.pick].name);
+    card.arrows.setText(`◀    ${CHARACTER_KEYS.indexOf(card.pick) + 1} / ${CHARACTER_KEYS.length}    ▶`);
     this.showStatus(card);
   }
 

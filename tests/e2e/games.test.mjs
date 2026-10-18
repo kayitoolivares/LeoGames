@@ -256,9 +256,9 @@ test('bolitas bros: pelea contra el CPU, revancha y salir', { timeout: ms(120000
 });
 
 // Personajes nuevos: su especial le tiene que pegar a un rival que está enfrente.
-const NEW_CHARACTERS = ['dino', 'gatito', 'pinguino', 'pirata'];
+const NEW_CHARACTERS = ['dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero'];
 
-test('bolitas bros: el especial de cada personaje nuevo pega', { timeout: ms(150000) }, async () => {
+test('bolitas bros: el especial de cada personaje nuevo pega', { timeout: ms(240000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(2);
   for (const character of NEW_CHARACTERS) {

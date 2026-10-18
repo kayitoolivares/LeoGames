@@ -177,13 +177,73 @@ export const CHARACTERS = {
     airJumps: 1,
     stats: { Fuerza: 2, Velocidad: 2, Salto: 2 },
   },
+  hada: {
+    name: 'Hada',
+    superName: 'Hada Reina',
+    blurb: 'Flota en el aire',
+    special: 'Polvo mágico',
+    radius: 32,
+    weight: 0.8,
+    power: 0.9,
+    run: 360,
+    air: 360,
+    jump: 780,
+    airJumps: 2,
+    gravity: 0.75,
+    stats: { Fuerza: 1, Velocidad: 2, Salto: 3 },
+  },
+  astronauta: {
+    name: 'Astronauta',
+    superName: 'Astronauta Galáctico',
+    blurb: 'Vuela con su mochila',
+    special: 'Mochila cohete',
+    radius: 35,
+    weight: 1.1,
+    power: 1.05,
+    run: 320,
+    air: 320,
+    jump: 760,
+    airJumps: 1,
+    gravity: 0.85,
+    stats: { Fuerza: 2, Velocidad: 1, Salto: 3 },
+  },
+  abeja: {
+    name: 'Abeja',
+    superName: 'Abeja Reina',
+    blurb: 'Vuela a saltitos',
+    special: 'Aguijonazo',
+    radius: 30,
+    weight: 0.75,
+    power: 0.9,
+    run: 400,
+    air: 400,
+    jump: 760,
+    airJumps: 3,
+    gravity: 0.85,
+    stats: { Fuerza: 1, Velocidad: 3, Salto: 3 },
+  },
+  bombero: {
+    name: 'Bombero',
+    superName: 'Súper Bombero',
+    blurb: 'Empuja con agua',
+    special: 'Chorro de agua',
+    radius: 36,
+    weight: 1.15,
+    power: 1,
+    run: 320,
+    air: 300,
+    jump: 740,
+    airJumps: 1,
+    stats: { Fuerza: 2, Velocidad: 2, Salto: 1 },
+  },
 };
 
 export const CHARACTER_KEYS = Object.keys(CHARACTERS);
 
 // Le pone a la bolita el accesorio de su personaje (cuando no hay imagen de Gemini):
 // casco, pelos de rayo, orejas, estrella, cinta ninja, antena, cuernitos, colita de fantasma, picos de dino,
-// orejas de gato, pancita y pico de pingüino o sombrero y parche de pirata.
+// orejas de gato, pancita y pico de pingüino, sombrero y parche de pirata, alitas de hada, casco de astronauta,
+// rayas de abeja o casco de bombero.
 export function addAccessory(scene, blob, key) {
   const r = blob.radius;
   const figure = blob.figure;
@@ -250,6 +310,25 @@ export function addAccessory(scene, blob, key) {
     figure.add(scene.add.rectangle(0, -r * 0.66, r * 1.9, r * 0.18, COLORS.ink));
     figure.add(scene.add.circle(0, -r * 0.95, r * 0.14, 0xffffff));
     figure.add(scene.add.circle(r * 0.32, -r * 0.12, r * 0.25, COLORS.ink));
+  } else if (key === 'hada') {
+    for (const side of [-1, 1]) {
+      figure.addAt(scene.add.ellipse(side * r * 0.95, -r * 0.35, r * 0.8, r * 1.1, 0xe8f4ff, 0.9).setStrokeStyle(3, COLORS.ink).setRotation(side * 0.4), 0);
+    }
+    figure.add(scene.add.rectangle(r * 1.05, r * 0.05, r * 0.08, r * 0.8, 0x8b5a2b).setRotation(0.3));
+    figure.add(scene.add.star(r * 1.2, -r * 0.4, 5, r * 0.12, r * 0.28, COLORS.accent).setStrokeStyle(2, COLORS.ink));
+  } else if (key === 'astronauta') {
+    figure.addAt(scene.add.rectangle(-r * 0.95, r * 0.05, r * 0.5, r * 1.1, 0xd9dce8).setStrokeStyle(3, COLORS.ink), 0);
+    figure.add(scene.add.circle(0, -r * 0.05, r * 1.12).setStrokeStyle(4, 0xffffff, 0.9));
+  } else if (key === 'abeja') {
+    for (const y of [0.25, 0.6]) figure.addAt(scene.add.rectangle(0, y * r, r * 1.9, r * 0.2, COLORS.ink), 1);
+    for (const side of [-1, 1]) {
+      figure.addAt(scene.add.ellipse(side * r * 0.7, -r * 0.95, r * 0.6, r * 0.8, 0xe8f4ff, 0.85).setStrokeStyle(2, COLORS.ink), 0);
+      figure.add(scene.add.circle(side * r * 0.35, -r * 1.25, r * 0.1, COLORS.ink));
+    }
+  } else if (key === 'bombero') {
+    figure.add(scene.add.arc(0, -r * 0.5, r * 0.85, 180, 360, false, 0xe53935).setStrokeStyle(3, COLORS.ink));
+    figure.add(scene.add.ellipse(0, -r * 0.52, r * 2.1, r * 0.3, 0xe53935).setStrokeStyle(3, COLORS.ink));
+    figure.add(scene.add.rectangle(0, -r * 0.9, r * 0.3, r * 0.3, COLORS.accent).setStrokeStyle(2, COLORS.ink));
   }
 }
 

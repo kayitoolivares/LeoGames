@@ -60,6 +60,11 @@
       "normal",
       "salto"
     ],
+    "hada": [
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "ninja": [
       "dolor",
       "golpe",
@@ -91,8 +96,10 @@
       "salto"
     ],
     "pirata_super": [
+      "dolor",
       "golpe",
-      "normal"
+      "normal",
+      "salto"
     ],
     "rayo": [
       "dolor",

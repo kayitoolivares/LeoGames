@@ -42,8 +42,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),
   **Resorte** (salta 3 veces, B = súper salto), **Estrella** (B = lanza estrellas), **Ninja** (B = aparece por detrás),
   **Robot** (B = láser), **Dragoncito** (flota, B = fuego), **Fantasma** (B = invisible), **Dino** (B = coletazo a
-  los dos lados), **Gatito** (salta 3 veces, B = arañazos), **Pingüino** (B = se desliza de panza) y **Pirata**
-  (B = bala de cañón). Con la barra llena, **LB + RB** = súper forma por 10 segundos.
+  los dos lados), **Gatito** (salta 3 veces, B = arañazos), **Pingüino** (B = se desliza de panza), **Pirata**
+  (B = bala de cañón), **Hada** (flota, B = polvo mágico), **Astronauta** (B = mochila cohete), **Abeja** (salta 4 veces,
+  B = aguijonazo) y **Bombero** (B = chorro de agua que empuja). Con la barra llena, **LB + RB** = súper forma por 10 segundos.
   **A** = saltar, **X** = golpe (con ↑ hacia arriba, con ↓ barrida o pisotón), **B + ↑** = salto de rescate,
   **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén Y** = salir.
   Caen objetos: **martillo** (8 s de martillazos con X), **bomba** (X la lanza), **corazón** (-40 %)
