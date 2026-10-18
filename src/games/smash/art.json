@@ -1,5 +1,17 @@
 {
   "characters": {
+    "dino": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "dino_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "dragon": [
       "dolor",
       "golpe",
@@ -36,6 +48,18 @@
       "normal",
       "salto"
     ],
+    "gatito": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "gatito_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "ninja": [
       "dolor",
       "golpe",
@@ -47,6 +71,28 @@
       "golpe",
       "normal",
       "salto"
+    ],
+    "pinguino": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "pinguino_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "pirata": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "pirata_super": [
+      "golpe",
+      "normal"
     ],
     "rayo": [
       "dolor",

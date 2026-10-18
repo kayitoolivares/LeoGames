@@ -1,7 +1,8 @@
 // Prepara el arte (hecho con Gemini u otra herramienta) de los juegos.
 //
 // Bolitas Bros:
-//   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella | ninja | robot | dragon | fantasma
+//   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella | ninja | robot | dragon | fantasma |
+//                                                  dino | gatito | pinguino | pirata | hada | astronauta | abeja | bombero
 //                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
 //   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
@@ -22,7 +23,10 @@ const SOURCE = path.join(ART, 'smash');
 const OUTPUT = path.join(ROOT, 'public', 'smash');
 const MANIFEST = path.join(ROOT, 'src', 'games', 'smash', 'art.json');
 
-const CHARACTERS = ['tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma'];
+const CHARACTERS = [
+  'tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma',
+  'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero',
+];
 const POSES = ['normal', 'golpe', 'salto', 'dolor'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
 const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan'];

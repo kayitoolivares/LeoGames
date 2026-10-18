@@ -22,8 +22,22 @@ const SPRING_SPEED = 1050;
 const DASH_SPEED = 900;
 const DASH_MS = 260;
 const CHARGE_LUNGE = 320;
+const SCRATCH_LUNGE = 260;
+const SLIDE_SPEED = 720;
+const SLIDE_MS = 420;
+const CANNON_THROW = { vx: 640, vy: -260 };
 // Cada cuánto se puede repetir el especial (los que no están aquí no esperan).
-const SPECIAL_COOLDOWN_MS = { estrella: 700, robot: 900, ninja: 1400, dragon: 600, fantasma: 4000 };
+const SPECIAL_COOLDOWN_MS = {
+  estrella: 700,
+  robot: 900,
+  ninja: 1400,
+  dragon: 600,
+  fantasma: 4000,
+  dino: 700,
+  gatito: 500,
+  pinguino: 900,
+  pirata: 1100,
+};
 const GHOST_MS = 1500;
 export const SHIELD_MAX = 100;
 const SHIELD_DRAIN = 22;
@@ -55,6 +69,7 @@ const SUPER_TINT = 0x806000;
 // Golpes. Tiempos en ms; el empujón crece con el % del que recibe.
 // angle: hacia dónde sale volando (grados; 0 = hacia adelante, 90 = arriba, negativo = abajo).
 // multi: vuelve a pegar cada tantos ms mientras está activo (el fuego de Dragoncito).
+// around: pega alrededor y avienta hacia afuera, para los dos lados (el coletazo de Dino).
 export const ATTACKS = {
   // X, según la dirección del stick.
   jab: { startup: 60, active: 100, recovery: 160, damage: 7, base: 260, scale: 9, angle: 35, hx: 52, hy: 0, radius: 30 },
@@ -77,6 +92,14 @@ export const ATTACKS = {
   laser: { startup: 160, active: 0, recovery: 240 },
   // Dragoncito: fuego enfrente que pega varias veces.
   fire: { startup: 120, active: 480, recovery: 240, damage: 3, base: 140, scale: 3, angle: 25, hx: 72, hy: 0, radius: 44, multi: 160 },
+  // Dino: coletazo que da la vuelta y pega a los dos lados.
+  tail: { startup: 150, active: 160, recovery: 260, damage: 12, base: 380, scale: 10, angle: 35, hx: 0, hy: 6, radius: 84, around: true },
+  // Gatito: arañazos rápidos enfrente, un pasito hacia adelante.
+  scratch: { startup: 40, active: 300, recovery: 160, damage: 3, base: 120, scale: 3, angle: 30, hx: 46, hy: -4, radius: 34, multi: 100 },
+  // Pingüino: se desliza de panza y tumba a quien encuentre.
+  slide: { startup: 40, active: 420, recovery: 200, damage: 9, base: 300, scale: 8, angle: 30, hx: 30, hy: 16, radius: 38 },
+  // Pirata: dispara una bala de cañón que cae en arco (la crea la escena).
+  cannon: { startup: 140, active: 0, recovery: 260 },
 };
 
 // Un peleador estilo Smash: corre, salta, golpea según la dirección, usa su especial con B,
@@ -168,6 +191,7 @@ export class SmashFighter {
     this.hitstunMs = 0;
     this.stunMs = 0;
     this.dashMs = 0;
+    this.slideMs = 0;
     this.cooldownMs = 0;
     this.ghostMs = 0;
     this.transformMs = 0;
@@ -246,6 +270,7 @@ export class SmashFighter {
     this.transformMs = TRANSFORM_MS;
     this.attack = null;
     this.dashMs = 0;
+    this.slideMs = 0;
     this.shielding = false;
     this.setSuper(true);
     sfx.transform();
@@ -283,6 +308,7 @@ export class SmashFighter {
     this.hitstunMs = Math.max(0, this.hitstunMs - dtMs);
     this.stunMs = Math.max(0, this.stunMs - dtMs);
     this.dashMs = Math.max(0, this.dashMs - dtMs);
+    this.slideMs = Math.max(0, this.slideMs - dtMs);
     this.cooldownMs = Math.max(0, this.cooldownMs - dtMs);
     this.ghostMs = Math.max(0, this.ghostMs - dtMs);
     this.transformMs = Math.max(0, this.transformMs - dtMs);
@@ -344,6 +370,19 @@ export class SmashFighter {
     attack.elapsed += dtMs;
     const justActive = wasStarting && attack.elapsed >= a.startup;
     if (justActive && attack.type === 'charge') this.vx = this.facing * CHARGE_LUNGE;
+    if (justActive && attack.type === 'scratch') this.vx = this.facing * SCRATCH_LUNGE;
+    if (justActive && attack.type === 'slide') this.slideMs = SLIDE_MS;
+    if (justActive && attack.type === 'cannon') {
+      this.projectileRequest = {
+        kind: 'cannon',
+        x: this.x + this.facing * (this.radius + 16),
+        y: this.y - 10,
+        vx: this.facing * CANNON_THROW.vx,
+        vy: CANNON_THROW.vy,
+        dir: this.facing,
+      };
+      sfx.boom();
+    }
     if (justActive && attack.type === 'cast') {
       this.projectileRequest = { kind: 'star', x: this.x + this.facing * (this.radius + 12), y: this.y - 6, dir: this.facing };
     }
@@ -382,6 +421,8 @@ export class SmashFighter {
     if (!this.attack && Math.abs(input.x) > 0.2) this.facing = Math.sign(input.x);
     if (this.dashMs > 0) {
       this.vx = this.facing * DASH_SPEED;
+    } else if (this.slideMs > 0) {
+      this.vx = this.facing * SLIDE_SPEED;
     } else if (this.grounded) {
       const slow = this.attack ? 0.3 : 1;
       this.vx = approach(this.vx, input.x * stats.run * slow * speedBonus, GROUND_FRICTION * dt);
@@ -463,6 +504,16 @@ export class SmashFighter {
     } else if (key === 'fantasma') {
       this.ghostMs = GHOST_MS * (this.superMs > 0 ? 1.5 : 1);
       sound = sfx.ghost;
+    } else if (key === 'dino') {
+      attack('tail');
+    } else if (key === 'gatito') {
+      attack('scratch');
+    } else if (key === 'pinguino') {
+      attack('slide');
+      sound = sfx.jump;
+    } else if (key === 'pirata') {
+      attack('cannon');
+      sound = null;
     } else {
       return;
     }
@@ -538,11 +589,14 @@ export class SmashFighter {
     this.addMeter(dealt * METER_PER_DAMAGE_TAKEN);
     const speed = ((data.base * source.power + this.damage * data.scale) / this.weight) * (this.peque ? PEQUE_KNOCKBACK : 1);
     const angle = (data.angle * Math.PI) / 180;
-    this.vx = Math.cos(angle) * speed * source.facing;
+    // Los golpes "alrededor" avientan hacia afuera del que pegó, no hacia donde mira.
+    const dir = data.around ? Math.sign(this.x - source.x) || source.facing : source.facing;
+    this.vx = Math.cos(angle) * speed * dir;
     this.vy = -Math.sin(angle) * speed;
     this.hitstunMs = speed * HITSTUN_PER_SPEED;
     this.stunMs = 0;
     this.dashMs = 0;
+    this.slideMs = 0;
     this.grounded = false;
     this.platform = null;
     this.attack = null;

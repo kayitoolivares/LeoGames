@@ -24,10 +24,12 @@ const STRONG_HIT_SPEED = 900;
 const HIT_WORDS = ['¡PAM!', '¡ZAS!', '¡POW!', '¡BAM!'];
 const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false, transform: false };
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
-// Disparos en línea recta: la estrella de Estrella (poco daño, pero pega de lejos) y el láser de Robot (rápido).
+// Disparos: la estrella de Estrella (poco daño, pero pega de lejos), el láser de Robot (rápido) y la bala
+// de cañón de Pirata (lenta, cae en arco por la gravedad y avienta fuerte).
 const SHOTS = {
   star: { speed: 700, lifeMs: 900, radius: 16, color: 0xffc93c, hit: { damage: 5, base: 160, scale: 5, angle: 30 } },
   laser: { speed: 1150, lifeMs: 650, radius: 14, color: 0xff4d6d, hit: { damage: 8, base: 220, scale: 6, angle: 15 } },
+  cannon: { lifeMs: 1400, radius: 18, gravity: 900, color: 0x3a3a4a, hit: { damage: 12, base: 360, scale: 9, angle: 35 } },
 };
 // Ninja aparece detrás del rival más cercano si está a esta distancia; si no, avanza un poco.
 const TELEPORT_RANGE = 700;
@@ -419,6 +421,12 @@ export class SmashScene extends Phaser.Scene {
       if (request.kind === 'bomb' && !fighter.isCpu) rewards.earn('smash-bomba');
       if (request.kind === 'bomb') sprite = drawItem(this, 'bomb');
       else if (request.kind === 'laser') sprite = this.add.rectangle(request.x, request.y, 80, 12, SHOTS.laser.color).setStrokeStyle(3, 0xffffff);
+      else if (request.kind === 'cannon') {
+        sprite = this.add.container(request.x, request.y, [
+          this.add.circle(0, 0, 18, 0x2a2a36).setStrokeStyle(3, 0xffffff),
+          this.add.circle(-6, -6, 5, 0xffffff, 0.6),
+        ]);
+      }
       else sprite = this.add.star(request.x, request.y, 5, 9, 20, SHOTS.star.color).setStrokeStyle(3, 0xffffff);
       // En súper modo los disparos salen más grandes.
       sprite.setScale(fighter.radius / fighter.baseRadius);
@@ -453,7 +461,13 @@ export class SmashScene extends Phaser.Scene {
       p.ageMs += dtMs;
       const shot = SHOTS[p.kind];
       if (shot) {
-        p.x += p.dir * shot.speed * dt;
+        if (shot.gravity) {
+          p.vy += shot.gravity * (this.stage.gravity ?? 1) * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        } else {
+          p.x += p.dir * shot.speed * dt;
+        }
         p.sprite.setPosition(p.x, p.y);
         if (p.kind === 'star') p.sprite.setAngle(p.ageMs * 0.8);
         const victim = this.touching(p, shot.radius);

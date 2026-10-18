@@ -40,7 +40,10 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),
-  **Resorte** (salta 3 veces, B = súper salto) y **Estrella** (B = lanza estrellas).
+  **Resorte** (salta 3 veces, B = súper salto), **Estrella** (B = lanza estrellas), **Ninja** (B = aparece por detrás),
+  **Robot** (B = láser), **Dragoncito** (flota, B = fuego), **Fantasma** (B = invisible), **Dino** (B = coletazo a
+  los dos lados), **Gatito** (salta 3 veces, B = arañazos), **Pingüino** (B = se desliza de panza) y **Pirata**
+  (B = bala de cañón). Con la barra llena, **LB + RB** = súper forma por 10 segundos.
   **A** = saltar, **X** = golpe (con ↑ hacia arriba, con ↓ barrida o pisotón), **B + ↑** = salto de rescate,
   **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén Y** = salir.
   Caen objetos: **martillo** (8 s de martillazos con X), **bomba** (X la lanza), **corazón** (-40 %)

@@ -255,6 +255,33 @@ test('bolitas bros: pelea contra el CPU, revancha y salir', { timeout: ms(120000
   await p.context.close();
 });
 
+// Personajes nuevos: su especial le tiene que pegar a un rival que está enfrente.
+const NEW_CHARACTERS = ['dino', 'gatito', 'pinguino', 'pirata'];
+
+test('bolitas bros: el especial de cada personaje nuevo pega', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  for (const character of NEW_CHARACTERS) {
+    await p.page.evaluate((c) => import('/src/shared/picks.js').then((m) => (m.characterPicks.set('pad0', c), m.characterPicks.set('pad1', 'tanque'))), character);
+    await p.openGameCard('Bolitas Bros');
+    await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
+    await p.tap(0, BUTTON.A);
+    await p.tap(1, BUTTON.A);
+    await p.until(() => { const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight'; }, ms(10000), `pelear con ${character}`);
+    await p.page.evaluate(() => {
+      const [me, rival] = window.leogames.scene.getScene('Smash').fighters;
+      Object.assign(me, { x: 900, vx: 0, facing: 1 });
+      Object.assign(rival, { x: 1000, vx: 0, facing: -1 });
+      me.startSpecial({ x: 0, y: 0 });
+    });
+    await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(4000), `que el especial de ${character} pegue`);
+    assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].characterKey), character);
+    await p.holdToMenu(0, [BUTTON.Y], 'salir de Bolitas Bros');
+  }
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(1);
