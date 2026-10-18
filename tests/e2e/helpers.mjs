@@ -63,11 +63,18 @@ export async function openPage(game, { touch = false } = {}) {
   await page.waitForTimeout(800);
 
   const wait = (ms) => page.waitForTimeout(ms);
+  // Espera a que el juego dibuje `count` cuadros más: en GitHub (sin tarjeta de video) puede ir a pocos
+  // cuadros por segundo, y un botón que se suelta antes de que el juego lo lea es como no apretarlo.
+  const frames = async (count = 2) => {
+    const start = await page.evaluate(() => window.leogames.loop.frame);
+    await page.waitForFunction(([s, n]) => window.leogames.loop.frame >= s + n, [start, count], { timeout: 30000 });
+  };
   const tap = async (pad, button, holdMs = 100) => {
     await page.evaluate(([p, b]) => window.__button(p, b, true), [pad, button]);
     await wait(holdMs);
+    await frames();
     await page.evaluate(([p, b]) => window.__button(p, b, false), [pad, button]);
-    await wait(160);
+    await frames();
   };
   const scenes = () => page.evaluate(() => window.leogames.scene.getScenes(true).map((s) => s.sys.settings.key).join(','));
   const until = async (fn, timeoutMs, label) => {
@@ -78,14 +85,24 @@ export async function openPage(game, { touch = false } = {}) {
     }
     throw new Error(`No pasó a tiempo: ${label}`);
   };
+  // Mantiene apretados unos botones hasta que pase algo (salir con Y, empezar con A...).
+  const holdUntil = async (pad, buttons, fn, label, timeoutMs = 30000) => {
+    for (const b of buttons) await page.evaluate(([p, x]) => window.__button(p, x, true), [pad, b]);
+    try {
+      await until(fn, timeoutMs, label);
+    } finally {
+      for (const b of buttons) await page.evaluate(([p, x]) => window.__button(p, x, false), [pad, b]);
+      await frames();
+    }
+  };
+  const holdToMenu = (pad, buttons, label) => holdUntil(pad, buttons, () => window.leogames.scene.isActive('Menu'), label);
   // Une a N jugadores y pasa al menú (el Jugador 1 mantiene A).
   const joinPlayers = async (count) => {
     for (let i = 0; i < count; i += 1) {
       await page.evaluate((p) => window.__connect(p), i);
       await tap(i, BUTTON.A);
     }
-    await tap(0, BUTTON.A, 1300);
-    await until(() => window.leogames.scene.isActive('Menu'), 5000, 'llegar al menú');
+    await holdToMenu(0, [BUTTON.A], 'llegar al menú');
   };
   // Mueve la selección del menú hasta la tarjeta con ese título y entra.
   const openGameCard = async (title) => {
@@ -97,5 +114,5 @@ export async function openPage(game, { touch = false } = {}) {
     }
     await tap(0, BUTTON.A);
   };
-  return { page, context, errors, wait, tap, scenes, until, joinPlayers, openGameCard };
+  return { page, context, errors, wait, frames, tap, scenes, until, holdUntil, holdToMenu, joinPlayers, openGameCard };
 }

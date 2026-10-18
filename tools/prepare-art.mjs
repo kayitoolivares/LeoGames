@@ -1,28 +1,45 @@
-// Prepara el arte (hecho con Gemini u otra herramienta) para Bolitas Bros.
+// Prepara el arte (hecho con Gemini u otra herramienta) de los juegos.
 //
+// Bolitas Bros:
 //   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella | ninja | robot | dragon | fantasma
 //                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
 //   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
-//   arte/smash/fondos/<escenario>.png              castillo | nubes | barco
+//   arte/smash/fondos/<escenario>.png              castillo | nubes | barco | espacio | volcan
+// Los demás juegos (ver GAMES): arte/<juego>/<carpeta>/<nombre>.png
 //
-// A personajes y objetos les quita el fondo liso (o de cuadritos, como sale a veces de Gemini),
-// los recorta y los achica; a los fondos solo los achica. Todo queda en public/smash/ y la lista
-// de lo que hay en src/games/smash/art.json, para que el juego sepa qué cargar.
-// Se aceptan .png, .jpg y .webp.  Uso: npm run arte   (o: node tools/prepare-art.mjs <otra carpeta>)
+// A personajes, monstruos y objetos les quita el fondo liso (o de cuadritos, como sale a veces de Gemini),
+// los recorta y los achica; a los fondos solo los achica. Todo queda en public/<juego>/ y la lista
+// de lo que hay en src/games/<juego>/art.json, para que el juego sepa qué cargar.
+// Se aceptan .png, .jpg y .webp.  Uso: npm run arte   (o: node tools/prepare-art.mjs <otra carpeta arte>)
 import sharp from 'sharp';
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const SOURCE = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'arte', 'smash');
+const ART = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'arte');
+const SOURCE = path.join(ART, 'smash');
 const OUTPUT = path.join(ROOT, 'public', 'smash');
 const MANIFEST = path.join(ROOT, 'src', 'games', 'smash', 'art.json');
 
 const CHARACTERS = ['tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma'];
 const POSES = ['normal', 'golpe', 'salto', 'dolor'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
-const STAGES = ['castillo', 'nubes', 'barco'];
+const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan'];
+
+// Arte de los otros juegos: por carpeta, qué nombres valen y si es recorte (cutout) o fondo.
+const GAMES = {
+  brawl: {
+    monstruos: { kind: 'cutout', max: 256, names: ['slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava'] },
+    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan'] },
+  },
+  kart: {
+    objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja'] },
+  },
+  futbol: {
+    fondos: { kind: 'background', names: ['estadio'] },
+  },
+};
 const IMAGE = /\.(png|jpe?g|webp)$/i;
 // Tamaños pensados para la memoria del Xbox One S.
 const CHARACTER_MAX = 256;
@@ -31,12 +48,40 @@ const BACKGROUND_MAX = 1600;
 // Qué tan parecido al fondo tiene que ser un pixel para borrarlo (distancia de color, 0-441).
 const TOLERANCE = 48;
 
-async function files(folder) {
+async function files(folder, root = SOURCE) {
   try {
-    return (await readdir(path.join(SOURCE, folder))).filter((name) => IMAGE.test(name));
+    return (await readdir(path.join(root, folder))).filter((name) => IMAGE.test(name));
   } catch {
     return [];
   }
+}
+
+async function background(input, output) {
+  await sharp(input).resize({ width: BACKGROUND_MAX, withoutEnlargement: true }).jpeg({ quality: 82 }).toFile(output);
+}
+
+// Un juego "sencillo": cada carpeta es una lista de nombres permitidos (ver GAMES).
+async function prepareGame(game, folders, report) {
+  const source = path.join(ART, game);
+  const output = path.join(ROOT, 'public', game);
+  await rm(output, { recursive: true, force: true });
+  const manifest = {};
+  for (const [folder, spec] of Object.entries(folders)) {
+    await mkdir(path.join(output, folder), { recursive: true });
+    manifest[folder] = [];
+    for (const file of await files(folder, source)) {
+      const name = baseName(file);
+      if (!spec.names.includes(name)) {
+        report.push(`  ? ${game}/${folder}/${file}: el nombre debe ser ${spec.names.join(', ')}`);
+        continue;
+      }
+      if (spec.kind === 'cutout') await cutOut(path.join(source, folder, file), path.join(output, folder, `${name}.png`), spec.max);
+      else await background(path.join(source, folder, file), path.join(output, folder, `${name}.jpg`));
+      manifest[folder].push(name);
+      report.push(`  ✓ ${game}: ${folder}/${name}`);
+    }
+  }
+  await writeFile(path.join(ROOT, 'src', 'games', game, 'art.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
 function baseName(file) {
@@ -180,16 +225,14 @@ async function main() {
       report.push(`  ? fondos/${file}: el nombre debe ser ${STAGES.join(', ')}`);
       continue;
     }
-    await sharp(path.join(SOURCE, 'fondos', file))
-      .resize({ width: BACKGROUND_MAX, withoutEnlargement: true })
-      .jpeg({ quality: 82 })
-      .toFile(path.join(OUTPUT, 'fondos', `${stage}.jpg`));
+    await background(path.join(SOURCE, 'fondos', file), path.join(OUTPUT, 'fondos', `${stage}.jpg`));
     manifest.backgrounds.push(stage);
     report.push(`  ✓ fondo: ${stage}`);
   }
 
   await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log(report.length ? report.join('\n') : `No hay imágenes en ${path.relative(ROOT, SOURCE)}/`);
+  for (const [game, folders] of Object.entries(GAMES)) await prepareGame(game, folders, report);
+  console.log(report.length ? report.join('\n') : `No hay imágenes en ${path.relative(ROOT, ART)}/`);
 }
 
 main().catch((error) => {

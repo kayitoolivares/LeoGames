@@ -1,0 +1,16 @@
+{
+  "monstruos": [
+    "dragon-lava",
+    "gran-hongo",
+    "hongo",
+    "rey-slime",
+    "slime-grande",
+    "slime-lava",
+    "slime"
+  ],
+  "fondos": [
+    "bosque",
+    "pradera",
+    "volcan"
+  ]
+}
