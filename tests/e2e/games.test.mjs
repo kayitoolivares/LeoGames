@@ -39,6 +39,11 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
     assert.equal(await p.page.evaluate(() => document.querySelectorAll('body > div[style*="z-index"]').length), 0, `${title} dejó su capa 3D`);
   }
 
+  await p.openGameCard('Fútbol de bolitas');
+  await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir del fútbol');
+
   await p.openGameCard('Modo Bebé');
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Baby'), null, { timeout: ms(8000) });
   await p.holdToMenu(0, [BUTTON.LB, BUTTON.RB], 'salir del Modo Bebé');
@@ -329,6 +334,50 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   assert.equal(await p.page.evaluate(() => document.querySelectorAll('.kart-choose').length), 1);
   await p.holdToMenu(0, [BUTTON.Y], 'salir de Karts locos');
   assert.equal(await p.page.evaluate(() => document.querySelectorAll('body > div[style*="z-index"]').length), 0, 'quedó la capa 3D');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('fútbol de bolitas: meter gol, ganar el partido y revancha', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Fútbol de bolitas');
+  await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), 'empezar el partido');
+  // El bot juega con la misma lógica de la compu, pero a velocidad de jugador.
+  await p.page.evaluate(async () => {
+    const { cpuInput } = await import('/src/games/futbol/cpu.js');
+    window.__bot = setInterval(() => {
+      const s = window.leogames.scene.getScene('Futbol');
+      if (!s.sys.isActive()) return;
+      for (const f of s.team.filter((t) => !t.isCpu)) {
+        const pad = window.__pads[Number(f.deviceId.replace('pad', ''))];
+        const input = cpuInput(f, s.ball, false, { speed: 1, kickChance: 0.6, power: 1 });
+        pad.axes = [input.x, 0, 0, 0];
+        pad.buttons[2].pressed = input.kick && !pad.buttons[2].pressed;
+        pad.buttons[0].pressed = input.jump && !pad.buttons[0].pressed;
+      }
+    }, 50);
+  });
+  await p.until(() => window.leogames.scene.getScene('Futbol').score.some((goals) => goals > 0), ms(90000), 'que alguien meta gol');
+  await stopBot(p.page);
+  await p.page.evaluate(() => window.__release());
+  // Al último gol le pega el jugador: gana el partido.
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(10000), 'el saque');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Futbol');
+    s.score = [s.setup.goals - 1, 0];
+    s.ball.lastTouch = s.team.find((t) => !t.isCpu);
+    s.scoreGoal(0);
+  });
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'end', ms(10000), 'terminar el partido');
+  const earned = await stickers(p.page);
+  assert.ok(earned.includes('futbol-gol') && earned.includes('futbol-gana'), `calcomanías: ${earned}`);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phaseMs > 1300, ms(10000), 'que se pueda pedir revancha');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').score.join('-') === '0-0', ms(5000), 'revancha');
+  await p.holdToMenu(0, [BUTTON.Y], 'salir del fútbol');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

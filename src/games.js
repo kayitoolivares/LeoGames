@@ -5,6 +5,7 @@ export const GAMES = [
   { title: 'Bolitas Bros', emoji: '🥊', description: 'Sácalos de la pantalla\n¡estilo Smash!', scene: 'SmashSelect' },
   { title: 'Karts locos', emoji: '🏁', description: 'Nitro, cajitas\ny poderes', scene: 'Kart' },
   { title: 'Carreras', emoji: '🏎️', description: 'Vista desde arriba,\n¡a toda velocidad!', scene: 'Race' },
+  { title: 'Fútbol de bolitas', emoji: '⚽', description: 'Azules contra Rojos\n¡a meter goles!', scene: 'Futbol' },
   { title: 'Halcón de Acero', emoji: '✈️', description: 'Combate aéreo 3D\n(se abre aparte)', url: 'https://hda.grupomegarey.mx/' },
   { title: 'Modo Bebé', emoji: '👶', description: 'Aprieta botones:\ncolores y sonidos', scene: 'Baby' },
   { title: 'Mis premios', emoji: '🏆', description: 'Tus calcomanías\ny lo que desbloqueas', scene: 'Premios', badge: 'Ver' },

@@ -53,6 +53,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   Pistas: **Pradera** y **Montaña nevada** (se desbloquea al ganar una carrera; tiene nieve cayendo, monos de nieve
   y una curva en "S"). Al terminar, **B** regresa a escoger pista.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
+- **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,
+  **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),
+  **mantén Y** = salir. Antes del partido el Jugador 1 escoge: **todos contra la compu** o **unos contra otros**
+  (la compu completa los equipos), a cuántos goles (3, 5 o 7) y el nivel de la compu (fácil, normal, difícil).
 - **Halcón de Acero**: abre https://hda.grupomegarey.mx (es otro proyecto; para volver, B en modo navegador).
 - **Prueba de controles**: muestra lo que el navegador ve de cada control, botón por botón.
 
@@ -114,9 +118,10 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/shared/touch.js`: controles táctiles para el celular (cuentan como un control en `controls.js`).
 - `src/shared/clock.js`: tiempo real entre cuadros (para que nada vaya en cámara lenta si baja el fps).
 - `src/shared/sound.js`: efectos de sonido sintetizados.
-- `tools/prepare-art.mjs`: prepara el arte de Bolitas Bros (`npm run arte`).
+- `tools/prepare-art.mjs`: prepara el arte de Gemini de todos los juegos (`npm run arte`).
 - `src/games/brawl/`: Pelea en equipo (Phaser).
 - `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
+- `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha, balón, jugadores y la compu (`cpu.js`).
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.
