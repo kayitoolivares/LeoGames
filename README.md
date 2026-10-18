@@ -93,6 +93,12 @@ se juega desde GitHub Pages:
 4. Abre la dirección en **Edge**, mantén **≡ (Menú)** → **"Use game controls"** → **A**.
 5. Si algo falla, el menú tiene **Prueba de controles** para ver qué detecta el navegador.
 
+## Pruebas
+
+`npm test` levanta el juego y corre bots que lo juegan con controles simulados (menú, cada juego,
+pantalla táctil, música/voz/premios). En la compu usan el Edge instalado; en GitHub Actions corren
+antes de cada publicación, y si alguna falla no se publica.
+
 ## Estructura
 
 - `src/shared/controls.js`: lee controles y teclado. No depende de Phaser (para reutilizarlo con Three.js).

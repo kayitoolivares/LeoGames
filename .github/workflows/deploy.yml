@@ -1,4 +1,5 @@
-# Publica el juego en GitHub Pages cada vez que se sube código a main o master.
+# Publica el juego en GitHub Pages cada vez que se sube código a main o master,
+# pero solo si pasan las pruebas (bots que juegan cada juego con controles simulados).
 # Requiere: Settings → Pages → Source: "GitHub Actions" en el repo de GitHub.
 name: Publicar en GitHub Pages
 
@@ -17,7 +18,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - run: npm test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
