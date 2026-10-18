@@ -74,6 +74,9 @@ function melody(notes, { ms = 120, gap = 80, type = 'square', volume = 0.12 } = 
   notes.forEach((freq, i) => tone({ freq, ms, type, volume, delay: i * gap }));
 }
 
+// Escala pentatónica de Do: cualquier combinación de estas notas suena bonito (Modo Bebé).
+const PENTATONIC = [262, 294, 330, 392, 440, 523, 587, 659, 784, 880, 1047];
+
 export const sfx = {
   select: () => tone({ freq: 700, ms: 50, volume: 0.08 }),
   confirm: () => melody([600, 900], { ms: 90, gap: 70, volume: 0.1 }),
@@ -103,4 +106,12 @@ export const sfx = {
     tone({ freq: 620, to: 90, ms: 650, type: 'sawtooth', volume: 0.18 });
   },
   win: () => melody([523, 659, 784, 659, 784, 1047], { ms: 170, gap: 150, volume: 0.13 }),
+  // Modo Bebé: sonidos suaves (triángulo y seno, nada chillón).
+  note: (step) => {
+    const freq = PENTATONIC[Math.min(Math.max(step, 0), PENTATONIC.length - 1)];
+    tone({ freq, ms: 500, type: 'triangle', volume: 0.25 });
+    tone({ freq: freq * 2, ms: 260, type: 'sine', volume: 0.06 });
+  },
+  boing: () => tone({ freq: 200, to: 620, ms: 240, type: 'sine', volume: 0.22 }),
+  sparkle: () => melody([1047, 1319, 1568, 2093], { ms: 160, gap: 60, type: 'sine', volume: 0.09 }),
 };

@@ -91,7 +91,11 @@ export class Blob extends Phaser.GameObjects.Container {
     });
   }
 
+  // Como hop(): si ya se está aplastando no empieza otro, porque uno encima del otro
+  // la dejaba aplastada para siempre.
   squish() {
+    if (this.squishing) return;
+    this.squishing = true;
     this.scene.tweens.add({
       targets: this.figure,
       scaleX: 1.2,
@@ -99,6 +103,9 @@ export class Blob extends Phaser.GameObjects.Container {
       duration: 90,
       yoyo: true,
       ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.squishing = false;
+      },
     });
   }
 }

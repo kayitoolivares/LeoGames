@@ -6,6 +6,6 @@ export const GAMES = [
   { title: 'Karts locos', emoji: '🏁', description: 'Nitro, cajitas\ny poderes', scene: 'Kart' },
   { title: 'Carreras', emoji: '🏎️', description: 'Vista desde arriba,\n¡a toda velocidad!', scene: 'Race' },
   { title: 'Halcón de Acero', emoji: '✈️', description: 'Combate aéreo 3D\n(se abre aparte)', url: 'https://hda.grupomegarey.mx/' },
-  { title: 'Modo Bebé', emoji: '👶', description: 'Aprieta botones:\ncolores y sonidos', scene: null },
+  { title: 'Modo Bebé', emoji: '👶', description: 'Aprieta botones:\ncolores y sonidos', scene: 'Baby' },
   { title: 'Prueba de controles', emoji: '🔧', description: 'Revisa que se vean\ntodos los controles', scene: 'PadTest' },
 ];
