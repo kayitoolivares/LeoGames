@@ -3,6 +3,7 @@ import { controls, readGamepads } from '../../shared/controls.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { audioReady, sfx } from '../../shared/sound.js';
+import { touchPad } from '../../shared/touch.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
@@ -83,6 +84,9 @@ export class BabyScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer) => {
       this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), { x: pointer.worldX, y: pointer.worldY });
     });
+    // En el celular toda la pantalla es para tocar: de los botones táctiles solo quedan LB y RB (para salir).
+    touchPad.setMode('bumpers');
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => touchPad.setMode('full'));
   }
 
   createHint(x, y) {

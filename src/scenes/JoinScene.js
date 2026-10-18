@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { controls } from '../shared/controls.js';
 import { frameDelta } from '../shared/clock.js';
 import { audioReady, sfx } from '../shared/sound.js';
+import { touchEnabled } from '../shared/touch.js';
 import { players, MAX_PLAYERS } from '../shared/players.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
@@ -186,10 +187,12 @@ export class JoinScene extends Phaser.Scene {
 
   updatePadInfo() {
     const count = controls.gamepadCount();
-    const text =
-      count === 0
-        ? '¿No aparece tu control? Presiona cualquier botón.  En Xbox: mantén ≡ (Menú) → «Use game controls» → A'
-        : `El navegador ve ${count} ${count === 1 ? 'control' : 'controles'}`;
+    let text = `El navegador ve ${count} ${count === 1 ? 'control' : 'controles'}`;
+    if (count === 0) {
+      text = touchEnabled
+        ? 'En el cel: toca el botón A de la pantalla para unirte (o conecta un control por Bluetooth)'
+        : '¿No aparece tu control? Presiona cualquier botón.  En Xbox: mantén ≡ (Menú) → «Use game controls» → A';
+    }
     if (this.padInfo.text !== text) this.padInfo.setText(text);
     this.soundHint.setVisible(!audioReady());
   }

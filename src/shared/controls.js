@@ -1,6 +1,7 @@
-// Lectura de controles (gamepads de Xbox + teclado) para todos los juegos de LeoGames.
+// Lectura de controles (gamepads de Xbox, teclado y pantalla táctil) para todos los juegos de LeoGames.
 // No depende de Phaser, así los juegos en Three.js pueden usar exactamente lo mismo.
 // Hay que llamar update() una vez por cuadro, antes de leer cualquier control.
+import { touchEnabled, touchPad } from './touch.js';
 
 // Índices del mapeo "standard" del Gamepad API.
 // Vista (8) y Menú (9) no se usan a propósito: en Edge del Xbox no se detectan bien
@@ -50,6 +51,8 @@ export const CONTROL_NAMES = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y',
 const STICK_ON = 0.5;
 const STICK_OFF = 0.3;
 const DEADZONE = 0.15;
+// Con un control conectado, los botones de la pantalla se esconden si nadie la toca en este tiempo.
+const HIDE_TOUCH_AFTER_MS = 8000;
 
 function emptyState() {
   return Object.fromEntries(CONTROL_NAMES.map((name) => [name, false]));
@@ -75,6 +78,7 @@ class Controls {
     for (const [id, kb] of Object.entries(KEYBOARDS)) {
       this.devices.set(id, this.createDevice(id, kb.label, 'keyboard'));
     }
+    if (touchEnabled) this.devices.set('touch', this.createDevice('touch', 'Pantalla', 'touch'));
 
     window.addEventListener('keydown', (event) => {
       if (this.mappedKeys.has(event.code)) event.preventDefault();
@@ -133,18 +137,35 @@ class Controls {
         device.stick = { x: 0, y: 0 };
       }
     }
+
+    if (touchEnabled) this.readTouch(seen.size > 0);
+  }
+
+  // La pantalla táctil es un control más: stick analógico y botones A B X Y LB RB.
+  readTouch(gamepadInUse) {
+    const device = this.devices.get('touch');
+    const touch = touchPad.read();
+    device.prev = device.state;
+    device.stick = { x: applyDeadzone(touch.x), y: applyDeadzone(touch.y) };
+    const dirs = this.updateStickDirs(device, device.stick.x, device.stick.y);
+    device.state = { ...emptyState(), ...touch.buttons, ...dirs };
+    touchPad.setHidden(gamepadInUse && touchPad.msSinceTouch() > HIDE_TOUCH_AFTER_MS);
+  }
+
+  updateStickDirs(device, x, y) {
+    const dirs = device.stickDirs;
+    dirs.left = dirs.left ? x < -STICK_OFF : x < -STICK_ON;
+    dirs.right = dirs.right ? x > STICK_OFF : x > STICK_ON;
+    dirs.up = dirs.up ? y < -STICK_OFF : y < -STICK_ON;
+    dirs.down = dirs.down ? y > STICK_OFF : y > STICK_ON;
+    return { ...dirs };
   }
 
   readPad(pad, device) {
     const pressed = (index) => Boolean(pad.buttons[index]?.pressed);
     const x = applyDeadzone(pad.axes[0] ?? 0);
     const y = applyDeadzone(pad.axes[1] ?? 0);
-
-    const dirs = device.stickDirs;
-    dirs.left = dirs.left ? x < -STICK_OFF : x < -STICK_ON;
-    dirs.right = dirs.right ? x > STICK_OFF : x > STICK_ON;
-    dirs.up = dirs.up ? y < -STICK_OFF : y < -STICK_ON;
-    dirs.down = dirs.down ? y > STICK_OFF : y > STICK_ON;
+    const dirs = this.updateStickDirs(device, x, y);
 
     const state = emptyState();
     for (const [name, index] of Object.entries(PAD_BUTTONS)) state[name] = pressed(index);

@@ -52,6 +52,17 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 Los juegos 3D usan [Three.js](https://threejs.org) y se descargan hasta que alguien entra a ellos.
 
+## Jugar en el celular
+
+- **Con un control por Bluetooth:** se conecta al cel y funciona igual que en el Xbox.
+- **Con la pantalla:** en pantallas táctiles aparece un stick (donde pongas el dedo, del lado izquierdo)
+  y los botones A B X Y con LB y RB a la derecha. Cuenta como un control más ("Pantalla"), así que
+  sirve en todos los juegos. En el Modo Bebé solo quedan LB y RB (para salir); lo demás es para tocar.
+  Si hay un control conectado y nadie toca la pantalla, los botones se esconden solos.
+- Se juega con el teléfono **horizontal**. En Android, al primer toque se pone en pantalla completa;
+  en iPhone conviene **Compartir → Agregar a pantalla de inicio** para abrirlo como app, sin barras.
+- Para probar los botones táctiles en la compu: agrega `?tactil` a la dirección.
+
 ## Sonido
 
 Los sonidos se generan con el navegador (no hay archivos de audio). El navegador no deja sonar nada
@@ -88,6 +99,7 @@ se juega desde GitHub Pages:
 - `src/shared/players.js`: quién juega, con qué control y de qué color.
 - `src/games.js`: catálogo de juegos del menú.
 - `src/scenes/`: pantallas (unirse, menú, prueba de controles).
+- `src/shared/touch.js`: controles táctiles para el celular (cuentan como un control en `controls.js`).
 - `src/shared/clock.js`: tiempo real entre cuadros (para que nada vaya en cámara lenta si baja el fps).
 - `src/shared/sound.js`: efectos de sonido sintetizados.
 - `tools/prepare-art.mjs`: prepara el arte de Bolitas Bros (`npm run arte`).
