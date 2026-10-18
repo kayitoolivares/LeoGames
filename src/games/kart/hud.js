@@ -15,6 +15,7 @@ const CSS = `
   width: calc(86px * var(--s)); height: calc(86px * var(--s)); border-radius: calc(18px * var(--s));
   background: rgba(27, 21, 48, 0.6); border: calc(4px * var(--s)) solid #fff;
   display: flex; align-items: center; justify-content: center; font-size: calc(54px * var(--s)); }
+.kart-panel .item img { width: 82%; height: 82%; object-fit: contain; }
 .kart-panel .item.rolling { border-color: #ffc93c; }
 .kart-panel .nitro { position: absolute; bottom: calc(20px * var(--s)); right: calc(20px * var(--s));
   font-size: calc(36px * var(--s)); }
@@ -107,14 +108,16 @@ export class KartHud {
     if (this.exitBar.style.width !== width) this.exitBar.style.width = width;
   }
 
-  showResults(rows) {
+  // `canChoose`: hay más de una pista abierta, así que B regresa a escogerla.
+  showResults(rows, canChoose = false) {
     const list = rows
       .map(
         (row, i) => `<div class="row"><span>${MEDALS[i] ?? `${i + 1}°`}</span>
           <span class="dot" style="background:${row.color}"></span><span>${row.label}</span></div>`,
       )
       .join('');
-    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera  ·  Mantén Y = salir</p>`;
+    const choose = canChoose ? '  ·  B = cambiar pista' : '';
+    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera${choose}  ·  Mantén Y = salir</p>`;
     this.results.hidden = false;
   }
 

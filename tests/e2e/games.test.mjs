@@ -260,12 +260,9 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
   await p.context.close();
 });
 
-test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { timeout: ms(180000) }, async () => {
-  const p = await openPage(game);
-  await p.joinPlayers(2);
-  await p.openGameCard('Karts locos');
-  await p.page.waitForFunction(() => Boolean(window.leogames.scene.getScene('Kart')?.game3d), null, { timeout: ms(30000) });
-  await p.page.evaluate(() => {
+// Bot de karts: cada jugador apunta a un punto de la pista más adelante, acelera y lanza lo que agarre.
+function startKartBot(page) {
+  return page.evaluate(() => {
     window.__boxes = 0;
     window.__bot = setInterval(() => {
       const kart = window.leogames.scene.getScene('Kart').game3d;
@@ -283,6 +280,16 @@ test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { 
       }
     }, 50);
   });
+}
+
+test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Karts locos');
+  await p.page.waitForFunction(() => Boolean(window.leogames.scene.getScene('Kart')?.game3d), null, { timeout: ms(30000) });
+  // Sin calcomanías no hay pista que escoger: arranca en la Pradera.
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'pradera');
+  await startKartBot(p.page);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans.every((r) => r.lap >= 1), ms(150000), 'completar una vuelta');
   assert.ok((await p.page.evaluate(() => window.__boxes)) > 0, 'nadie agarró cajitas');
   await p.page.evaluate(() => {
@@ -294,6 +301,34 @@ test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { 
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(5000), 'otra carrera');
   await p.holdToMenu(0, [BUTTON.Y], 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver las pistas');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.trackKey === 'nieve', ms(10000), 'entrar a la nieve');
+  assert.ok(await p.page.evaluate(() => Boolean(window.leogames.scene.getScene('Kart').game3d.snow)), 'no está nevando');
+  await startKartBot(p.page);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].progress > 0.3, ms(120000), 'avanzar en la nieve');
+  // Al terminar, B regresa a escoger pista (el juego se abre otra vez desde cero).
+  await p.page.evaluate(() => {
+    clearInterval(window.__bot);
+    window.__release();
+    window.leogames.scene.getScene('Kart').game3d.showResults();
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda cambiar de pista');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'regresar a escoger pista');
+  assert.equal(await p.page.evaluate(() => document.querySelectorAll('.kart-choose').length), 1);
+  await p.holdToMenu(0, [BUTTON.Y], 'salir de Karts locos');
+  assert.equal(await p.page.evaluate(() => document.querySelectorAll('body > div[style*="z-index"]').length), 0, 'quedó la capa 3D');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

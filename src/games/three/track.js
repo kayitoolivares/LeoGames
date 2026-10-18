@@ -23,15 +23,18 @@ const CONTROL_POINTS = [
 // La pista como una lista de puntos muy juntos (muestras). Con ellos se dibuja el camino
 // y se sabe qué tan avanzado va cada carro (el índice de la muestra más cercana).
 // `scale` la hace más grande y `barriers` le pone llantas a los lados (para los karts).
+// `points` cambia el trazo, `ground` el color del piso y `snowy` les pone nieve a los árboles.
 export class Track {
-  constructor({ roadWidth = 14, scale = 1, barriers = false } = {}) {
+  constructor({ roadWidth = 14, scale = 1, barriers = false, points = CONTROL_POINTS, ground = 0x6abf4b, snowy = false } = {}) {
     this.roadWidth = roadWidth;
     this.scale = scale;
     this.barriers = barriers;
+    this.ground = ground;
+    this.snowy = snowy;
     // Distancia lateral máxima antes de chocar con las llantas.
     this.wallDistance = roadWidth / 2 + CURB_WIDTH + 1.2;
     const curve = new THREE.CatmullRomCurve3(
-      CONTROL_POINTS.map(([x, z]) => new THREE.Vector3(x * scale, 0, z * scale)),
+      points.map(([x, z]) => new THREE.Vector3(x * scale, 0, z * scale)),
       true,
       'centripetal',
     );
@@ -87,7 +90,7 @@ export class Track {
   addTo(scene) {
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(700 * this.scale, 700 * this.scale),
-      new THREE.MeshLambertMaterial({ color: 0x6abf4b }),
+      new THREE.MeshLambertMaterial({ color: this.ground }),
     );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
@@ -175,7 +178,7 @@ export class Track {
       spots.length,
     );
     const crowns = new THREE.InstancedMesh(new THREE.ConeGeometry(2.2, 5, 7), new THREE.MeshLambertMaterial(), spots.length);
-    const greens = [0x2e8b57, 0x3fa34d, 0x267a46];
+    const greens = this.snowy ? [0x1f5a48, 0x26664f, 0x1a4d3e] : [0x2e8b57, 0x3fa34d, 0x267a46];
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
     spots.forEach(({ x, z, scale }, i) => {
@@ -185,7 +188,14 @@ export class Track {
       crowns.setMatrixAt(i, matrix);
       crowns.setColorAt(i, color.setHex(greens[i % greens.length]));
     });
-    return [trunks, crowns];
+    if (!this.snowy) return [trunks, crowns];
+    // Gorrito de nieve en la punta de cada árbol.
+    const caps = new THREE.InstancedMesh(new THREE.ConeGeometry(1.25, 2.3, 7), new THREE.MeshLambertMaterial({ color: 0xffffff }), spots.length);
+    spots.forEach(({ x, z, scale }, i) => {
+      matrix.makeScale(scale, scale, scale).setPosition(x, 2 * scale + 4.3 * scale, z);
+      caps.setMatrixAt(i, matrix);
+    });
+    return [trunks, crowns, caps];
   }
 
   // Llantas rojas y blancas a ambos lados: no dejan que los karts se salgan.
@@ -202,7 +212,7 @@ export class Track {
         dummy.position.set(spot.x, 0.55, spot.z);
         dummy.updateMatrix();
         tires.setMatrixAt(n, dummy.matrix);
-        tires.setColorAt(n, color.setHex((i / step) % 2 === 0 ? 0xe53935 : 0xffffff));
+        tires.setColorAt(n, color.setHex((i / step) % 2 === 0 ? 0xe53935 : this.snowy ? 0x3fa7ff : 0xffffff));
         n += 1;
       }
     }

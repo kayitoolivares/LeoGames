@@ -2,13 +2,17 @@ import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
-import { rewards } from '../../shared/rewards.js';
+import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
 import { Racer, RACER_RADIUS, NITRO_CHARGES, SHIELD_MS } from './Racer.js';
 import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
+import manifest from './art.json';
+import { TrackChooser } from './chooser.js';
+import { Snowfall, addSnowmen } from './scenery.js';
+import { TRACKS, TRACK_KEYS } from './tracks.js';
 
 const LAPS = 3;
 const TOTAL_RACERS = 6;
@@ -23,9 +27,19 @@ const EXIT_HOLD_MS = 1200;
 const CPU_LOOKAHEAD = 12;
 const CPU_GAS = 0.86;
 const CPU_LANES = [-5, 5, -2, 2, -7, 7];
-const SKY = 0x8fd3ff;
 const LABEL_PX = 28;
-const ITEM_EMOJIS = Object.values(ITEMS).map((item) => item.emoji);
+// Íconos de los poderes hechos con Gemini (npm run arte); si falta alguno se usa su emoji.
+const ITEM_ART = { rocket: 'cohete', banana: 'platano', turbo: 'turbo', shield: 'burbuja' };
+const ITEM_ICONS = Object.fromEntries(
+  Object.entries(ITEMS).map(([key, item]) => [
+    key,
+    manifest.objetos.includes(ITEM_ART[key]) ? `<img src="kart/objetos/${ITEM_ART[key]}.png" alt="">` : item.emoji,
+  ]),
+);
+const ROLL_ICONS = Object.values(ITEM_ICONS);
+
+// La última pista que se escogió, para que salga seleccionada la próxima vez.
+let lastTrack = 'pradera';
 
 // Cómo se reparte la pantalla: 1 jugador = completa, 2 = arriba/abajo,
 // 3 o 4 = cuatro cuadros (con 3, el cuarto muestra el mapa).
@@ -49,25 +63,70 @@ function layoutViews(humans) {
 // "Karts locos": carreras con cámara detrás del carro (pantalla dividida para cada jugador),
 // nitro y cajitas con poderes para lanzar a los demás, al estilo Mario Kart / Crash Team Racing.
 export class KartGame {
-  constructor(parent, { onExit }) {
+  constructor(parent, { onExit, onRestart }) {
     this.onExit = onExit;
+    this.onRestart = onRestart;
     this.exitMs = 0;
     this.exited = false;
     this.view = createStage(parent);
     this.renderer = this.view.renderer;
-
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(SKY);
-    this.fog = new THREE.Fog(SKY, 140, 420);
+    this.deviceIds = players.sorted().map((player) => player.deviceId);
+    for (const name of manifest.objetos) new Image().src = `kart/objetos/${name}.png`;
+
+    // Si ya se ganó otra pista se escoge; si no, directo a la de siempre.
+    this.openTracks = TRACK_KEYS.filter((key) => rewards.unlocked(TRACKS[key].unlock));
+    if (this.openTracks.length > 1) this.showChooser();
+    else this.build('pradera');
+  }
+
+  showChooser() {
+    this.phase = 'choose';
+    const cards = TRACK_KEYS.map((key) => ({
+      ...TRACKS[key],
+      open: this.openTracks.includes(key),
+      lock: TRACKS[key].unlock ? UNLOCKS[TRACKS[key].unlock].label : '',
+    }));
+    this.chooser = new TrackChooser(this.view.stage, cards, Math.max(0, TRACK_KEYS.indexOf(lastTrack)));
+  }
+
+  updateChooser() {
+    const id = players.host()?.deviceId;
+    if (!id) return;
+    const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
+    if (step !== 0) this.chooser.move(step);
+    if (controls.justPressed(id, 'a')) {
+      const key = TRACK_KEYS[this.chooser.selected];
+      if (!this.openTracks.includes(key)) return;
+      this.chooser.destroy();
+      this.chooser = null;
+      this.build(key);
+    } else if (controls.justPressed(id, 'b') && !this.exited) {
+      this.exited = true;
+      this.onExit();
+    }
+  }
+
+  // Arma la pista escogida con su cielo, su piso y sus adornos, y empieza la carrera.
+  build(key) {
+    lastTrack = key;
+    const look = TRACKS[key];
+    this.trackKey = key;
+    this.scene.background = new THREE.Color(look.sky);
+    this.fog = new THREE.Fog(look.sky, 140, 420);
     this.scene.fog = this.fog;
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x5a7a3a, 1.2));
+    this.scene.add(new THREE.HemisphereLight(0xffffff, look.groundLight, 1.2));
     const sun = new THREE.DirectionalLight(0xffffff, 1.6);
     sun.position.set(50, 100, 30);
     this.scene.add(sun);
 
-    this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true });
+    this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy });
     this.track.addTo(this.scene);
-    this.addMountains();
+    this.addMountains(look.mountains);
+    if (look.snowy) {
+      addSnowmen(this.scene, this.track);
+      this.snow = new Snowfall(this.scene, this.track);
+    }
     this.boxes = new ItemBoxes(this.scene, this.track);
     this.projectiles = new Projectiles(this.scene);
     this.createRacers();
@@ -77,9 +136,9 @@ export class KartGame {
   }
 
   // Montañas a lo lejos para que el horizonte no se vea vacío.
-  addMountains() {
+  addMountains(color) {
     const geometry = new THREE.ConeGeometry(1, 1, 6);
-    const material = new THREE.MeshLambertMaterial({ color: 0x8a86b8 });
+    const material = new THREE.MeshLambertMaterial({ color });
     const count = 16;
     const mountains = new THREE.InstancedMesh(geometry, material, count);
     const matrix = new THREE.Matrix4();
@@ -165,6 +224,11 @@ export class KartGame {
     const now = performance.now();
     this.phaseMs += dtMs;
     this.updateExit(dtMs);
+    if (this.phase === 'choose') {
+      this.updateChooser();
+      return;
+    }
+    this.snow?.update(dtMs / 1000);
 
     if (this.phase === 'countdown') this.updateCountdown();
     else if (this.phase === 'race') this.updateRace(dtMs, now);
@@ -372,13 +436,17 @@ export class KartGame {
     this.phaseMs = 0;
     this.hud.setCenter('');
     const ranking = this.ranking();
-    this.hud.showResults(ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color) })));
+    this.hud.showResults(
+      ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color) })),
+      this.openTracks.length > 1,
+    );
     say(`¡Ganó ${ranking[0].label}!`);
   }
 
   updateResults() {
     if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
     if (this.humans.some((racer) => controls.justPressed(racer.deviceId, 'a'))) this.startRace();
+    else if (this.openTracks.length > 1 && this.humans.some((racer) => controls.justPressed(racer.deviceId, 'b'))) this.onRestart?.();
   }
 
   updatePanels(now) {
@@ -387,7 +455,7 @@ export class KartGame {
       if (view.kind !== 'player') return;
       const racer = view.racer;
       const rolling = racer.rollMs > 0;
-      const item = rolling ? ITEM_EMOJIS[Math.floor(now / 90) % ITEM_EMOJIS.length] : racer.item ? ITEMS[racer.item].emoji : '';
+      const item = rolling ? ROLL_ICONS[Math.floor(now / 90) % ROLL_ICONS.length] : racer.item ? ITEM_ICONS[racer.item] : '';
       const message = racer.messageMs > 0 ? racer.message : racer.wrongWayMs > WRONG_WAY_MS ? '¡Vas al revés! ↩️' : '';
       this.hud.setPanel(i, {
         pos: `${ranking.indexOf(racer) + 1}°`,
@@ -449,9 +517,9 @@ export class KartGame {
   }
 
   updateExit(dtMs) {
-    const holding = this.humans.some((racer) => controls.isDown(racer.deviceId, 'y'));
+    const holding = this.deviceIds.some((id) => controls.isDown(id, 'y'));
     this.exitMs = holding ? this.exitMs + dtMs : 0;
-    this.hud.setExitProgress(Math.min(1, this.exitMs / EXIT_HOLD_MS));
+    (this.hud ?? this.chooser)?.setExitProgress(Math.min(1, this.exitMs / EXIT_HOLD_MS));
     if (this.exitMs >= EXIT_HOLD_MS && !this.exited) {
       this.exited = true;
       this.onExit();
@@ -459,8 +527,9 @@ export class KartGame {
   }
 
   destroy() {
-    this.projectiles.dispose();
-    this.hud.destroy();
+    this.projectiles?.dispose();
+    this.hud?.destroy();
+    this.chooser?.destroy();
     this.view.destroy(this.scene);
   }
 }

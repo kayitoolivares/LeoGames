@@ -6,8 +6,8 @@ import { TEXT, textStyle } from '../ui/style.js';
 // Los juegos en 3D (Three.js) se abren encima de Phaser: esta escena descarga el juego,
 // le pasa cada cuadro y espera a que termine. Three.js se descarga hasta que alguien entra,
 // para que el menú cargue rápido en el Xbox.
-// `loadGame` devuelve (con import()) la clase del juego; esa clase recibe (contenedor, { onExit })
-// y tiene update(deltaMs) y destroy().
+// `loadGame` devuelve (con import()) la clase del juego; esa clase recibe (contenedor, { onExit, onRestart })
+// y tiene update(deltaMs) y destroy(). `onRestart` vuelve a abrir el juego desde cero (para escoger otra pista).
 export class ThreeGameScene extends Phaser.Scene {
   constructor(key, loadGame) {
     super(key);
@@ -31,7 +31,7 @@ export class ThreeGameScene extends Phaser.Scene {
       .then((Game) => {
         if (this.closed) return;
         this.game.canvas.style.visibility = 'hidden';
-        this.game3d = new Game(document.body, { onExit: () => this.exit() });
+        this.game3d = new Game(document.body, { onExit: () => this.exit(), onRestart: () => this.restart() });
       })
       .catch((error) => {
         console.error(error);
@@ -46,6 +46,12 @@ export class ThreeGameScene extends Phaser.Scene {
       return;
     }
     if (this.failed && controls.connectedDevices().some((device) => controls.justPressed(device.id, 'a'))) this.exit();
+  }
+
+  restart() {
+    if (this.closed) return;
+    this.closed = true;
+    this.scene.restart(this.returnData);
   }
 
   exit() {
