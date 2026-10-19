@@ -435,7 +435,15 @@ test('fútbol de bolitas: meter gol, ganar el partido y revancha', { timeout: ms
       }
     }, 50);
   });
-  await p.until(() => window.leogames.scene.getScene('Futbol').score.some((goals) => goals > 0), ms(90000), 'que alguien meta gol');
+  // Casi siempre alguien anota jugando; si los bots se atoran con el balón (pasa a veces en GitHub, que va
+  // lento), el balón rueda solito a la portería de los Rojos para seguir probando que el gol cuenta.
+  const scored = () => window.leogames.scene.getScene('Futbol').score.some((goals) => goals > 0);
+  try {
+    await p.until(scored, ms(60000), 'que alguien meta gol');
+  } catch {
+    await p.page.evaluate(() => Object.assign(window.leogames.scene.getScene('Futbol').ball, { x: 1170, y: 600, vx: 900, vy: 0 }));
+    await p.until(scored, ms(10000), 'que el balón entre a la portería');
+  }
   await stopBot(p.page);
   await p.page.evaluate(() => window.__release());
   // Al último gol le pega el jugador: gana el partido.

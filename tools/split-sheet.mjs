@@ -84,11 +84,13 @@ for (const pose of [...poses].sort((a, b) => a.top - b.top)) {
 const ordered = rows.flatMap((row) => row.poses.sort((a, b) => a.left - b.left));
 console.log(`  ${rows.length} fila(s): ${rows.map((row) => row.poses.length).join(' + ')} poses`);
 
-// Las piezas sueltas (estrellitas de mareo, gotas, chispas) se le dan a la pose más cercana; el ruido se ignora.
+// Las piezas sueltas (estrellitas de mareo, gotas, chispas) se le dan a la pose más cercana; el ruido se ignora,
+// y también las piezas sueltas grandes (copias borrosas o estelas que a veces dibuja Gemini).
 const owner = new Map(ordered.map((pose, k) => [pose.id, k]));
 const boxes = ordered.map((pose) => ({ ...pose }));
+const junk = sizes[0] * 0.12;
 for (const piece of pieces) {
-  if (owner.has(piece.id) || piece.size < NOISE) continue;
+  if (owner.has(piece.id) || piece.size < NOISE || piece.size > junk) continue;
   const cx = (piece.left + piece.right) / 2;
   const cy = (piece.top + piece.bottom) / 2;
   const distance = (box) => Math.hypot(Math.max(box.left - cx, 0, cx - box.right), Math.max(box.top - cy, 0, cy - box.bottom));

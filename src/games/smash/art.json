@@ -1,9 +1,13 @@
 {
   "characters": {
     "abeja": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "abeja_super": [
@@ -13,15 +17,45 @@
       "salto"
     ],
     "astronauta": [
+      "cubrirse",
+      "dolor",
+      "especial",
+      "gana",
+      "golpe",
+      "normal",
+      "patada",
+      "salto"
+    ],
+    "astronauta_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "bombero": [
+      "cubrirse",
+      "dolor",
+      "especial",
+      "gana",
+      "golpe",
+      "normal",
+      "patada",
+      "salto"
+    ],
+    "bombero_super": [
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "dino": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "dino_super": [
@@ -31,9 +65,13 @@
       "salto"
     ],
     "dragon": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "dragon_super": [
@@ -43,9 +81,13 @@
       "salto"
     ],
     "estrella": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "estrella_super": [
@@ -55,9 +97,13 @@
       "salto"
     ],
     "fantasma": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "fantasma_super": [
@@ -67,9 +113,13 @@
       "salto"
     ],
     "gatito": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "gatito_super": [
@@ -79,14 +129,29 @@
       "salto"
     ],
     "hada": [
+      "cubrirse",
+      "dolor",
+      "especial",
+      "gana",
+      "golpe",
+      "normal",
+      "patada",
+      "salto"
+    ],
+    "hada_super": [
+      "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "ninja": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "ninja_super": [
@@ -96,9 +161,13 @@
       "salto"
     ],
     "pinguino": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "pinguino_super": [
@@ -108,9 +177,13 @@
       "salto"
     ],
     "pirata": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "pirata_super": [
@@ -120,9 +193,13 @@
       "salto"
     ],
     "rayo": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "rayo_super": [
@@ -132,9 +209,13 @@
       "salto"
     ],
     "resorte": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "resorte_super": [
@@ -144,9 +225,13 @@
       "salto"
     ],
     "robot": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "robot_super": [
@@ -156,9 +241,13 @@
       "salto"
     ],
     "tanque": [
+      "cubrirse",
       "dolor",
+      "especial",
+      "gana",
       "golpe",
       "normal",
+      "patada",
       "salto"
     ],
     "tanque_super": [
