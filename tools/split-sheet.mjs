@@ -1,0 +1,120 @@
+// Parte una "hoja" de Gemini con varias poses (en filas, sobre fondo liso verde o magenta) en imágenes
+// sueltas que luego procesa `npm run arte`. Pedir una hoja en vez de una imagen por pose gasta mucho
+// menos del límite de Gemini y las poses salen más parecidas entre sí.
+//
+// Uso: node tools/split-sheet.mjs <hoja.jpg> <nombre> [<nombre> ...]
+// Los nombres van en orden de lectura (fila por fila, de izquierda a derecha). Un nombre sin guion
+// es un personaje y cuenta como sus 4 poses: normal, golpe, salto, dolor. Ejemplos:
+//   node tools/split-sheet.mjs hoja.jpg astronauta                  1 fila de 4
+//   node tools/split-sheet.mjs hoja.jpg abeja abeja_super           2 filas: normal arriba, súper abajo
+//   node tools/split-sheet.mjs hoja.jpg hada-dolor pinguino_super-golpe
+// Escribe arte/smash/personajes/<nombre>.jpg
+import sharp from 'sharp';
+import path from 'node:path';
+
+const POSES = ['normal', 'golpe', 'salto', 'dolor'];
+const ROOT = path.resolve(import.meta.dirname, '..');
+const DEST = path.join(ROOT, 'arte', 'smash', 'personajes');
+// Margen alrededor de cada pose (en pixeles de la hoja) y tamaño mínimo de una pieza suelta.
+const MARGIN = 40;
+const NOISE = 40;
+
+const [input, ...args] = process.argv.slice(2);
+const names = args.flatMap((name) => (name.includes('-') ? [name] : POSES.map((pose) => `${name}-${pose}`)));
+if (!input || !names.length) {
+  console.log('Uso: node tools/split-sheet.mjs <hoja.jpg> <nombre> [<nombre> ...]');
+  process.exit(1);
+}
+
+const { data, info } = await sharp(input).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+const { width, height } = info;
+// El color de fondo se toma de la esquina. Además cuenta como fondo cualquier verde chillón
+// (la sombrita que a veces pone Gemini bajo la pose de salto es verde más oscuro).
+const ref = [data[0], data[1], data[2]];
+const isBackground = (p) => {
+  const i = p * 3;
+  const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+  return Math.hypot(r - ref[0], g - ref[1], b - ref[2]) < 90 || (g > 120 && g - Math.max(r, b) > 60);
+};
+
+// Piezas conectadas: el borde blanco de sticker une cada pose en una sola pieza grande.
+const label = new Int32Array(width * height).fill(-1);
+const pieces = [];
+for (let start = 0; start < width * height; start += 1) {
+  if (label[start] !== -1 || isBackground(start)) continue;
+  const piece = { id: pieces.length, size: 0, left: width, top: height, right: 0, bottom: 0 };
+  label[start] = piece.id;
+  const stack = [start];
+  while (stack.length) {
+    const p = stack.pop();
+    const x = p % width;
+    const y = (p - x) / width;
+    piece.size += 1;
+    piece.left = Math.min(piece.left, x);
+    piece.right = Math.max(piece.right, x);
+    piece.top = Math.min(piece.top, y);
+    piece.bottom = Math.max(piece.bottom, y);
+    for (const q of [x > 0 ? p - 1 : -1, x < width - 1 ? p + 1 : -1, y > 0 ? p - width : -1, y < height - 1 ? p + width : -1]) {
+      if (q >= 0 && label[q] === -1 && !isBackground(q)) {
+        label[q] = piece.id;
+        stack.push(q);
+      }
+    }
+  }
+  pieces.push(piece);
+}
+
+// Las piezas más grandes son las poses. Se acomodan en filas (las que se enciman en altura son de
+// la misma fila) y cada fila de izquierda a derecha.
+const poses = [...pieces].sort((a, b) => b.size - a.size).slice(0, names.length);
+if (poses.length < names.length) throw new Error(`solo encontré ${poses.length} poses en la hoja y pediste ${names.length}`);
+const sizes = poses.map((pose) => pose.size).sort((a, b) => a - b);
+if (sizes.at(-1) > sizes[Math.floor(sizes.length / 2)] * 2.5) {
+  throw new Error('una pose es mucho más grande que las demás: ¿dos poses se tocan en la hoja? Pide más espacio entre ellas');
+}
+const rows = [];
+for (const pose of [...poses].sort((a, b) => a.top - b.top)) {
+  const center = (pose.top + pose.bottom) / 2;
+  const row = rows.find((r) => center > r.top && center < r.bottom);
+  if (row) row.poses.push(pose);
+  else rows.push({ top: pose.top, bottom: pose.bottom, poses: [pose] });
+}
+const ordered = rows.flatMap((row) => row.poses.sort((a, b) => a.left - b.left));
+console.log(`  ${rows.length} fila(s): ${rows.map((row) => row.poses.length).join(' + ')} poses`);
+
+// Las piezas sueltas (estrellitas de mareo, gotas, chispas) se le dan a la pose más cercana; el ruido se ignora.
+const owner = new Map(ordered.map((pose, k) => [pose.id, k]));
+const boxes = ordered.map((pose) => ({ ...pose }));
+for (const piece of pieces) {
+  if (owner.has(piece.id) || piece.size < NOISE) continue;
+  const cx = (piece.left + piece.right) / 2;
+  const cy = (piece.top + piece.bottom) / 2;
+  const distance = (box) => Math.hypot(Math.max(box.left - cx, 0, cx - box.right), Math.max(box.top - cy, 0, cy - box.bottom));
+  const k = ordered.reduce((best, pose, i) => (distance(pose) < distance(ordered[best]) ? i : best), 0);
+  owner.set(piece.id, k);
+  const box = boxes[k];
+  box.left = Math.min(box.left, piece.left);
+  box.right = Math.max(box.right, piece.right);
+  box.top = Math.min(box.top, piece.top);
+  box.bottom = Math.max(box.bottom, piece.bottom);
+}
+
+// Cada pose se recorta con su margen; lo que sea de otra pose (un puño que se mete) se pinta de fondo.
+for (const [k, name] of names.entries()) {
+  const box = boxes[k];
+  const left = Math.max(0, box.left - MARGIN);
+  const top = Math.max(0, box.top - MARGIN);
+  const w = Math.min(width - 1, box.right + MARGIN) - left + 1;
+  const h = Math.min(height - 1, box.bottom + MARGIN) - top + 1;
+  const out = Buffer.alloc(w * h * 3);
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const p = (y + top) * width + (x + left);
+      const mine = label[p] === -1 || owner.get(label[p]) === k;
+      out.set(mine ? [data[p * 3], data[p * 3 + 1], data[p * 3 + 2]] : ref, (y * w + x) * 3);
+    }
+  }
+  const file = path.join(DEST, `${name}.jpg`);
+  await sharp(out, { raw: { width: w, height: h, channels: 3 } }).jpeg({ quality: 95 }).toFile(file);
+  console.log(`  ✓ ${path.relative(ROOT, file)} (${w}x${h})`);
+}

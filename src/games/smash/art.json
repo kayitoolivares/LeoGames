@@ -1,5 +1,23 @@
 {
   "characters": {
+    "abeja": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "abeja_super": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
+    "astronauta": [
+      "dolor",
+      "golpe",
+      "normal",
+      "salto"
+    ],
     "dino": [
       "dolor",
       "golpe",

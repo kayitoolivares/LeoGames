@@ -97,6 +97,11 @@ Pon las imágenes en `arte/smash/` (esa carpeta no se sube a GitHub) y corre `np
 El script quita el fondo, recorta y achica las imágenes (para la memoria del Xbox), las deja en `public/smash/`
 y anota en `src/games/smash/art.json` cuáles hay. Lo que falte se sigue dibujando con figuras.
 
+Para gastar menos del límite de Gemini se le puede pedir una **hoja** con varias poses del mismo personaje
+(en filas, bien separadas, sobre fondo verde liso) y partirla con
+`node tools/split-sheet.mjs <hoja.jpg> <personaje> [<personaje>_super]`: una fila de 4 poses
+(normal, golpe, salto, dolor) por nombre. Deja las poses sueltas en `arte/smash/personajes/`.
+
 ## Jugar en el Xbox
 
 El navegador solo deja leer controles en páginas **HTTPS** (o `localhost`), así que en el Xbox
@@ -125,6 +130,7 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/shared/clock.js`: tiempo real entre cuadros (para que nada vaya en cámara lenta si baja el fps).
 - `src/shared/sound.js`: efectos de sonido sintetizados.
 - `tools/prepare-art.mjs`: prepara el arte de Gemini de todos los juegos (`npm run arte`).
+- `tools/split-sheet.mjs`: parte una hoja de Gemini con varias poses en imágenes sueltas.
 - `src/games/brawl/`: Pelea en equipo (Phaser).
 - `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha, balón, jugadores y la compu (`cpu.js`).
