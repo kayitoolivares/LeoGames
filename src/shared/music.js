@@ -42,6 +42,12 @@ const SONGS = {
     bass: { wave: 'triangle', volume: 0.12, notes: 'C3 . G2 . C3 . G2 . | F2 . C3 . F2 . C3 . | C3 . G2 . C3 . G2 . | G2 . G2 . G2 . G2 .' },
     drums: 'k . s k k . s . | k . s k k . s . | k . s k k . s . | k s k s k s s s',
   },
+  duelo: {
+    bpm: 152,
+    lead: { wave: 'square', volume: 0.04, notes: 'E5 . B4 E5 G5 . F#5 E5 | D5 . A4 D5 F#5 . E5 D5 | C5 . G4 C5 E5 . D5 C5 | B4 . D#5 F#5 B5 - - .' },
+    bass: { wave: 'triangle', volume: 0.13, notes: 'E2 E2 . E2 E3 . E2 . | D2 D2 . D2 D3 . D2 . | C2 C2 . C2 C3 . C2 . | B1 B1 . B1 B2 . B1 .' },
+    drums: 'k . s k k . s . | k . s k k . s . | k . s k k . s . | k s k s s s s s',
+  },
   // Canción de cuna para el Modo Bebé: lenta, suave y sin batería.
   baby: {
     bpm: 84,

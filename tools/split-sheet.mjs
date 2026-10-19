@@ -28,13 +28,15 @@ if (!input || !names.length) {
 
 const { data, info } = await sharp(input).removeAlpha().raw().toBuffer({ resolveWithObject: true });
 const { width, height } = info;
-// El color de fondo se toma de la esquina. Además cuenta como fondo cualquier verde chillón
-// (la sombrita que a veces pone Gemini bajo la pose de salto es verde más oscuro).
+// El color de fondo se toma de la esquina. Si es verde, además cuenta como fondo cualquier verde chillón
+// (la sombrita que a veces pone Gemini bajo la pose de salto es verde más oscuro). Con fondo magenta
+// (personajes verdes, como Dino) no, porque se borraría el personaje.
 const ref = [data[0], data[1], data[2]];
+const greenScreen = ref[1] > ref[0] + 40 && ref[1] > ref[2] + 40;
 const isBackground = (p) => {
   const i = p * 3;
   const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-  return Math.hypot(r - ref[0], g - ref[1], b - ref[2]) < 90 || (g > 120 && g - Math.max(r, b) > 60);
+  return Math.hypot(r - ref[0], g - ref[1], b - ref[2]) < 90 || (greenScreen && g > 120 && g - Math.max(r, b) > 60);
 };
 
 // Piezas conectadas: el borde blanco de sticker une cada pose en una sola pieza grande.

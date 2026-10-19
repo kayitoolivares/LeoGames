@@ -4,14 +4,18 @@ import manifest from './art.json';
 // art.json dice qué imágenes hay; si falta alguna, el juego la dibuja con figuras como siempre.
 const BASE = 'smash/';
 export const ITEM_ART = { hammer: 'martillo', bomb: 'bomba', heart: 'corazon', star: 'estrella' };
+// Las poses que usan todos los juegos; las demás (patada, cubrirse...) solo el Duelo, que las pide con `allPoses`.
+const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor'];
 
 // Se llama en preload(): pone en la fila de carga lo que todavía no esté cargado.
-export function loadSmashArt(scene) {
+export function loadSmashArt(scene, { allPoses = false } = {}) {
   const queue = (key, url) => {
     if (!scene.textures.exists(key)) scene.load.image(key, url);
   };
   for (const [character, poses] of Object.entries(manifest.characters)) {
-    for (const pose of poses) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
+    for (const pose of poses) {
+      if (allPoses || BASIC_POSES.includes(pose)) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
+    }
   }
   for (const item of manifest.items) queue(`smash:objeto-${item}`, `${BASE}objetos/${item}.png`);
   for (const stage of manifest.backgrounds) queue(`smash:fondo-${stage}`, `${BASE}fondos/${stage}.jpg`);

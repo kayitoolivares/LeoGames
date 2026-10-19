@@ -46,6 +46,12 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir del fútbol');
 
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir del duelo');
+
   await p.openGameCard('Modo Bebé');
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Baby'), null, { timeout: ms(8000) });
   await p.holdToMenu(0, [BUTTON.LB, BUTTON.RB], 'salir del Modo Bebé');
@@ -447,6 +453,81 @@ test('fútbol de bolitas: meter gol, ganar el partido y revancha', { timeout: ms
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Futbol').score.join('-') === '0-0', ms(5000), 'revancha');
   await p.holdToMenu(0, [BUTTON.Y], 'salir del fútbol');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('duelo de bolitas: pelear contra la compu, ganar y siguiente pelea', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(10000), 'empezar a pelear');
+  // El bot camina hacia la compu y le pega con A (y a él no le pasa nada, para no depender de la suerte).
+  await p.page.evaluate(() => {
+    window.__bot = setInterval(() => {
+      const s = window.leogames.scene.getScene('Duelo');
+      if (!s.sys.isActive() || s.fighters.length < 2) return;
+      const [me, cpu] = s.fighters;
+      me.invulnerableMs = 1000;
+      const pad = window.__pads[0];
+      const close = Math.abs(cpu.x - me.x) < me.radius * 2.2;
+      pad.axes = [close ? 0 : Math.sign(cpu.x - me.x), 0, 0, 0];
+      pad.buttons[0].pressed = close && !pad.buttons[0].pressed;
+      pad.buttons[0].value = pad.buttons[0].pressed ? 1 : 0;
+    }, 90);
+  });
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[1].health < 100, ms(30000), 'pegarle a la compu');
+  // Para ganar dos rounds rápido, a la compu le queda poquita vida y el bot le da el último golpe.
+  for (const round of [1, 2]) {
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), `empezar el round ${round}`);
+    await p.page.evaluate(() => (window.leogames.scene.getScene('Duelo').fighters[1].health = 1));
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase !== 'fight', ms(40000), `K.O. en el round ${round}`);
+  }
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(15000), 'ganar el duelo');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').matchWinner.label), 'J1');
+  assert.ok((await stickers(p.page)).includes('duelo-gana'));
+  await stopBot(p.page);
+  await p.page.evaluate(() => {
+    window.__release();
+    window.__pads[0].axes = [0, 0, 0, 0];
+  });
+  await p.until(() => window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(10000), 'que se pueda seguir');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'intro', ms(5000), 'siguiente pelea');
+  await p.holdToMenu(0, [BUTTON.Y], 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { timeout: ms(90000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(3);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(3);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  assert.match(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').matchText.text), /J1 · .* vs {3}J2 · .*\n\nDespués: J3/);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(10000), 'empezar a pelear');
+  // J1 gana el último round que le falta.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    s.fighters[0].roundWins = s.setup.rounds - 1;
+    s.fighters[1].health = 0;
+    s.endRound(s.fighters[0], 'ko');
+  });
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(10000), 'terminar el duelo');
+  await p.until(() => window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(10000), 'que se pueda seguir');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'intro', ms(5000), 'siguiente pelea');
+  const next = await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    return { fighters: s.fighters.map((f) => f.label), waiting: s.waiting().map((e) => s.labelOf(e.player)) };
+  });
+  assert.deepEqual(next, { fighters: ['J1', 'J3'], waiting: ['J2'] });
+  await p.holdToMenu(0, [BUTTON.Y], 'salir del duelo');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

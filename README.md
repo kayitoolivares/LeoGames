@@ -30,7 +30,7 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 ## Juegos
 
-- Antes de **Pelea en equipo** y **Fútbol de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
+- Antes de **Pelea en equipo**, **Fútbol de bolitas** y **Duelo de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
   lo que escojas se recuerda en los demás juegos mientras la página siga abierta.
 - **Pelea en equipo**: todos contra los monstruos en 3 mundos (Pradera, Bosque de hongos y Volcán), de 4 rondas
   cada uno y con su jefe: el Rey Slime, el Gran Hongo (llama ayudantes) y el Dragón de lava (lanza bolas de
@@ -63,6 +63,13 @@ Abre http://localhost:5173 en Edge o Chrome.
   **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),
   **mantén Y** = salir. Antes del partido el Jugador 1 escoge: **todos contra la compu** o **unos contra otros**
   (la compu completa los equipos), a cuántos goles (3, 5 o 7) y el nivel de la compu (fácil, normal, difícil).
+- **Duelo de bolitas**: uno contra uno de lado, estilo Street Fighter, con barras de vida, reloj de 60 s y rounds.
+  **Stick** = caminar (**↑** saltar), **A** = golpe (3 seguidos = remate que tumba), **B** = patada, **X** = especial
+  (el de cada personaje: estrella, láser, fuego, bala de cañón, embestida, aparecer por detrás...),
+  **LB / RB** (o gatillos) = cubrirse, barra llena + **LB + RB** = súper forma, **mantén Y** = salir.
+  Con un solo jugador se pelea contra la compu; con más, se turnan: el que gana se queda y el que pierde se forma
+  al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
+  de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).
 - **Halcón de Acero**: abre https://hda.grupomegarey.mx (es otro proyecto; para volver, B en modo navegador).
 - **Prueba de controles**: muestra lo que el navegador ve de cada control, botón por botón.
 
@@ -100,7 +107,9 @@ y anota en `src/games/smash/art.json` cuáles hay. Lo que falte se sigue dibujan
 Para gastar menos del límite de Gemini se le puede pedir una **hoja** con varias poses del mismo personaje
 (en filas, bien separadas, sobre fondo verde liso) y partirla con
 `node tools/split-sheet.mjs <hoja.jpg> <personaje> [<personaje>_super]`: una fila de 4 poses
-(normal, golpe, salto, dolor) por nombre. Deja las poses sueltas en `arte/smash/personajes/`.
+(normal, golpe, salto, dolor) por nombre, o los nombres exactos (`tanque-patada tanque-cubrirse ...`).
+Deja las poses sueltas en `arte/smash/personajes/`. El Duelo usa además `patada`, `cubrirse`, `especial` y `gana`
+(si faltan, usa la pose más parecida); el fondo del dojo va en `arte/duelo/fondos/dojo.jpg`.
 
 ## Jugar en el Xbox
 
@@ -134,6 +143,8 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/games/brawl/`: Pelea en equipo (Phaser).
 - `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha, balón, jugadores y la compu (`cpu.js`).
+- `src/games/duelo/`: Duelo de bolitas (Phaser): peleador, golpes y especiales (`moves.js`), lo que se lanza
+  (`shots.js`), escenarios y la compu.
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.

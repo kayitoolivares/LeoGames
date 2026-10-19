@@ -20,6 +20,9 @@ export const STICKERS = [
   { id: 'carrera-gana', emoji: '🏎️', name: 'Piloto veloz', hint: 'Gana una carrera vista desde arriba' },
   { id: 'futbol-gol', emoji: '⚽', name: '¡Gol!', hint: 'Mete un gol en Fútbol de bolitas' },
   { id: 'futbol-gana', emoji: '🏆', name: 'Campeones', hint: 'Gana un partido de Fútbol de bolitas' },
+  { id: 'duelo-gana', emoji: '🥋', name: 'Campeón del duelo', hint: 'Gana un Duelo de bolitas' },
+  { id: 'duelo-perfecto', emoji: '💯', name: '¡Perfecto!', hint: 'Gana un round del duelo sin que te peguen' },
+  { id: 'duelo-super', emoji: '🔥', name: 'Súper peleador', hint: 'Transfórmate en el Duelo de bolitas' },
   { id: 'bebe', emoji: '👶', name: 'Hora del bebé', hint: 'Jueguen el Modo Bebé' },
   { id: 'coleccion', emoji: '⭐', name: 'Coleccionista', hint: 'Consigue 10 calcomanías' },
 ];

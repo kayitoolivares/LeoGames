@@ -5,6 +5,7 @@
 //                                                  dino | gatito | pinguino | pirata | hada | astronauta | abeja | bombero
 //                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
+//                                                  y para el Duelo: patada | cubrirse | especial | gana | caminar
 //   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
 //   arte/smash/fondos/<escenario>.png              castillo | nubes | barco | espacio | volcan
 // Los demás juegos (ver GAMES): arte/<juego>/<carpeta>/<nombre>.png
@@ -27,7 +28,7 @@ const CHARACTERS = [
   'tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma',
   'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero',
 ];
-const POSES = ['normal', 'golpe', 'salto', 'dolor'];
+const POSES = ['normal', 'golpe', 'salto', 'dolor', 'patada', 'cubrirse', 'especial', 'gana', 'caminar'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
 const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan'];
 
@@ -42,6 +43,9 @@ const GAMES = {
   },
   futbol: {
     fondos: { kind: 'background', names: ['estadio'] },
+  },
+  duelo: {
+    fondos: { kind: 'background', names: ['dojo'] },
   },
 };
 const IMAGE = /\.(png|jpe?g|webp)$/i;
