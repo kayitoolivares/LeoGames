@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
+import { frameDelta } from '../../shared/clock.js';
 import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
+import { WALK_FPS } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { characterTexture, hasPose, superArtKey } from './art.js';
+import { characterTexture, hasPose, superArtKey, walkPose } from './art.js';
 import { CHARACTERS, addAccessory } from './characters.js';
 import { drawItem } from './items.js';
 
@@ -670,11 +672,14 @@ export class SmashFighter {
   renderArt() {
     this.punchArt = false;
     if (!this.image) return;
-    let pose = 'normal';
+    const art = this.superMs > 0 && this.superArt ? this.superArt : this.characterKey;
+    // Corriendo por el piso: los cuadros de caminata (si los tiene).
+    const walking = this.grounded && Math.abs(this.vx) > 40;
+    this.walkStep = walking ? (this.walkStep ?? 0) + (frameDelta() * WALK_FPS) / 1000 : 0;
+    let pose = (walking && walkPose(this.scene, art, this.walkStep)) || 'normal';
     if (this.hitstunMs > 0 || this.stunMs > 0) pose = 'dolor';
     else if (this.attack) pose = 'golpe';
     else if (!this.grounded) pose = 'salto';
-    const art = this.superMs > 0 && this.superArt ? this.superArt : this.characterKey;
     const key = characterTexture(this.scene, art, pose);
     if (this.image.texture.key !== key) {
       this.image.setTexture(key);

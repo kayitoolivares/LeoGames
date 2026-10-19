@@ -5,7 +5,8 @@
 //                                                  dino | gatito | pinguino | pirata | hada | astronauta | abeja | bombero
 //                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
-//                                                  y para el Duelo: patada | cubrirse | especial | gana | caminar
+//                                                  caminar1 a caminar4 (los cuadros de la caminata, en todos los juegos)
+//                                                  y para el Duelo: patada | cubrirse | especial | gana
 //   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
 //   arte/smash/fondos/<escenario>.png              castillo | nubes | barco | espacio | volcan
 // Los demás juegos (ver GAMES): arte/<juego>/<carpeta>/<nombre>.png
@@ -28,7 +29,7 @@ const CHARACTERS = [
   'tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma',
   'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero',
 ];
-const POSES = ['normal', 'golpe', 'salto', 'dolor', 'patada', 'cubrirse', 'especial', 'gana', 'caminar'];
+const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
 const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan'];
 

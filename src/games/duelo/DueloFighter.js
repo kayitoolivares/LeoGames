@@ -38,7 +38,6 @@ const SUPER_TINT = 0x806000;
 // (si no hay, usa la más parecida de las 4 de siempre).
 const POSE_CHAIN = {
   normal: ['normal'],
-  caminar: ['caminar', 'normal'],
   golpe: ['golpe'],
   patada: ['patada', 'golpe'],
   especial: ['especial', 'golpe'],
@@ -470,20 +469,22 @@ export class DueloFighter {
     const figure = this.blob.figure;
     const pose = this.pose();
     const art = this.look.character;
-    const shown = POSE_CHAIN[pose].find((p) => hasPose(this.scene, art, p)) ?? 'normal';
+    const ground = this.look.groundPose(pose === 'caminar');
+    const shown = pose === 'caminar' ? ground : (POSE_CHAIN[pose].find((p) => hasPose(this.scene, art, p)) ?? 'normal');
+    const walkFrames = shown.startsWith('caminar');
     this.look.show(shown, this.facing);
     const image = this.look.image;
     if (image) image.setScale((r * LOOK_HEIGHT * (POSE_HEIGHT[shown] ?? 1)) / image.height);
     this.blob.setPosition(this.x, FLOOR - r);
     this.blob.look(this.facing * 0.9, pose === 'dolor' ? -0.6 : 0);
 
-    // Caminando se bambolea; parado "respira". Así se ve vivo aunque sean pocas imágenes.
+    // Caminando se bambolea (si no tiene cuadros de caminata); parado "respira". Así se ve vivo.
     let bob = 0;
     let angle = 0;
     let sx = 1;
     let sy = 1;
     const now = this.scene.time.now;
-    if (pose === 'caminar') {
+    if (pose === 'caminar' && !walkFrames) {
       this.walkPhase += (dtMs / 1000) * 13;
       bob = -Math.abs(Math.sin(this.walkPhase)) * r * 0.14;
       angle = Math.sin(this.walkPhase) * 4;

@@ -305,7 +305,7 @@ export class RaceGame {
   }
 
   updateExit(dtMs) {
-    const holding = this.humans.some((kart) => controls.isDown(kart.deviceId, 'y'));
+    const holding = this.humans.some((kart) => controls.holdingExit(kart.deviceId));
     this.exitMs = holding ? this.exitMs + dtMs : 0;
     this.hud.setExitProgress(Math.min(1, this.exitMs / EXIT_HOLD_MS));
     if (this.exitMs >= EXIT_HOLD_MS && !this.exited) {

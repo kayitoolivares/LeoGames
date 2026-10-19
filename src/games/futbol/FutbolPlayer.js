@@ -115,7 +115,8 @@ export class FutbolPlayer {
     this.blob.setPosition(this.x, FIELD.ground - this.radius);
     this.blob.figure.y = -this.z;
     this.blob.look(this.facing * 0.9, 0.1);
-    this.look.show(this.kickMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : 'normal', this.facing);
+    const ground = this.look.groundPose(this.z === 0 && Math.abs(this.vx) > 40);
+    this.look.show(this.kickMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : ground, this.facing);
     this.foot.setVisible(this.kickMs > 0 && !this.look.punchArt).setX(this.facing * this.radius * 0.95);
     // La sombra se achica cuando va en el aire.
     const shadow = this.blob.list[0];

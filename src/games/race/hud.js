@@ -43,7 +43,7 @@ export class RaceHud {
       <div class="race-center"></div>
       <div class="race-flash"></div>
       <div class="race-results" hidden></div>
-      <div class="race-help">Stick = manejar  ·  A = turbo  ·  B = frenar  ·  Mantén Y = salir
+      <div class="race-help">Stick = manejar  ·  A = turbo  ·  B = frenar  ·  Mantén LB + RB + Y = salir
         <div class="race-exit"><div></div></div></div>`;
     stage.append(this.el);
     this.standings = this.el.querySelector('.race-standings');
@@ -95,7 +95,7 @@ export class RaceHud {
           <span class="race-dot" style="background:${row.color}"></span><span>${row.label}</span></div>`,
       )
       .join('');
-    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera  ·  Mantén Y = salir</p>`;
+    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 

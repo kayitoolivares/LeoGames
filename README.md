@@ -21,11 +21,14 @@ Abre http://localhost:5173 en Edge o Chrome.
 | B (salir / regresar) | B | Q | Shift derecho |
 | X | X | E | . (punto) |
 | Y | Y | R | - (guion) |
+| LB | LB | Z | , (coma) |
 | RB (nitro en karts) | RB | Shift izquierdo | Ctrl derecho |
 
 - **Unirse:** cada quien presiona A en su control (hasta 4 jugadores).
 - **Empezar:** el Jugador 1 *mantiene* A.
 - **Cambiar color:** ◀ ▶ en la pantalla de jugadores.
+- **Salir de un juego:** mantén **LB + RB + Y** juntos (en el celular, LB + RB). Así nadie se sale sin querer:
+  LB y RB solos sirven para cubrirse o transformarse en las peleas. En el Modo Bebé hay que mantenerlos 3 segundos.
 - Los botones **Menú** y **Vista** no se usan a propósito: en Edge del Xbox fallan.
 
 ## Juegos
@@ -35,7 +38,7 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Pelea en equipo**: todos contra los monstruos en 3 mundos (Pradera, Bosque de hongos y Volcán), de 4 rondas
   cada uno y con su jefe: el Rey Slime, el Gran Hongo (llama ayudantes) y el Dragón de lava (lanza bolas de
   fuego; se esquivan saltando). Ganar un mundo desbloquea el siguiente.
-  **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén Y** = salir.
+  **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén LB + RB + Y** = salir.
   Si alguien cae, un compañero se para junto a él para levantarlo.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
@@ -46,7 +49,7 @@ Abre http://localhost:5173 en Edge o Chrome.
   (B = bala de cañón), **Hada** (flota, B = polvo mágico), **Astronauta** (B = mochila cohete), **Abeja** (salta 4 veces,
   B = aguijonazo) y **Bombero** (B = chorro de agua que empuja). Con la barra llena, **LB + RB** = súper forma por 10 segundos.
   **A** = saltar, **X** = golpe (con ↑ hacia arriba, con ↓ barrida o pisotón), **B + ↑** = salto de rescate,
-  **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén Y** = salir.
+  **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén LB + RB + Y** = salir.
   Caen objetos: **martillo** (8 s de martillazos con X), **bomba** (X la lanza), **corazón** (-40 %)
   y **estrella** (6 s sin recibir golpes). **Y** en la selección activa el **modo peque** (menos daño y menos empujón).
   El Jugador 1 escoge escenario (**Castillo**, **Nubes** con plataformas que se mueven, **Barco pirata**, y los
@@ -61,12 +64,12 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,
   **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),
-  **mantén Y** = salir. Antes del partido el Jugador 1 escoge: **todos contra la compu** o **unos contra otros**
+  **mantén LB + RB + Y** = salir. Antes del partido el Jugador 1 escoge: **todos contra la compu** o **unos contra otros**
   (la compu completa los equipos), a cuántos goles (3, 5 o 7) y el nivel de la compu (fácil, normal, difícil).
 - **Duelo de bolitas**: uno contra uno de lado, estilo Street Fighter, con barras de vida, reloj de 60 s y rounds.
   **Stick** = caminar (**↑** saltar), **A** = golpe (3 seguidos = remate que tumba), **B** = patada, **X** = especial
   (el de cada personaje: estrella, láser, fuego, bala de cañón, embestida, aparecer por detrás...),
-  **LB / RB** (o gatillos) = cubrirse, barra llena + **LB + RB** = súper forma, **mantén Y** = salir.
+  **LB / RB** (o gatillos) = cubrirse, barra llena + **LB + RB** = súper forma, **mantén LB + RB + Y** = salir.
   Con un solo jugador se pelea contra la compu; con más, se turnan: el que gana se queda y el que pierde se forma
   al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
   de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).

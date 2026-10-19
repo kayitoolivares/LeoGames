@@ -7,6 +7,8 @@ import { BUTTON, openPage, startGame } from './helpers.mjs';
 // En GitHub no hay tarjeta de video y el juego va más lento: se le da más tiempo a todo.
 const SLOW = process.env.CI ? 4 : 1;
 const ms = (value) => value * SLOW;
+// Para salir de cualquier juego se mantienen LB + RB + Y.
+const EXIT = [BUTTON.LB, BUTTON.RB, BUTTON.Y];
 
 let game;
 before(async () => {
@@ -26,7 +28,7 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   await p.openGameCard('Pelea en equipo');
   await p.pickCharacters(1);
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
-  await p.holdToMenu(0, [BUTTON.Y], 'salir de Pelea en equipo');
+  await p.holdToMenu(0, EXIT, 'salir de Pelea en equipo');
 
   await p.openGameCard('Bolitas Bros');
   await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
@@ -36,7 +38,7 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   for (const [title, key] of [['Karts locos', 'Kart'], ['Carreras', 'Race']]) {
     await p.openGameCard(title);
     await p.page.waitForFunction((k) => Boolean(window.leogames.scene.getScene(k)?.game3d), key, { timeout: ms(30000) });
-    await p.holdToMenu(0, [BUTTON.Y], `salir de ${title}`);
+    await p.holdToMenu(0, EXIT, `salir de ${title}`);
     assert.equal(await p.page.evaluate(() => document.querySelectorAll('body > div[style*="z-index"]').length), 0, `${title} dejó su capa 3D`);
   }
 
@@ -54,7 +56,7 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
 
   await p.openGameCard('Modo Bebé');
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Baby'), null, { timeout: ms(8000) });
-  await p.holdToMenu(0, [BUTTON.LB, BUTTON.RB], 'salir del Modo Bebé');
+  await p.holdToMenu(0, EXIT, 'salir del Modo Bebé');
 
   await p.openGameCard('Mis premios');
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Premios'), null, { timeout: ms(8000) });
@@ -205,7 +207,7 @@ test('personajes: lo que escoges se usa en la pelea, el fútbol y Bolitas Bros',
     window.leogames.scene.getScene('Brawl').fighters.map((f) => [f.look.character, f.look.image?.texture.key ?? null]),
   );
   assert.deepEqual(looks, [['resorte', 'smash:resorte-normal'], ['rayo', 'smash:rayo-normal']]);
-  await p.holdToMenu(0, [BUTTON.Y], 'salir de Pelea en equipo');
+  await p.holdToMenu(0, EXIT, 'salir de Pelea en equipo');
 
   // En el fútbol ya salen escogidos.
   await p.openGameCard('Fútbol de bolitas');
@@ -256,7 +258,7 @@ test('bolitas bros: pelea contra el CPU, revancha y salir', { timeout: ms(120000
   await p.until(() => window.leogames.scene.getScene('Smash').phaseMs > 1600, ms(10000), 'que se pueda pedir revancha');
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Smash').phase === 'countdown', ms(5000), 'revancha');
-  await p.holdToMenu(0, [BUTTON.Y], 'salir de Bolitas Bros');
+  await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -282,7 +284,7 @@ test('bolitas bros: el especial de cada personaje nuevo pega', { timeout: ms(240
     });
     await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(4000), `que el especial de ${character} pegue`);
     assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].characterKey), character);
-    await p.holdToMenu(0, [BUTTON.Y], 'salir de Bolitas Bros');
+    await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
   }
   assert.deepEqual(p.errors, []);
   await p.context.close();
@@ -326,7 +328,7 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
   await p.tap(0, BUTTON.A);
   await fightOn('espacio');
   assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].arena.gravity), 0.55);
-  await p.holdToMenu(0, [BUTTON.Y], 'salir del Espacio');
+  await p.holdToMenu(0, EXIT, 'salir del Espacio');
 
   // En el Volcán, los géiseres avisan y hacen erupción.
   await openSelect();
@@ -334,7 +336,7 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
   await p.tap(0, BUTTON.A);
   await fightOn('volcan');
   await p.until(() => window.leogames.scene.getScene('Smash').geysers.eruptions > 0, ms(20000), 'que un géiser haga erupción');
-  await p.holdToMenu(0, [BUTTON.Y], 'salir del Volcán');
+  await p.holdToMenu(0, EXIT, 'salir del Volcán');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -379,7 +381,7 @@ test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { 
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda pedir otra carrera');
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(5000), 'otra carrera');
-  await p.holdToMenu(0, [BUTTON.Y], 'salir de Karts locos');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -406,7 +408,7 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'regresar a escoger pista');
   assert.equal(await p.page.evaluate(() => document.querySelectorAll('.kart-choose').length), 1);
-  await p.holdToMenu(0, [BUTTON.Y], 'salir de Karts locos');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.equal(await p.page.evaluate(() => document.querySelectorAll('body > div[style*="z-index"]').length), 0, 'quedó la capa 3D');
   assert.deepEqual(p.errors, []);
   await p.context.close();
@@ -460,7 +462,7 @@ test('fútbol de bolitas: meter gol, ganar el partido y revancha', { timeout: ms
   await p.until(() => window.leogames.scene.getScene('Futbol').phaseMs > 1300, ms(10000), 'que se pueda pedir revancha');
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Futbol').score.join('-') === '0-0', ms(5000), 'revancha');
-  await p.holdToMenu(0, [BUTTON.Y], 'salir del fútbol');
+  await p.holdToMenu(0, EXIT, 'salir del fútbol');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -505,7 +507,10 @@ test('duelo de bolitas: pelear contra la compu, ganar y siguiente pelea', { time
   await p.until(() => window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(10000), 'que se pueda seguir');
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'intro', ms(5000), 'siguiente pelea');
-  await p.holdToMenu(0, [BUTTON.Y], 'salir del duelo');
+  // Mantener solo Y ya no saca del juego (antes sí): hacen falta LB + RB + Y.
+  await p.tap(0, BUTTON.Y, 1800);
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.isActive('Duelo')), 'con Y sola no debe salir');
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
@@ -535,7 +540,7 @@ test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { tim
     return { fighters: s.fighters.map((f) => f.label), waiting: s.waiting().map((e) => s.labelOf(e.player)) };
   });
   assert.deepEqual(next, { fighters: ['J1', 'J3'], waiting: ['J2'] });
-  await p.holdToMenu(0, [BUTTON.Y], 'salir del duelo');
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

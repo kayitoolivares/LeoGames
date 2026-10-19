@@ -113,7 +113,7 @@ export class BrawlScene extends Phaser.Scene {
     this.subBanner.setAlpha(0);
 
     this.add
-      .text(width / 2, height - 24, 'X o B = pegar   ·   A = saltar   ·   Mantén Y = salir', textStyle(17, TEXT.normal, OUTLINE))
+      .text(width / 2, height - 24, 'X o B = pegar   ·   A = saltar   ·   Mantén LB + RB + Y = salir', textStyle(17, TEXT.normal, OUTLINE))
       .setOrigin(0.5)
       .setDepth(HUD_DEPTH);
     this.exitBar = this.add
@@ -449,7 +449,7 @@ export class BrawlScene extends Phaser.Scene {
     confetti(this, this.fighters.map((f) => f.color));
     if (this.worldIndex + 1 < WORLDS.length) {
       this.phase = 'worldWon';
-      this.showBanner('¡Mundo superado!', `A = seguir al ${WORLDS[this.worldIndex + 1].name}   ·   Mantén Y = salir`, 0);
+      this.showBanner('¡Mundo superado!', `A = seguir al ${WORLDS[this.worldIndex + 1].name}   ·   Mantén LB + RB + Y = salir`, 0);
     } else {
       this.phase = 'won';
       this.showBanner('¡GANARON TODO!', 'Presiona A para volver al menú', 0);
@@ -474,7 +474,7 @@ export class BrawlScene extends Phaser.Scene {
   }
 
   updateExit(dt) {
-    const holding = this.fighters.some((f) => controls.isDown(f.deviceId, 'y'));
+    const holding = this.fighters.some((f) => controls.holdingExit(f.deviceId));
     this.exitMs = holding ? this.exitMs + dt : 0;
     this.exitBar.setScale(Math.min(1, this.exitMs / EXIT_HOLD_MS), 1);
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();

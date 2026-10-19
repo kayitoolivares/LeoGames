@@ -4,8 +4,11 @@ import manifest from './art.json';
 // art.json dice qué imágenes hay; si falta alguna, el juego la dibuja con figuras como siempre.
 const BASE = 'smash/';
 export const ITEM_ART = { hammer: 'martillo', bomb: 'bomba', heart: 'corazon', star: 'estrella' };
+// La caminata son 4 cuadros (caminar1 a caminar4) que se repiten mientras el personaje camina.
+export const WALK_FRAMES = 4;
+const WALK_POSES = Array.from({ length: WALK_FRAMES }, (_, i) => `caminar${i + 1}`);
 // Las poses que usan todos los juegos; las demás (patada, cubrirse...) solo el Duelo, que las pide con `allPoses`.
-const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor'];
+const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor', ...WALK_POSES];
 
 // Se llama en preload(): pone en la fila de carga lo que todavía no esté cargado.
 export function loadSmashArt(scene, { allPoses = false } = {}) {
@@ -32,6 +35,12 @@ export function characterTexture(scene, character, pose = 'normal') {
 
 export function hasPose(scene, character, pose) {
   return scene.textures.exists(`smash:${character}-${pose}`);
+}
+
+// El cuadro de la caminata que toca según `step` (un número que va subiendo mientras camina),
+// o null si el personaje no tiene cuadros de caminar.
+export function walkPose(scene, character, step) {
+  return hasPose(scene, character, WALK_POSES[0]) ? WALK_POSES[Math.floor(step) % WALK_FRAMES] : null;
 }
 
 // La súper forma tiene sus propias imágenes (<personaje>_super-<pose>). Devuelve ese nombre

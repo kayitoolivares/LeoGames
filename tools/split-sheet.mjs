@@ -66,9 +66,47 @@ for (let start = 0; start < width * height; start += 1) {
   pieces.push(piece);
 }
 
+// Si dos poses quedaron pegadas (los bordes blancos se tocan en un puntito, pasa mucho con los cuadros de
+// caminar), la pieza más ancha se corta por la columna de en medio donde menos se tocan. Se repite hasta
+// que haya tantas piezas grandes como poses.
+const bySize = () => [...pieces].sort((a, b) => b.size - a.size);
+const enoughPoses = () => {
+  const sorted = bySize();
+  return sorted.length >= names.length && sorted[names.length - 1].size > sorted[0].size * 0.25;
+};
+for (let tries = 0; tries < names.length && !enoughPoses(); tries += 1) {
+  const widest = bySize()
+    .slice(0, names.length)
+    .reduce((a, b) => (b.right - b.left > a.right - a.left ? b : a));
+  const w = widest.right - widest.left;
+  let cut = -1;
+  let fewest = Infinity;
+  for (let x = Math.round(widest.left + w * 0.3); x <= widest.left + w * 0.7; x += 1) {
+    let count = 0;
+    for (let y = widest.top; y <= widest.bottom; y += 1) if (label[y * width + x] === widest.id) count += 1;
+    if (count < fewest) [fewest, cut] = [count, x];
+  }
+  const right = { id: pieces.length, size: 0, left: width, top: height, right: 0, bottom: 0 };
+  Object.assign(widest, { size: 0, left: width, top: height, right: 0, bottom: 0 });
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const p = y * width + x;
+      if (label[p] !== widest.id) continue;
+      const piece = x > cut ? right : widest;
+      label[p] = piece.id;
+      piece.size += 1;
+      piece.left = Math.min(piece.left, x);
+      piece.right = Math.max(piece.right, x);
+      piece.top = Math.min(piece.top, y);
+      piece.bottom = Math.max(piece.bottom, y);
+    }
+  }
+  pieces.push(right);
+}
+
 // Las piezas más grandes son las poses. Se acomodan en filas (las que se enciman en altura son de
 // la misma fila) y cada fila de izquierda a derecha.
-const poses = [...pieces].sort((a, b) => b.size - a.size).slice(0, names.length);
+const poses = bySize().slice(0, names.length);
 if (poses.length < names.length) throw new Error(`solo encontré ${poses.length} poses en la hoja y pediste ${names.length}`);
 const sizes = poses.map((pose) => pose.size).sort((a, b) => a - b);
 if (sizes.at(-1) > sizes[Math.floor(sizes.length / 2)] * 2.5) {

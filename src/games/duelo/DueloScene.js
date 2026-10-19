@@ -472,7 +472,7 @@ export class DueloScene extends Phaser.Scene {
     const next = this.nextQueue();
     const [a, b] = this.pairingFor(next);
     const nextText = `Sigue: ${this.describe(a)} vs ${this.describe(b)}`;
-    this.showBanner(`¡Ganó ${winner.label}!`, `${nextText}\nA = siguiente pelea  ·  B = cambiar personajes  ·  Mantén Y = salir`, 0, hexToCss(winner.color));
+    this.showBanner(`¡Ganó ${winner.label}!`, `${nextText}\nA = siguiente pelea  ·  B = cambiar personajes  ·  Mantén LB + RB + Y = salir`, 0, hexToCss(winner.color));
     confetti(this, [winner.color, 0xffffff, 0xffc93c], 90);
     sfx.win();
   }
@@ -549,7 +549,7 @@ export class DueloScene extends Phaser.Scene {
       .text(
         width / 2,
         height - 22,
-        'Stick = moverse (↑ saltar)  ·  A = golpe (3 seguidos = remate)  ·  B = patada  ·  X = especial  ·  LB / RB = cubrirse  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén Y = salir',
+        'Stick = moverse (↑ saltar)  ·  A = golpe (3 seguidos = remate)  ·  B = patada  ·  X = especial  ·  LB / RB = cubrirse  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén LB + RB + Y = salir',
         textStyle(15, TEXT.normal, OUTLINE),
       )
       .setOrigin(0.5)
@@ -599,7 +599,7 @@ export class DueloScene extends Phaser.Scene {
   }
 
   updateExit(dt) {
-    const holding = this.humans.some((player) => controls.isDown(player.deviceId, 'y'));
+    const holding = this.humans.some((player) => controls.holdingExit(player.deviceId));
     this.exitMs = holding ? this.exitMs + dt : 0;
     this.exitBar.setScale(Math.min(1, this.exitMs / EXIT_HOLD_MS), 1);
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();

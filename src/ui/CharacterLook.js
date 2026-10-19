@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
-import { characterTexture, hasPose } from '../games/smash/art.js';
+import { frameDelta } from '../shared/clock.js';
+import { characterTexture, hasPose, walkPose } from '../games/smash/art.js';
 import { addAccessory } from '../games/smash/characters.js';
+
+// Cuadros de caminata por segundo.
+export const WALK_FPS = 9;
 
 // Viste una bolita como un personaje de Bolitas Bros: con su imagen de Gemini (y sus poses) si existe,
 // o con su accesorio dibujado si no. Hay que crearlo antes de agregarle otras cosas a `blob.figure`,
@@ -13,6 +17,7 @@ export class CharacterLook {
     this.character = character;
     this.height = height;
     this.image = null;
+    this.walkStep = 0;
     const key = characterTexture(scene, character);
     if (!key) {
       addAccessory(scene, blob, character);
@@ -39,7 +44,14 @@ export class CharacterLook {
     this.image.setScale((this.blob.radius * this.height) / this.image.height);
   }
 
-  // pose: normal | golpe | salto | dolor (si falta, usa la normal). facing: 1 = derecha, -1 = izquierda.
+  // La pose cuando está en el piso: si va caminando, el cuadro de caminata que toca (si tiene); si no, la normal.
+  // Hay que llamarla en cada cuadro, para que la caminata avance.
+  groundPose(walking) {
+    this.walkStep = walking ? this.walkStep + (frameDelta() * WALK_FPS) / 1000 : 0;
+    return (walking && walkPose(this.scene, this.character, this.walkStep)) || 'normal';
+  }
+
+  // pose: normal | golpe | salto | dolor | caminar1... (si falta, usa la normal). facing: 1 = derecha, -1 = izquierda.
   show(pose, facing) {
     if (!this.image) return;
     const key = characterTexture(this.scene, this.character, pose);

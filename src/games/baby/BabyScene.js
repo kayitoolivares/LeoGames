@@ -36,8 +36,8 @@ const ANIMAL_COOLDOWN_MS = 350;
 const FRIEND_SPEED = 480;
 const TRAIL_EVERY_MS = 50;
 const IDLE_HINT_MS = 10000;
-// En los otros juegos se sale manteniendo Y, pero el bebé lo haría sin querer:
-// aquí hay que mantener LB + RB juntos (o Esc) 3 segundos.
+// Se sale como en los otros juegos (LB + RB + Y juntos, o Esc), pero hay que mantenerlos 3 segundos
+// para que el bebé no lo haga sin querer.
 const EXIT_HOLD_MS = 3000;
 const VOICE_EVERY_MS = 1200;
 const DEPTH = { trail: 1, shape: 2, animal: 3, friend: 4, firework: 5, ui: 10 };
@@ -72,7 +72,7 @@ export class BabyScene extends Phaser.Scene {
       .text(width / 2, 30, '🔇 Para que suene: haz clic o presiona una tecla  (en Xbox: A en modo cursor)', textStyle(20, TEXT.accent))
       .setOrigin(0.5)
       .setDepth(DEPTH.ui);
-    this.add.text(width / 2, height - 22, 'Para salir: mantén LB + RB juntos (o Esc)', textStyle(16, TEXT.muted)).setOrigin(0.5).setDepth(DEPTH.ui);
+    this.add.text(width / 2, height - 22, 'Para salir: mantén LB + RB + Y juntos (o Esc)', textStyle(16, TEXT.muted)).setOrigin(0.5).setDepth(DEPTH.ui);
     this.exitBar = this.add.rectangle(width / 2 - 150, height - 46, 300, 8, 0xffffff).setOrigin(0, 0.5).setScale(0, 1).setDepth(DEPTH.ui);
     this.escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
@@ -335,8 +335,8 @@ export class BabyScene extends Phaser.Scene {
   }
 
   updateExit(dt) {
-    const bothBumpers = controls.connectedDevices().some((device) => controls.isDown(device.id, 'lb') && controls.isDown(device.id, 'rb'));
-    this.exitMs = bothBumpers || this.escKey?.isDown ? this.exitMs + dt : 0;
+    const exitCombo = controls.connectedDevices().some((device) => controls.holdingExit(device.id));
+    this.exitMs = exitCombo || this.escKey?.isDown ? this.exitMs + dt : 0;
     this.exitBar.setScale(Math.min(1, this.exitMs / EXIT_HOLD_MS), 1);
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();
   }

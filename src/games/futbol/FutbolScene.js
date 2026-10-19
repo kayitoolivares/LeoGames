@@ -106,7 +106,7 @@ export class FutbolScene extends Phaser.Scene {
       .setDepth(HUD_DEPTH + 1)
       .setAlpha(0);
     this.add
-      .text(width / 2, height - 22, 'Stick = correr  ·  A = saltar  ·  X o B = patear (con ↑ globito, con ↓ rasante)  ·  Mantén Y = salir', textStyle(16, TEXT.normal, OUTLINE))
+      .text(width / 2, height - 22, 'Stick = correr  ·  A = saltar  ·  X o B = patear (con ↑ globito, con ↓ rasante)  ·  Mantén LB + RB + Y = salir', textStyle(16, TEXT.normal, OUTLINE))
       .setOrigin(0.5)
       .setDepth(HUD_DEPTH);
     this.exitBar = this.add.rectangle(width / 2 - 100, height - 6, 200, 6, 0xffffff).setOrigin(0, 0.5).setScale(0, 1).setDepth(HUD_DEPTH);
@@ -388,7 +388,7 @@ export class FutbolScene extends Phaser.Scene {
     const humansWon = this.team.some((p) => !p.isCpu && p.team === winner);
     if (humansWon) rewards.earn('futbol-gana');
     const choose = this.humans.length > 1 ? '  ·  B = cambiar equipos' : '';
-    this.showBanner(`¡Ganaron los ${TEAM_NAMES[winner]}!`, `A = revancha${choose}  ·  Mantén Y = salir`, 0, hexToCss(TEAM_COLORS[winner]));
+    this.showBanner(`¡Ganaron los ${TEAM_NAMES[winner]}!`, `A = revancha${choose}  ·  Mantén LB + RB + Y = salir`, 0, hexToCss(TEAM_COLORS[winner]));
     confetti(this, [TEAM_COLORS[winner], 0xffffff], 90);
     sfx.win();
   }
@@ -409,7 +409,7 @@ export class FutbolScene extends Phaser.Scene {
   }
 
   updateExit(dt) {
-    const holding = this.humans.some((player) => controls.isDown(player.deviceId, 'y'));
+    const holding = this.humans.some((player) => controls.holdingExit(player.deviceId));
     this.exitMs = holding ? this.exitMs + dt : 0;
     this.exitBar.setScale(Math.min(1, this.exitMs / EXIT_HOLD_MS), 1);
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();

@@ -72,7 +72,7 @@ export class KartHud {
     this.el.insertAdjacentHTML(
       'beforeend',
       `<div class="kart-center"></div><div class="kart-results" hidden></div>
-       <div class="kart-help">A = acelerar  ·  B = frenar  ·  X = lanzar poder  ·  RB = nitro  ·  Mantén Y = salir</div>
+       <div class="kart-help">A = acelerar  ·  B = frenar  ·  X = lanzar poder  ·  RB = nitro  ·  Mantén LB + RB + Y = salir</div>
        <div class="kart-exit"><div></div></div>`,
     );
     this.center = this.el.querySelector('.kart-center');
@@ -117,7 +117,7 @@ export class KartHud {
       )
       .join('');
     const choose = canChoose ? '  ·  B = cambiar pista' : '';
-    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera${choose}  ·  Mantén Y = salir</p>`;
+    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera${choose}  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 

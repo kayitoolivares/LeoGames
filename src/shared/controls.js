@@ -189,6 +189,14 @@ class Controls {
     return Boolean(device && device.state[name] && !device.prev[name]);
   }
 
+  // Salir de un juego: mantener LB + RB + Y. Así no se sale nadie sin querer (LB + RB solos son escudo,
+  // cubrirse o súper en las peleas). En la pantalla táctil basta LB + RB: con dos pulgares no se alcanzan tres.
+  holdingExit(deviceId) {
+    const device = this.devices.get(deviceId);
+    if (!device?.state.lb || !device.state.rb) return false;
+    return device.kind === 'touch' || device.state.y;
+  }
+
   getStick(deviceId) {
     return this.devices.get(deviceId)?.stick ?? { x: 0, y: 0 };
   }

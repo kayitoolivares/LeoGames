@@ -76,6 +76,7 @@ export class Fighter {
     const dt = dtMs / 1000;
     const id = this.deviceId;
     const stick = controls.getStick(id);
+    this.walking = Math.hypot(stick.x, stick.y) > 0.2;
     this.x += stick.x * SPEED_X * dt + this.knockback * dt;
     this.y += stick.y * SPEED_Y * dt;
     this.knockback = decay(this.knockback, dt);
@@ -162,7 +163,8 @@ export class Fighter {
     s.setAlpha(this.down ? 0.75 : blinking ? 0.35 : 1);
     s.look(this.facing * 0.9, 0);
     const hurting = this.down || (this.invulnerableMs > INVULNERABLE_MS - 350 && this.knockback !== 0);
-    const pose = hurting ? 'dolor' : this.attackMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : 'normal';
+    const ground = this.look.groundPose(Boolean(this.walking) && !this.down);
+    const pose = hurting ? 'dolor' : this.attackMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : ground;
     this.look.show(pose, this.facing);
     this.tag.setVisible(!this.down);
     this.stars.setVisible(this.down);

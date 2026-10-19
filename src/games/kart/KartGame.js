@@ -517,7 +517,7 @@ export class KartGame {
   }
 
   updateExit(dtMs) {
-    const holding = this.deviceIds.some((id) => controls.isDown(id, 'y'));
+    const holding = this.deviceIds.some((id) => controls.holdingExit(id));
     this.exitMs = holding ? this.exitMs + dtMs : 0;
     (this.hud ?? this.chooser)?.setExitProgress(Math.min(1, this.exitMs / EXIT_HOLD_MS));
     if (this.exitMs >= EXIT_HOLD_MS && !this.exited) {

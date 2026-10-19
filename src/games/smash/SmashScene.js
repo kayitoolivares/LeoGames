@@ -184,7 +184,7 @@ export class SmashScene extends Phaser.Scene {
       .text(
         width / 2,
         22,
-        'A = saltar  ·  X = golpe (↑ ↓ cambian)  ·  B = especial (B + ↑ = rescate)  ·  RB / LB = escudo  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén Y = salir',
+        'A = saltar  ·  X = golpe (↑ ↓ cambian)  ·  B = especial (B + ↑ = rescate)  ·  RB / LB = escudo  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén LB + RB + Y = salir',
         textStyle(16, TEXT.normal, OUTLINE),
       )
       .setOrigin(0.5);
@@ -580,7 +580,7 @@ export class SmashScene extends Phaser.Scene {
     this.phase = 'end';
     this.phaseMs = 0;
     const winner = standing[0];
-    this.showBanner(winner ? `¡Ganó ${winner.label}!` : '¡Empate!', 'A = revancha   ·   B = cambiar personaje   ·   Mantén Y = salir');
+    this.showBanner(winner ? `¡Ganó ${winner.label}!` : '¡Empate!', 'A = revancha   ·   B = cambiar personaje   ·   Mantén LB + RB + Y = salir');
     if (winner) {
       this.banner.setColor(hexToCss(winner.color));
       confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
@@ -643,7 +643,7 @@ export class SmashScene extends Phaser.Scene {
   }
 
   updateExit(dt) {
-    const holding = this.fighters.some((f) => !f.isCpu && controls.isDown(f.deviceId, 'y'));
+    const holding = this.fighters.some((f) => !f.isCpu && controls.holdingExit(f.deviceId));
     this.exitMs = holding ? this.exitMs + dt : 0;
     this.exitBar.setScale(Math.min(1, this.exitMs / EXIT_HOLD_MS), 1);
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();
