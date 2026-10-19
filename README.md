@@ -111,8 +111,10 @@ Para gastar menos del límite de Gemini se le puede pedir una **hoja** con varia
 (en filas, bien separadas, sobre fondo verde liso) y partirla con
 `node tools/split-sheet.mjs <hoja.jpg> <personaje> [<personaje>_super]`: una fila de 4 poses
 (normal, golpe, salto, dolor) por nombre, o los nombres exactos (`tanque-patada tanque-cubrirse ...`).
-Deja las poses sueltas en `arte/smash/personajes/`. El Duelo usa además `patada`, `cubrirse`, `especial` y `gana`
-(si faltan, usa la pose más parecida); el fondo del dojo va en `arte/duelo/fondos/dojo.jpg`.
+Deja las poses sueltas en `arte/smash/personajes/`. Todos los juegos usan además `caminar1` a `caminar4`
+(los cuadros de la caminata; con personajes anchos sale mejor pedirlos en 2 filas de 2) y el Duelo
+`patada`, `cubrirse`, `especial` y `gana` (si faltan, usa la pose más parecida); el fondo del dojo va en
+`arte/duelo/fondos/dojo.jpg`.
 
 ## Jugar en el Xbox
 

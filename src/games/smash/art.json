@@ -1,6 +1,10 @@
 {
   "characters": {
     "abeja": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -11,12 +15,20 @@
       "salto"
     ],
     "abeja_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "astronauta": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -27,12 +39,20 @@
       "salto"
     ],
     "astronauta_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "bombero": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -43,12 +63,20 @@
       "salto"
     ],
     "bombero_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "dino": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -59,12 +87,20 @@
       "salto"
     ],
     "dino_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "dragon": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -75,12 +111,20 @@
       "salto"
     ],
     "dragon_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "estrella": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -91,12 +135,20 @@
       "salto"
     ],
     "estrella_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "fantasma": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -107,12 +159,20 @@
       "salto"
     ],
     "fantasma_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "gatito": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -123,12 +183,20 @@
       "salto"
     ],
     "gatito_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "hada": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -139,12 +207,20 @@
       "salto"
     ],
     "hada_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "ninja": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -155,12 +231,20 @@
       "salto"
     ],
     "ninja_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "pinguino": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -171,12 +255,20 @@
       "salto"
     ],
     "pinguino_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "pirata": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -187,12 +279,20 @@
       "salto"
     ],
     "pirata_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "rayo": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -203,12 +303,20 @@
       "salto"
     ],
     "rayo_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "resorte": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -219,12 +327,20 @@
       "salto"
     ],
     "resorte_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "robot": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -235,12 +351,20 @@
       "salto"
     ],
     "robot_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
       "salto"
     ],
     "tanque": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "cubrirse",
       "dolor",
       "especial",
@@ -251,6 +375,10 @@
       "salto"
     ],
     "tanque_super": [
+      "caminar1",
+      "caminar2",
+      "caminar3",
+      "caminar4",
       "dolor",
       "golpe",
       "normal",
