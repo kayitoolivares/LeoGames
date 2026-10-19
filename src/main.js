@@ -5,6 +5,7 @@ import { music } from './shared/music.js';
 import { CharacterSelectScene } from './scenes/CharacterSelectScene.js';
 import { JoinScene } from './scenes/JoinScene.js';
 import { MenuScene } from './scenes/MenuScene.js';
+import { ControlsScene } from './scenes/ControlsScene.js';
 import { PadTestScene } from './scenes/PadTestScene.js';
 import { PrizesScene } from './scenes/PrizesScene.js';
 import { BabyScene } from './games/baby/BabyScene.js';
@@ -31,6 +32,7 @@ const game = new Phaser.Game({
     JoinScene,
     MenuScene,
     PadTestScene,
+    ControlsScene,
     PrizesScene,
     CharacterSelectScene,
     BrawlScene,
@@ -57,6 +59,7 @@ const SCENE_MUSIC = {
   Menu: 'menu',
   SmashSelect: 'menu',
   Premios: 'menu',
+  Controles: 'menu',
   Personajes: 'menu',
   Brawl: 'brawl',
   Smash: 'smash',

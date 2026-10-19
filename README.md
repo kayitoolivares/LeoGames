@@ -74,7 +74,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
   de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).
 - **Halcón de Acero**: abre https://hda.grupomegarey.mx (es otro proyecto; para volver, B en modo navegador).
-- **Prueba de controles**: muestra lo que el navegador ve de cada control, botón por botón.
+- **Cómo jugar**: qué tecla es cada botón en los dos teclados y qué hace cada botón en cada juego (una página
+  por juego, ◀ ▶ para cambiar). Con **Y** abre la **prueba de controles**, que muestra lo que el navegador ve
+  de cada control, botón por botón.
 
 Los juegos 3D usan [Three.js](https://threejs.org) y se descargan hasta que alguien entra a ellos.
 
@@ -126,7 +128,7 @@ se juega desde GitHub Pages:
    `https://<tu-usuario>.github.io/LeoGames/`.
 3. En el Xbox: desactiva **"Apps can add a border"** (borde de overscan) para que no vaya lento.
 4. Abre la dirección en **Edge**, mantén **≡ (Menú)** → **"Use game controls"** → **A**.
-5. Si algo falla, el menú tiene **Prueba de controles** para ver qué detecta el navegador.
+5. Si algo falla, en el menú **Cómo jugar** → **Y** abre la prueba de controles para ver qué detecta el navegador.
 
 ## Pruebas
 
@@ -139,7 +141,7 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/shared/controls.js`: lee controles y teclado. No depende de Phaser (para reutilizarlo con Three.js).
 - `src/shared/players.js`: quién juega, con qué control y de qué color.
 - `src/games.js`: catálogo de juegos del menú.
-- `src/scenes/`: pantallas (unirse, menú, prueba de controles).
+- `src/scenes/`: pantallas (unirse, menú, personajes, premios, cómo jugar, prueba de controles).
 - `src/shared/touch.js`: controles táctiles para el celular (cuentan como un control en `controls.js`).
 - `src/shared/clock.js`: tiempo real entre cuadros (para que nada vaya en cámara lenta si baja el fps).
 - `src/shared/sound.js`: efectos de sonido sintetizados.

@@ -44,6 +44,28 @@ const KEYBOARDS = {
   },
 };
 
+// Cómo se llama cada tecla en un teclado latinoamericano. event.code es la posición física: la tecla
+// "Slash" de un teclado en inglés es la del guion en uno latino.
+const KEY_NAMES = {
+  Space: 'Espacio',
+  ShiftLeft: 'Shift izq.',
+  ShiftRight: 'Shift der.',
+  ControlRight: 'Ctrl der.',
+  Period: '.',
+  Comma: ',',
+  Slash: '-',
+  ArrowUp: '↑',
+  ArrowDown: '↓',
+  ArrowLeft: '←',
+  ArrowRight: '→',
+};
+
+// La tecla de un botón en un teclado ('kb1' o 'kb2'), para mostrarla en pantalla. null si no tiene.
+export function keyFor(keyboardId, button) {
+  const code = KEYBOARDS[keyboardId].keys[button];
+  return code ? (KEY_NAMES[code] ?? code.replace(/^Key/, '')) : null;
+}
+
 export const CONTROL_NAMES = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt'];
 
 // Histéresis del stick: se activa al pasar de 0.5 y se suelta al bajar de 0.3,

@@ -63,7 +63,17 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir de Mis premios');
 
-  await p.openGameCard('Prueba de controles');
+  // "Cómo jugar": se pasan todas las páginas (las teclas salen de controls.js), Y abre la prueba de controles.
+  await p.openGameCard('Cómo jugar');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Controles'), null, { timeout: ms(8000) });
+  const pages = await p.page.evaluate(() => window.leogames.scene.getScene('Controles').dots.length);
+  for (let i = 1; i < pages; i += 1) await p.tap(0, BUTTON.RIGHT);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Controles').page), pages - 1);
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'salir de Cómo jugar');
+  await p.openGameCard('Cómo jugar');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Controles'), null, { timeout: ms(8000) });
+  await p.tap(0, BUTTON.Y);
   await p.page.waitForFunction(() => window.leogames.scene.isActive('PadTest'), null, { timeout: ms(8000) });
   await p.holdToMenu(0, [BUTTON.B], 'salir de la prueba de controles');
 
