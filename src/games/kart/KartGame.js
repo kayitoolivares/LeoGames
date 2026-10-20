@@ -7,7 +7,7 @@ import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
-import { Racer, RACER_RADIUS, NITRO_CHARGES, SHIELD_MS } from './Racer.js';
+import { INK_MS, Racer, RACER_RADIUS, NITRO_CHARGES, SHIELD_MS } from './Racer.js';
 import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
 import manifest from './art.json';
@@ -48,6 +48,10 @@ const ROLL_ICONS = Object.values(ITEM_ICONS);
 const EVENT_MESSAGES = { turbo1: '¡Mini turbo!', turbo2: '¡Súper turbo!', turbo3: '¡Ultra turbo!', trick: '¡Truco! 🤸' };
 // La compu hace truco en el aire de vez en cuando (probabilidad por cuadro).
 const CPU_TRICK = 0.06;
+// Con tinta en la cara la compu maneja chueco.
+const CPU_INK_WOBBLE = 0.6;
+// Encogido por el rayo, si te toca un kart normal te aplasta (si va a esta velocidad o más).
+const SQUASH_SPEED = 10;
 
 // La última pista que se escogió, para que salga seleccionada la próxima vez.
 let lastTrack = 'pradera';
@@ -360,8 +364,9 @@ export class KartGame {
   cpuInput(racer, ranking) {
     const target = this.track.pointAt(racer.index + CPU_LOOKAHEAD, racer.lane);
     const diff = angleDiff(Math.atan2(target.x - racer.x, target.z - racer.z), racer.heading);
+    const wobble = racer.inkMs > 0 ? Math.sin(performance.now() / 260) * CPU_INK_WOBBLE : 0;
     return {
-      steer: clamp(-diff * 2.5, -1, 1),
+      steer: clamp(-diff * 2.5 + wobble, -1, 1),
       gas: CPU_GAS,
       brake: 0,
       nitro: racer.nitro >= 1 && Math.abs(diff) < 0.12 && Math.random() < 0.006,
@@ -383,7 +388,9 @@ export class KartGame {
 
   cpuWantsItem(racer, ranking) {
     if (!racer.item || racer.rollMs > 0) return false;
-    if (racer.item === 'turbo' || racer.item === 'shield') return true;
+    if (['turbo', 'shield', 'lightning'].includes(racer.item)) return true;
+    // El cometa y la tinta solo sirven si alguien va adelante.
+    if (racer.item === 'comet' || racer.item === 'ink') return ranking.indexOf(racer) > 0;
     if (racer.item === 'rocket') {
       const ahead = ranking[ranking.indexOf(racer) - 1];
       return ahead ? Math.hypot(ahead.x - racer.x, ahead.z - racer.z) < 60 : Math.random() < 0.003;
@@ -398,18 +405,49 @@ export class KartGame {
     if (racer.item || racer.rollMs > 0) return;
     const ranking = this.ranking();
     racer.pendingItem = rollItem(ranking.indexOf(racer) / (ranking.length - 1));
+    racer.pendingUses = ITEMS[racer.pendingItem].uses ?? 1;
     racer.rollMs = ROLL_MS;
   }
 
   useItem(racer, ranking) {
     if (!racer.item || racer.rollMs > 0) return;
     const item = racer.item;
-    racer.item = null;
+    racer.itemUses -= 1;
+    if (racer.itemUses <= 0) racer.item = null;
     if (item === 'rocket') this.projectiles.addRocket(racer, ranking[ranking.indexOf(racer) - 1] ?? null);
-    else if (item === 'banana') this.projectiles.addBanana(racer);
+    else if (item === 'banana' || item === 'banana3') this.projectiles.addBanana(racer);
     else if (item === 'turbo') racer.boost(1.7, 2000);
     else if (item === 'shield') racer.shieldMs = SHIELD_MS;
+    else if (item === 'comet') {
+      const leader = ranking.find((other) => other !== racer && !other.finished);
+      if (leader) this.projectiles.addComet(racer, leader);
+    } else if (item === 'lightning') this.strikeLightning(racer);
+    else if (item === 'ink') this.splashInk(racer, ranking);
     if (!racer.isCpu) racer.say(ITEMS[item].name, 900);
+  }
+
+  // Rayo: encoge a todos los demás (a los que traen burbuja solo se las revienta).
+  strikeLightning(owner) {
+    this.hud.flash();
+    sfx.boom();
+    let hits = 0;
+    for (const racer of this.racers) {
+      if (racer === owner || racer.finished) continue;
+      const shrunk = racer.shrink();
+      if (shrunk) hits += 1;
+      if (!racer.isCpu) racer.say(shrunk ? '¡Te encogieron! 🌩️' : '¡La burbuja te salvó!');
+    }
+    if (hits > 0 && !owner.isCpu) rewards.earn('kart-poder');
+  }
+
+  // Tinta: les mancha la pantalla a todos los que van adelante.
+  splashInk(owner, ranking) {
+    for (const racer of ranking.slice(0, ranking.indexOf(owner))) {
+      if (racer.finished) continue;
+      racer.inkMs = INK_MS;
+      if (!racer.isCpu) racer.say('¡No veo! 🦑');
+    }
+    sfx.throw();
   }
 
   onProjectileHit(victim, projectile) {
@@ -499,6 +537,14 @@ export class KartGame {
         b.z += (dz / dist) * overlap * (1 - share);
         a.speed *= 0.97;
         b.speed *= 0.97;
+        // Si uno está encogido por el rayo y el otro no, ¡lo aplasta!
+        for (const [small, big] of [[a, b], [b, a]]) {
+          if (small.shrinkMs > 0 && big.shrinkMs === 0 && big.speed > SQUASH_SPEED && small.spinMs === 0) {
+            small.hit();
+            if (!small.isCpu) small.say('¡Te aplastaron! 💫');
+            if (!big.isCpu) big.say('¡Aplastado! 👟');
+          }
+        }
       }
     }
   }
@@ -545,7 +591,9 @@ export class KartGame {
       if (view.kind !== 'player') return;
       const racer = view.racer;
       const rolling = racer.rollMs > 0;
-      const item = rolling ? ROLL_ICONS[Math.floor(now / 90) % ROLL_ICONS.length] : racer.item ? ITEM_ICONS[racer.item] : '';
+      let item = rolling ? ROLL_ICONS[Math.floor(now / 90) % ROLL_ICONS.length] : racer.item ? ITEM_ICONS[racer.item] : '';
+      // Los que se usan varias veces (triple plátano) dicen cuántos quedan.
+      if (!rolling && racer.itemUses > 1) item += `<b class="count">×${racer.itemUses}</b>`;
       const message = racer.messageMs > 0 ? racer.message : racer.wrongWayMs > WRONG_WAY_MS ? '¡Vas al revés! ↩️' : '';
       this.hud.setPanel(i, {
         pos: `${ranking.indexOf(racer) + 1}°`,
@@ -555,6 +603,7 @@ export class KartGame {
         rolling,
         nitro: Array.from({ length: NITRO_CHARGES }, (_, k) => `<span class="${k < racer.nitro ? '' : 'off'}">🔥</span>`).join(''),
         msg: message,
+        ink: racer.inkMs > 0,
       });
     });
   }

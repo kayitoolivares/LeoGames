@@ -64,8 +64,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   primeros (**A** = otra carrera, **X** = regresar al taller).
   **A / RT** = acelerar, **B / LT** = frenar y reversa, **stick** = girar, **RB** = nitro (3 cargas que se recargan),
   **LB** = derrapar (mantenerlo en la curva junta chispas azules, naranjas y moradas; al soltarlo, turbito) y, en el
-  aire después de una rampa, truco (turbito al caer). Las flechas naranjas del piso dan turbo,
-  **X** = lanzar el poder de las cajitas "?" (🚀 cohete, 🍌 plátano, ⚡ súper turbo, 🛡️ burbuja).
+  aire después de una rampa, truco (turbito al caer). Las flechas naranjas del piso dan turbo.
+  **X** = lanzar el poder de las cajitas "?": 🚀 cohete (al de adelante), 🍌 plátano, 🍌×3 tres plátanos (uno con
+  cada X), ⚡ súper turbo, 🛡️ burbuja, ☄️ cometa (va por el primer lugar), 🌩️ rayo (encoge a los demás; encogidos,
+  si los tocas dan vueltas) y 🦑 tinta (mancha la pantalla de los de adelante). Los de atrás reciben mejores poderes.
   Pistas: **Pradera** y **Montaña nevada** (se desbloquea al ganar una carrera; tiene nieve cayendo, monos de nieve
   y una curva en "S"). Al terminar, **B** regresa a escoger pista.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.

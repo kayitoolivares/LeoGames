@@ -16,6 +16,16 @@ const CSS = `
   background: rgba(27, 21, 48, 0.6); border: calc(4px * var(--s)) solid #fff;
   display: flex; align-items: center; justify-content: center; font-size: calc(54px * var(--s)); }
 .kart-panel .item img { width: 82%; height: 82%; object-fit: contain; }
+.kart-panel .item .count { position: absolute; bottom: 0; right: calc(6px * var(--s)); font-size: calc(24px * var(--s)); }
+.kart-panel .ink { position: absolute; inset: 0; opacity: 0; transition: opacity 0.5s; pointer-events: none;
+  background: radial-gradient(circle at 30% 40%, #1b1530 0 14%, transparent 15%),
+    radial-gradient(circle at 62% 55%, #2a1f4a 0 19%, transparent 20%),
+    radial-gradient(circle at 45% 74%, #1b1530 0 11%, transparent 12%),
+    radial-gradient(circle at 76% 28%, #1b1530 0 10%, transparent 11%),
+    radial-gradient(circle at 18% 72%, #2a1f4a 0 9%, transparent 10%),
+    radial-gradient(circle at 52% 30%, #2a1f4a 0 8%, transparent 9%); }
+.kart-panel .ink.on { opacity: 0.88; transition: opacity 0.15s; }
+.kart-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .kart-panel .item.rolling { border-color: #ffc93c; }
 .kart-panel .nitro { position: absolute; bottom: calc(20px * var(--s)); right: calc(20px * var(--s));
   font-size: calc(36px * var(--s)); }
@@ -74,19 +84,29 @@ export class KartHud {
       panel.innerHTML =
         view.kind === 'map'
           ? '<div class="map-title">Mapa</div>'
-          : '<div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="nitro"></div><div class="msg"></div>';
+          : '<div class="ink"></div><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="nitro"></div><div class="msg"></div>';
       this.el.append(panel);
       const part = (name) => panel.querySelector(`.${name}`);
-      return { pos: part('pos'), who: part('who'), lap: part('lap'), item: part('item'), nitro: part('nitro'), msg: part('msg'), last: {} };
+      return {
+        pos: part('pos'),
+        who: part('who'),
+        lap: part('lap'),
+        item: part('item'),
+        nitro: part('nitro'),
+        msg: part('msg'),
+        inkEl: part('ink'),
+        last: {},
+      };
     });
 
     this.el.insertAdjacentHTML(
       'beforeend',
-      `<div class="kart-center"></div><div class="kart-results" hidden></div>
+      `<div class="kart-flash"></div><div class="kart-center"></div><div class="kart-results" hidden></div>
        <div class="kart-help">A = acelerar  ·  B = frenar  ·  LB = derrapar  ·  X = lanzar poder  ·  RB = nitro  ·  Bloquecito: Y = número  ·  Mantén LB + RB + Y = salir</div>
        <div class="kart-exit"><div></div></div>`,
     );
     this.center = this.el.querySelector('.kart-center');
+    this.flashEl = this.el.querySelector('.kart-flash');
     this.results = this.el.querySelector('.kart-results');
     this.help = this.el.querySelector('.kart-help');
     this.exitBar = this.el.querySelector('.kart-exit > div');
@@ -97,11 +117,25 @@ export class KartHud {
   setPanel(i, data) {
     const panel = this.panels[i];
     for (const [key, value] of Object.entries(data)) {
-      if (key === 'rolling' || panel.last[key] === value || !panel[key]) continue;
+      if (key === 'rolling' || key === 'ink' || panel.last[key] === value || !panel[key]) continue;
       panel.last[key] = value;
       panel[key].innerHTML = value;
     }
     panel.item?.classList.toggle('rolling', Boolean(data.rolling));
+    if (panel.inkEl && panel.last.ink !== data.ink) {
+      panel.last.ink = data.ink;
+      panel.inkEl.classList.toggle('on', Boolean(data.ink));
+    }
+  }
+
+  // Destello blanco en toda la pantalla (el rayo).
+  flash() {
+    const el = this.flashEl;
+    el.style.transition = 'none';
+    el.style.opacity = '0.85';
+    void el.offsetWidth;
+    el.style.transition = 'opacity 0.7s';
+    el.style.opacity = '0';
   }
 
   setCenter(text) {

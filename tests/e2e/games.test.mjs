@@ -539,6 +539,64 @@ test('karts locos: derrape, rampa con truco y flecha de turbo', { timeout: ms(12
   await p.context.close();
 });
 
+// Poderes nuevos: triple plátano (uno con cada X), rayo (encoge a los demás), tinta (a los de adelante) y cometa (al primero).
+test('karts locos: triple plátano, rayo, tinta y cometa', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'empezar la carrera');
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  const kart = (fn) => p.page.evaluate(fn);
+  const give = (item, uses = 1) =>
+    p.page.evaluate(([it, u]) => Object.assign(window.leogames.scene.getScene('Kart').game3d.humans[0], { item: it, itemUses: u, rollMs: 0 }), [item, uses]);
+
+  // Se cuentan los plátanos que suelta (la compu de atrás puede atropellar alguno).
+  await kart(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const drop = k.projectiles.addBanana.bind(k.projectiles);
+    k.bananas = 0;
+    k.projectiles.addBanana = (owner) => ((k.bananas += 1), drop(owner));
+  });
+  await give('banana3', 3);
+  for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.X);
+  assert.equal(await kart(() => window.leogames.scene.getScene('Kart').game3d.bananas), 3);
+  assert.equal(await kart(() => window.leogames.scene.getScene('Kart').game3d.humans[0].item), null);
+
+  // Sin burbujas (la burbuja protege del rayo y del cometa).
+  const noShields = () => kart(() => window.leogames.scene.getScene('Kart').game3d.racers.forEach((r) => (r.shieldMs = 0)));
+  await noShields();
+  await give('lightning');
+  await p.tap(0, BUTTON.X);
+  const shrunk = await kart(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.shrinkMs > 0));
+  assert.deepEqual(shrunk, [false, true, true, true, true, true]);
+
+  // Para la tinta y el cometa el jugador va hasta atrás.
+  await kart(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    for (const r of k.racers) r.shrinkMs = 0;
+    k.humans[0].lap = -3;
+  });
+  await p.frames(2);
+  await give('ink');
+  await p.tap(0, BUTTON.X);
+  assert.equal(await kart(() => window.leogames.scene.getScene('Kart').game3d.racers.filter((r) => r.inkMs > 0).length), 5);
+
+  const leader = await kart(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    return k.racers.indexOf(k.ranking().find((r) => r !== k.humans[0]));
+  });
+  await noShields();
+  await give('comet');
+  await p.tap(0, BUTTON.X);
+  // (que el cometa le pegue al primero)
+  await p.page.waitForFunction((i) => window.leogames.scene.getScene('Kart').game3d.racers[i].spinMs > 0, leader, { timeout: ms(15000) });
+  await p.page.evaluate(() => window.__release());
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(180000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));

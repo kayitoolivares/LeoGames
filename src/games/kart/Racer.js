@@ -26,6 +26,11 @@ const GRAVITY = 28;
 const AIR_STEER = 0.4;
 const TRICK_BOOST = { factor: 1.3, ms: 800 };
 const TRICK_SPIN_MS = 420;
+// El rayo encoge: más chiquito y más lento un rato. La tinta mancha la pantalla.
+export const SHRINK_MS = 6000;
+const SHRINK_SCALE = 0.55;
+const SHRINK_SPEED = 0.72;
+export const INK_MS = 4500;
 
 const shieldGeometry = new THREE.SphereGeometry(2.7, 16, 12);
 let sparkTexture = null;
@@ -100,8 +105,12 @@ export class Racer {
     this.progress = -1;
     this.finished = false;
     this.item = null;
+    this.itemUses = 0;
     this.pendingItem = null;
     this.rollMs = 0;
+    this.shrinkMs = 0;
+    this.inkMs = 0;
+    this.size = 1;
     this.nitro = NITRO_CHARGES;
     this.nitroRefillMs = 0;
     this.boostMs = 0;
@@ -183,9 +192,14 @@ export class Racer {
     this.spinMs = Math.max(0, this.spinMs - dtMs);
     this.shieldMs = Math.max(0, this.shieldMs - dtMs);
     this.messageMs = Math.max(0, this.messageMs - dtMs);
+    this.shrinkMs = Math.max(0, this.shrinkMs - dtMs);
+    this.inkMs = Math.max(0, this.inkMs - dtMs);
     if (this.rollMs > 0) {
       this.rollMs = Math.max(0, this.rollMs - dtMs);
-      if (this.rollMs === 0) this.item = this.pendingItem;
+      if (this.rollMs === 0) {
+        this.item = this.pendingItem;
+        this.itemUses = this.pendingUses;
+      }
     }
     if (this.nitro < NITRO_CHARGES) {
       this.nitroRefillMs += dtMs;
@@ -204,7 +218,7 @@ export class Racer {
     }
 
     const { maxSpeed, accel, turn } = this.stats;
-    const top = maxSpeed * topFactor * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? this.stats.offroad : 1);
+    const top = maxSpeed * topFactor * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? this.stats.offroad : 1) * (this.shrinkMs > 0 ? SHRINK_SPEED : 1);
     if (this.boostMs > 0) {
       this.speed = approach(this.speed, top, accel * 2 * dt);
     } else if (gas > 0.1) {
@@ -260,9 +274,24 @@ export class Racer {
     }
   }
 
+  // Lo encogió un rayo (la burbuja lo protege). Devuelve true si sí lo encogió.
+  shrink() {
+    if (this.shieldMs > 0) {
+      this.shieldMs = 0;
+      return false;
+    }
+    this.shrinkMs = SHRINK_MS;
+    this.speed *= 0.6;
+    if (this.drifting) this.endDrift(true);
+    return true;
+  }
+
   render(timeMs) {
     const spin = this.spinMs > 0 ? (1 - this.spinMs / SPIN_MS) * Math.PI * 4 : 0;
     this.object.position.set(this.x, this.y, this.z);
+    // Encogido por el rayo: se hace chiquito poco a poco (y vuelve a crecer igual).
+    this.size += ((this.shrinkMs > 0 ? SHRINK_SCALE : 1) - this.size) * 0.15;
+    this.object.scale.setScalar(this.size);
     // Derrapando, la trompa apunta más hacia adentro de la curva (se ve de lado).
     this.visualYaw += ((this.drifting ? -this.driftDir * DRIFT_YAW : 0) - this.visualYaw) * 0.2;
     this.object.rotation.y = this.heading + spin + this.visualYaw;
