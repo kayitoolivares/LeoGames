@@ -3,6 +3,7 @@ import { controls } from '../../shared/controls.js';
 import { characterPicks } from '../../shared/picks.js';
 import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { loadSmashArt } from '../smash/art.js';
+import { MAX_NUMBER, numberStep } from '../smash/bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { frameDelta } from '../../shared/clock.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
@@ -250,6 +251,8 @@ export class FutbolScene extends Phaser.Scene {
   startMatch() {
     this.clearTeam();
     this.team = this.buildRoster().map((entry) => new FutbolPlayer(this, entry));
+    // Un Bloquecito de la compu sale con un número al azar.
+    for (const p of this.team) if (p.isCpu) p.look.setNumber(1 + Math.floor(Math.random() * MAX_NUMBER));
     // Si un equipo tiene 2 de la compu, uno se queda de portero.
     for (const team of [0, 1]) {
       const cpus = this.team.filter((p) => p.isCpu && p.team === team);
@@ -312,6 +315,7 @@ export class FutbolScene extends Phaser.Scene {
       kick: controls.justPressed(id, 'x') || controls.justPressed(id, 'b'),
       up: stick.y < -0.5,
       down: stick.y > 0.5,
+      change: numberStep(id),
     };
   }
 

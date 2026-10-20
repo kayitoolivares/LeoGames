@@ -15,6 +15,8 @@ const CARD_H = 380;
 const CARD_GAP = 18;
 const CARD_Y = 400;
 const START_DELAY_MS = 700;
+// Lo más alto que puede verse Bloquecito en la tarjeta (va contando del 1 al 10).
+const PREVIEW_MAX_HEIGHT = 140;
 
 // El personaje que le toca a cada quien si nunca ha escogido.
 export function defaultCharacter(player) {
@@ -74,7 +76,7 @@ export class CharacterSelectScene extends Phaser.Scene {
     card.preview?.destroy();
     const blob = new Blob(this, 0, -CARD_H / 2 + 150, card.color, 46);
     blob.list[0].setVisible(false);
-    new CharacterLook(this, blob, card.pick, { height: 3.2 });
+    card.look = new CharacterLook(this, blob, card.pick, { height: 3.2 });
     card.preview = blob;
     card.container.add(blob);
     card.name.setText(CHARACTERS[card.pick].name);
@@ -94,6 +96,7 @@ export class CharacterSelectScene extends Phaser.Scene {
 
   update() {
     if (this.leaving) return;
+    for (const card of this.cards) card.look.showcase(PREVIEW_MAX_HEIGHT);
     for (const card of this.cards) {
       const id = card.player.deviceId;
       if (!card.ready) {

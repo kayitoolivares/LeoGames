@@ -6,8 +6,10 @@ import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { sfx } from '../../shared/sound.js';
 import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { Blob } from '../../ui/Blob.js';
+import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { characterTexture, loadSmashArt } from './art.js';
+import { isBlockCharacter } from './bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS, addAccessory } from './characters.js';
 import { STAGES, STAGE_KEYS } from './stages.js';
 
@@ -16,6 +18,8 @@ const CARD_H = 420;
 const CARD_GAP = 18;
 const CARD_Y = 420;
 const START_DELAY_MS = 700;
+// Lo más alto que puede verse Bloquecito en la tarjeta (va contando del 1 al 10).
+const PREVIEW_MAX_HEIGHT = 110;
 const LEVEL_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
 
 // Opciones de la pelea que escoge el Jugador 1 (↑ ↓ para elegir cuál, LB / RB para cambiarla).
@@ -158,8 +162,16 @@ export class SmashSelectScene extends Phaser.Scene {
     const { slot } = card;
     const c = CHARACTERS[slot.pick];
     card.blob?.destroy();
+    card.look = null;
     const key = characterTexture(this, slot.pick);
-    if (key) {
+    if (isBlockCharacter(slot.pick)) {
+      // Bloquecito no tiene imagen: se arma con bloques.
+      const blob = new Blob(this, 0, -CARD_H / 2 + 112, slot.color, c.radius * 1.4);
+      blob.list[0].setVisible(false);
+      card.look = new CharacterLook(this, blob, slot.pick);
+      card.blob = blob;
+      card.hop = () => blob.hop();
+    } else if (key) {
       const image = this.add.image(0, -CARD_H / 2 + 180, key).setOrigin(0.5, 1);
       image.setScale(140 / image.height);
       card.blob = image;
@@ -187,6 +199,7 @@ export class SmashSelectScene extends Phaser.Scene {
   }
 
   update() {
+    for (const card of this.cards) card.look?.showcase(PREVIEW_MAX_HEIGHT);
     if (this.updateOptions()) return;
 
     for (const card of this.cards) {

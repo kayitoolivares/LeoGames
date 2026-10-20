@@ -8,7 +8,7 @@ import { COLORS, TEXT, textStyle } from '../ui/style.js';
 
 const COLUMNS = 8;
 const CELL_W = 142;
-const CELL_H = 170;
+const CELL_H = 150;
 const GAP = 10;
 
 // "Mis premios": el álbum de calcomanías. Las que faltan salen con "?" y la pista de cómo ganarlas;
@@ -31,17 +31,17 @@ export class PrizesScene extends Phaser.Scene {
     const startX = (width - (COLUMNS * CELL_W + (COLUMNS - 1) * GAP)) / 2 + CELL_W / 2;
     this.cells = STICKERS.map((sticker, i) => {
       const x = startX + (i % COLUMNS) * (CELL_W + GAP);
-      const y = 230 + Math.floor(i / COLUMNS) * (CELL_H + GAP);
+      const y = 210 + Math.floor(i / COLUMNS) * (CELL_H + GAP);
       const has = rewards.has(sticker.id);
       const bg = this.add.rectangle(x, y, CELL_W, CELL_H, has ? COLORS.panel : 0x1b1730).setRounded(18);
-      this.add.text(x, y - 30, has ? sticker.emoji : '?', textStyle(has ? 58 : 50, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5);
+      this.add.text(x, y - 26, has ? sticker.emoji : '?', textStyle(has ? 58 : 50, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5);
       this.add
-        .text(x, y + 46, has ? sticker.name : '???', textStyle(16, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold', align: 'center', wordWrap: { width: CELL_W - 14 } }))
+        .text(x, y + 42, has ? sticker.name : '???', textStyle(16, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold', align: 'center', wordWrap: { width: CELL_W - 14 } }))
         .setOrigin(0.5);
       return { sticker, has, bg };
     });
 
-    this.detail = this.add.text(width / 2, 610, '', textStyle(24, TEXT.normal, { align: 'center', wordWrap: { width: 1100 } })).setOrigin(0.5);
+    this.detail = this.add.text(width / 2, 642, '', textStyle(24, TEXT.normal, { align: 'center', wordWrap: { width: 1100 } })).setOrigin(0.5);
     this.add.text(width / 2, height - 22, 'Stick = ver cada calcomanía   ·   B = regresar', textStyle(18, TEXT.muted)).setOrigin(0.5);
     this.select(0, false);
   }

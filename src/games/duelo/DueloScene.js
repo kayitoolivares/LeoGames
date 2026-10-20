@@ -10,6 +10,7 @@ import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText, randomPow } from '../brawl/effects.js';
 import { loadSmashArt } from '../smash/art.js';
+import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { ARENAS, ARENA_KEYS, drawArena, loadArenaArt } from './arenas.js';
 import { CPU_LEVELS, cpuInput } from './cpu.js';
@@ -30,7 +31,7 @@ const BAR = { width: 500, height: 30, y: 52, margin: 40 };
 const ROUND_CHOICES = [1, 2, 3];
 const RIVALS = { versus: 'Entre nosotros', cpu: 'Contra la compu' };
 const ARENA_CHOICES = ['azar', ...ARENA_KEYS];
-const IDLE = { x: 0, up: false, punch: false, kick: false, special: false, block: false, transform: false };
+const IDLE = { x: 0, up: false, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
 
 // Lo último que se escogió, para no escogerlo otra vez.
 const lastSetup = { rival: 'versus', rounds: 2, level: 'facil', arena: 'azar' };
@@ -301,6 +302,7 @@ export class DueloScene extends Phaser.Scene {
       special: controls.justPressed(id, 'x'),
       block: !transform && ['lb', 'rb', 'lt', 'rt'].some((button) => controls.isDown(id, button)),
       transform,
+      change: numberStep(id),
     };
   }
 

@@ -10,6 +10,7 @@ import { burst, confetti, popText } from '../brawl/effects.js';
 import { CHARACTERS, CHARACTER_KEYS } from './characters.js';
 import { METER_MAX, SUPER_MS, SmashFighter, STOCKS } from './SmashFighter.js';
 import { backgroundTexture, loadSmashArt } from './art.js';
+import { MAX_NUMBER, RAINBOW, numberStep } from './bloquecito.js';
 import { SmashItems, drawItem } from './items.js';
 import { Geysers } from './geysers.js';
 import { STAGES, buildPlatforms, movePlatforms } from './stages.js';
@@ -22,7 +23,7 @@ const ZOOM_MAX = 1.15;
 const CAMERA_MARGIN = 220;
 const STRONG_HIT_SPEED = 900;
 const HIT_WORDS = ['¡PAM!', '¡ZAS!', '¡POW!', '¡BAM!'];
-const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false, transform: false };
+const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false, transform: false, change: 0 };
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
 // Disparos: la estrella de Estrella (poco daño, pero pega de lejos), el láser de Robot (rápido) y la bala
 // de cañón de Pirata (lenta, cae en arco por la gravedad y avienta fuerte).
@@ -32,7 +33,12 @@ const SHOTS = {
   cannon: { lifeMs: 1400, radius: 18, gravity: 900, color: 0x3a3a4a, hit: { damage: 12, base: 360, scale: 9, angle: 35 } },
   // Polvo mágico de Hada: lento, va flotando en ondas y avienta hacia arriba.
   dust: { speed: 430, lifeMs: 1100, radius: 24, wave: 18, color: 0xff9ee8, hit: { damage: 6, base: 260, scale: 6, angle: 75 } },
+  // Bloquecito: las pelotas de malabares del 3 (salen tres, en arco) y el arcoíris del 7.
+  juggle: { lifeMs: 1300, radius: 13, gravity: 1100, color: 0xffd02a, hit: { damage: 5, base: 200, scale: 5, angle: 45 } },
+  rainbow: { speed: 900, lifeMs: 700, radius: 22, color: 0xffffff, hit: { damage: 9, base: 260, scale: 7, angle: 25 } },
 };
+// La compu con Bloquecito: cada cuánto escoge otro número (y lo va contando, un número cada tanto).
+const CPU_NUMBER_MS = { min: 3000, extra: 4000, step: 260 };
 // Ninja aparece detrás del rival más cercano si está a esta distancia; si no, avanza un poco.
 const TELEPORT_RANGE = 700;
 const TELEPORT_HOP = 220;
@@ -176,6 +182,11 @@ export class SmashScene extends Phaser.Scene {
       this.ui.add([bg, name, damage, ...stocks, meterBg, meter, meterText]);
       return { fighter, damage, stocks, meter, meterText, shown: null };
     });
+    // Si alguien escogió a Bloquecito, cómo cambia de número.
+    if (this.fighters.some((f) => f.blocks && !f.isCpu)) {
+      const hint = this.add.text(width / 2, 62, 'Bloquecito: Y = sube de número  ·  ↓ + Y = baja', textStyle(16, TEXT.accent, OUTLINE)).setOrigin(0.5);
+      this.ui.add(hint);
+    }
 
     const bannerStyle = { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 10, align: 'center' };
     this.banner = this.add.text(width / 2, 250, '', textStyle(84, TEXT.accent, bannerStyle)).setOrigin(0.5).setAlpha(0);
@@ -252,7 +263,7 @@ export class SmashScene extends Phaser.Scene {
   }
 
   inputFor(fighter) {
-    if (fighter.isCpu) return this.cpuInput(fighter);
+    if (fighter.isCpu) return { ...this.cpuInput(fighter), change: this.cpuNumber(fighter) };
     const id = fighter.deviceId;
     const stick = controls.getStick(id);
     // Con la barra llena, LB + RB juntos transforman (en vez de subir el escudo ese cuadro).
@@ -270,7 +281,23 @@ export class SmashScene extends Phaser.Scene {
       // Escudo con cualquier botón de arriba (bumpers o gatillos), para que sea fácil de encontrar.
       shield: !transform && ['rb', 'lb', 'rt', 'lt'].some((button) => controls.isDown(id, button)),
       transform,
+      change: numberStep(id),
     };
+  }
+
+  // Bloquecito de la compu: de vez en cuando escoge un número y va contando hacia él, uno por uno.
+  cpuNumber(fighter) {
+    if (!fighter.blocks || this.phase !== 'fight' || fighter.superMs > 0 || !fighter.isAlive()) return 0;
+    fighter.cpuNumberMs = (fighter.cpuNumberMs ?? CPU_NUMBER_MS.min) - frameDelta();
+    if (fighter.cpuNumberMs > 0) return 0;
+    const current = fighter.look.number;
+    if (!fighter.cpuGoal || fighter.cpuGoal === current) {
+      fighter.cpuGoal = 1 + Math.floor(Math.random() * MAX_NUMBER);
+      fighter.cpuNumberMs = CPU_NUMBER_MS.min + Math.random() * CPU_NUMBER_MS.extra;
+      return 0;
+    }
+    fighter.cpuNumberMs = CPU_NUMBER_MS.step;
+    return fighter.cpuGoal > current ? 1 : -1;
   }
 
   // El CPU se transforma un ratito después de llenar su barra, si tiene a alguien cerca.
@@ -391,9 +418,10 @@ export class SmashScene extends Phaser.Scene {
     // Golpe según dónde está el rival: arriba → hacia arriba; abajo estando en el aire → pisotón.
     let aim = climb.y;
     if (level.smart && close) aim = tdy < -40 ? -1 : !fighter.grounded && tdy > 30 ? 1 : 0;
-    // Estrella y Robot disparan de lejos si el otro está a su altura; Ninja se le aparece por detrás.
+    // Estrella, Robot (y Bloquecito en 3, 5 o 7) disparan de lejos si el otro está a su altura; Ninja se le aparece por detrás.
     const key = fighter.characterKey;
-    const lined = (key === 'estrella' || key === 'robot') && Math.abs(tdy) < 40 && Math.abs(dx) > 150 && Math.abs(dx) < 600;
+    const shooter = key === 'estrella' || key === 'robot' || (fighter.blocks && [3, 5, 7].includes(fighter.look.form));
+    const lined = shooter && Math.abs(tdy) < 40 && Math.abs(dx) > 150 && Math.abs(dx) < 600;
     const ambush = key === 'ninja' && best > 200 && best < TELEPORT_RANGE;
     return {
       x,
@@ -419,6 +447,10 @@ export class SmashScene extends Phaser.Scene {
         this.teleport(fighter);
         continue;
       }
+      if (request.kind === 'juggle') {
+        this.throwJuggle(fighter, request);
+        continue;
+      }
       let sprite;
       if (request.kind === 'bomb' && !fighter.isCpu) rewards.earn('smash-bomba');
       if (request.kind === 'bomb') sprite = drawItem(this, 'bomb');
@@ -436,11 +468,27 @@ export class SmashScene extends Phaser.Scene {
           this.add.circle(-6, -6, 5, 0xffffff, 0.6),
         ]);
       }
+      else if (request.kind === 'rainbow') {
+        sprite = this.add.container(request.x, request.y, [
+          this.add.rectangle(0, 0, 118, RAINBOW.length * 5 + 6, 0xffffff),
+          ...RAINBOW.map((color, i) => this.add.rectangle(0, (i - (RAINBOW.length - 1) / 2) * 5, 110, 5, color)),
+        ]);
+      }
       else sprite = this.add.star(request.x, request.y, 5, 9, 20, SHOTS.star.color).setStrokeStyle(3, 0xffffff);
-      // En súper modo los disparos salen más grandes.
-      sprite.setScale(fighter.radius / fighter.baseRadius);
+      // En súper modo los disparos salen más grandes (los de Bloquecito, según su número).
+      sprite.setScale(fighter.sizeScale);
       this.world.add(sprite);
       this.projectiles.push({ ...request, sprite, owner: fighter, ageMs: 0 });
+    }
+  }
+
+  // Los malabares del 3 de Bloquecito: tres pelotas de colores que salen en arco, cada una con su fuerza.
+  throwJuggle(fighter, request) {
+    for (const t of request.throws) {
+      const sprite = this.add.circle(request.x, request.y, SHOTS.juggle.radius, t.color).setStrokeStyle(3, 0xffffff);
+      sprite.setScale(fighter.sizeScale);
+      this.world.add(sprite);
+      this.projectiles.push({ kind: 'juggle', x: request.x, y: request.y, vx: request.dir * t.vx, vy: t.vy, dir: request.dir, sprite, owner: fighter, ageMs: 0 });
     }
   }
 
@@ -518,7 +566,7 @@ export class SmashScene extends Phaser.Scene {
   // Primer peleador (que no sea el que lo lanzó) que toca el proyectil.
   touching(p, radius) {
     return this.fighters.find(
-      (f) => f !== p.owner && f.isAlive() && !f.isInvulnerable() && Math.hypot(f.x - p.x, f.y - p.y) < f.radius + radius,
+      (f) => f !== p.owner && f.isAlive() && !f.isInvulnerable() && f.distanceTo(p.x, p.y) < f.radius + radius,
     );
   }
 
@@ -530,7 +578,7 @@ export class SmashScene extends Phaser.Scene {
     sfx.boom();
     for (const f of this.fighters) {
       if (f === bomb.owner || !f.isAlive() || f.isInvulnerable()) continue;
-      if (Math.hypot(f.x - bomb.x, f.y - bomb.y) > BOMB.blast + f.radius) continue;
+      if (f.distanceTo(bomb.x, bomb.y) > BOMB.blast + f.radius) continue;
       const { dealt } = f.takeHit({ facing: Math.sign(f.x - bomb.x) || 1, power: 1 }, BOMB.hit);
       bomb.owner.dealtDamage(dealt);
     }
@@ -542,7 +590,7 @@ export class SmashScene extends Phaser.Scene {
       if (!box) continue;
       for (const victim of this.fighters) {
         if (victim === attacker || !victim.isAlive() || victim.isInvulnerable() || attacker.attack.hit.has(victim)) continue;
-        if (Math.hypot(victim.x - box.x, victim.y - box.y) > box.radius + victim.radius) continue;
+        if (victim.distanceTo(box.x, box.y, box.tall) > box.radius + victim.radius) continue;
         attacker.attack.hit.add(victim);
         const { blocked, speed, dealt } = victim.takeHit(attacker, box.data);
         attacker.dealtDamage(dealt);

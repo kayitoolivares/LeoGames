@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 import { frameDelta } from '../../shared/clock.js';
 import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
-import { WALK_FPS } from '../../ui/CharacterLook.js';
+import { CharacterLook, WALK_FPS } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { characterTexture, hasPose, superArtKey, walkPose } from './art.js';
+import { OCTO, isBlockCharacter, lerp, numberSize } from './bloquecito.js';
 import { CHARACTERS, addAccessory } from './characters.js';
 import { drawItem } from './items.js';
 
@@ -116,7 +117,56 @@ export const ATTACKS = {
   sting: { startup: 60, active: 200, recovery: 220, damage: 10, base: 340, scale: 9, angle: 40, hx: 40, hy: 6, radius: 30 },
   // Bombero: chorro de agua que casi no hace daño pero empuja mucho.
   water: { startup: 100, active: 600, recovery: 240, damage: 1, base: 270, scale: 2, angle: 12, hx: 90, hy: -4, radius: 46, multi: 120 },
+  // Bloquecito (los trucos que no comparte con otros personajes, ver BLOCK_TRICKS).
+  // El 2: dos golpes rápidos.
+  pair: { startup: 40, active: 200, recovery: 160, damage: 5, base: 220, scale: 6, angle: 35, hx: 46, hy: 0, radius: 32, multi: 100 },
+  // El 3: lanza tres pelotas de malabares en arco (las crea la escena).
+  juggle: { startup: 100, active: 0, recovery: 220 },
+  // El 4: se vuelve cuadrado y aplasta alrededor (en el aire, cae de golpe).
+  square: { startup: 160, active: 160, recovery: 240, damage: 11, base: 360, scale: 9, angle: 60, hx: 0, hy: 0, radius: 78, around: true },
+  // El 6: rueda como dado hacia adelante.
+  roll: { startup: 60, active: 420, recovery: 200, damage: 9, base: 320, scale: 8, angle: 35, hx: 24, hy: 0, radius: 40 },
+  // El 7: echa un arcoíris (lo crea la escena).
+  rainbow: { startup: 120, active: 0, recovery: 240 },
+  // El 8 y Octobloque: ocho brazos que dan vueltas y pegan a los dos lados.
+  octo: { startup: 60, active: 480, recovery: 200, damage: 3, base: 150, scale: 3, angle: 40, hx: 0, hy: 0, radius: 72, multi: 120, around: true },
 };
+
+// Bloquecito: el truco (B) de cada número, cada cuánto se puede repetir y cómo se dibuja (`action`, ver BlockBody).
+const BLOCK_TRICKS = {
+  1: { attack: 'dash', cooldown: 600 },
+  2: { attack: 'pair', cooldown: 450 },
+  3: { attack: 'juggle', cooldown: 900 },
+  4: { attack: 'square', cooldown: 800, action: 'square' },
+  5: { attack: 'cast', cooldown: 700 },
+  6: { attack: 'roll', cooldown: 900, action: 'roll' },
+  7: { attack: 'rainbow', cooldown: 900 },
+  8: { attack: 'octo', cooldown: 800, action: 'octo' },
+  9: { attack: 'charge', cooldown: 700, action: 'charge' },
+  10: { attack: 'rocket', cooldown: 1500, action: 'rocket' },
+  [OCTO]: { attack: 'octo', cooldown: 600, action: 'octo' },
+};
+// Bloquecito: con qué pose se dibuja cada golpe (los que no están aquí, 'golpe').
+const BLOCK_POSES = {
+  sweep: 'patada',
+  stomp: 'patada',
+  juggle: 'especial',
+  cast: 'especial',
+  rainbow: 'especial',
+  square: 'especial',
+  roll: 'especial',
+  octo: 'especial',
+  rocket: 'especial',
+};
+// Las tres pelotas de los malabares del 3: cada una sale con distinta fuerza.
+const JUGGLE_THROWS = [
+  { vx: 380, vy: -640, color: 0xff5a5f },
+  { vx: 560, vy: -500, color: 0xffd02a },
+  { vx: 740, vy: -360, color: 0x3fa7ff },
+];
+const SQUARE_SLAM_SPEED = 900;
+// Lo más arriba del centro que salen los disparos de Bloquecito.
+const SHOT_LIFT_MAX = 24;
 
 // Un peleador estilo Smash: corre, salta, golpea según la dirección, usa su especial con B,
 // se cubre con el escudo, agarra objetos y sale volando más lejos mientras más % de daño lleva.
@@ -132,6 +182,12 @@ export class SmashFighter {
     this.peque = peque;
     this.arena = arena;
     this.characterKey = character;
+    // Bloquecito cambia de tamaño, peso y velocidad según su número (ver applyForm).
+    this.blocks = isBlockCharacter(character);
+    // Para los golpes: cuánto sube el cuerpo arriba del círculo (Bloquecito es más alto que ancho)
+    // y hasta qué altura arriba del centro llegan sus golpes (sus hombros).
+    this.tall = 0;
+    this.attackLift = 0;
     const stats = CHARACTERS[character];
     this.stats = stats;
     // `radius` crece en súper modo; `baseRadius` es el tamaño normal (con el que se dibuja).
@@ -183,13 +239,22 @@ export class SmashFighter {
     this.sprite.add([this.shieldBubble, this.tag, this.dizzy]);
     layer.add(this.sprite);
     this.spawn(arena.respawn.x, arena.respawn.y, 0);
+    if (this.blocks) this.applyForm();
   }
 
   // Si hay imagen del personaje (npm run arte), se esconde la bolita dibujada y se usa la imagen,
   // con los pies en el piso y un aro del color del jugador para saber quién es quién.
   setupArt(scene) {
-    const key = characterTexture(scene, this.characterKey);
     this.image = null;
+    if (this.blocks) {
+      // Bloquecito se dibuja con bloques; su súper forma (Octobloque) también, así que no se pinta dorado.
+      this.look = new CharacterLook(scene, this.sprite, this.characterKey);
+      this.superArt = OCTO;
+      this.ring = scene.add.ellipse(0, this.baseRadius - 2, this.baseRadius * 2.4, this.baseRadius * 0.6).setStrokeStyle(5, this.color);
+      this.sprite.addAt(this.ring, 1);
+      return;
+    }
+    const key = characterTexture(scene, this.characterKey);
     this.superArt = superArtKey(scene, this.characterKey);
     if (!key) return;
     for (const part of this.sprite.figure.list) part.setVisible(false);
@@ -303,8 +368,13 @@ export class SmashFighter {
   }
 
   setSuper(on) {
-    const stats = this.stats;
     if (!on) this.superMs = 0;
+    if (this.blocks) {
+      this.look.setSuper(on);
+      this.applyForm();
+      return;
+    }
+    const stats = this.stats;
     this.radius = on ? Math.round(stats.radius * SUPER.size) : stats.radius;
     this.power = stats.power * (on ? SUPER.power : 1);
     this.weight = stats.weight * (on ? SUPER.weight : 1);
@@ -313,7 +383,66 @@ export class SmashFighter {
     if (this.grounded && this.platform) this.y = this.platform.top - this.radius;
   }
 
-  // input: { x, y (stick), jump, attack, special (recién apretados), shield (sostenido) }
+  // Bloquecito cambió de número (o se volvió Octobloque): su fuerza, peso, velocidad y tamaño son los de ese número.
+  // El 1 es chiquito, ligero y rápido; el 10, grandote, pesado y fuerte. Los pies se quedan donde estaban.
+  applyForm() {
+    const body = this.look.body;
+    const form = this.look.form;
+    const k = numberSize(form);
+    const isSuper = this.superMs > 0;
+    const feet = this.y + this.radius;
+    this.stats = {
+      ...CHARACTERS[this.characterKey],
+      weight: lerp(0.7, 1.4, k),
+      power: lerp(0.75, 1.35, k),
+      run: lerp(480, 290, k),
+      air: lerp(390, 270, k),
+      jump: lerp(870, 720, k),
+      airJumps: form !== OCTO && form <= 3 ? 2 : 1,
+    };
+    this.power = this.stats.power * (isSuper ? SUPER.power : 1);
+    this.weight = this.stats.weight * (isSuper ? SUPER.weight : 1);
+    this.hitScale = lerp(0.8, 1.3, k) * (isSuper ? SUPER.size : 1);
+    this.airJumps = Math.min(this.airJumps, this.stats.airJumps);
+    // Para la física es un círculo del ancho del cuerpo; lo que sobra para arriba cuenta para los golpes (distanceTo).
+    this.radius = Math.max(14, body.width * 0.55);
+    this.tall = Math.max(0, body.height - this.radius * 2);
+    this.attackLift = Math.max(0, -body.shoulder - this.radius);
+    this.y = feet - this.radius;
+    body.setY(this.radius);
+    const middle = this.radius - body.height / 2;
+    const around = Math.max(body.width, body.height) / 2;
+    this.ring.setPosition(0, this.radius - 2).setSize(Math.max(40, body.width * 1.6), Math.max(14, body.width * 0.4));
+    this.shieldBubble.setPosition(0, middle).setRadius(around * 1.15);
+    this.aura.setPosition(0, middle).setRadius(around * 1.25);
+  }
+
+  // Y (o ↓ + Y): Bloquecito sube o baja un número. Los jugadores además lo oyen en voz alta.
+  changeNumber(step) {
+    if (!this.blocks || !this.isAlive() || this.transformMs > 0) return;
+    if (this.look.changeNumber(step, this.isCpu ? null : this.deviceId) === null) return;
+    this.applyForm();
+  }
+
+  // Tamaño de sus golpes y disparos: crece en súper modo; el de Bloquecito, con su número.
+  get sizeScale() {
+    return this.blocks ? this.hitScale : this.radius / this.baseRadius;
+  }
+
+  // Distancia de un golpe al cuerpo, para ver si le llega. Las bolitas son un círculo alrededor de (x, y);
+  // Bloquecito, si es alto, es una "cápsula" que sube `this.tall` px desde ahí. El golpe también puede
+  // subir `tall` px desde (px, py) (los de Bloquecito alto van de la cintura a los hombros).
+  distanceTo(px, py, tall = 0) {
+    const gap = Math.max(0, py - tall - this.y, this.y - this.tall - py);
+    return Math.hypot(px - this.x, gap);
+  }
+
+  // A qué altura salen sus disparos: los de Bloquecito alto, de la panza (si no, les pasarían por arriba a los bajitos).
+  shotY() {
+    return this.y - Math.min(this.attackLift, SHOT_LIFT_MAX);
+  }
+
+  // input: { x, y (stick), jump, attack, special (recién apretados), shield (sostenido), change (Bloquecito: 1, -1 o 0) }
   update(dtMs, input) {
     const dt = dtMs / 1000;
     if (this.out) {
@@ -338,6 +467,7 @@ export class SmashFighter {
     this.cooldownMs = Math.max(0, this.cooldownMs - dtMs);
     this.ghostMs = Math.max(0, this.ghostMs - dtMs);
     this.transformMs = Math.max(0, this.transformMs - dtMs);
+    if (input.change) this.changeNumber(input.change);
     if (this.superMs > 0) {
       this.superMs -= dtMs;
       if (this.superMs <= 0) {
@@ -398,7 +528,19 @@ export class SmashFighter {
     const justActive = wasStarting && attack.elapsed >= a.startup;
     if (justActive && attack.type === 'charge') this.vx = this.facing * CHARGE_LUNGE;
     if (justActive && attack.type === 'scratch') this.vx = this.facing * SCRATCH_LUNGE;
-    if (justActive && attack.type === 'slide') this.slideMs = SLIDE_MS;
+    if (justActive && (attack.type === 'slide' || attack.type === 'roll')) this.slideMs = SLIDE_MS;
+    if (justActive && attack.type === 'square') {
+      if (!this.grounded) this.vy = SQUARE_SLAM_SPEED;
+      sfx.hit(0.7);
+    }
+    if (justActive && attack.type === 'juggle') {
+      this.projectileRequest = { kind: 'juggle', x: this.x + this.facing * (this.radius + 10), y: this.shotY() - 10, dir: this.facing, throws: JUGGLE_THROWS };
+      sfx.throw();
+    }
+    if (justActive && attack.type === 'rainbow') {
+      this.projectileRequest = { kind: 'rainbow', x: this.x + this.facing * (this.radius + 40), y: this.shotY(), dir: this.facing };
+      sfx.laser();
+    }
     if (justActive && attack.type === 'rocket') {
       this.rocketMs = ROCKET.ms;
       this.grounded = false;
@@ -420,7 +562,7 @@ export class SmashFighter {
       sfx.boom();
     }
     if (justActive && attack.type === 'cast') {
-      this.projectileRequest = { kind: 'star', x: this.x + this.facing * (this.radius + 12), y: this.y - 6, dir: this.facing };
+      this.projectileRequest = { kind: 'star', x: this.x + this.facing * (this.radius + 12), y: this.shotY() - 6, dir: this.facing };
     }
     if (justActive && attack.type === 'laser') {
       this.projectileRequest = { kind: 'laser', x: this.x + this.facing * (this.radius + 30), y: this.y - 4, dir: this.facing };
@@ -522,7 +664,16 @@ export class SmashFighter {
       this.attack = { type, elapsed: 0, hit: new Set() };
     };
     let sound = sfx.special;
-    if (key === 'tanque') {
+    let cooldown = SPECIAL_COOLDOWN_MS[key] ?? 0;
+    if (this.blocks) {
+      // Bloquecito: el truco de su número (los que lanzan algo suenan al lanzarlo).
+      const trick = BLOCK_TRICKS[this.look.form];
+      attack(trick.attack);
+      if (trick.attack === 'dash') this.dashMs = DASH_MS;
+      cooldown = trick.cooldown;
+      if (['juggle', 'rainbow', 'square'].includes(trick.attack)) sound = null;
+      else if (trick.attack === 'rocket') sound = sfx.fire;
+    } else if (key === 'tanque') {
       attack('charge');
     } else if (key === 'rayo') {
       attack('dash');
@@ -567,7 +718,7 @@ export class SmashFighter {
     } else {
       return;
     }
-    this.cooldownMs = (SPECIAL_COOLDOWN_MS[key] ?? 0) * (this.superMs > 0 ? SUPER.cooldown : 1);
+    this.cooldownMs = cooldown * (this.superMs > 0 ? SUPER.cooldown : 1);
     sound?.();
   }
 
@@ -618,8 +769,8 @@ export class SmashFighter {
     const a = ATTACKS[this.attack.type];
     const t = this.attack.elapsed;
     if (!a.active || t < a.startup || t >= a.startup + a.active) return null;
-    const size = this.radius / this.baseRadius;
-    return { x: this.x + a.hx * size * this.facing, y: this.y + a.hy * size, radius: a.radius * size, data: a };
+    const size = this.sizeScale;
+    return { x: this.x + a.hx * size * this.facing, y: this.y + a.hy * size, tall: this.attackLift, radius: a.radius * size, data: a };
   }
 
   // Recibe un golpe de `source` ({ facing, power }). Con el escudo arriba solo gasta escudo;
@@ -659,6 +810,7 @@ export class SmashFighter {
 
   // Con imagen, el destello del golpe es pintarla de blanco un instante.
   flashImage() {
+    if (this.blocks) this.look.flash();
     if (!this.image) return;
     this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(70, () => {
@@ -671,6 +823,10 @@ export class SmashFighter {
   // En súper modo usa las imágenes de su súper forma, si las hay.
   renderArt() {
     this.punchArt = false;
+    if (this.blocks) {
+      this.renderBlocks();
+      return;
+    }
     if (!this.image) return;
     const art = this.superMs > 0 && this.superArt ? this.superArt : this.characterKey;
     // Corriendo por el piso: los cuadros de caminata (si los tiene).
@@ -687,6 +843,23 @@ export class SmashFighter {
     }
     this.image.setFlipX(this.facing < 0);
     this.punchArt = hasPose(this.scene, art, 'golpe');
+  }
+
+  // Bloquecito: su pose (y el truco que está haciendo) para que BlockBody lo dibuje.
+  renderBlocks() {
+    this.punchArt = true;
+    let pose = this.look.groundPose(this.grounded && Math.abs(this.vx) > 40);
+    const type = this.attack?.type;
+    if (this.hitstunMs > 0 || this.stunMs > 0) pose = 'dolor';
+    else if (type) pose = BLOCK_POSES[type] ?? 'golpe';
+    else if (!this.grounded) pose = 'salto';
+    else if (this.shielding) pose = 'cubrirse';
+    const trick = BLOCK_TRICKS[this.look.form];
+    this.look.show(pose, this.facing, type === trick.attack ? trick.action : null);
+    // El letrero y el mareo van arriba de la cabeza, que sube y baja con el número.
+    const top = this.radius + this.look.body.top;
+    this.tag.setY(top - 14);
+    this.dizzy.setY(top - 40);
   }
 
   render() {
@@ -711,6 +884,7 @@ export class SmashFighter {
       s.ball.setFillStyle(this.color);
       this.image?.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
     }
+    this.look?.body?.setTint(this.starPowerMs > 0 ? rainbow : null);
     this.tinted = tint !== null;
     this.renderArt();
     this.renderAura();
@@ -734,7 +908,8 @@ export class SmashFighter {
 
     // El fuego de Dragoncito tiembla mientras está activo; con la mochila cohete sale chiquito por abajo.
     const fire = type === 'fire' && Boolean(box);
-    const rocket = this.rocketMs > 0;
+    // (Bloquecito dibuja su propio fuego de cohete.)
+    const rocket = this.rocketMs > 0 && !this.blocks;
     this.flames.setVisible(fire || rocket);
     const flicker = 0.85 + Math.random() * 0.3;
     if (fire) this.flames.setPosition(a.hx * this.facing, -4).setScale(this.facing * flicker, flicker).setAngle(0);
@@ -750,10 +925,15 @@ export class SmashFighter {
     if (hasHammer) {
       let angle = -25;
       if (type === 'hammer') angle = -80 + 170 * Math.min(1, this.attack.elapsed / (a.startup + a.active));
-      this.hammerSprite.setPosition(this.facing * this.baseRadius * 0.85, -6).setScale(this.facing, 1).setAngle(angle * this.facing);
+      this.hammerSprite.setPosition(this.facing * this.handReach(0.85), -6 - this.attackLift).setScale(this.facing, 1).setAngle(angle * this.facing);
     }
     this.bombSprite.setVisible(this.held?.type === 'bomb');
-    if (this.held?.type === 'bomb') this.bombSprite.setPosition(this.facing * this.baseRadius * 0.9, -4);
+    if (this.held?.type === 'bomb') this.bombSprite.setPosition(this.facing * this.handReach(0.9), -4 - this.attackLift);
+  }
+
+  // Qué tan adelante lleva lo que trae en la mano (Bloquecito, según su ancho).
+  handReach(k) {
+    return this.blocks ? this.radius + 8 : this.baseRadius * k;
   }
 
   // Brillo que late detrás del personaje en súper modo. Al transformarse sale grande y se encoge;

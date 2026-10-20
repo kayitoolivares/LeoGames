@@ -3,6 +3,7 @@ import { players } from '../../shared/players.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
+import { numberStep } from '../smash/bloquecito.js';
 import { ARENA } from './arena.js';
 
 export const MAX_HP = 5;
@@ -22,7 +23,7 @@ const REVIVE_RADIUS = 70;
 const REVIVE_MS = 1200;
 const REVIVE_HP = 3;
 
-// Un jugador en la pelea: se mueve con el stick, salta con A y pega con X o B.
+// Un jugador en la pelea: se mueve con el stick, salta con A y pega con X o B (Bloquecito cambia de número con Y).
 // Si se queda sin corazones cae, y otro jugador lo levanta parándose junto a él.
 // Se ve como el personaje que escogió (`character`, de Bolitas Bros).
 export class Fighter {
@@ -84,6 +85,7 @@ export class Fighter {
     else if (stick.x < -0.2) this.facing = -1;
 
     if (controls.justPressed(id, 'a') && this.z === 0) this.vz = JUMP_SPEED;
+    this.look.changeNumber(numberStep(id), id);
     if (this.z > 0 || this.vz > 0) {
       this.vz -= GRAVITY * dt;
       this.z = Math.max(0, this.z + this.vz * dt);
@@ -166,6 +168,11 @@ export class Fighter {
     const ground = this.look.groundPose(Boolean(this.walking) && !this.down);
     const pose = hurting ? 'dolor' : this.attackMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : ground;
     this.look.show(pose, this.facing);
+    // Bloquecito sube y baja de tamaño con su número: los letreros van arriba de su cabeza.
+    if (this.look.body) {
+      this.tag.setY(this.look.top - 14);
+      this.stars.setY(this.look.top - 6);
+    }
     this.tag.setVisible(!this.down);
     this.stars.setVisible(this.down);
 

@@ -24,6 +24,7 @@ export const STICKERS = [
   { id: 'duelo-perfecto', emoji: '💯', name: '¡Perfecto!', hint: 'Gana un round del duelo sin que te peguen' },
   { id: 'duelo-super', emoji: '🔥', name: 'Súper peleador', hint: 'Transfórmate en el Duelo de bolitas' },
   { id: 'bebe', emoji: '👶', name: 'Hora del bebé', hint: 'Jueguen el Modo Bebé' },
+  { id: 'bloquecito-10', emoji: '🔟', name: 'Hasta el 10', hint: 'Cuenta del 1 al 10 con Bloquecito (Y sube de número)' },
   { id: 'coleccion', emoji: '⭐', name: 'Coleccionista', hint: 'Consigue 10 calcomanías' },
 ];
 

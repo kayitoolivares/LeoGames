@@ -4,8 +4,9 @@ import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { hasPose, superArtKey } from '../smash/art.js';
+import { isBlockCharacter, lerp, numberSize } from '../smash/bloquecito.js';
 import { CHARACTERS } from '../smash/characters.js';
-import { ATTACKS, SPECIALS, SPECIAL_COOLDOWN_MS } from './moves.js';
+import { ATTACKS, BLOCK_SPECIALS, SPECIALS, SPECIAL_COOLDOWN_MS } from './moves.js';
 
 // El piso y las paredes del escenario (la pantalla completa, sin cámara).
 export const FLOOR = 650;
@@ -33,6 +34,10 @@ const BLOCK_STUN_MS = 160;
 const SPECIAL_RECOVERY_MS = 160;
 const SUPER = { power: 1.35, speed: 1.15, scale: 1.15 };
 const SUPER_TINT = 0x806000;
+// Bloquecito: aunque el 1 sea chiquito, su cuerpo cuenta al menos este alto (en radios) para que le lleguen
+// los golpes; y si es muy alto, sus golpes y disparos bajan hasta esta altura (px) para pegarle a los bajitos.
+const BLOCK_MIN_HEIGHT = 1.6;
+const BLOCK_LOW_REACH = 180;
 
 // Qué imagen usa cada cosa, en orden de preferencia: las poses de pelea son opcionales
 // (si no hay, usa la más parecida de las 4 de siempre).
@@ -62,7 +67,11 @@ export class DueloFighter {
     this.name = stats.name;
     this.superName = stats.superName;
     this.specialData = SPECIALS[character];
+    // Bloquecito cambia de tamaño, fuerza y especial según su número (ver applyForm).
+    this.blocks = isBlockCharacter(character);
     this.radius = Math.round(stats.radius * SIZE);
+    // El radio con el que se acomoda el dibujo (fijo); el de Bloquecito para pelear (`radius`) cambia con su número.
+    this.drawRadius = this.radius;
     this.basePower = stats.power;
     this.walkSpeed = stats.run * WALK;
     this.jumpSpeed = stats.jump * JUMP;
@@ -77,18 +86,44 @@ export class DueloFighter {
     const figure = this.blob.figure;
     this.aura = scene.add.ellipse(0, r - this.height / 2, r * 2.6, this.height * 1.15, 0xffd84d, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     figure.addAt(this.aura, 0);
-    this.blob.addAt(scene.add.ellipse(0, r - 2, r * 2.2, r * 0.55).setStrokeStyle(6, color), 1);
+    this.ring = scene.add.ellipse(0, r - 2, r * 2.2, r * 0.55).setStrokeStyle(6, color);
+    this.blob.addAt(this.ring, 1);
     this.shield = scene.add.ellipse(0, r - this.height / 2, r * 2.4, this.height * 1.1, 0x7fdcff, 0.25).setStrokeStyle(5, 0x7fdcff).setVisible(false);
     // Puño dibujado, para los que no tienen imagen de golpe.
     this.fist = scene.add.circle(0, 0, r * 0.32, color).setStrokeStyle(4, COLORS.ink).setVisible(false);
-    const tag = scene.add
+    this.tag = scene.add
       .text(0, this.look.top - 16, label, textStyle(20, hexToCss(color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 }))
       .setOrigin(0.5);
-    figure.add([this.shield, this.fist, tag]);
+    figure.add([this.shield, this.fist, this.tag]);
 
     this.meter = 0;
     this.superMs = 0;
     this.reset(WALLS.left + 300, 1);
+    if (this.blocks) this.applyForm();
+  }
+
+  // Bloquecito cambió de número (o se volvió Octobloque): su tamaño, fuerza, velocidad y especial son los de
+  // ese número. El 1 es chiquito y rápido; el 10, grandote y fuerte.
+  applyForm() {
+    const body = this.look.body;
+    const k = numberSize(this.look.form);
+    const r = this.drawRadius;
+    // La caja de su cuerpo (hurtbox) mide de ancho lo que sus bloques.
+    this.radius = Math.max(30, body.width / 2 / 0.7);
+    this.height = Math.max(body.height, r * BLOCK_MIN_HEIGHT);
+    this.basePower = lerp(0.75, 1.35, k);
+    this.walkSpeed = lerp(480, 290, k) * WALK;
+    this.jumpSpeed = lerp(870, 720, k) * JUMP;
+    this.specialData = BLOCK_SPECIALS[this.look.form];
+    const middle = r - this.height / 2;
+    this.aura.setPosition(0, middle).setSize(body.width * 1.6 + 40, this.height * 1.15);
+    this.shield.setPosition(0, middle).setSize(body.width * 1.5 + 40, this.height * 1.1);
+    this.ring.setSize(Math.max(r * 1.2, body.width * 1.5), Math.max(r * 0.35, body.width * 0.4));
+  }
+
+  // Y (o ↓ + Y): Bloquecito sube o baja un número. Los jugadores además lo oyen en voz alta.
+  changeNumber(step) {
+    if (this.look.changeNumber(step, this.isCpu ? null : this.deviceId) !== null) this.applyForm();
   }
 
   reset(x, facing) {
@@ -137,6 +172,11 @@ export class DueloFighter {
     return this.superMs > 0 ? SUPER.scale : 1;
   }
 
+  // Hasta qué altura bajan sus golpes y salen sus disparos: su estatura, menos la de Bloquecito muy alto.
+  get reachHeight() {
+    return this.blocks ? Math.min(this.height, BLOCK_LOW_REACH) : this.height;
+  }
+
   // Lo que ocupa su cuerpo (donde le pueden pegar).
   get hurtbox() {
     const half = this.radius * 0.7 * this.scale;
@@ -173,7 +213,12 @@ export class DueloFighter {
     if (this.meter < METER_MAX || this.superMs > 0 || this.koed) return false;
     this.meter = 0;
     this.superMs = SUPER_MS;
-    if (this.superArt) this.look.character = this.superArt;
+    if (this.blocks) {
+      this.look.setSuper(true);
+      this.applyForm();
+    } else if (this.superArt) {
+      this.look.character = this.superArt;
+    }
     sfx.transform();
     return true;
   }
@@ -186,6 +231,7 @@ export class DueloFighter {
   update(dtMs, input, opponent) {
     const dt = dtMs / 1000;
     this.tick(dtMs);
+    if (input.change && this.blocks && !this.koed && !this.celebrating) this.changeNumber(input.change);
     if (this.koed || this.celebrating) {
       this.move(dt);
       return;
@@ -215,7 +261,12 @@ export class DueloFighter {
     if (this.superMs > 0) {
       this.superMs = Math.max(0, this.superMs - dtMs);
       if (this.superMs === 0) {
-        this.look.character = this.character;
+        if (this.blocks) {
+          this.look.setSuper(false);
+          this.applyForm();
+        } else {
+          this.look.character = this.character;
+        }
         sfx.powerDown();
       }
     }
@@ -349,10 +400,11 @@ export class DueloFighter {
   hitbox() {
     const r = this.radius * this.scale;
     const h = this.height * this.scale;
+    const low = this.reachHeight * this.scale;
     const front = (reach, hi, lo) => {
       const near = this.x + this.facing * r * 0.4;
       const far = this.x + this.facing * (r * 0.7 + reach * r);
-      return { left: Math.min(near, far), right: Math.max(near, far), top: this.y - h * hi, bottom: this.y - h * lo };
+      return { left: Math.min(near, far), right: Math.max(near, far), top: this.y - h * hi, bottom: this.y - low * lo };
     };
     if (this.attack) {
       const a = this.attack.data;
@@ -464,15 +516,18 @@ export class DueloFighter {
   }
 
   render(dtMs) {
-    const r = this.radius;
+    const r = this.drawRadius;
     const s = this.scale;
     const figure = this.blob.figure;
     const pose = this.pose();
     const art = this.look.character;
     const ground = this.look.groundPose(pose === 'caminar');
-    const shown = pose === 'caminar' ? ground : (POSE_CHAIN[pose].find((p) => hasPose(this.scene, art, p)) ?? 'normal');
+    let shown = pose === 'caminar' ? ground : (POSE_CHAIN[pose].find((p) => hasPose(this.scene, art, p)) ?? 'normal');
+    // Bloquecito tiene todas las poses (se dibuja con bloques), y su especial se ve distinto en cada número.
+    if (this.blocks && pose !== 'caminar') shown = pose;
     const walkFrames = shown.startsWith('caminar');
-    this.look.show(shown, this.facing);
+    this.look.show(shown, this.facing, this.special?.action ?? null);
+    if (this.blocks) this.tag.setY(this.look.top - 16);
     const image = this.look.image;
     if (image) image.setScale((r * LOOK_HEIGHT * (POSE_HEIGHT[shown] ?? 1)) / image.height);
     this.blob.setPosition(this.x, FLOOR - r);

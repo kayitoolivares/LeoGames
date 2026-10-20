@@ -236,6 +236,22 @@ export const CHARACTERS = {
     airJumps: 1,
     stats: { Fuerza: 2, Velocidad: 2, Salto: 1 },
   },
+  // Hecho de bloques: con Y cambia de número del 1 al 10, y cada número tiene su tamaño y su truco
+  // (ver bloquecito.js). Los valores de aquí son los del 1; el juego los cambia según el número.
+  bloquecito: {
+    name: 'Bloquecito',
+    superName: 'Octobloque',
+    blurb: 'Y: cambia del 1 al 10',
+    special: 'Un truco por número',
+    radius: 34,
+    weight: 0.7,
+    power: 0.75,
+    run: 480,
+    air: 390,
+    jump: 870,
+    airJumps: 2,
+    stats: { Fuerza: 2, Velocidad: 2, Salto: 2 },
+  },
 };
 
 export const CHARACTER_KEYS = Object.keys(CHARACTERS);

@@ -1,3 +1,4 @@
+import { RAINBOW } from '../smash/bloquecito.js';
 import { COLORS } from '../../ui/style.js';
 import { WALLS } from './DueloFighter.js';
 
@@ -31,6 +32,25 @@ const SHAPES = {
     h: 16,
     draw: (scene) => [scene.add.ellipse(0, 0, 76, 36, 0x3fa7ff, 0.9).setStrokeStyle(3, 0xffffff, 0.8), scene.add.ellipse(8, -5, 30, 9, 0xffffff, 0.7)],
   },
+  // Bloquecito: las tres pelotas de malabares del 3 y el arcoíris del 7.
+  juggle: {
+    w: 26,
+    h: 26,
+    draw: (scene) => [
+      scene.add.circle(0, -14, 12, 0xff5a5f).setStrokeStyle(3, COLORS.ink),
+      scene.add.circle(-13, 9, 12, 0xffd02a).setStrokeStyle(3, COLORS.ink),
+      scene.add.circle(13, 9, 12, 0x3fa7ff).setStrokeStyle(3, COLORS.ink),
+    ],
+    spin: 8,
+  },
+  rainbow: {
+    w: 56,
+    h: 20,
+    draw: (scene) => [
+      scene.add.rectangle(0, 0, 124, RAINBOW.length * 6 + 8, 0xffffff),
+      ...RAINBOW.map((color, i) => scene.add.rectangle(0, (i - (RAINBOW.length - 1) / 2) * 6, 116, 6, color)),
+    ],
+  },
 };
 
 // Lo que lanza el especial de algunos personajes: vuela derecho (el polvo mágico, en ondas) hasta que pega,
@@ -44,7 +64,7 @@ export class Shot {
     this.dir = owner.facing;
     this.vx = this.dir * data.speed * owner.speed;
     this.x = owner.x + this.dir * owner.radius * 1.2;
-    this.baseY = owner.y - owner.height * owner.scale * 0.55;
+    this.baseY = owner.y - owner.reachHeight * owner.scale * 0.55;
     this.y = this.baseY;
     this.ms = 0;
     this.dead = false;

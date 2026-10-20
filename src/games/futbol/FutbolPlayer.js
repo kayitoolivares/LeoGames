@@ -21,7 +21,7 @@ const KICKS = {
 };
 
 // Un jugador: el personaje que escogió (de Bolitas Bros) con un aro del color de su equipo. Corre, salta y patea.
-// `input` = { x (-1 a 1), jump, kick, up, down, power? }: de un control o de la compu (cpu.js).
+// `input` = { x (-1 a 1), jump, kick, up, down, power?, change? (Bloquecito: 1 o -1) }: de un control o de la compu (cpu.js).
 export class FutbolPlayer {
   constructor(scene, { team, color, label, character, deviceId = null }) {
     this.scene = scene;
@@ -39,10 +39,10 @@ export class FutbolPlayer {
       this.blob.addAt(scene.add.ellipse(0, PLAYER_RADIUS - 2, PLAYER_RADIUS * 2.4, PLAYER_RADIUS * 0.6).setStrokeStyle(6, TEAM_COLORS[team]), 1);
     }
     this.foot = scene.add.ellipse(0, PLAYER_RADIUS * 0.75, 30, 18, COLORS.ink).setVisible(false);
-    const tag = scene.add
+    this.tag = scene.add
       .text(0, this.look.top - 14, label, textStyle(18, hexToCss(color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 }))
       .setOrigin(0.5);
-    this.blob.figure.add([this.foot, tag]);
+    this.blob.figure.add([this.foot, this.tag]);
     this.reset(FIELD.width / 2);
   }
 
@@ -76,6 +76,7 @@ export class FutbolPlayer {
       this.vz = JUMP_SPEED;
       sfx.jump();
     }
+    if (input.change) this.look.changeNumber(input.change, this.deviceId);
     if (this.z > 0 || this.vz > 0) {
       this.vz -= GRAVITY * dt;
       this.z = Math.max(0, this.z + this.vz * dt);
@@ -116,7 +117,11 @@ export class FutbolPlayer {
     this.blob.figure.y = -this.z;
     this.blob.look(this.facing * 0.9, 0.1);
     const ground = this.look.groundPose(this.z === 0 && Math.abs(this.vx) > 40);
-    this.look.show(this.kickMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : ground, this.facing);
+    // (Bloquecito sí tiene pose de patada; las imágenes de los demás, solo la de golpe.)
+    const kick = this.look.body ? 'patada' : 'golpe';
+    this.look.show(this.kickMs > 0 ? kick : this.z > 0 ? 'salto' : ground, this.facing);
+    // Bloquecito sube y baja de tamaño con su número: el letrero va arriba de su cabeza.
+    if (this.look.body) this.tag.setY(this.look.top - 14);
     this.foot.setVisible(this.kickMs > 0 && !this.look.punchArt).setX(this.facing * this.radius * 0.95);
     // La sombra se achica cuando va en el aire.
     const shadow = this.blob.list[0];

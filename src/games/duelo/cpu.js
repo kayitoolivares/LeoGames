@@ -10,12 +10,13 @@ export const CPU_LEVELS = {
 };
 
 const BLOCK_MS = 350;
+const BLOCK_CHANGES_PER_SECOND = 0.35;
 
 // Decide qué "aprieta" la compu este cuadro (mismo formato que un control).
 // Se acerca hasta tener al rival a su alcance y pega; si lo van a golpear o le lanzan algo, a veces se
 // cubre o salta. Los que lanzan cosas (estrella, láser...) prefieren pelear de lejos.
 export function cpuInput(me, foe, shots, level, dtMs) {
-  const input = { x: 0, up: false, punch: false, kick: false, special: false, block: false, transform: false };
+  const input = { x: 0, up: false, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
   const ai = (me.ai ??= { blockMs: 0, retreatMs: 0, threat: null });
   ai.blockMs -= dtMs;
   ai.retreatMs -= dtMs;
@@ -40,6 +41,8 @@ export function cpuInput(me, foe, shots, level, dtMs) {
   }
 
   if (me.meter >= METER_MAX && chance(0.6)) input.transform = true;
+  // Bloquecito cambia de número de vez en cuando (sube más de lo que baja).
+  if (me.blocks && chance(BLOCK_CHANGES_PER_SECOND)) input.change = Math.random() < 0.6 ? 1 : -1;
   const ranged = me.specialData.kind === 'shot';
   if (me.cooldownMs === 0 && chance(level.special) && (ranged ? gap > 200 : gap < 150)) input.special = true;
 

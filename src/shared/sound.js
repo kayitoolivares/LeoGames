@@ -132,5 +132,11 @@ export const sfx = {
     tone({ freq: freq * 2, ms: 260, type: 'sine', volume: 0.06 });
   },
   boing: () => tone({ freq: 200, to: 620, ms: 240, type: 'sine', volume: 0.22 }),
+  // Bloquecito cambia de número: una nota que sube con el número (del 1 al 10).
+  count: (n) => {
+    const freq = PENTATONIC[Math.min(Math.max(n, 0), PENTATONIC.length - 1)];
+    tone({ freq, ms: 140, type: 'square', volume: 0.07 });
+    tone({ freq: freq * 2, ms: 100, type: 'sine', volume: 0.06, delay: 60 });
+  },
   sparkle: () => melody([1047, 1319, 1568, 2093], { ms: 160, gap: 60, type: 'sine', volume: 0.09 }),
 };

@@ -81,7 +81,7 @@ export class SmashItems {
       item.ageMs += dtMs;
       this.fall(item, dt);
       const taker = fighters.find(
-        (f) => f.isAlive() && Math.hypot(f.x - item.x, f.y - item.y) < f.radius + ITEM_RADIUS && f.grab(item.type),
+        (f) => f.isAlive() && f.distanceTo(item.x, item.y) < f.radius + ITEM_RADIUS && f.grab(item.type),
       );
       if (taker) onPickup(taker, item);
       if (taker || item.ageMs > LIFE_MS || item.y > this.area.bottom) {

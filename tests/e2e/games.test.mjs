@@ -300,6 +300,83 @@ test('bolitas bros: el especial de cada personaje nuevo pega', { timeout: ms(240
   await p.context.close();
 });
 
+// Bloquecito: Y sube de número, ↓ + Y baja (del 1 da la vuelta al 10), cada número tiene su tamaño y su truco,
+// y con la barra llena se vuelve Octobloque.
+test('bloquecito: cambia de número con Y y el truco de cada número pega', { timeout: ms(240000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.page.evaluate(() => import('/src/shared/picks.js').then((m) => (m.characterPicks.set('pad0', 'bloquecito'), m.characterPicks.set('pad1', 'tanque'))));
+  await p.openGameCard('Bolitas Bros');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
+  await p.tap(0, BUTTON.A);
+  await p.tap(1, BUTTON.A);
+  await p.until(() => { const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight'; }, ms(10000), 'pelear con Bloquecito');
+  const me = () => p.page.evaluate(() => { const f = window.leogames.scene.getScene('Smash').fighters[0]; return { n: f.look.form, weight: f.weight }; });
+
+  assert.equal((await me()).n, 1);
+  const light = (await me()).weight;
+  await p.tap(0, BUTTON.Y);
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[0].look.form === 2, ms(3000), 'subir al 2 con Y');
+  await p.page.evaluate(() => window.__button(0, 13, true));
+  await p.tap(0, BUTTON.Y);
+  await p.tap(0, BUTTON.Y);
+  await p.page.evaluate(() => window.__button(0, 13, false));
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[0].look.form === 10, ms(3000), 'bajar del 2 al 10 con ↓ + Y');
+  assert.ok((await me()).weight > light, 'el 10 pesa más que el 1');
+
+  // Cada número: su truco le pega al rival (los malabares del 3 caen lejos).
+  for (const n of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 'octo']) {
+    await p.page.evaluate((form) => {
+      const s = window.leogames.scene.getScene('Smash');
+      const [bloque, rival] = s.fighters;
+      if (form === 'octo') {
+        bloque.meter = 100;
+        bloque.transform();
+        bloque.transformMs = 0;
+      } else {
+        bloque.look.setNumber(form);
+        bloque.applyForm();
+      }
+      const place = (f, x, facing) =>
+        Object.assign(f, { x, y: s.main.top - f.radius, vx: 0, vy: 0, facing, grounded: true, platform: s.main, attack: null, hitstunMs: 0, stunMs: 0, dashMs: 0, slideMs: 0, rocketMs: 0, cooldownMs: 0, invulnerableMs: 0, damage: 0 });
+      place(bloque, 800, 1);
+      place(rival, form === 3 ? 1280 : 880, -1);
+      s.projectiles.forEach((shot) => shot.sprite.destroy());
+      s.projectiles = [];
+      bloque.startSpecial({ x: 0, y: 0 });
+    }, n);
+    await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(4000), `que el truco del ${n} pegue`);
+  }
+  assert.equal((await me()).n, 'octo');
+  // Siendo Octobloque, Y no le cambia el número.
+  await p.tap(0, BUTTON.Y);
+  assert.equal((await me()).n, 'octo');
+  await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
+
+  // En el Duelo, Y también le cambia el número (y su especial).
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(2);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(10000), 'empezar el duelo');
+  const before = await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[0].look.form);
+  await p.tap(0, BUTTON.Y);
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].look.form === 2, ms(3000), 'subir al 2 en el duelo');
+  await p.page.evaluate(() => {
+    const [bloque, rival] = window.leogames.scene.getScene('Duelo').fighters;
+    bloque.look.setNumber(4);
+    bloque.applyForm();
+    Object.assign(bloque, { x: 500, facing: 1, cooldownMs: 0 });
+    Object.assign(rival, { x: 500 + bloque.radius + rival.radius * 0.5, blocking: false });
+    bloque.startSpecial();
+  });
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[1].health < 100, ms(4000), 'que el cuadrado del 4 pegue en el duelo');
+  assert.equal(before, 1);
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(1);

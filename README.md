@@ -47,7 +47,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Robot** (B = láser), **Dragoncito** (flota, B = fuego), **Fantasma** (B = invisible), **Dino** (B = coletazo a
   los dos lados), **Gatito** (salta 3 veces, B = arañazos), **Pingüino** (B = se desliza de panza), **Pirata**
   (B = bala de cañón), **Hada** (flota, B = polvo mágico), **Astronauta** (B = mochila cohete), **Abeja** (salta 4 veces,
-  B = aguijonazo) y **Bombero** (B = chorro de agua que empuja). Con la barra llena, **LB + RB** = súper forma por 10 segundos.
+  B = aguijonazo), **Bombero** (B = chorro de agua que empuja) y **Bloquecito** (ver abajo). Con la barra llena,
+  **LB + RB** = súper forma por 10 segundos.
   **A** = saltar, **X** = golpe (con ↑ hacia arriba, con ↓ barrida o pisotón), **B + ↑** = salto de rescate,
   **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén LB + RB + Y** = salir.
   Caen objetos: **martillo** (8 s de martillazos con X), **bomba** (X la lanza), **corazón** (-40 %)
@@ -73,6 +74,13 @@ Abre http://localhost:5173 en Edge o Chrome.
   Con un solo jugador se pelea contra la compu; con más, se turnan: el que gana se queda y el que pierde se forma
   al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
   de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).
+- **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, dibujado con
+  figuras (sin imágenes de Gemini). **Y** sube de número y **↓ + Y** baja (del 10 regresa al 1), cuando quieras y sin
+  límite; la voz dice el número. Cada número tiene su color y su forma, y entre más grande es más fuerte y pesado pero
+  más lento. Su especial cambia con el número: 1 embestida, 2 doble golpe, 3 malabares, 4 se vuelve cuadrado y
+  aplasta, 5 estrella, 6 rueda como dado, 7 arcoíris, 8 ocho brazos, 9 golpazo y 10 despega como cohete.
+  Su súper forma es **Octobloque** (el 8 superhéroe, con antifaz, capa y ocho brazos). Contar del 1 al 10 da
+  la calcomanía "Hasta el 10".
 - **Halcón de Acero**: abre https://hda.grupomegarey.mx (es otro proyecto; para volver, B en modo navegador).
 - **Cómo jugar**: qué tecla es cada botón en los dos teclados y qué hace cada botón en cada juego (una página
   por juego, ◀ ▶ para cambiar). Con **Y** abre la **prueba de controles**, que muestra lo que el navegador ve
@@ -155,4 +163,5 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.
-- `src/ui/`: estilos y el personaje (la bolita).
+- `src/ui/`: estilos y el personaje (la bolita); `BlockBody.js` dibuja a Bloquecito (sus números están en
+  `src/games/smash/bloquecito.js`).
