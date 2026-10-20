@@ -48,6 +48,10 @@ const START_WINDOW_MS = [COUNTDOWN_STEP_MS * 2.1, COUNTDOWN_STEP_MS * 3];
 const START_BOOST = { factor: 1.55, ms: 1200 };
 // Cada cuánto puede volver a decir "¡Vas en primero!".
 const FIRST_PLACE_SAY_MS = 6000;
+// El paisaje de fondo: un cilindro gigante alrededor de todo con el dibujo repetido (en espejo) varias veces.
+// `sink`: qué parte de abajo de la imagen queda bajo el piso (el suelo del dibujo), para que su horizonte quede
+// a la altura de los ojos y no se vea como una pared.
+const PANORAMA = { radius: 400, repeats: 5, sink: 0.3 };
 const CPU_LANES = [-5, 5, -2, 2, -7, 7];
 const LABEL_PX = 28;
 // Íconos de los poderes hechos con Gemini (npm run arte); si falta alguno se usa su emoji.
@@ -284,9 +288,10 @@ export class KartGame {
     this.trackLook = look;
     this.setSky(look.sky, look.groundLight, look.light ?? 1);
 
-    this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy, theme: look.theme });
+    const theme = { ...look.theme, groundMap: this.artTexture('texturas', look.texture), groundTint: look.textureTint, roadMap: this.artTexture('texturas', 'asfalto') };
+    this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy, theme });
     this.track.addTo(this.scene);
-    if (look.mountains) this.addMountains(look.mountains);
+    if (!this.addPanorama(key) && look.mountains) this.addMountains(look.mountains);
     if (look.scenery === 'snow') {
       addSnowmen(this.scene, this.track);
       this.snow = new Snowfall(this.scene, this.track);
@@ -325,7 +330,7 @@ export class KartGame {
     this.setSky(0x8fd3ff, 0x5a7a3a, 1);
     this.track = new Arena();
     this.track.addTo(this.scene);
-    this.addMountains(0x8a86b8);
+    if (!this.addPanorama('arena')) this.addMountains(0x8a86b8);
     this.boxes = new ItemBoxes(this.scene, this.track, this.track.boxSpots);
     this.projectiles = new Projectiles(this.scene);
     this.createRacers(BATTLE_RACERS);
@@ -369,6 +374,37 @@ export class KartGame {
     } else if (pressed('x')) {
       this.onRestart?.();
     }
+  }
+
+  // Una imagen de Gemini de kart/<carpeta>/ como textura (o null si no existe).
+  artTexture(folder, name) {
+    if (!name || !manifest[folder]?.includes(name)) return null;
+    const texture = new THREE.TextureLoader().load(`kart/${folder}/${name}.jpg`);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  // El paisaje de fondo de la pista (de Gemini), alrededor de todo. El cielo y la neblina toman los colores de la
+  // imagen (arriba y cerca del horizonte) para que todo se junte bien. Devuelve false si esa pista no tiene paisaje.
+  addPanorama(key) {
+    if (!manifest.fondos?.includes(key)) return false;
+    const { radius, repeats, sink } = PANORAMA;
+    const height = ((Math.PI * 2 * radius) / repeats) * (9 / 16);
+    const texture = new THREE.TextureLoader().load(`kart/fondos/${key}.jpg`, (loaded) => {
+      const [sky, horizon] = sampleColors(loaded.image);
+      this.scene.background = sky;
+      this.fog.color.copy(horizon);
+    });
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.MirroredRepeatWrapping;
+    texture.repeat.set(repeats, 1);
+    const wall = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius, radius, height, 64, 1, true),
+      new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, fog: false }),
+    );
+    wall.position.y = height / 2 - height * sink;
+    this.scene.add(wall);
+    return true;
   }
 
   // Montañas a lo lejos para que el horizonte no se vea vacío.
@@ -996,6 +1032,23 @@ export class KartGame {
     this.drivers.dispose();
     this.view.destroy(this.scene);
   }
+}
+
+// Los colores promedio del paisaje: arriba (el cielo) y cerca de abajo (el piso lejano, para la neblina).
+function sampleColors(image) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 32;
+  canvas.height = 18;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0, 32, 18);
+  const average = (row) => {
+    const data = ctx.getImageData(0, row, 32, 1).data;
+    let [r, g, b] = [0, 0, 0];
+    for (let i = 0; i < data.length; i += 4) [r, g, b] = [r + data[i], g + data[i + 1], b + data[i + 2]];
+    const n = data.length / 4;
+    return new THREE.Color().setRGB(r / n / 255, g / n / 255, b / n / 255, THREE.SRGBColorSpace);
+  };
+  return [average(0), average(15)];
 }
 
 // El trazo de una pista visto desde arriba (unos 50 puntos), para dibujarlo en la tarjeta.

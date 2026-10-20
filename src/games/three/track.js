@@ -4,6 +4,9 @@ const CURB_WIDTH = 1.2;
 const SAMPLES = 400;
 const SEARCH_WINDOW = 25;
 const TREE_COUNT = 70;
+// Las texturas del piso se repiten cada TILE unidades.
+const TILE = 26;
+const ROAD_TEXTURE_BOOST = 1.45;
 
 // Por dónde pasa la pista (x, z). Se suaviza con una curva cerrada.
 const CONTROL_POINTS = [
@@ -30,6 +33,7 @@ const CONTROL_POINTS = [
 //   decor: pine | snowy | palm | candy | none (lo que hay alrededor: pinos, pinos con nieve, palmeras, paletas)
 //   treeColors: los colores de las copas de los pinos   avoid: { x, z, radius } donde no poner nada (el castillo)
 //   sea: del lado de abajo hay mar (ahí no se ponen árboles)
+//   groundMap / groundTint: textura del piso (y de qué color se tiñe) · roadMap: textura del camino (asfalto)
 export class Track {
   constructor({ roadWidth = 14, scale = 1, barriers = false, points = CONTROL_POINTS, ground = 0x6abf4b, snowy = false, theme = {} } = {}) {
     this.roadWidth = roadWidth;
@@ -106,9 +110,13 @@ export class Track {
   }
 
   addTo(scene) {
+    const { groundMap, groundTint } = this.theme;
+    const size = 700 * this.scale;
+    // Con textura, se repite en cuadros de TILE de lado (en espejo, para que no se noten las uniones).
+    if (groundMap) prepareTile(groundMap, size / TILE);
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(700 * this.scale, 700 * this.scale),
-      new THREE.MeshLambertMaterial({ color: this.ground }),
+      new THREE.PlaneGeometry(size, size),
+      new THREE.MeshLambertMaterial({ color: groundMap ? (groundTint ?? 0xffffff) : this.ground, map: groundMap ?? null }),
     );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
@@ -117,7 +125,11 @@ export class Track {
     const { road, rainbow, curbs } = this.theme;
     // El camino de arcoíris va de colores (cambia poco a poco) y brilla solo, sin depender de la luz.
     const roadColor = rainbow ? (i) => new THREE.Color().setHSL((i / this.count) * 6 % 1, 0.85, 0.6).getHex() : () => road;
-    scene.add(this.ribbon(-half, half, 0.02, roadColor, rainbow));
+    // El asfalto (si hay textura) es gris claro y se multiplica por el color del camino: se aclara el color para compensar.
+    const roadMap = rainbow ? null : this.theme.roadMap;
+    const roadTone = roadMap ? (i) => new THREE.Color(roadColor(i)).multiplyScalar(ROAD_TEXTURE_BOOST).getHex() : roadColor;
+    if (roadMap) prepareTile(roadMap, 1);
+    scene.add(this.ribbon(-half, half, 0.02, roadTone, rainbow, roadMap));
     const curbColor = (i) => curbs[Math.floor(i / 3) % 2];
     scene.add(this.ribbon(half, half + CURB_WIDTH, 0.03, curbColor, rainbow));
     scene.add(this.ribbon(-half - CURB_WIDTH, -half, 0.03, curbColor, rainbow));
@@ -129,10 +141,13 @@ export class Track {
   // Tira de pavimento a lo largo de la pista, entre `inner` y `outer` (distancias laterales).
   // Cada segmento lleva sus propios vértices para que las franjas de color queden nítidas.
   // `unlit`: sin sombras (brilla igual de noche).
-  ribbon(inner, outer, y, colorOf, unlit = false) {
+  // `map`: textura que se repite a lo largo (una vez de lado a lado, y cada `roadWidth` hacia adelante).
+  ribbon(inner, outer, y, colorOf, unlit = false, map = null) {
     const positions = [];
     const colors = [];
+    const uvs = [];
     const color = new THREE.Color();
+    const spacing = this.points[0].distanceTo(this.points[1]) / this.roadWidth;
     for (let i = 0; i < this.count; i += 1) {
       const j = (i + 1) % this.count;
       const a = this.edge(i, inner, y);
@@ -140,18 +155,21 @@ export class Track {
       const c = this.edge(j, outer, y);
       const d = this.edge(j, inner, y);
       positions.push(...a, ...b, ...c, ...a, ...c, ...d);
+      const [v0, v1] = [i * spacing, (i + 1) * spacing];
+      uvs.push(0, v0, 1, v0, 1, v1, 0, v0, 1, v1, 0, v1);
       color.setHex(colorOf(i));
       for (let v = 0; v < 6; v += 1) colors.push(color.r, color.g, color.b);
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     // Todo es piso plano: la normal siempre apunta hacia arriba.
     const normals = new Float32Array(positions.length);
     for (let k = 1; k < normals.length; k += 3) normals[k] = 1;
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     const Material = unlit ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial;
-    return new THREE.Mesh(geometry, new Material({ vertexColors: true, side: THREE.DoubleSide }));
+    return new THREE.Mesh(geometry, new Material({ vertexColors: true, side: THREE.DoubleSide, map }));
   }
 
   edge(i, lateral, y) {
@@ -322,6 +340,14 @@ export class Track {
     }
     return tires;
   }
+}
+
+// Una textura que se repite `times` veces (en espejo, así no se notan las uniones).
+function prepareTile(texture, times) {
+  texture.wrapS = THREE.MirroredRepeatWrapping;
+  texture.wrapT = THREE.MirroredRepeatWrapping;
+  texture.repeat.set(times, times);
+  texture.colorSpace = THREE.SRGBColorSpace;
 }
 
 function seededRandom(seed) {

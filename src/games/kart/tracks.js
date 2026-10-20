@@ -3,6 +3,8 @@
 // `unlock`: qué hay que ganar antes (ver UNLOCKS en rewards.js). `theme`: cómo se ve el camino (ver Track).
 // `scenery`: adornos de la pista (snow = nieve y monos de nieve; beach, candy, castle, space: ver scenery.js).
 // `mapColor`: color del dibujo de la pista al escogerla (si no, el del piso).
+// `texture`: textura del piso (kart/texturas, de Gemini) y `textureTint` de qué color se tiñe. El paisaje de fondo
+// es kart/fondos/<pista>.jpg (si existe; si no, montañas de colores).
 // `light`: qué tanta luz hay (menos de 1 = de noche). `mountains`: color de las montañas de lejos (null = sin montañas).
 export const TRACKS = {
   pradera: {
@@ -16,6 +18,7 @@ export const TRACKS = {
     ground: 0x6abf4b,
     groundLight: 0x5a7a3a,
     mountains: 0x8a86b8,
+    texture: 'pasto',
   },
   playa: {
     name: 'Playa',
@@ -28,6 +31,7 @@ export const TRACKS = {
     ground: 0xf2d48a,
     groundLight: 0xc9a85a,
     mountains: 0x7fae8a,
+    texture: 'arena',
     theme: { decor: 'palm', sea: true, curbs: [0xffd02a, 0x3fa7ff], barrierColors: [0x3fa7ff, 0xffffff] },
     scenery: 'beach',
   },
@@ -42,6 +46,7 @@ export const TRACKS = {
     ground: 0xffb3dc,
     groundLight: 0xd98cb8,
     mountains: 0xfff1f8,
+    texture: 'dulce',
     // Camino de chocolate con orillas de bastón de caramelo.
     theme: { decor: 'candy', road: 0x7a4a32, curbs: [0xff5fa8, 0xffffff], barrierColors: [0xff5fa8, 0x7fe0c8] },
     scenery: 'candy',
@@ -73,6 +78,7 @@ export const TRACKS = {
     ground: 0xf2f6fc,
     groundLight: 0x9aa8c0,
     mountains: 0xe6ecf8,
+    texture: 'nieve',
     snowy: true,
     scenery: 'snow',
   },
@@ -89,6 +95,8 @@ export const TRACKS = {
     ground: 0x3f5a3a,
     groundLight: 0x2a2440,
     mountains: 0x2a2450,
+    texture: 'pasto',
+    textureTint: 0x5f7a66,
     light: 0.65,
     theme: {
       road: 0x6e6a78,

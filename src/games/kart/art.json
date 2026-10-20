@@ -13,5 +13,28 @@
   "copas": [
     "copa-estrella",
     "copa-hoja"
+  ],
+  "fondos": [
+    "arena",
+    "castillo",
+    "dulces",
+    "espacio",
+    "nieve",
+    "playa",
+    "pradera"
+  ],
+  "texturas": [
+    "arena",
+    "asfalto",
+    "dulce",
+    "nieve",
+    "pasto"
+  ],
+  "calcomanias": [
+    "corazones",
+    "estrellas",
+    "flores",
+    "llamas",
+    "rayos"
   ]
 }

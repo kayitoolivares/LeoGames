@@ -42,6 +42,9 @@ const GAMES = {
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella'] },
+    fondos: { kind: 'background', names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena'] },
+    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto'] },
+    calcomanias: { kind: 'cutout', max: 256, names: ['llamas', 'estrellas', 'rayos', 'corazones', 'flores'] },
   },
   futbol: {
     fondos: { kind: 'background', names: ['estadio'] },
@@ -66,8 +69,8 @@ async function files(folder, root = SOURCE) {
   }
 }
 
-async function background(input, output) {
-  await sharp(input).resize({ width: BACKGROUND_MAX, withoutEnlargement: true }).jpeg({ quality: 82 }).toFile(output);
+async function background(input, output, max = BACKGROUND_MAX) {
+  await sharp(input).resize({ width: max, withoutEnlargement: true }).jpeg({ quality: 82 }).toFile(output);
 }
 
 // Un juego "sencillo": cada carpeta es una lista de nombres permitidos (ver GAMES).
@@ -86,7 +89,7 @@ async function prepareGame(game, folders, report) {
         continue;
       }
       if (spec.kind === 'cutout') await cutOut(path.join(source, folder, file), path.join(output, folder, `${name}.png`), spec.max);
-      else await background(path.join(source, folder, file), path.join(output, folder, `${name}.jpg`));
+      else await background(path.join(source, folder, file), path.join(output, folder, `${name}.jpg`), spec.max);
       manifest[folder].push(name);
       report.push(`  ✓ ${game}: ${folder}/${name}`);
     }
