@@ -68,8 +68,11 @@ Abre http://localhost:5173 en Edge o Chrome.
   **X** = lanzar el poder de las cajitas "?": 🚀 cohete (al de adelante), 🍌 plátano, 🍌×3 tres plátanos (uno con
   cada X), ⚡ súper turbo, 🛡️ burbuja, ☄️ cometa (va por el primer lugar), 🌩️ rayo (encoge a los demás; encogidos,
   si los tocas dan vueltas) y 🦑 tinta (mancha la pantalla de los de adelante). Los de atrás reciben mejores poderes.
-  Pistas: **Pradera** y **Montaña nevada** (se desbloquea al ganar una carrera; tiene nieve cayendo, monos de nieve
-  y una curva en "S"). Al terminar, **B** regresa a escoger pista.
+  Pistas (cada una con su rampa y sus flechas): **Pradera**, **Playa** (palmeras, sombrillas y el mar), **Dulcelandia**
+  (camino de chocolate, paletas y gomitas), **Montaña nevada** (se desbloquea al ganar una carrera; nieve cayendo y
+  monos de nieve), **Castillo** (de noche, con antorchas; se desbloquea al pegarle a alguien con un poder) y
+  **Arcoíris espacial** (camino de colores entre estrellas y planetas; se desbloquea al ganar una copa del Gran
+  Premio). Al terminar, **B** regresa a escoger pista.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,
   **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),

@@ -24,13 +24,31 @@ const CONTROL_POINTS = [
 // y se sabe qué tan avanzado va cada carro (el índice de la muestra más cercana).
 // `scale` la hace más grande y `barriers` le pone llantas a los lados (para los karts).
 // `points` cambia el trazo, `ground` el color del piso y `snowy` les pone nieve a los árboles.
+// `theme` cambia cómo se ve (todo es opcional):
+//   road: color del camino   rainbow: camino de colores (el del espacio)   curbs: [color, color] de las orillas
+//   barrierColors: [color, color] de las llantas   glow: llantas que brillan solas (de noche o en el espacio)
+//   decor: pine | snowy | palm | candy | none (lo que hay alrededor: pinos, pinos con nieve, palmeras, paletas)
+//   treeColors: los colores de las copas de los pinos   avoid: { x, z, radius } donde no poner nada (el castillo)
+//   sea: del lado de abajo hay mar (ahí no se ponen árboles)
 export class Track {
-  constructor({ roadWidth = 14, scale = 1, barriers = false, points = CONTROL_POINTS, ground = 0x6abf4b, snowy = false } = {}) {
+  constructor({ roadWidth = 14, scale = 1, barriers = false, points = CONTROL_POINTS, ground = 0x6abf4b, snowy = false, theme = {} } = {}) {
     this.roadWidth = roadWidth;
     this.scale = scale;
     this.barriers = barriers;
     this.ground = ground;
     this.snowy = snowy;
+    this.theme = {
+      road: 0x4a4a55,
+      rainbow: false,
+      curbs: [0xe53935, 0xffffff],
+      barrierColors: [0xe53935, snowy ? 0x3fa7ff : 0xffffff],
+      glow: false,
+      decor: snowy ? 'snowy' : 'pine',
+      treeColors: snowy ? [0x1f5a48, 0x26664f, 0x1a4d3e] : [0x2e8b57, 0x3fa34d, 0x267a46],
+      ...theme,
+    };
+    // Con mar, nada de árboles más allá de la orilla.
+    if (this.theme.sea) this.theme.maxZ = Math.max(...points.map(([, z]) => z * scale)) + 20;
     // Distancia lateral máxima antes de chocar con las llantas.
     this.wallDistance = roadWidth / 2 + CURB_WIDTH + 1.2;
     const curve = new THREE.CatmullRomCurve3(
@@ -96,17 +114,22 @@ export class Track {
     scene.add(ground);
 
     const half = this.roadWidth / 2;
-    scene.add(this.ribbon(-half, half, 0.02, () => 0x4a4a55));
-    scene.add(this.ribbon(half, half + CURB_WIDTH, 0.03, curbColor));
-    scene.add(this.ribbon(-half - CURB_WIDTH, -half, 0.03, curbColor));
+    const { road, rainbow, curbs } = this.theme;
+    // El camino de arcoíris va de colores (cambia poco a poco) y brilla solo, sin depender de la luz.
+    const roadColor = rainbow ? (i) => new THREE.Color().setHSL((i / this.count) * 6 % 1, 0.85, 0.6).getHex() : () => road;
+    scene.add(this.ribbon(-half, half, 0.02, roadColor, rainbow));
+    const curbColor = (i) => curbs[Math.floor(i / 3) % 2];
+    scene.add(this.ribbon(half, half + CURB_WIDTH, 0.03, curbColor, rainbow));
+    scene.add(this.ribbon(-half - CURB_WIDTH, -half, 0.03, curbColor, rainbow));
     scene.add(this.startLine());
-    for (const mesh of this.trees()) scene.add(mesh);
+    for (const mesh of this.decorations()) scene.add(mesh);
     if (this.barriers) scene.add(this.barrierWall());
   }
 
   // Tira de pavimento a lo largo de la pista, entre `inner` y `outer` (distancias laterales).
   // Cada segmento lleva sus propios vértices para que las franjas de color queden nítidas.
-  ribbon(inner, outer, y, colorOf) {
+  // `unlit`: sin sombras (brilla igual de noche).
+  ribbon(inner, outer, y, colorOf, unlit = false) {
     const positions = [];
     const colors = [];
     const color = new THREE.Color();
@@ -127,7 +150,8 @@ export class Track {
     const normals = new Float32Array(positions.length);
     for (let k = 1; k < normals.length; k += 3) normals[k] = 1;
     geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    return new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+    const Material = unlit ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial;
+    return new THREE.Mesh(geometry, new Material({ vertexColors: true, side: THREE.DoubleSide }));
   }
 
   edge(i, lateral, y) {
@@ -159,18 +183,35 @@ export class Track {
     return line;
   }
 
-  // Árboles repartidos lejos del camino. Se usa un generador con semilla para que la pista
-  // se vea igual cada vez, y InstancedMesh para dibujar todos en una sola pasada (ligero para el Xbox).
-  trees() {
-    const random = seededRandom(7);
+  // Lugares al azar lejos del camino (y lejos de `avoid`, si se da: { x, z, radius }). Con semilla, para que
+  // la pista se vea igual cada vez.
+  scatter(count, seed = 7, avoid = null) {
+    const random = seededRandom(seed);
     const spots = [];
     const clearance = this.wallDistance + 5;
-    while (spots.length < TREE_COUNT) {
+    for (let tries = 0; spots.length < count && tries < count * 50; tries += 1) {
       const x = (random() - 0.5) * 300 * this.scale;
       const z = (random() - 0.5) * 240 * this.scale;
       if (this.closest(x, z).distance < clearance) continue;
-      spots.push({ x, z, scale: 0.8 + random() * 0.6 });
+      if (avoid && Math.hypot(x - avoid.x, z - avoid.z) < avoid.radius) continue;
+      if (this.theme.maxZ !== undefined && z > this.theme.maxZ) continue;
+      spots.push({ x, z, scale: 0.8 + random() * 0.6, turn: random() * Math.PI * 2 });
     }
+    return spots;
+  }
+
+  // Lo que hay alrededor del camino según el tema: pinos, palmeras o paletas gigantes.
+  decorations() {
+    const { decor } = this.theme;
+    if (decor === 'palm') return this.palms();
+    if (decor === 'candy') return this.lollipops();
+    if (decor === 'none') return [];
+    return this.trees();
+  }
+
+  // Árboles repartidos lejos del camino. InstancedMesh dibuja todos en una sola pasada (ligero para el Xbox).
+  trees() {
+    const spots = this.scatter(TREE_COUNT, 7, this.theme.avoid);
 
     const trunks = new THREE.InstancedMesh(
       new THREE.CylinderGeometry(0.4, 0.5, 2, 6),
@@ -178,7 +219,7 @@ export class Track {
       spots.length,
     );
     const crowns = new THREE.InstancedMesh(new THREE.ConeGeometry(2.2, 5, 7), new THREE.MeshLambertMaterial(), spots.length);
-    const greens = this.snowy ? [0x1f5a48, 0x26664f, 0x1a4d3e] : [0x2e8b57, 0x3fa34d, 0x267a46];
+    const greens = this.theme.treeColors;
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
     spots.forEach(({ x, z, scale }, i) => {
@@ -198,11 +239,74 @@ export class Track {
     return [trunks, crowns, caps];
   }
 
-  // Llantas rojas y blancas a ambos lados: no dejan que los karts se salgan.
+  // Palmeras: tronco un poco chueco y un penacho de hojas.
+  palms() {
+    const spots = this.scatter(Math.round(TREE_COUNT * 0.7), 11);
+    const trunks = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.3, 0.5, 7, 6),
+      new THREE.MeshLambertMaterial({ color: 0xa8763e }),
+      spots.length,
+    );
+    const leaves = new THREE.InstancedMesh(new THREE.ConeGeometry(3.6, 1.6, 7), new THREE.MeshLambertMaterial({ color: 0x2fa84f }), spots.length);
+    const coconuts = new THREE.InstancedMesh(new THREE.SphereGeometry(0.45, 8, 6), new THREE.MeshLambertMaterial({ color: 0x6b4a2b }), spots.length);
+    const dummy = new THREE.Object3D();
+    spots.forEach(({ x, z, scale, turn }, i) => {
+      const lean = 0.18;
+      dummy.position.set(x, 3.5 * scale, z);
+      dummy.rotation.set(Math.cos(turn) * lean, 0, Math.sin(turn) * lean);
+      dummy.scale.setScalar(scale);
+      dummy.updateMatrix();
+      trunks.setMatrixAt(i, dummy.matrix);
+      // La punta del tronco se corre hacia donde se inclina.
+      const tipX = x + Math.sin(turn) * -lean * 3.5 * scale;
+      const tipZ = z + Math.cos(turn) * lean * 3.5 * scale;
+      dummy.position.set(tipX, 7.2 * scale, tipZ);
+      dummy.rotation.set(Math.PI, turn, 0);
+      dummy.updateMatrix();
+      leaves.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(tipX + 0.4 * scale, 6.6 * scale, tipZ);
+      dummy.updateMatrix();
+      coconuts.setMatrixAt(i, dummy.matrix);
+    });
+    return [trunks, leaves, coconuts];
+  }
+
+  // Paletas gigantes de colores (Dulcelandia).
+  lollipops() {
+    const spots = this.scatter(TREE_COUNT, 13);
+    const sticks = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.22, 0.22, 6, 6),
+      new THREE.MeshLambertMaterial({ color: 0xfff6ea }),
+      spots.length,
+    );
+    const candies = new THREE.InstancedMesh(new THREE.CylinderGeometry(2.2, 2.2, 0.6, 16).rotateX(Math.PI / 2), new THREE.MeshLambertMaterial(), spots.length);
+    const swirls = new THREE.InstancedMesh(new THREE.TorusGeometry(1.2, 0.28, 6, 16), new THREE.MeshLambertMaterial({ color: 0xffffff }), spots.length);
+    const colors = [0xff5fa8, 0x7fe0c8, 0xffd02a, 0xb07cff, 0xff8a5c];
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
+    spots.forEach(({ x, z, scale, turn }, i) => {
+      dummy.rotation.set(0, turn, 0);
+      dummy.scale.setScalar(scale);
+      dummy.position.set(x, 3 * scale, z);
+      dummy.updateMatrix();
+      sticks.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(x, 7.6 * scale, z);
+      dummy.updateMatrix();
+      candies.setMatrixAt(i, dummy.matrix);
+      candies.setColorAt(i, color.setHex(colors[i % colors.length]));
+      dummy.position.set(x + Math.sin(turn) * 0.32 * scale, 7.6 * scale, z + Math.cos(turn) * 0.32 * scale);
+      dummy.updateMatrix();
+      swirls.setMatrixAt(i, dummy.matrix);
+    });
+    return [sticks, candies, swirls];
+  }
+
+  // Llantas de dos colores a ambos lados: no dejan que los karts se salgan.
   barrierWall() {
     const step = 2;
     const perSide = Math.ceil(this.count / step);
-    const tires = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.9, 0.9, 1.1, 10), new THREE.MeshLambertMaterial(), perSide * 2);
+    const Material = this.theme.glow ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial;
+    const tires = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.9, 0.9, 1.1, 10), new Material(), perSide * 2);
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
     let n = 0;
@@ -212,16 +316,12 @@ export class Track {
         dummy.position.set(spot.x, 0.55, spot.z);
         dummy.updateMatrix();
         tires.setMatrixAt(n, dummy.matrix);
-        tires.setColorAt(n, color.setHex((i / step) % 2 === 0 ? 0xe53935 : this.snowy ? 0x3fa7ff : 0xffffff));
+        tires.setColorAt(n, color.setHex(this.theme.barrierColors[(i / step) % 2]));
         n += 1;
       }
     }
     return tires;
   }
-}
-
-function curbColor(i) {
-  return Math.floor(i / 3) % 2 === 0 ? 0xe53935 : 0xffffff;
 }
 
 function seededRandom(seed) {

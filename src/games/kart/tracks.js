@@ -1,7 +1,9 @@
 // Pistas de Karts locos. `points`: el trazo (x, z) antes de escalar; null = el de siempre (track.js).
 // `pads`: flechas de turbo [dónde (0 a 1 de la vuelta), carril]; `ramps`: rampas [dónde] (en rectas).
-// `unlock`: qué hay que ganar antes (ver UNLOCKS en rewards.js). `snowy`: árboles con nieve, monos de nieve
-// y copos cayendo.
+// `unlock`: qué hay que ganar antes (ver UNLOCKS en rewards.js). `theme`: cómo se ve el camino (ver Track).
+// `scenery`: adornos de la pista (snow = nieve y monos de nieve; beach, candy, castle, space: ver scenery.js).
+// `mapColor`: color del dibujo de la pista al escogerla (si no, el del piso).
+// `light`: qué tanta luz hay (menos de 1 = de noche). `mountains`: color de las montañas de lejos (null = sin montañas).
 export const TRACKS = {
   pradera: {
     name: 'Pradera',
@@ -14,6 +16,35 @@ export const TRACKS = {
     ground: 0x6abf4b,
     groundLight: 0x5a7a3a,
     mountains: 0x8a86b8,
+  },
+  playa: {
+    name: 'Playa',
+    emoji: '🏖️',
+    unlock: null,
+    points: [[-90, -40], [-40, -62], [20, -55], [70, -66], [102, -30], [95, 15], [62, 35], [30, 22], [0, 42], [-30, 68], [-75, 60], [-102, 20]],
+    pads: [[0.04, 0], [0.32, -3], [0.56, 0], [0.8, 3]],
+    ramps: [0.13],
+    sky: 0x7fd6ff,
+    ground: 0xf2d48a,
+    groundLight: 0xc9a85a,
+    mountains: 0x7fae8a,
+    theme: { decor: 'palm', sea: true, curbs: [0xffd02a, 0x3fa7ff], barrierColors: [0x3fa7ff, 0xffffff] },
+    scenery: 'beach',
+  },
+  dulces: {
+    name: 'Dulcelandia',
+    emoji: '🍭',
+    unlock: null,
+    points: [[-80, -62], [0, -72], [70, -62], [98, -22], [72, 8], [24, -2], [-6, 22], [22, 46], [70, 50], [66, 82], [0, 84], [-62, 72], [-98, 30], [-102, -22]],
+    pads: [[0.02, 0], [0.35, 0], [0.52, 3], [0.86, -3]],
+    ramps: [0.09, 0.68],
+    sky: 0xffd6f5,
+    ground: 0xffb3dc,
+    groundLight: 0xd98cb8,
+    mountains: 0xfff1f8,
+    // Camino de chocolate con orillas de bastón de caramelo.
+    theme: { decor: 'candy', road: 0x7a4a32, curbs: [0xff5fa8, 0xffffff], barrierColors: [0xff5fa8, 0x7fe0c8] },
+    scenery: 'candy',
   },
   nieve: {
     name: 'Montaña nevada',
@@ -43,6 +74,47 @@ export const TRACKS = {
     groundLight: 0x9aa8c0,
     mountains: 0xe6ecf8,
     snowy: true,
+    scenery: 'snow',
+  },
+  castillo: {
+    name: 'Castillo',
+    emoji: '🏰',
+    unlock: 'kart-castillo',
+    mapColor: 0xb8b4c8,
+    // Alrededor del castillo, con curvitas en las cuatro esquinas.
+    points: [[-90, -52], [-34, -52], [-22, -72], [22, -72], [34, -52], [90, -52], [104, 0], [90, 52], [34, 52], [22, 72], [-22, 72], [-34, 52], [-90, 52], [-104, 0]],
+    pads: [[0.03, 0], [0.27, 0], [0.53, 0], [0.77, 0]],
+    ramps: [0.39, 0.89],
+    sky: 0x3b2f6b,
+    ground: 0x3f5a3a,
+    groundLight: 0x2a2440,
+    mountains: 0x2a2450,
+    light: 0.65,
+    theme: {
+      road: 0x6e6a78,
+      curbs: [0x9a96a8, 0x55516a],
+      barrierColors: [0xffc93c, 0x55516a],
+      treeColors: [0x1f4a3a, 0x24553f, 0x1a3f33],
+      avoid: { x: 0, z: 0, radius: 45 },
+    },
+    scenery: 'castle',
+  },
+  espacio: {
+    name: 'Arcoíris espacial',
+    emoji: '🌈',
+    unlock: 'kart-espacio',
+    mapColor: 0xd36bff,
+    points: [[-100, -10], [-72, -62], [0, -78], [72, -62], [102, -10], [86, 42], [46, 58], [14, 34], [-16, 56], [-52, 72], [-92, 42]],
+    pads: [[0.05, 0], [0.4, 3], [0.55, -3], [0.88, 0]],
+    ramps: [0.2, 0.74],
+    sky: 0x0b0820,
+    ground: 0x140d33,
+    groundLight: 0x0b0820,
+    mountains: null,
+    light: 0.75,
+    // Camino de arcoíris y llantas de neón que brillan.
+    theme: { decor: 'none', rainbow: true, curbs: [0xffffff, 0xbfe6ff], barrierColors: [0x3fe0ff, 0xff4dd2], glow: true },
+    scenery: 'space',
   },
 };
 

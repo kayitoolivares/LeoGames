@@ -434,6 +434,12 @@ async function passGarage(p, count) {
   for (let i = 0; i < count; i += 1) await p.tap(i, BUTTON.A);
 }
 
+// En la pantalla de pistas, A = la que ya está escogida (la Pradera, la primera vez).
+async function pickTrack(p) {
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver las pistas');
+  await p.tap(0, BUTTON.A);
+}
+
 // Bot de karts: cada jugador apunta a un punto de la pista más adelante, acelera y lanza lo que agarre.
 function startKartBot(page) {
   return page.evaluate(() => {
@@ -466,8 +472,8 @@ test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { 
   await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.RIGHT);
   await passGarage(p, 2);
-  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase !== 'garage', ms(10000), 'salir del taller');
-  // Sin calcomanías no hay pista que escoger: arranca en la Pradera.
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(10000), 'empezar en la Pradera');
   assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'pradera');
   const racers = await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => [r.setup.type, r.setup.character]));
   assert.equal(racers.length, 6);
@@ -495,6 +501,7 @@ test('karts locos: derrape, rampa con truco y flecha de turbo', { timeout: ms(12
   await p.joinPlayers(1);
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
+  await pickTrack(p);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'empezar la carrera');
   // Un kart solo en una recta, sin nadie que estorbe.
   const place = (at, lane, speed) =>
@@ -545,6 +552,7 @@ test('karts locos: triple plátano, rayo, tinta y cometa', { timeout: ms(120000)
   await p.joinPlayers(1);
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
+  await pickTrack(p);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'empezar la carrera');
   await p.page.evaluate(() => window.__button(0, 0, true));
   const kart = (fn) => p.page.evaluate(fn);
@@ -604,7 +612,8 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver las pistas');
-  await p.tap(0, BUTTON.RIGHT);
+  // La nieve está en el segundo renglón, abajo de la Pradera.
+  await p.tap(0, BUTTON.DOWN);
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.trackKey === 'nieve', ms(10000), 'entrar a la nieve');
   assert.ok(await p.page.evaluate(() => Boolean(window.leogames.scene.getScene('Kart').game3d.snow)), 'no está nevando');

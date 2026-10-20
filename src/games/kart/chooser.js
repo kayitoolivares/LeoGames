@@ -1,30 +1,36 @@
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 
-// Pantalla para escoger pista (HTML encima del 3D): ◀ ▶ escoger, A = ¡a correr!, B = regresar.
-// Las pistas cerradas dicen qué hay que ganar para abrirlas.
+// Pantalla para escoger pista (HTML encima del 3D): cuadrícula de 3 por renglón, cada una con el dibujo de su
+// trazo. ◀ ▶ ↑ ↓ escoger, A = ¡a correr!, B = regresar. Las pistas cerradas dicen qué hay que ganar para abrirlas.
 const STYLE_ID = 'kart-choose-style';
+const COLUMNS = 3;
+const MAP_W = 200;
+const MAP_H = 80;
 const CSS = `
 .kart-choose { position: absolute; inset: 0; background: #14112b; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 40px; color: #fff;
+  align-items: center; justify-content: center; gap: 26px; color: #fff;
   font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif; }
-.kart-choose h1 { margin: 0; font-size: 56px; }
-.kart-choose .cards { display: flex; gap: 36px; }
-.kart-choose .card { width: 340px; height: 290px; border-radius: 24px; background: #231d45; border: 4px solid #3a3170;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; box-sizing: border-box; }
+.kart-choose h1 { margin: 0; font-size: 52px; }
+.kart-choose .cards { display: grid; grid-template-columns: repeat(${COLUMNS}, 340px); gap: 22px; }
+.kart-choose .card { height: 212px; border-radius: 22px; background: #231d45; border: 4px solid #3a3170;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; }
 .kart-choose .card.on { border-color: #ffc93c; box-shadow: 0 0 0 6px #ffc93c; }
-.kart-choose .card .emoji { font-size: 96px; line-height: 1; }
-.kart-choose .card b { font-size: 30px; }
+.kart-choose .card .title { display: flex; align-items: center; gap: 10px; }
+.kart-choose .card .emoji { font-size: 46px; line-height: 1; }
+.kart-choose .card b { font-size: 27px; }
+.kart-choose .card svg { width: ${MAP_W}px; height: ${MAP_H}px; }
+.kart-choose .card.locked { opacity: 0.6; }
 .kart-choose .card.locked b, .kart-choose .card small { color: #a9a3d6; }
-.kart-choose .card small { font-size: 17px; text-align: center; max-width: 290px; min-height: 22px; }
+.kart-choose .card small { font-size: 16px; text-align: center; max-width: 300px; min-height: 20px; }
 .kart-choose p { margin: 0; font-size: 24px; color: #ffc93c; }
 .kart-choose .exit { position: absolute; bottom: 0; left: 50%; width: 200px; height: 6px; margin-left: -100px; }
 .kart-choose .exit > div { height: 100%; width: 0; background: #fff; border-radius: 3px; }
 `;
 
 export class TrackChooser {
-  // `tracks`: [{ name, emoji, open, lock }].
-  constructor(stage, tracks, selected = 0) {
+  // `tracks`: [{ name, emoji, open, lock, outline: [{ x, z }...] (el trazo), color (para dibujarlo) }].
+  constructor(stage, tracks, selected = 0, title = 'Escoge pista') {
     if (!document.getElementById(STYLE_ID)) {
       const style = document.createElement('style');
       style.id = STYLE_ID;
@@ -36,12 +42,12 @@ export class TrackChooser {
     this.el.className = 'kart-choose';
     const cards = tracks
       .map(
-        (track) => `<div class="card${track.open ? '' : ' locked'}"><span class="emoji">${track.emoji}</span>
-          <b>${track.name}</b><small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
+        (track) => `<div class="card${track.open ? '' : ' locked'}"><div class="title"><span class="emoji">${track.emoji}</span>
+          <b>${track.name}</b></div>${outlineSvg(track.outline, track.color)}<small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
       )
       .join('');
-    this.el.innerHTML = `<h1>Escoge pista</h1><div class="cards">${cards}</div>
-      <p>◀ ▶ escoger  ·  A = ¡a correr!  ·  B = regresar</p><div class="exit"><div></div></div>`;
+    this.el.innerHTML = `<h1>${title}</h1><div class="cards">${cards}</div>
+      <p>◀ ▶ ↑ ↓ escoger  ·  A = ¡a correr!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     stage.append(this.el);
     this.cards = [...this.el.querySelectorAll('.card')];
     this.exitBar = this.el.querySelector('.exit > div');
@@ -55,9 +61,17 @@ export class TrackChooser {
     say(track.open ? track.name : `${track.name}. Todavía no: ${track.lock}`);
   }
 
+  // ◀ ▶ = de uno en uno; ↑ ↓ = un renglón (3).
   move(step) {
     sfx.select();
     this.select((this.selected + step + this.tracks.length) % this.tracks.length);
+  }
+
+  moveRow(step) {
+    const next = this.selected + step * COLUMNS;
+    if (next < 0 || next >= this.tracks.length) return;
+    sfx.select();
+    this.select(next);
   }
 
   setExitProgress(fraction) {
@@ -67,4 +81,19 @@ export class TrackChooser {
   destroy() {
     this.el.remove();
   }
+}
+
+// El trazo de la pista visto desde arriba, como una línea gruesa.
+function outlineSvg(points = [], color = '#ffffff') {
+  if (points.length === 0) return '';
+  const xs = points.map((p) => p.x);
+  const zs = points.map((p) => p.z);
+  const [minX, maxX, minZ, maxZ] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
+  const pad = 8;
+  const k = Math.min((MAP_W - pad * 2) / (maxX - minX), (MAP_H - pad * 2) / (maxZ - minZ));
+  const offX = (MAP_W - (maxX - minX) * k) / 2;
+  const offY = (MAP_H - (maxZ - minZ) * k) / 2;
+  const path = points.map((p) => `${((p.x - minX) * k + offX).toFixed(1)},${((p.z - minZ) * k + offY).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 ${MAP_W} ${MAP_H}"><polygon points="${path}" fill="none" stroke="#1b1530" stroke-width="9" stroke-linejoin="round"/>
+    <polygon points="${path}" fill="none" stroke="${color}" stroke-width="5" stroke-linejoin="round"/></svg>`;
 }

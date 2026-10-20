@@ -16,7 +16,7 @@ import { DriverArt } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
 import { kartPicks, randomSetup } from './karts.js';
-import { Snowfall, addSnowmen } from './scenery.js';
+import { Snowfall, addScenery, addSnowmen } from './scenery.js';
 import { TRACKS, TRACK_KEYS } from './tracks.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTER_KEYS } from '../smash/characters.js';
@@ -127,6 +127,8 @@ export class KartGame {
       ...TRACKS[key],
       open: this.openTracks.includes(key),
       lock: TRACKS[key].unlock ? UNLOCKS[TRACKS[key].unlock].label : '',
+      outline: trackOutline(TRACKS[key]),
+      color: hexToCss(TRACKS[key].mapColor ?? TRACKS[key].ground),
     }));
     this.chooser = new TrackChooser(this.view.stage, cards, Math.max(0, TRACK_KEYS.indexOf(lastTrack)));
   }
@@ -136,6 +138,8 @@ export class KartGame {
     if (!id) return;
     const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
     if (step !== 0) this.chooser.move(step);
+    const row = (controls.justPressed(id, 'down') ? 1 : 0) - (controls.justPressed(id, 'up') ? 1 : 0);
+    if (row !== 0) this.chooser.moveRow(row);
     if (controls.justPressed(id, 'a')) {
       const key = TRACK_KEYS[this.chooser.selected];
       if (!this.openTracks.includes(key)) return;
@@ -157,17 +161,20 @@ export class KartGame {
     this.scene.background = new THREE.Color(look.sky);
     this.fog = new THREE.Fog(look.sky, 140, 420);
     this.scene.fog = this.fog;
-    this.scene.add(new THREE.HemisphereLight(0xffffff, look.groundLight, 1.2));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+    const light = look.light ?? 1;
+    this.scene.add(new THREE.HemisphereLight(0xffffff, look.groundLight, 1.2 * light));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6 * light);
     sun.position.set(50, 100, 30);
     this.scene.add(sun);
 
-    this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy });
+    this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy, theme: look.theme });
     this.track.addTo(this.scene);
-    this.addMountains(look.mountains);
-    if (look.snowy) {
+    if (look.mountains) this.addMountains(look.mountains);
+    if (look.scenery === 'snow') {
       addSnowmen(this.scene, this.track);
       this.snow = new Snowfall(this.scene, this.track);
+    } else {
+      this.scenery = addScenery(this.scene, this.track, look.scenery);
     }
     this.features = new TrackFeatures(this.scene, this.track, { pads: look.pads, ramps: look.ramps });
     this.boxes = new ItemBoxes(this.scene, this.track);
@@ -283,6 +290,7 @@ export class KartGame {
       return;
     }
     this.snow?.update(dtMs / 1000);
+    this.scenery?.update(dtMs / 1000);
 
     if (this.phase === 'countdown') this.updateCountdown();
     else if (this.phase === 'race') this.updateRace(dtMs, now);
@@ -675,6 +683,12 @@ export class KartGame {
     this.drivers.dispose();
     this.view.destroy(this.scene);
   }
+}
+
+// El trazo de una pista visto desde arriba (unos 50 puntos), para dibujarlo en la tarjeta.
+function trackOutline(look) {
+  const track = new Track({ scale: 1.3, points: look.points });
+  return track.points.filter((_, i) => i % 8 === 0).map((p) => ({ x: p.x, z: p.z }));
 }
 
 function clamp(value, min, max) {

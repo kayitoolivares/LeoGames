@@ -17,6 +17,7 @@ export const STICKERS = [
   { id: 'smash-bomba', emoji: '💣', name: 'Bombazo', hint: 'Lanza una bomba en Bolitas Bros' },
   { id: 'kart-gana', emoji: '🏁', name: 'Primer lugar', hint: 'Gana una carrera de Karts locos' },
   { id: 'kart-poder', emoji: '🚀', name: '¡Le diste!', hint: 'Pégale a alguien con un poder en Karts locos' },
+  { id: 'kart-copa', emoji: '🏅', name: 'Copa de karts', hint: 'Gana una copa del Gran Premio en Karts locos' },
   { id: 'carrera-gana', emoji: '🏎️', name: 'Piloto veloz', hint: 'Gana una carrera vista desde arriba' },
   { id: 'futbol-gol', emoji: '⚽', name: '¡Gol!', hint: 'Mete un gol en Fútbol de bolitas' },
   { id: 'futbol-gana', emoji: '🏆', name: 'Campeones', hint: 'Gana un partido de Fútbol de bolitas' },
@@ -33,6 +34,8 @@ export const UNLOCKS = {
   'smash-espacio': { sticker: 'smash-gana', label: 'Gana una pelea en Bolitas Bros' },
   'smash-volcan': { sticker: 'smash-super', label: 'Transfórmate en súper en Bolitas Bros' },
   'kart-nieve': { sticker: 'kart-gana', label: 'Gana una carrera de Karts locos' },
+  'kart-castillo': { sticker: 'kart-poder', label: 'Pégale a alguien con un poder' },
+  'kart-espacio': { sticker: 'kart-copa', label: 'Gana una copa del Gran Premio' },
   'pelea-mundo-2': { sticker: 'pelea-gana', label: 'Gana el primer mundo' },
   'pelea-mundo-3': { sticker: 'pelea-hongos', label: 'Gana el mundo del bosque' },
 };
