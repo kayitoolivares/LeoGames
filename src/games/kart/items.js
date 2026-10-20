@@ -201,7 +201,9 @@ export class Projectiles {
       }
 
       // El cohete nunca le pega a quien lo lanzó; su propio plátano sí, pero no en cuanto lo suelta.
-      const canHit = (r) => r !== p.owner || (p.kind === 'banana' && p.ageMs > OWNER_GRACE_MS);
+      // (En la carrera por equipos, lo de tu equipo no te hace nada.)
+      const teammate = (r) => r !== p.owner && r.team !== undefined && r.team === p.owner.team;
+      const canHit = (r) => !teammate(r) && (r !== p.owner || (p.kind === 'banana' && p.ageMs > OWNER_GRACE_MS));
       const victim = racers.find((r) => canHit(r) && Math.hypot(r.x - p.x, r.z - p.z) < RACER_RADIUS + 0.8);
       if (victim) {
         onHit(victim, p);
@@ -226,7 +228,8 @@ export class Projectiles {
     p.z += Math.cos(p.heading) * COMET_SPEED * dt;
     p.index = track.closest(p.x, p.z, p.index).index;
     if (Math.hypot(p.target.x - p.x, p.target.z - p.z) < RACER_RADIUS + 1) {
-      for (const r of racers) if (r !== p.owner && Math.hypot(r.x - p.x, r.z - p.z) < COMET_BLAST) onHit(r, p);
+      const teammate = (r) => r.team !== undefined && r.team === p.owner.team;
+      for (const r of racers) if (r !== p.owner && !teammate(r) && Math.hypot(r.x - p.x, r.z - p.z) < COMET_BLAST) onHit(r, p);
       return this.remove(p);
     }
     p.mesh.position.set(p.x, COMET_HEIGHT + Math.sin(p.ageMs / 90) * 0.2, p.z);

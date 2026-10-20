@@ -146,6 +146,14 @@ export class Racer {
     this.events = [];
   }
 
+  // Carrera por equipos: un aro del color del equipo en el piso, debajo del kart.
+  setTeam(team, color) {
+    this.team = team;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(2, 2.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color }));
+    ring.position.y = 0.08;
+    this.object.add(ring);
+  }
+
   get airborne() {
     return this.y > this.floor + 0.05 || this.vy > 0;
   }

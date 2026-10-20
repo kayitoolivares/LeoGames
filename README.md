@@ -78,6 +78,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   las vueltas (1, 2 o 3). **Arranque turbo**: acelerar justo cuando sale el "1". **Monedas** en la pista: cada una te hace
   un poco más rápido (hasta 10) y un golpe te tira 3. Mini mapa en la esquina, motor que suena según la velocidad y
   música más rápida en la última vuelta.
+  **Por equipos**: Rojos (J1 y J3) contra Azules (J2 y J4), la compu completa los equipos; cada kart lleva un aro de
+  su color, los poderes no le pegan a tu equipo y al final se suman los puntos (10, 8, 6, 4, 2, 1).
   **Batalla de globos**: 4 karts en una arena redonda con bloques de juguete; cada uno trae 3 globos y los poderes (o
   aplastar a uno encogido) revientan uno. Sin globos quedas fuera; gana el último con globos o el que tenga más al
   acabarse los 2:30.

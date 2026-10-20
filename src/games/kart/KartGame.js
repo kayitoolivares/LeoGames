@@ -106,6 +106,12 @@ const MODES = [
   { key: 'race', emoji: '🏁', name: 'Carrera', info: 'Una carrera en la pista que quieras' },
   { key: 'cup', emoji: '🏆', name: 'Gran Premio', info: '3 pistas seguidas: el que junte más puntos gana la copa' },
   { key: 'battle', emoji: '🎈', image: 'globos', name: 'Batalla de globos', info: 'Revienta los globos de los demás: gana el último con globos' },
+  { key: 'teams', emoji: '🤝', name: 'Por equipos', info: 'Rojos contra Azules: se suman los puntos de cada equipo' },
+];
+// Carreras por equipos: los colores y nombres de los dos equipos.
+const TEAMS = [
+  { name: 'Rojos', color: 0xff5a5f, emoji: '🔴' },
+  { name: 'Azules', color: 0x3fa7ff, emoji: '🔵' },
 ];
 
 // Cómo se reparte la pantalla: 1 jugador = completa, 2 = arriba/abajo,
@@ -146,6 +152,8 @@ export class KartGame {
     // Primero el taller (cada quien escoge piloto y kart), luego el modo y la pista (o la copa).
     const next = resume;
     resume = null;
+    // Carrera por equipos (se recuerda al reabrir para cambiar de pista).
+    this.teams = next?.teams ?? false;
     if (next?.gp) {
       this.gp = next.gp;
       this.build(CUPS[this.gp.cup].tracks[this.gp.race]);
@@ -209,6 +217,7 @@ export class KartGame {
     }));
     this.choose(cards, 0, '¿Qué jugamos?', (i) => {
       this.closeChooser();
+      this.teams = MODES[i].key === 'teams';
       if (MODES[i].key === 'cup') this.showCups();
       else if (MODES[i].key === 'battle') this.buildBattle();
       else this.showTracks();
@@ -460,6 +469,15 @@ export class KartGame {
       this.racers.push(new Racer({ color: cpuColors[i % cpuColors.length].hex, label: 'CPU', setup, drivers }));
     }
     if (this.gp && !saved) this.gp.setups = this.racers.filter((racer) => racer.isCpu).map((racer) => racer.setup);
+    // Por equipos: los jugadores nones son Rojos y los pares Azules; la compu completa los dos equipos.
+    if (this.teams) {
+      const count = [0, 0];
+      for (const racer of this.racers) {
+        const team = racer.isCpu ? (count[0] <= count[1] ? 0 : 1) : Number(racer.label.slice(1) - 1) % 2;
+        count[team] += 1;
+        racer.setTeam(team, TEAMS[team].color);
+      }
+    }
     if (this.gp && !this.gp.points) this.gp.points = this.racers.map(() => 0);
     this.racers.forEach((racer, i) => {
       racer.lane = CPU_LANES[i];
@@ -702,7 +720,7 @@ export class KartGame {
     // El cometa y la tinta solo sirven si alguien va adelante.
     if (racer.item === 'comet' || racer.item === 'ink') return ranking.indexOf(racer) > 0;
     if (racer.item === 'rocket') {
-      const ahead = ranking[ranking.indexOf(racer) - 1];
+      const ahead = this.rivalAhead(racer, ranking);
       return ahead ? Math.hypot(ahead.x - racer.x, ahead.z - racer.z) < 60 : Math.random() < 0.003;
     }
     const chased = this.racers.some(
@@ -747,25 +765,37 @@ export class KartGame {
     racer.itemUses -= 1;
     if (racer.itemUses <= 0) racer.item = null;
     racer.throwMs = THROW_POSE_MS;
-    if (item === 'rocket') this.projectiles.addRocket(racer, ranking[ranking.indexOf(racer) - 1] ?? null);
+    if (item === 'rocket') this.projectiles.addRocket(racer, this.rivalAhead(racer, ranking));
     else if (item === 'banana' || item === 'banana3') this.projectiles.addBanana(racer);
     else if (item === 'turbo') racer.boost(1.7, 2000);
     else if (item === 'shield') racer.shieldMs = SHIELD_MS;
     else if (item === 'comet') {
-      const leader = ranking.find((other) => other !== racer && !other.finished);
+      const leader = ranking.find((other) => other !== racer && !other.finished && !this.sameTeam(racer, other));
       if (leader) this.projectiles.addComet(racer, leader);
     } else if (item === 'lightning') this.strikeLightning(racer);
     else if (item === 'ink') this.splashInk(racer, ranking);
     if (!racer.isCpu) racer.say(ITEMS[item].name, 900);
   }
 
-  // Rayo: encoge a todos los demás (a los que traen burbuja solo se las revienta).
+  // El de adelante más cercano que no sea de su equipo (para el cohete), o null.
+  rivalAhead(racer, ranking) {
+    const place = ranking.indexOf(racer);
+    for (let i = place - 1; i >= 0; i -= 1) if (!this.sameTeam(racer, ranking[i])) return ranking[i];
+    return null;
+  }
+
+  // ¿Van en el mismo equipo? (Fuera de la carrera por equipos, nadie.)
+  sameTeam(a, b) {
+    return a.team !== undefined && a.team === b.team;
+  }
+
+  // Rayo: encoge a todos los demás (a los que traen burbuja solo se las revienta; a los de su equipo, nada).
   strikeLightning(owner) {
     this.hud.flash();
     sfx.boom();
     let hits = 0;
     for (const racer of this.racers) {
-      if (racer === owner || racer.finished || racer.out) continue;
+      if (racer === owner || racer.finished || racer.out || this.sameTeam(owner, racer)) continue;
       const shrunk = racer.shrink();
       if (shrunk) hits += 1;
       if (!racer.isCpu) racer.say(shrunk ? '¡Te encogieron! 🌩️' : '¡La burbuja te salvó!');
@@ -776,7 +806,7 @@ export class KartGame {
   // Tinta: les mancha la pantalla a todos los que van adelante.
   splashInk(owner, ranking) {
     for (const racer of ranking.slice(0, ranking.indexOf(owner))) {
-      if (racer.finished) continue;
+      if (racer.finished || this.sameTeam(owner, racer)) continue;
       racer.inkMs = INK_MS;
       if (!racer.isCpu) racer.say('¡No veo! 🦑');
     }
@@ -917,16 +947,25 @@ export class KartGame {
       this.showStandings(ranking);
       return;
     }
-    this.hud.showResults(
-      ranking.map((racer) => ({
-        label: racer.label,
-        color: hexToCss(racer.color),
-        name: racer.driver.name,
-        image: racer.driver.imageUrl,
-      })),
-    );
+    const rows = ranking.map((racer) => ({
+      label: racer.label,
+      color: hexToCss(racer.color),
+      name: `${racer.driver.name}${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}`,
+      image: racer.driver.imageUrl,
+    }));
+    if (this.teams) {
+      // Puntos de cada equipo (como en el Gran Premio: 10, 8, 6, 4, 2, 1).
+      const points = [0, 0];
+      ranking.forEach((racer, place) => (points[racer.team] += CUP_POINTS[place] ?? 0));
+      const winner = points[0] === points[1] ? null : TEAMS[points[0] > points[1] ? 0 : 1];
+      const score = `${TEAMS[0].emoji} ${points[0]}  a  ${points[1]} ${TEAMS[1].emoji}`;
+      this.hud.showResults(rows, { title: winner ? `¡Ganaron los ${winner.name}! ${score}` : `¡Empate! ${score}` });
+      say(winner ? `¡Ganaron los ${winner.name}!` : '¡Empate!');
+    } else {
+      this.hud.showResults(rows);
+      say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
+    }
     this.startCeremony(ranking);
-    say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
   }
 
   // Gran Premio: suma los puntos de esta carrera y muestra la tabla. En la última, la copa para el que juntó más.
@@ -982,7 +1021,7 @@ export class KartGame {
     if (pressed('a')) {
       this.startRace();
     } else if (pressed('b')) {
-      resume = { to: 'tracks' };
+      resume = { to: 'tracks', teams: this.teams };
       this.onRestart?.();
     } else if (pressed('x')) {
       this.onRestart?.();
@@ -1003,7 +1042,7 @@ export class KartGame {
       const battle = this.battle?.panel(racer);
       this.hud.setPanel(i, {
         pos: battle?.pos ?? `${ranking.indexOf(racer) + 1}°`,
-        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>${racer.setup.peque ? ' 🐣' : ''}`,
+        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
         lap: battle?.lap ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
         coins: this.battle ? '' : `🪙 ${racer.coins}`,
         item,

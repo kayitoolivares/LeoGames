@@ -713,6 +713,37 @@ test('karts locos: modo peque acelera solo y sigue la pista', { timeout: ms(1200
   await p.context.close();
 });
 
+// Por equipos: Rojos contra Azules (3 y 3), los poderes no le pegan a tu equipo y al final se suman los puntos.
+test('karts locos: carrera por equipos', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 2);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(10000), 'ver las pistas');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'countdown', ms(15000), 'empezar');
+  const teams = await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.team));
+  assert.deepEqual([teams[0], teams[1]], [0, 1], 'J1 rojo y J2 azul');
+  assert.equal(teams.filter((t) => t === 0).length, 3);
+  // Un cohete de J1 no persigue a nadie de su equipo.
+  const target = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const ranking = [...k.racers];
+    const me = ranking[ranking.length - 1];
+    const rival = k.rivalAhead(me, ranking);
+    return rival ? rival.team !== me.team : true;
+  });
+  assert.ok(target, 'el cohete va contra el otro equipo');
+  await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.showResults());
+  await p.until(() => /Ganaron|Empate/.test(document.querySelector('.kart-results h1')?.textContent ?? ''), ms(5000), 'ver qué equipo ganó');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 // Batalla de globos: un cohete revienta un globo; sin globos quedas fuera; gana el último con globos.
 test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);
