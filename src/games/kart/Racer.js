@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buildKartLabel, buildKartModel } from '../three/kartModel.js';
-import { kartStats } from './karts.js';
+import { decalTexture, kartStats } from './karts.js';
 
 const BRAKE = 50;
 const REVERSE_MAX = 12;
@@ -67,7 +67,8 @@ export class Racer {
     this.isCpu = deviceId === null;
     this.setup = setup;
     this.stats = kartStats(setup.type);
-    const { group, flame, seat } = buildKartModel(setup.color, { type: setup.type, wheels: setup.wheels, extra: setup.extra, driver: true });
+    const decal = decalTexture(setup.decal, setup.number ?? (Number(label.slice(1)) || 1));
+    const { group, flame, seat } = buildKartModel(setup.color, { type: setup.type, wheels: setup.wheels, extra: setup.extra, decal, driver: true });
     this.object = group;
     this.flame = flame;
     this.driver = drivers.createDriver(setup.character, deviceId);

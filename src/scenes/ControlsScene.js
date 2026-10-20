@@ -106,7 +106,7 @@ const PAGES = [
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Antes de correr, en el taller: ↑ ↓ qué cambiar, ◀ ▶ cambiarlo (piloto, kart, color, llantas y adorno).',
+    note: 'En el taller: ↑ ↓ qué cambiar, ◀ ▶ cambiarlo. Al escoger pista: LB = nivel de la compu, RB = vueltas.',
   },
   {
     title: 'Carreras',

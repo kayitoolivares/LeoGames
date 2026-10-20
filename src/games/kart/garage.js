@@ -8,7 +8,7 @@ import { hexToCss } from '../../ui/style.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { HEIGHT, WIDTH } from '../three/stage.js';
 import { buildKartModel, disposeKartModel } from '../three/kartModel.js';
-import { EXTRAS, EXTRA_KEYS, KART_TYPES, KART_TYPE_KEYS, PAINTS, WHEELS, WHEEL_KEYS, kartPicks } from './karts.js';
+import { DECALS, DECAL_KEYS, EXTRAS, EXTRA_KEYS, KART_TYPES, KART_TYPE_KEYS, PAINTS, WHEELS, WHEEL_KEYS, decalTexture, kartPicks } from './karts.js';
 
 // El taller de Karts locos: cada jugador escoge su piloto, su kart, el color, las llantas y un adorno,
 // y lo ve en 3D dando vueltas. ↑ ↓ = qué cambiar, ◀ ▶ = cambiarlo, A = ¡listo!, B = ya no estoy listo
@@ -16,17 +16,17 @@ import { EXTRAS, EXTRA_KEYS, KART_TYPES, KART_TYPE_KEYS, PAINTS, WHEELS, WHEEL_K
 const STYLE_ID = 'kart-garage-style';
 const CARD_W = 290;
 const CARD_GAP = 16;
-const CARD_TOP = 96;
-const CARD_H = 566;
+const CARD_TOP = 88;
+const CARD_H = 590;
 const BORDER = 4;
 const TITLE_H = 40;
-const PREVIEW_H = 190;
+const PREVIEW_H = 172;
 const START_DELAY_MS = 600;
 const SPIN_SPEED = 0.9;
 const BACKGROUND = 0x14112b;
 const PANEL = 0x231d45;
-const ROWS = ['character', 'type', 'color', 'wheels', 'extra'];
-const ROW_LABELS = { character: 'Piloto', type: 'Kart', color: 'Color', wheels: 'Llantas', extra: 'Adorno' };
+const ROWS = ['character', 'type', 'color', 'wheels', 'extra', 'decal'];
+const ROW_LABELS = { character: 'Piloto', type: 'Kart', color: 'Color', wheels: 'Llantas', extra: 'Adorno', decal: 'Calcomanía' };
 const CSS = `
 .kart-garage { position: absolute; inset: 0; color: #fff; font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif; }
 .kart-garage h1 { position: absolute; top: 14px; left: 0; right: 0; margin: 0; text-align: center; font-size: 48px; }
@@ -98,6 +98,7 @@ export class Garage {
       color: playerColor,
       wheels: 'normales',
       extra: 'aleron',
+      decal: 'llamas',
     };
     const el = document.createElement('div');
     el.className = 'card';
@@ -149,6 +150,7 @@ export class Garage {
     if (row === 'type') return KART_TYPE_KEYS;
     if (row === 'color') return card.paints;
     if (row === 'wheels') return WHEEL_KEYS;
+    if (row === 'decal') return DECAL_KEYS;
     return EXTRA_KEYS;
   }
 
@@ -159,7 +161,8 @@ export class Garage {
       card.turntable.remove(card.model);
       disposeKartModel(card.model);
     }
-    const { group, seat } = buildKartModel(setup.color, { type: setup.type, wheels: setup.wheels, extra: setup.extra, driver: true });
+    const decal = decalTexture(setup.decal, card.player.slot + 1);
+    const { group, seat } = buildKartModel(setup.color, { type: setup.type, wheels: setup.wheels, extra: setup.extra, decal, driver: true });
     card.model = group;
     card.turntable.add(group);
     if (driverToo || !card.driver) {
@@ -182,6 +185,7 @@ export class Garage {
       color: `<span class="dot" style="background:${hexToCss(setup.color)}"></span>`,
       wheels: WHEELS[setup.wheels].name,
       extra: EXTRAS[setup.extra].name,
+      decal: (DECALS[setup.decal] ?? DECALS.nada).name,
     };
     card.rows.innerHTML = ROWS.map((row, i) => {
       const on = i === card.row && !card.ready;

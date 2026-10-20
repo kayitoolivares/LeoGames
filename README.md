@@ -60,7 +60,9 @@ Abre http://localhost:5173 en Edge o Chrome.
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
   Antes de correr, en el **taller** cada quien escoge piloto (los personajes de Bolitas Bros, con su imagen
   manejando; Bloquecito cambia de número con Y), kart (**Clásico**, **Bólido** rápido, **Mini** que arranca y gira
-  bien, **Monstruo** pesado que casi no se frena en el pasto), color, llantas y adorno. Al final, podio con los 3
+  bien, **Monstruo** pesado que casi no se frena en el pasto), color, llantas, adorno y calcomanía (llamas, estrellas,
+  rayos, corazones o flores dibujadas por Gemini, o su número). Los karts se ven como caricatura (sombreado de 2-3
+  tonos y contorno negro) y cada uno se dibuja de una sola pasada, para que el Xbox no se trabe. Al final, podio con los 3
   primeros (**A** = otra carrera, **X** = regresar al taller). Después del taller se escoge el modo: **Carrera** (una
   pista) o **Gran Premio** (copas de 3 pistas seguidas con puntos: 10, 8, 6, 4, 2 y 1; la compu trae el mismo kart en
   toda la copa y el que junta más gana el trofeo). **Copa Hoja**: Pradera, Playa y Dulcelandia. **Copa Estrella**

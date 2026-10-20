@@ -1,4 +1,6 @@
+import * as THREE from 'three';
 import { CHARACTER_KEYS } from '../smash/characters.js';
+import manifest from './art.json';
 
 // Lo que se escoge en el taller de Karts locos: el tipo de kart (cada uno maneja distinto), su color,
 // las llantas y un adorno. El piloto es uno de los personajes de Bolitas Bros.
@@ -31,6 +33,55 @@ export const EXTRAS = {
   nada: { name: 'Nada' },
 };
 export const EXTRA_KEYS = Object.keys(EXTRAS);
+
+// Calcomanías de los lados (dibujadas por Gemini, en kart/calcomanias) o el número del piloto.
+export const DECALS = {
+  llamas: { name: 'Llamas' },
+  estrellas: { name: 'Estrellas' },
+  rayos: { name: 'Rayos' },
+  corazones: { name: 'Corazones' },
+  flores: { name: 'Flores' },
+  numero: { name: 'Número' },
+  nada: { name: 'Nada' },
+};
+export const DECAL_KEYS = Object.keys(DECALS).filter((key) => key === 'numero' || key === 'nada' || manifest.calcomanias?.includes(key));
+
+// La textura de una calcomanía (las de imagen se cargan una sola vez). 'numero' pinta el número en un círculo.
+const decalCache = new Map();
+export function decalTexture(key, number = 1) {
+  if (!key || key === 'nada' || !DECAL_KEYS.includes(key)) return null;
+  if (key === 'numero') return numberTexture(number);
+  if (!decalCache.has(key)) {
+    const texture = new THREE.TextureLoader().load(`kart/calcomanias/${key}.png`);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    decalCache.set(key, texture);
+  }
+  return decalCache.get(key);
+}
+
+function numberTexture(number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(64, 64, 56, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = '#1b1530';
+  ctx.stroke();
+  ctx.fillStyle = '#1b1530';
+  ctx.font = 'bold 72px "Segoe UI", Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(number), 64, 70);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  // Es de un solo kart: se libera con él (ver disposeKartModel).
+  texture.userData.disposable = true;
+  return texture;
+}
 
 // Cómo maneja cada tipo de kart. Las diferencias son chicas a propósito: con cualquiera se puede ganar.
 export function kartStats(type) {
@@ -67,5 +118,7 @@ export function randomSetup(taken) {
     color: pick(PAINTS),
     wheels: pick(WHEEL_KEYS),
     extra: pick(EXTRA_KEYS),
+    decal: pick(DECAL_KEYS),
+    number: 10 + Math.floor(Math.random() * 90),
   };
 }
