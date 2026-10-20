@@ -657,6 +657,45 @@ test('karts locos: gran premio de tres carreras con puntos y copa', { timeout: m
   await p.context.close();
 });
 
+// Batalla de globos: un cohete revienta un globo; sin globos quedas fuera; gana el último con globos.
+test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar la batalla');
+  assert.deepEqual(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.balloons)), [3, 3, 3, 3]);
+  // Un cohete al más cercano (sin burbujas que lo protejan).
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    k.racers.forEach((r) => (r.shieldMs = 0));
+    Object.assign(k.humans[0], { item: 'rocket', itemUses: 1, rollMs: 0 });
+  });
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.racers.some((r) => r.balloons === 2), ms(10000), 'reventar un globo con el cohete');
+  // A la compu se le acaban los globos: gana el jugador.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    for (const r of k.racers.filter((x) => x.isCpu)) {
+      Object.assign(r, { balloons: 1, safeMs: 0, shieldMs: 0 });
+      k.battle.hit(r, k.humans[0]);
+    }
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'terminar la batalla');
+  assert.ok((await stickers(p.page)).includes('kart-batalla'), 'ganar la batalla da su calcomanía');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda pedir otra');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(5000), 'otra batalla');
+  assert.deepEqual(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.balloons)), [3, 3, 3, 3]);
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(180000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));

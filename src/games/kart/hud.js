@@ -166,8 +166,8 @@ export class KartHud {
   }
 
   // Podio con los 3 primeros (su personaje arriba de su escalón) y los demás abajo.
-  // `rows`: [{ label, color, name, image }] en orden de llegada. `canChoose`: hay más de una pista, B la cambia.
-  showResults(rows, canChoose = false) {
+  // `rows`: [{ label, color, name, image }] en orden de llegada. `title` y `footer`: lo de arriba y lo de abajo.
+  showResults(rows, { title = '¡Llegaron!', footer = 'A = otra carrera  ·  B = cambiar pista  ·  X = taller' } = {}) {
     const who = (row) => `<span style="color:${row.color}">${row.label}</span> · ${row.name}`;
     const place = (row, n) =>
       row
@@ -179,9 +179,8 @@ export class KartHud {
       .slice(3)
       .map((row, i) => `<div class="row"><span>${i + 4}°</span><span class="dot" style="background:${row.color}"></span>${who(row)}</div>`)
       .join('');
-    const choose = canChoose ? '  ·  B = cambiar pista' : '';
-    this.results.innerHTML = `<h1>¡Llegaron!</h1><div class="podium">${podium}</div><div class="rest">${rest}</div>
-      <p>A = otra carrera${choose}  ·  X = taller  ·  Mantén LB + RB + Y = salir</p>`;
+    this.results.innerHTML = `<h1>${title}</h1><div class="podium">${podium}</div><div class="rest">${rest}</div>
+      <p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 

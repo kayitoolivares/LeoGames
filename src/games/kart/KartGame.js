@@ -12,6 +12,7 @@ import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
+import { Arena, Battle, BATTLE_RACERS } from './battle.js';
 import { DriverArt } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
@@ -66,12 +67,14 @@ const SQUASH_SPEED = 10;
 let lastTrack = 'pradera';
 // Para cambiar de pista el juego se vuelve a abrir desde cero (así se libera la memoria de la pista anterior,
 // que en el Xbox es poca). Esto dice a dónde ir al reabrirlo, sin pasar otra vez por el taller:
-//   { to: 'tracks' } escoger pista · { to: 'cups' } escoger copa · { gp } la siguiente carrera del Gran Premio.
+//   { to: 'modes' } escoger modo · { to: 'tracks' } escoger pista · { to: 'cups' } escoger copa ·
+//   { gp } la siguiente carrera del Gran Premio.
 let resume = null;
 // Los modos de juego (la primera pantalla después del taller).
 const MODES = [
   { key: 'race', emoji: '🏁', name: 'Carrera', info: 'Una carrera en la pista que quieras' },
   { key: 'cup', emoji: '🏆', name: 'Gran Premio', info: '3 pistas seguidas: el que junte más puntos gana la copa' },
+  { key: 'battle', emoji: '🎈', image: 'globos', name: 'Batalla de globos', info: 'Revienta los globos de los demás: gana el último con globos' },
 ];
 
 // Cómo se reparte la pantalla: 1 jugador = completa, 2 = arriba/abajo,
@@ -115,6 +118,8 @@ export class KartGame {
     if (next?.gp) {
       this.gp = next.gp;
       this.build(CUPS[this.gp.cup].tracks[this.gp.race]);
+    } else if (next?.to === 'modes') {
+      this.showModes();
     } else if (next?.to === 'tracks') {
       this.showTracks();
     } else if (next?.to === 'cups') {
@@ -158,9 +163,15 @@ export class KartGame {
   }
 
   showModes() {
-    this.choose(MODES.map((mode) => ({ ...mode, open: true })), 0, '¿Qué jugamos?', (i) => {
+    const cards = MODES.map((mode) => ({
+      ...mode,
+      emoji: manifest.objetos.includes(mode.image) ? `<img src="kart/objetos/${mode.image}.png" alt="" style="height:56px">` : mode.emoji,
+      open: true,
+    }));
+    this.choose(cards, 0, '¿Qué jugamos?', (i) => {
       this.closeChooser();
       if (MODES[i].key === 'cup') this.showCups();
+      else if (MODES[i].key === 'battle') this.buildBattle();
       else this.showTracks();
     });
   }
@@ -235,14 +246,7 @@ export class KartGame {
     const look = TRACKS[key];
     this.trackKey = key;
     this.trackLook = look;
-    this.scene.background = new THREE.Color(look.sky);
-    this.fog = new THREE.Fog(look.sky, 140, 420);
-    this.scene.fog = this.fog;
-    const light = look.light ?? 1;
-    this.scene.add(new THREE.HemisphereLight(0xffffff, look.groundLight, 1.2 * light));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.6 * light);
-    sun.position.set(50, 100, 30);
-    this.scene.add(sun);
+    this.setSky(look.sky, look.groundLight, look.light ?? 1);
 
     this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy, theme: look.theme });
     this.track.addTo(this.scene);
@@ -266,6 +270,68 @@ export class KartGame {
     }
   }
 
+  // Cielo, neblina a lo lejos y luz (`light` menos de 1 = de noche).
+  setSky(sky, groundLight, light) {
+    this.scene.background = new THREE.Color(sky);
+    this.fog = new THREE.Fog(sky, 140, 420);
+    this.scene.fog = this.fog;
+    this.scene.add(new THREE.HemisphereLight(0xffffff, groundLight, 1.2 * light));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6 * light);
+    sun.position.set(50, 100, 30);
+    this.scene.add(sun);
+  }
+
+  // Batalla de globos: la arena en vez de pista, con 4 karts.
+  buildBattle() {
+    this.trackKey = 'arena';
+    this.setSky(0x8fd3ff, 0x5a7a3a, 1);
+    this.track = new Arena();
+    this.track.addTo(this.scene);
+    this.addMountains(0x8a86b8);
+    this.boxes = new ItemBoxes(this.scene, this.track, this.track.boxSpots);
+    this.projectiles = new Projectiles(this.scene);
+    this.createRacers(BATTLE_RACERS);
+    this.createViews();
+    this.hud = new KartHud(this.view.stage, this.views);
+    this.battle = new Battle(this);
+    this.startBattle();
+    say('¡Batalla de globos! Revienta los globos de los demás');
+  }
+
+  startBattle() {
+    this.battle.start();
+    this.finishOrder = [];
+    this.projectiles.clear();
+    this.phase = 'countdown';
+    this.phaseMs = 0;
+    this.raceMs = 0;
+    this.spokenStep = null;
+    this.hud.hideResults();
+    this.hud.showHelp(true);
+    this.updateCameras(0, true);
+  }
+
+  updateBattle(dtMs) {
+    this.raceMs += dtMs;
+    if (this.raceMs > GO_MS) this.hud.setCenter('');
+    if (this.raceMs > HELP_MS) this.hud.showHelp(false);
+    this.battle.update(dtMs);
+  }
+
+  // A = otra batalla, B = cambiar de modo, X = taller.
+  updateBattleResults() {
+    if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
+    const pressed = (button) => this.humans.some((racer) => controls.justPressed(racer.deviceId, button));
+    if (pressed('a')) {
+      this.startBattle();
+    } else if (pressed('b')) {
+      resume = { to: 'modes' };
+      this.onRestart?.();
+    } else if (pressed('x')) {
+      this.onRestart?.();
+    }
+  }
+
   // Montañas a lo lejos para que el horizonte no se vea vacío.
   addMountains(color) {
     const geometry = new THREE.ConeGeometry(1, 1, 6);
@@ -283,8 +349,8 @@ export class KartGame {
     this.scene.add(mountains);
   }
 
-  // Los jugadores con lo que escogieron en el taller; la compu, con personajes y karts al azar.
-  createRacers() {
+  // Los jugadores con lo que escogieron en el taller; la compu, con personajes y karts al azar, hasta ser `total`.
+  createRacers(total = TOTAL_RACERS) {
     const humans = players.sorted();
     const taken = new Set(humans.map((player) => player.colorIndex));
     const cpuColors = PLAYER_COLORS.filter((_, i) => !taken.has(i));
@@ -297,7 +363,7 @@ export class KartGame {
     // En el Gran Premio la compu trae el mismo personaje y kart en todas las carreras de la copa.
     const characters = new Set(this.racers.map((racer) => racer.setup.character));
     const saved = this.gp?.setups;
-    for (let i = 0; this.racers.length < TOTAL_RACERS; i += 1) {
+    for (let i = 0; this.racers.length < total; i += 1) {
       const setup = saved?.[i] ?? randomSetup(characters);
       characters.add(setup.character);
       this.racers.push(new Racer({ color: cpuColors[i % cpuColors.length].hex, label: 'CPU', setup, drivers }));
@@ -378,10 +444,11 @@ export class KartGame {
     this.scenery?.update(dtMs / 1000);
 
     if (this.phase === 'countdown') this.updateCountdown();
-    else if (this.phase === 'race') this.updateRace(dtMs, now);
-    else if (this.phase === 'results') this.updateResults();
+    else if (this.phase === 'race') this.battle ? this.updateBattle(dtMs) : this.updateRace(dtMs, now);
+    else if (this.phase === 'results') this.battle ? this.updateBattleResults() : this.updateResults();
 
     for (const racer of this.racers) racer.render(now);
+    this.battle?.render();
     this.updateCameras(dtMs / 1000);
     this.updatePanels(now);
     this.render();
@@ -497,12 +564,17 @@ export class KartGame {
   giveItem(racer) {
     if (racer.item || racer.rollMs > 0) return;
     const ranking = this.ranking();
-    racer.pendingItem = rollItem(ranking.indexOf(racer) / (ranking.length - 1));
+    // En la batalla no hay primero ni último: todos reciben poderes de los de en medio.
+    racer.pendingItem = rollItem(this.battle ? 0.5 : ranking.indexOf(racer) / (ranking.length - 1));
     racer.pendingUses = ITEMS[racer.pendingItem].uses ?? 1;
     racer.rollMs = ROLL_MS;
   }
 
   useItem(racer, ranking) {
+    if (this.battle) {
+      this.battle.useItem(racer);
+      return;
+    }
     if (!racer.item || racer.rollMs > 0) return;
     const item = racer.item;
     racer.itemUses -= 1;
@@ -525,7 +597,7 @@ export class KartGame {
     sfx.boom();
     let hits = 0;
     for (const racer of this.racers) {
-      if (racer === owner || racer.finished) continue;
+      if (racer === owner || racer.finished || racer.out) continue;
       const shrunk = racer.shrink();
       if (shrunk) hits += 1;
       if (!racer.isCpu) racer.say(shrunk ? '¡Te encogieron! 🌩️' : '¡La burbuja te salvó!');
@@ -633,6 +705,11 @@ export class KartGame {
         // Si uno está encogido por el rayo y el otro no, ¡lo aplasta!
         for (const [small, big] of [[a, b], [b, a]]) {
           if (small.shrinkMs > 0 && big.shrinkMs === 0 && big.speed > SQUASH_SPEED && small.spinMs === 0) {
+            // En la batalla, aplastar revienta un globo.
+            if (this.battle) {
+              this.battle.hit(small, big);
+              continue;
+            }
             small.hit();
             if (!small.isCpu) small.say('¡Te aplastaron! 💫');
             if (!big.isCpu) big.say('¡Aplastado! 👟');
@@ -663,7 +740,6 @@ export class KartGame {
         name: racer.driver.name,
         image: racer.driver.imageUrl,
       })),
-      true,
     );
     say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
   }
@@ -736,10 +812,12 @@ export class KartGame {
       // Los que se usan varias veces (triple plátano) dicen cuántos quedan.
       if (!rolling && racer.itemUses > 1) item += `<b class="count">×${racer.itemUses}</b>`;
       const message = racer.messageMs > 0 ? racer.message : racer.wrongWayMs > WRONG_WAY_MS ? '¡Vas al revés! ↩️' : '';
+      // En la batalla: sus globos y el reloj en vez del lugar y la vuelta.
+      const battle = this.battle?.panel(racer);
       this.hud.setPanel(i, {
-        pos: `${ranking.indexOf(racer) + 1}°`,
+        pos: battle?.pos ?? `${ranking.indexOf(racer) + 1}°`,
         who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>`,
-        lap: racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, LAPS)}/${LAPS}`,
+        lap: battle?.lap ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, LAPS)}/${LAPS}`),
         item,
         rolling,
         nitro: Array.from({ length: NITRO_CHARGES }, (_, k) => `<span class="${k < racer.nitro ? '' : 'off'}">🔥</span>`).join(''),

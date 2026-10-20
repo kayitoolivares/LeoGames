@@ -40,9 +40,10 @@ const BOX_RESPAWN_MS = 3000;
 const BOX_ROWS = [0.22, 0.47, 0.7, 0.9];
 const BOX_LANES = [-6, -2, 2, 6];
 
-// Cajitas "?" en filas a lo largo de la pista. Al pasar por una te da un poder (si no traes uno).
+// Cajitas "?" en filas a lo largo de la pista (o en `spots`: [{ x, z }], en la arena). Al pasar por una te da un
+// poder (si no traes uno).
 export class ItemBoxes {
-  constructor(scene, track) {
+  constructor(scene, track, spots = null) {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -63,14 +64,12 @@ export class ItemBoxes {
     const material = new THREE.MeshLambertMaterial({ map: texture, transparent: true, opacity: 0.9 });
 
     this.boxes = [];
-    for (const row of BOX_ROWS) {
-      for (const lane of BOX_LANES) {
-        const spot = track.pointAt(Math.round(row * track.count), lane);
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(spot.x, 1.6, spot.z);
-        scene.add(mesh);
-        this.boxes.push({ x: spot.x, z: spot.z, mesh, respawnMs: 0, phase: Math.random() * 6 });
-      }
+    const places = spots ?? BOX_ROWS.flatMap((row) => BOX_LANES.map((lane) => track.pointAt(Math.round(row * track.count), lane)));
+    for (const spot of places) {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(spot.x, 1.6, spot.z);
+      scene.add(mesh);
+      this.boxes.push({ x: spot.x, z: spot.z, mesh, respawnMs: 0, phase: Math.random() * 6 });
     }
   }
 
@@ -219,7 +218,8 @@ export class Projectiles {
   // Al llegar explota: le pega a él y a los que estén junto.
   updateComet(p, dt, racers, track, onHit) {
     if (!p.target || p.target.finished || p.ageMs > COMET_LIFE_MS) return this.remove(p);
-    const close = Math.hypot(p.target.x - p.x, p.target.z - p.z) < COMET_HOMING;
+    // (En la arena no hay pista que seguir: va directo.)
+    const close = track.isArena || Math.hypot(p.target.x - p.x, p.target.z - p.z) < COMET_HOMING;
     const aim = close ? p.target : track.pointAt(p.index + COMET_LOOKAHEAD);
     p.heading = Math.atan2(aim.x - p.x, aim.z - p.z);
     p.x += Math.sin(p.heading) * COMET_SPEED * dt;

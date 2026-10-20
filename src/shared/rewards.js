@@ -18,6 +18,7 @@ export const STICKERS = [
   { id: 'kart-gana', emoji: '🏁', name: 'Primer lugar', hint: 'Gana una carrera de Karts locos' },
   { id: 'kart-poder', emoji: '🚀', name: '¡Le diste!', hint: 'Pégale a alguien con un poder en Karts locos' },
   { id: 'kart-copa', emoji: '🏅', name: 'Copa de karts', hint: 'Gana una copa del Gran Premio en Karts locos' },
+  { id: 'kart-batalla', emoji: '🎈', name: 'Campeón de globos', hint: 'Gana una batalla de globos en Karts locos' },
   { id: 'carrera-gana', emoji: '🏎️', name: 'Piloto veloz', hint: 'Gana una carrera vista desde arriba' },
   { id: 'futbol-gol', emoji: '⚽', name: '¡Gol!', hint: 'Mete un gol en Fútbol de bolitas' },
   { id: 'futbol-gana', emoji: '🏆', name: 'Campeones', hint: 'Gana un partido de Fútbol de bolitas' },
