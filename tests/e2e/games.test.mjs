@@ -657,6 +657,38 @@ test('karts locos: gran premio de tres carreras con puntos y copa', { timeout: m
   await p.context.close();
 });
 
+// Opciones (RB = vueltas), arranque turbo (acelerar cuando sale el 1) y monedas (más rápido; un golpe tira 3).
+test('karts locos: vueltas, arranque turbo y monedas', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  await p.tap(0, BUTTON.RB);
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(15000), 'cuenta regresiva');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.laps), 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1750, ms(10000), 'que salga el 1');
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(10000), 'arrancar');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.humans[0].boostMs > 0), 'arranque turbo');
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    Object.assign(k.humans[0], { x: k.coins.coins[0].x, z: k.coins.coins[0].z });
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].coins > 0, ms(5000), 'agarrar una moneda');
+  await p.page.evaluate(() => {
+    const r = window.leogames.scene.getScene('Kart').game3d.humans[0];
+    Object.assign(r, { coins: 5, shieldMs: 0 });
+    r.hit();
+  });
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.humans[0].coins), 2);
+  await p.page.evaluate(() => window.__release());
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 // Batalla de globos: un cohete revienta un globo; sin globos quedas fuera; gana el último con globos.
 test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);

@@ -65,6 +65,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   pista) o **Gran Premio** (copas de 3 pistas seguidas con puntos: 10, 8, 6, 4, 2 y 1; la compu trae el mismo kart en
   toda la copa y el que junta más gana el trofeo). **Copa Hoja**: Pradera, Playa y Dulcelandia. **Copa Estrella**
   (se abre al ganar una copa): Montaña nevada, Castillo y Arcoíris espacial.
+  En las pantallas de escoger, el Jugador 1 cambia con **LB** el nivel de la compu (fácil, normal, difícil) y con **RB**
+  las vueltas (1, 2 o 3). **Arranque turbo**: acelerar justo cuando sale el "1". **Monedas** en la pista: cada una te hace
+  un poco más rápido (hasta 10) y un golpe te tira 3. Mini mapa en la esquina, motor que suena según la velocidad y
+  música más rápida en la última vuelta.
   **Batalla de globos**: 4 karts en una arena redonda con bloques de juguete; cada uno trae 3 globos y los poderes (o
   aplastar a uno encogido) revientan uno. Sin globos quedas fuera; gana el último con globos o el que tenga más al
   acabarse los 2:30.

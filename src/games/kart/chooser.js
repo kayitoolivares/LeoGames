@@ -26,6 +26,9 @@ const CSS = `
 .kart-choose .card small { font-size: 16px; text-align: center; max-width: 300px; min-height: 20px; }
 .kart-choose .card .info { font-size: 18px; color: #d9d4ff; text-align: center; max-width: 290px; line-height: 1.3; }
 .kart-choose p { margin: 0; font-size: 24px; color: #ffc93c; }
+.kart-choose .options { display: flex; gap: 18px; font-size: 21px; }
+.kart-choose .options span { background: #231d45; border: 3px solid #3a3170; border-radius: 14px; padding: 6px 18px; }
+.kart-choose .options b { color: #ffc93c; }
 .kart-choose .exit { position: absolute; bottom: 0; left: 50%; width: 200px; height: 6px; margin-left: -100px; }
 .kart-choose .exit > div { height: 100%; width: 0; background: #fff; border-radius: 3px; }
 `;
@@ -48,12 +51,18 @@ export class TrackChooser {
           <b>${track.name}</b></div>${outlineSvg(track.outline, track.color)}${track.info ? `<div class="info">${track.info}</div>` : ''}<small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
       )
       .join('');
-    this.el.innerHTML = `<h1>${title}</h1><div class="cards">${cards}</div>
+    this.el.innerHTML = `<h1>${title}</h1><div class="cards">${cards}</div><div class="options"></div>
       <p>◀ ▶ ↑ ↓ escoger  ·  A = ¡a jugar!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     stage.append(this.el);
     this.cards = [...this.el.querySelectorAll('.card')];
     this.exitBar = this.el.querySelector('.exit > div');
+    this.optionsEl = this.el.querySelector('.options');
     this.select(selected);
+  }
+
+  // Las opciones que se cambian con LB / RB (nivel de la compu, vueltas): [[botón, nombre, valor], ...].
+  setOptions(options) {
+    this.optionsEl.innerHTML = options.map(([button, name, value]) => `<span>${button}: ${name} <b>${value}</b></span>`).join('');
   }
 
   select(index) {

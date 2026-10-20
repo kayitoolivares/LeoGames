@@ -30,6 +30,8 @@ const CSS = `
 .kart-panel .nitro { position: absolute; bottom: calc(20px * var(--s)); right: calc(20px * var(--s));
   font-size: calc(36px * var(--s)); }
 .kart-panel .nitro .off { opacity: 0.25; }
+.kart-panel .coins { position: absolute; bottom: calc(66px * var(--s)); right: calc(22px * var(--s)); font-size: calc(30px * var(--s)); font-weight: 800; }
+.kart-panel .minimap { position: absolute; top: calc(58px * var(--s)); right: calc(14px * var(--s)); width: calc(190px * var(--s)); height: calc(130px * var(--s)); }
 .kart-panel .msg { position: absolute; top: 36%; left: 0; right: 0; text-align: center;
   font-size: calc(48px * var(--s)); font-weight: 800; }
 .kart-panel .map-title { position: absolute; top: 10px; left: 0; right: 0; text-align: center; font-size: 22px; font-weight: 700; }
@@ -96,7 +98,7 @@ export class KartHud {
       panel.innerHTML =
         view.kind === 'map'
           ? '<div class="map-title">Mapa</div>'
-          : '<div class="ink"></div><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="nitro"></div><div class="msg"></div>';
+          : '<div class="ink"></div><canvas class="minimap" width="190" height="130"></canvas><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="coins"></div><div class="nitro"></div><div class="msg"></div>';
       this.el.append(panel);
       const part = (name) => panel.querySelector(`.${name}`);
       return {
@@ -106,7 +108,9 @@ export class KartHud {
         item: part('item'),
         nitro: part('nitro'),
         msg: part('msg'),
+        coins: part('coins'),
         inkEl: part('ink'),
+        map: part('minimap')?.getContext('2d'),
         last: {},
       };
     });
@@ -137,6 +141,45 @@ export class KartHud {
     if (panel.inkEl && panel.last.ink !== data.ink) {
       panel.last.ink = data.ink;
       panel.inkEl.classList.toggle('on', Boolean(data.ink));
+    }
+  }
+
+  // El mini mapa de la esquina: el trazo de la pista (se le da una vez con setMapOutline) y un punto por kart.
+  // `dots`: [{ x, z, color, me }] (el del jugador de ese panel va más grande y con borde).
+  setMapOutline(points) {
+    const xs = points.map((p) => p.x);
+    const zs = points.map((p) => p.z);
+    const [minX, maxX, minZ, maxZ] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
+    const pad = 10;
+    const k = Math.min((190 - pad * 2) / (maxX - minX), (130 - pad * 2) / (maxZ - minZ));
+    const offX = (190 - (maxX - minX) * k) / 2;
+    const offY = (130 - (maxZ - minZ) * k) / 2;
+    this.toMap = (x, z) => [(x - minX) * k + offX, (z - minZ) * k + offY];
+    this.mapPath = new Path2D();
+    points.forEach((p, i) => (i === 0 ? this.mapPath.moveTo(...this.toMap(p.x, p.z)) : this.mapPath.lineTo(...this.toMap(p.x, p.z))));
+    this.mapPath.closePath();
+  }
+
+  drawMap(i, dots) {
+    const ctx = this.panels[i].map;
+    if (!ctx || !this.mapPath) return;
+    ctx.clearRect(0, 0, 190, 130);
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = 'rgba(27, 21, 48, 0.75)';
+    ctx.stroke(this.mapPath);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.stroke(this.mapPath);
+    for (const dot of [...dots].sort((a, b) => a.me - b.me)) {
+      const [x, y] = this.toMap(dot.x, dot.z);
+      ctx.beginPath();
+      ctx.arc(x, y, dot.me ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = dot.color;
+      ctx.fill();
+      ctx.lineWidth = dot.me ? 3 : 2;
+      ctx.strokeStyle = dot.me ? '#ffffff' : '#1b1530';
+      ctx.stroke();
     }
   }
 

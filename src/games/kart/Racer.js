@@ -31,6 +31,9 @@ export const SHRINK_MS = 6000;
 const SHRINK_SCALE = 0.55;
 const SHRINK_SPEED = 0.72;
 export const INK_MS = 4500;
+// Cada moneda da un poquito más de velocidad; un golpe tira 3.
+const COIN_BOOST = 0.01;
+const COINS_LOST = 3;
 
 const shieldGeometry = new THREE.SphereGeometry(2.7, 16, 12);
 let sparkTexture = null;
@@ -111,6 +114,9 @@ export class Racer {
     this.shrinkMs = 0;
     this.inkMs = 0;
     this.size = 1;
+    this.coins = 0;
+    // Cuándo apretó acelerar durante la cuenta regresiva (para el arranque turbo).
+    this.startPress = null;
     this.nitro = NITRO_CHARGES;
     this.nitroRefillMs = 0;
     this.boostMs = 0;
@@ -180,6 +186,7 @@ export class Racer {
     this.spinMs = SPIN_MS;
     this.speed *= 0.3;
     this.boostMs = 0;
+    this.coins = Math.max(0, this.coins - COINS_LOST);
     if (this.drifting) this.endDrift(true);
     return true;
   }
@@ -199,6 +206,7 @@ export class Racer {
       if (this.rollMs === 0) {
         this.item = this.pendingItem;
         this.itemUses = this.pendingUses;
+        this.events.push('item');
       }
     }
     if (this.nitro < NITRO_CHARGES) {
@@ -218,7 +226,8 @@ export class Racer {
     }
 
     const { maxSpeed, accel, turn } = this.stats;
-    const top = maxSpeed * topFactor * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? this.stats.offroad : 1) * (this.shrinkMs > 0 ? SHRINK_SPEED : 1);
+    const coins = 1 + COIN_BOOST * this.coins;
+    const top = maxSpeed * topFactor * coins * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? this.stats.offroad : 1) * (this.shrinkMs > 0 ? SHRINK_SPEED : 1);
     if (this.boostMs > 0) {
       this.speed = approach(this.speed, top, accel * 2 * dt);
     } else if (gas > 0.1) {

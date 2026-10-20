@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
-import { sfx } from '../../shared/sound.js';
+import { music } from '../../shared/music.js';
+import { createEngine, sfx } from '../../shared/sound.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
 import { UNLOCKS, rewards } from '../../shared/rewards.js';
@@ -13,6 +14,7 @@ import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
 import { Arena, Battle, BATTLE_RACERS } from './battle.js';
+import { Coins } from './coins.js';
 import { DriverArt } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
@@ -22,7 +24,6 @@ import { CUPS, CUP_KEYS, CUP_POINTS, TRACKS, TRACK_KEYS } from './tracks.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTER_KEYS } from '../smash/characters.js';
 
-const LAPS = 3;
 const TOTAL_RACERS = 6;
 const COUNTDOWN_STEP_MS = 800;
 const GO_MS = 700;
@@ -33,7 +34,20 @@ const RESULTS_AFTER_FIRST_MS = 12000;
 const RESULTS_INPUT_DELAY_MS = 1200;
 const EXIT_HOLD_MS = 1200;
 const CPU_LOOKAHEAD = 12;
-const CPU_GAS = 0.86;
+// Nivel de la compu: qué tan fuerte acelera, cuánto se ayuda a los jugadores que van atrás (por cada lugar),
+// qué tan seguido sale con arranque turbo y usa el nitro.
+const LEVELS = {
+  facil: { name: 'Fácil', gas: 0.78, help: 0.05, startBoost: 0.15, nitro: 0.003 },
+  normal: { name: 'Normal', gas: 0.86, help: 0.03, startBoost: 0.35, nitro: 0.006 },
+  dificil: { name: 'Difícil', gas: 0.95, help: 0.012, startBoost: 0.6, nitro: 0.012 },
+};
+const LEVEL_KEYS = Object.keys(LEVELS);
+const LAP_CHOICES = [1, 2, 3];
+// Arranque turbo: acelerar cuando sale el "1" de la cuenta regresiva (ni antes ni después).
+const START_WINDOW_MS = [COUNTDOWN_STEP_MS * 2.1, COUNTDOWN_STEP_MS * 3];
+const START_BOOST = { factor: 1.55, ms: 1200 };
+// Cada cuánto puede volver a decir "¡Vas en primero!".
+const FIRST_PLACE_SAY_MS = 6000;
 const CPU_LANES = [-5, 5, -2, 2, -7, 7];
 const LABEL_PX = 28;
 // Íconos de los poderes hechos con Gemini (npm run arte); si falta alguno se usa su emoji.
@@ -65,6 +79,8 @@ const SQUASH_SPEED = 10;
 
 // La última pista que se escogió, para que salga seleccionada la próxima vez.
 let lastTrack = 'pradera';
+// Lo que escoge el Jugador 1 con LB / RB en las pantallas de escoger: nivel de la compu y vueltas.
+const options = { level: 'normal', laps: 3 };
 // Para cambiar de pista el juego se vuelve a abrir desde cero (así se libera la memoria de la pista anterior,
 // que en el Xbox es poca). Esto dice a dónde ir al reabrirlo, sin pasar otra vez por el taller:
 //   { to: 'modes' } escoger modo · { to: 'tracks' } escoger pista · { to: 'cups' } escoger copa ·
@@ -152,9 +168,17 @@ export class KartGame {
     this.phase = 'choose';
     this.chooser?.destroy();
     this.chooser = new TrackChooser(this.view.stage, cards, selected, title);
+    this.showOptions();
     this.chooserCards = cards;
     this.onPick = onPick;
     this.onBack = onBack;
+  }
+
+  showOptions() {
+    this.chooser.setOptions([
+      ['LB', 'Compu', LEVELS[options.level].name],
+      ['RB', 'Vueltas', String(options.laps)],
+    ]);
   }
 
   closeChooser() {
@@ -227,6 +251,18 @@ export class KartGame {
     if (step !== 0) this.chooser.move(step);
     const row = (controls.justPressed(id, 'down') ? 1 : 0) - (controls.justPressed(id, 'up') ? 1 : 0);
     if (row !== 0) this.chooser.moveRow(row);
+    // LB = nivel de la compu, RB = cuántas vueltas.
+    if (controls.justPressed(id, 'lb')) {
+      options.level = LEVEL_KEYS[(LEVEL_KEYS.indexOf(options.level) + 1) % LEVEL_KEYS.length];
+      sfx.select();
+      say(`Compu ${LEVELS[options.level].name}`);
+      this.showOptions();
+    } else if (controls.justPressed(id, 'rb')) {
+      options.laps = LAP_CHOICES[(LAP_CHOICES.indexOf(options.laps) + 1) % LAP_CHOICES.length];
+      sfx.select();
+      say(options.laps === 1 ? 'Una vuelta' : `${options.laps} vueltas`);
+      this.showOptions();
+    }
     if (controls.justPressed(id, 'a')) {
       if (this.chooserCards[this.chooser.selected].open) this.onPick(this.chooser.selected);
     } else if (controls.justPressed(id, 'b')) {
@@ -258,11 +294,13 @@ export class KartGame {
       this.scenery = addScenery(this.scene, this.track, look.scenery);
     }
     this.features = new TrackFeatures(this.scene, this.track, { pads: look.pads, ramps: look.ramps });
+    this.coins = new Coins(this.scene, this.track);
     this.boxes = new ItemBoxes(this.scene, this.track);
     this.projectiles = new Projectiles(this.scene);
     this.createRacers();
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views);
+    this.hud.setMapOutline(this.track.points);
     this.startRace();
     if (this.gp) {
       const cup = CUPS[this.gp.cup];
@@ -293,6 +331,7 @@ export class KartGame {
     this.createRacers(BATTLE_RACERS);
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views);
+    this.hud.setMapOutline(this.track.points);
     this.battle = new Battle(this);
     this.startBattle();
     say('¡Batalla de globos! Revienta los globos de los demás');
@@ -414,6 +453,9 @@ export class KartGame {
       racer.reset(spot.x, spot.z, spot.heading, index);
       racer.progress = racer.lap + index / n;
     });
+    this.laps = options.laps;
+    this.level = LEVELS[options.level];
+    music.setTempo(1);
     this.projectiles.clear();
     this.phase = 'countdown';
     this.phaseMs = 0;
@@ -459,6 +501,12 @@ export class KartGame {
     if (step !== this.spokenStep) {
       this.spokenStep = step;
       say(step < 3 ? String(3 - step) : '¡Ya!');
+      sfx.countdown(step >= 3);
+    }
+    // Arranque turbo: se anota cuándo empezó a acelerar cada jugador.
+    for (const racer of this.humans) {
+      const id = racer.deviceId;
+      if (racer.startPress === null && (controls.justPressed(id, 'a') || controls.justPressed(id, 'rt'))) racer.startPress = this.phaseMs;
     }
     if (step < 3) {
       this.hud.setCenter(String(3 - step));
@@ -467,6 +515,17 @@ export class KartGame {
     this.hud.setCenter('¡YA!');
     this.phase = 'race';
     this.phaseMs = 0;
+    for (const racer of this.racers) {
+      const good = racer.isCpu
+        ? !this.battle && Math.random() < this.level.startBoost
+        : racer.startPress !== null && racer.startPress >= START_WINDOW_MS[0] && racer.startPress <= START_WINDOW_MS[1];
+      if (!good) continue;
+      racer.boost(START_BOOST.factor, START_BOOST.ms);
+      if (!racer.isCpu) {
+        racer.say('¡Arranque turbo! 🚀', 1200);
+        sfx.boost();
+      }
+    }
   }
 
   updateRace(dtMs, now) {
@@ -480,7 +539,7 @@ export class KartGame {
       const input = racer.isCpu || racer.finished ? this.cpuInput(racer, ranking) : this.humanInput(racer);
       const offroad = Math.abs(this.track.lateral(racer.x, racer.z, racer.index)) > this.track.roadWidth / 2 + 0.3;
       // Pequeña ayuda a los jugadores que van atrás, para que la carrera sea pareja.
-      const topFactor = racer.isCpu ? 1 : 1 + 0.03 * ranking.indexOf(racer);
+      const topFactor = racer.isCpu ? 1 : 1 + this.level.help * ranking.indexOf(racer);
       racer.update(dtMs, input, offroad, topFactor);
       if (input.useItem) this.useItem(racer, ranking);
       if (input.change) racer.driver.changeNumber(input.change);
@@ -491,6 +550,10 @@ export class KartGame {
     this.features.update(dtMs, this.racers, {
       onBoost: (racer) => this.announce(racer, 'pad'),
     });
+    this.coins.update(dtMs, now, this.racers, (racer) => {
+      if (!racer.isCpu) sfx.coin();
+    });
+    this.announceFirstPlace(ranking);
     for (const racer of this.racers) {
       for (const event of racer.events) this.announce(racer, event);
       racer.events.length = 0;
@@ -527,17 +590,33 @@ export class KartGame {
     const wobble = racer.inkMs > 0 ? Math.sin(performance.now() / 260) * CPU_INK_WOBBLE : 0;
     return {
       steer: clamp(-diff * 2.5 + wobble, -1, 1),
-      gas: CPU_GAS,
+      gas: this.level.gas,
       brake: 0,
-      nitro: racer.nitro >= 1 && Math.abs(diff) < 0.12 && Math.random() < 0.006,
+      nitro: racer.nitro >= 1 && Math.abs(diff) < 0.12 && Math.random() < this.level.nitro,
       useItem: !racer.finished && this.cpuWantsItem(racer, ranking),
       trick: racer.airborne && Math.random() < CPU_TRICK,
     };
   }
 
+  // "¡Vas en primero!" cuando un jugador pasa al primer lugar (no muy seguido).
+  announceFirstPlace(ranking) {
+    const first = ranking[0];
+    if (first.isCpu || first === this.lastFirst || this.raceMs < 4000) {
+      this.lastFirst = first;
+      return;
+    }
+    this.lastFirst = first;
+    const now = performance.now();
+    if (now - (first.firstSaidAt ?? -Infinity) < FIRST_PLACE_SAY_MS) return;
+    first.firstSaidAt = now;
+    first.say('¡Vas en primero! 🥇', 1500);
+    if (this.humans.length === 1) say('¡Vas en primer lugar!');
+  }
+
   // Sonido y letrero de lo que le pasó a un jugador (a la compu no, para no llenar todo de ruido).
   announce(racer, event) {
     if (racer.isCpu) return;
+    if (event === 'item') sfx.pickup();
     if (event === 'pad' || event.startsWith('turbo')) sfx.boost();
     else if (event === 'jump') sfx.jump();
     else if (event === 'trick') sfx.special();
@@ -617,6 +696,7 @@ export class KartGame {
 
   onProjectileHit(victim, projectile) {
     const hurt = victim.hit();
+    if (hurt && (!victim.isCpu || !projectile.owner.isCpu)) sfx.hit(projectile.kind === 'comet' ? 1 : 0.7);
     if (!victim.isCpu) victim.say(hurt ? '¡Te dieron! 💫' : '¡La burbuja te salvó!');
     if (hurt && projectile.owner !== victim && !projectile.owner.isCpu) {
       projectile.owner.say('¡Le diste! 🎯');
@@ -659,20 +739,26 @@ export class KartGame {
   }
 
   onLap(racer) {
-    if (racer.lap >= LAPS && !racer.finished) {
+    const laps = this.laps;
+    if (racer.lap >= laps && !racer.finished) {
       racer.finished = true;
       this.finishOrder.push(racer);
       if (!racer.isCpu && this.finishOrder.length === 1) rewards.earn('kart-gana');
       if (!racer.isCpu) {
         if (this.firstHumanFinishMs === null) this.firstHumanFinishMs = this.raceMs;
         racer.say(`¡Meta! ${this.finishOrder.length}° lugar`, 5000);
+        if (this.finishOrder.length === 1) sfx.win();
+        else sfx.confirm();
       }
       return;
     }
-    if (!racer.isCpu && racer.lap > 0) racer.say(racer.lap === LAPS - 1 ? '¡Última vuelta!' : `Vuelta ${racer.lap + 1}`);
-    if (!racer.isCpu && racer.lap === LAPS - 1 && !this.lastLapSaid) {
+    if (!racer.isCpu && racer.lap > 0) racer.say(racer.lap === laps - 1 ? '¡Última vuelta!' : `Vuelta ${racer.lap + 1}`);
+    // La última vuelta: aviso, fanfarria y la música más rápida.
+    if (!racer.isCpu && racer.lap === laps - 1 && laps > 1 && !this.lastLapSaid) {
       this.lastLapSaid = true;
       say('¡Última vuelta!');
+      sfx.meterFull();
+      music.setTempo(1.15);
     }
   }
 
@@ -817,14 +903,28 @@ export class KartGame {
       this.hud.setPanel(i, {
         pos: battle?.pos ?? `${ranking.indexOf(racer) + 1}°`,
         who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>`,
-        lap: battle?.lap ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, LAPS)}/${LAPS}`),
+        lap: battle?.lap ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
+        coins: this.battle ? '' : `🪙 ${racer.coins}`,
         item,
         rolling,
         nitro: Array.from({ length: NITRO_CHARGES }, (_, k) => `<span class="${k < racer.nitro ? '' : 'off'}">🔥</span>`).join(''),
         msg: message,
         ink: racer.inkMs > 0,
       });
+      // El mini mapa (con 3 jugadores ya hay un cuadro de mapa grande).
+      if (this.views.some((other) => other.kind === 'map')) return;
+      const dots = this.racers.map((other) => ({ x: other.x, z: other.z, color: hexToCss(other.color), me: other === racer }));
+      this.hud.drawMap(i, dots);
     });
+    this.updateEngines();
+  }
+
+  // El motor de cada jugador suena según su velocidad (se prende cuando el navegador ya deja sonar).
+  updateEngines() {
+    for (const racer of this.humans) {
+      racer.engine ??= createEngine();
+      racer.engine?.update(this.phase === 'race' ? racer.speed : 0, racer.boostMs > 0);
+    }
   }
 
   // Cámara detrás de cada jugador, como en GTA: lo sigue con un poco de suavidad
@@ -885,6 +985,8 @@ export class KartGame {
   }
 
   destroy() {
+    for (const racer of this.humans ?? []) racer.engine?.stop();
+    music.setTempo(1);
     this.projectiles?.dispose();
     this.features?.dispose();
     this.hud?.destroy();

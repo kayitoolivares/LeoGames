@@ -132,7 +132,8 @@ export const sfx = {
     tone({ freq: freq * 2, ms: 260, type: 'sine', volume: 0.06 });
   },
   boing: () => tone({ freq: 200, to: 620, ms: 240, type: 'sine', volume: 0.22 }),
-  // Karts locos: turbo (flechas del piso, mini turbo del derrape).
+  // Karts locos: moneda (dos notitas agudas), turbo (flechas del piso, mini turbo del derrape).
+  coin: () => melody([988, 1319], { ms: 90, gap: 60, type: 'square', volume: 0.06 }),
   boost: () => {
     tone({ freq: 220, to: 900, ms: 320, type: 'sawtooth', volume: 0.07 });
     noise({ ms: 260, volume: 0.12, filter: 2400 });
@@ -145,3 +146,32 @@ export const sfx = {
   },
   sparkle: () => melody([1047, 1319, 1568, 2093], { ms: 160, gap: 60, type: 'sine', volume: 0.09 }),
 };
+
+// Karts locos: el motor de un kart, un zumbido grave que sube con la velocidad (y más con turbo).
+// Devuelve { update(speed, boosting), stop() }, o null si el sonido todavía no está activado.
+export function createEngine() {
+  if (!audioReady()) return null;
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 520;
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  osc.connect(filter).connect(gain).connect(master);
+  osc.start();
+  return {
+    update(speed, boosting = false) {
+      const now = ctx.currentTime;
+      osc.frequency.setTargetAtTime(50 + Math.abs(speed) * 3 * (boosting ? 1.25 : 1), now, 0.08);
+      gain.gain.setTargetAtTime(Math.abs(speed) > 1 ? 0.03 : 0.012, now, 0.12);
+    },
+    stop() {
+      gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+      setTimeout(() => {
+        osc.stop();
+        osc.disconnect();
+      }, 300);
+    },
+  };
+}

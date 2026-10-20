@@ -95,6 +95,7 @@ class MusicPlayer {
     this.song = null;
     this.timer = null;
     this.output = null;
+    this.tempo = 1;
   }
 
   enabled() {
@@ -109,7 +110,13 @@ class MusicPlayer {
     if (enabled && name) this.start();
   }
 
+  // Más rápida (factor > 1) o normal (1): la última vuelta de los karts.
+  setTempo(factor) {
+    this.tempo = factor;
+  }
+
   play(name) {
+    this.tempo = 1;
     if (this.name === name) return;
     this.stop();
     this.name = name;
@@ -151,7 +158,7 @@ class MusicPlayer {
     while (this.nextTime < ctx.currentTime + SCHEDULE_AHEAD_S) {
       this.playStep(ctx, this.step, this.nextTime);
       this.step += 1;
-      this.nextTime += this.song.stepSeconds;
+      this.nextTime += this.song.stepSeconds / this.tempo;
     }
   }
 
