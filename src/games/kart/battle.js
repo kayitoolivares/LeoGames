@@ -325,6 +325,7 @@ export class Battle {
       { title: `¡Ganó ${winner.label}!`, footer: 'A = otra batalla  ·  X = taller' },
     );
     say(`¡Ganó la batalla ${winner.label}, ${winner.driver.name}!`);
+    game.startCeremony(ranking);
   }
 }
 

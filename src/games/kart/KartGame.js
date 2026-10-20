@@ -14,6 +14,7 @@ import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
 import { Arena, Battle, BATTLE_RACERS } from './battle.js';
+import { Ceremony } from './ceremony.js';
 import { Coins } from './coins.js';
 import { Particles } from './particles.js';
 import { DriverArt, driverView } from './drivers.js';
@@ -356,6 +357,7 @@ export class KartGame {
   }
 
   startBattle() {
+    this.endCeremony();
     this.battle.start();
     this.finishOrder = [];
     this.projectiles.clear();
@@ -417,6 +419,7 @@ export class KartGame {
     );
     wall.position.y = height / 2 - height * sink;
     this.scene.add(wall);
+    this.panorama = wall;
     return true;
   }
 
@@ -502,6 +505,7 @@ export class KartGame {
       racer.reset(spot.x, spot.z, spot.heading, index);
       racer.progress = racer.lap + index / n;
     });
+    this.endCeremony();
     this.laps = options.laps;
     this.level = LEVELS[options.level];
     music.setTempo(1);
@@ -541,6 +545,7 @@ export class KartGame {
     for (const racer of this.racers) racer.render(now);
     this.battle?.render();
     this.particles?.update(dtMs);
+    this.ceremony?.update(dtMs);
     this.updateCameras(dtMs / 1000);
     this.updatePanels(now);
     this.render();
@@ -920,6 +925,7 @@ export class KartGame {
         image: racer.driver.imageUrl,
       })),
     );
+    this.startCeremony(ranking);
     say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
   }
 
@@ -948,6 +954,8 @@ export class KartGame {
     const winner = rows[0];
     if (winner.human) rewards.earn('kart-copa');
     const trophy = manifest.copas?.includes(cup.image) ? `kart/copas/${cup.image}.png` : null;
+    const byPoints = this.racers.map((racer, i) => [racer, this.gp.points[i]]).sort((a, b) => b[1] - a[1]).map(([racer]) => racer);
+    this.startCeremony(byPoints, trophy);
     this.hud.showStandings({
       title: `¡${winner.label} ganó la ${cup.name}!`,
       rows,
@@ -1045,9 +1053,28 @@ export class KartGame {
     }
   }
 
-  // Una pasada por cada pedazo de pantalla (pantalla dividida).
+  // La premiación: los 3 primeros al podio (en toda la pantalla). `trophy`: imagen de la copa (Gran Premio).
+  startCeremony(podium, trophy = null) {
+    this.endCeremony();
+    const scenery = [this.panorama, this.track.groundMesh].filter(Boolean);
+    this.ceremony = new Ceremony(podium.slice(0, 3), { background: this.scene.background, scenery, trophy });
+    this.hud.setCeremony(true);
+  }
+
+  endCeremony() {
+    if (!this.ceremony) return;
+    this.ceremony.dispose();
+    this.ceremony = null;
+    this.hud.setCeremony(false);
+  }
+
+  // Una pasada por cada pedazo de pantalla (pantalla dividida); en la premiación, una sola en toda la pantalla.
   render() {
     const renderer = this.renderer;
+    if (this.ceremony) {
+      this.ceremony.render(renderer);
+      return;
+    }
     renderer.setScissorTest(true);
     for (const view of this.views) {
       const y = HEIGHT - view.y - view.h;
@@ -1080,6 +1107,7 @@ export class KartGame {
   }
 
   destroy() {
+    this.endCeremony();
     for (const racer of this.humans ?? []) racer.engine?.stop();
     music.setTempo(1);
     this.projectiles?.dispose();

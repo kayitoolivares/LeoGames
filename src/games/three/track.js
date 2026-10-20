@@ -120,6 +120,7 @@ export class Track {
     );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
+    this.groundMesh = ground;
 
     const half = this.roadWidth / 2;
     const { road, rainbow, curbs } = this.theme;

@@ -25,6 +25,9 @@ const CSS = `
     radial-gradient(circle at 18% 72%, #2a1f4a 0 9%, transparent 10%),
     radial-gradient(circle at 52% 30%, #2a1f4a 0 8%, transparent 9%); }
 .kart-panel .ink.on { opacity: 0.88; transition: opacity 0.15s; }
+.kart-hud.ceremony .kart-panel, .kart-hud.ceremony .kart-help, .kart-hud.ceremony .podium, .kart-hud.ceremony .trophy { display: none; }
+.kart-hud.ceremony .kart-results { background: transparent; justify-content: flex-end; padding-bottom: 16px; }
+.kart-hud.ceremony .kart-results h1 { position: absolute; top: 14px; left: 0; right: 0; text-align: center; }
 .kart-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 .kart-panel .item.rolling { border-color: #ffc93c; }
 .kart-panel .nitro { position: absolute; bottom: calc(20px * var(--s)); right: calc(20px * var(--s));
@@ -243,6 +246,11 @@ export class KartHud {
     this.results.innerHTML = `${trophy ? `<div class="trophy">${winner}${cup}</div>` : ''}<h1>${title}</h1>
       <div class="standings">${list}</div><p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
+  }
+
+  // La premiación en 3D: se esconden los paneles de cada jugador y el podio de imágenes.
+  setCeremony(on) {
+    this.el.classList.toggle('ceremony', on);
   }
 
   hideResults() {

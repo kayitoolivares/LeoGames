@@ -7,6 +7,8 @@ const KINDS = {
   dust: { max: 160, size: 1.8, additive: false, gravity: -1.5 },
   // Chispas al rozar las llantas, estrellitas al pegarle a alguien, brillitos de las monedas.
   spark: { max: 160, size: 0.7, additive: true, gravity: 14 },
+  // Confeti de la premiación: de colores, cae despacito.
+  confetti: { max: 260, size: 0.55, additive: false, gravity: 2.2 },
 };
 
 export class Particles {
@@ -30,7 +32,7 @@ export class Particles {
         points.frustumCulled = false;
         scene.add(points);
         const list = Array.from({ length: spec.max }, () => ({ life: 0, max: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, r: 1, g: 1, b: 1 }));
-        return [kind, { spec, geometry, positions, colors, list, next: 0 }];
+        return [kind, { spec, geometry, points, positions, colors, list, next: 0 }];
       }),
     );
     this.color = new THREE.Color();
@@ -51,6 +53,13 @@ export class Particles {
       const angle = Math.random() * Math.PI * 2;
       const v = speed * (0.5 + Math.random() * 0.5);
       this.emit(kind, x, y, z, Math.cos(angle) * v, up * (0.5 + Math.random()), Math.sin(angle) * v, colors[i % colors.length], lifeMs * (0.7 + Math.random() * 0.6));
+    }
+  }
+
+  dispose() {
+    for (const group of Object.values(this.groups)) {
+      group.geometry.dispose();
+      group.points.material.dispose();
     }
   }
 
