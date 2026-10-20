@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
+import { sfx } from '../../shared/sound.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
 import { UNLOCKS, rewards } from '../../shared/rewards.js';
@@ -12,6 +13,7 @@ import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
 import { DriverArt } from './drivers.js';
+import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
 import { kartPicks, randomSetup } from './karts.js';
 import { Snowfall, addSnowmen } from './scenery.js';
@@ -42,6 +44,10 @@ const ITEM_ICONS = Object.fromEntries(
   ]),
 );
 const ROLL_ICONS = Object.values(ITEM_ICONS);
+// Letreros de lo que hace cada jugador (ver Racer.events).
+const EVENT_MESSAGES = { turbo1: '¡Mini turbo!', turbo2: '¡Súper turbo!', turbo3: '¡Ultra turbo!', trick: '¡Truco! 🤸' };
+// La compu hace truco en el aire de vez en cuando (probabilidad por cuadro).
+const CPU_TRICK = 0.06;
 
 // La última pista que se escogió, para que salga seleccionada la próxima vez.
 let lastTrack = 'pradera';
@@ -143,6 +149,7 @@ export class KartGame {
     lastTrack = key;
     const look = TRACKS[key];
     this.trackKey = key;
+    this.trackLook = look;
     this.scene.background = new THREE.Color(look.sky);
     this.fog = new THREE.Fog(look.sky, 140, 420);
     this.scene.fog = this.fog;
@@ -158,6 +165,7 @@ export class KartGame {
       addSnowmen(this.scene, this.track);
       this.snow = new Snowfall(this.scene, this.track);
     }
+    this.features = new TrackFeatures(this.scene, this.track, { pads: look.pads, ramps: look.ramps });
     this.boxes = new ItemBoxes(this.scene, this.track);
     this.projectiles = new Projectiles(this.scene);
     this.createRacers();
@@ -316,6 +324,13 @@ export class KartGame {
       this.updateProgress(racer);
       this.updateWrongWay(racer, dtMs);
     }
+    this.features.update(dtMs, this.racers, {
+      onBoost: (racer) => this.announce(racer, 'pad'),
+    });
+    for (const racer of this.racers) {
+      for (const event of racer.events) this.announce(racer, event);
+      racer.events.length = 0;
+    }
     this.separateRacers();
     this.boxes.update(dtMs, now, this.racers, (racer) => this.giveItem(racer));
     this.projectiles.update(dtMs, this.racers, this.track, (victim, projectile) => this.onProjectileHit(victim, projectile));
@@ -333,6 +348,9 @@ export class KartGame {
       brake: controls.isDown(id, 'b') || controls.isDown(id, 'lt') ? 1 : 0,
       nitro: controls.justPressed(id, 'rb'),
       useItem: controls.justPressed(id, 'x'),
+      // LB: derrapar (mantener en la curva) y truco (apretarlo en el aire).
+      drift: controls.isDown(id, 'lb'),
+      trick: controls.justPressed(id, 'lb'),
       // Bloquecito cambia de número (Y sube, ↓ + Y baja).
       change: numberStep(id),
     };
@@ -348,7 +366,19 @@ export class KartGame {
       brake: 0,
       nitro: racer.nitro >= 1 && Math.abs(diff) < 0.12 && Math.random() < 0.006,
       useItem: !racer.finished && this.cpuWantsItem(racer, ranking),
+      trick: racer.airborne && Math.random() < CPU_TRICK,
     };
+  }
+
+  // Sonido y letrero de lo que le pasó a un jugador (a la compu no, para no llenar todo de ruido).
+  announce(racer, event) {
+    if (racer.isCpu) return;
+    if (event === 'pad' || event.startsWith('turbo')) sfx.boost();
+    else if (event === 'jump') sfx.jump();
+    else if (event === 'trick') sfx.special();
+    else if (event.startsWith('spark')) sfx.count(Number(event.slice(5)) * 3);
+    const message = event === 'pad' ? '¡Turbo!' : EVENT_MESSAGES[event];
+    if (message) racer.say(message, 800);
   }
 
   cpuWantsItem(racer, ranking) {
@@ -540,8 +570,8 @@ export class KartGame {
       const racer = view.racer;
       const fx = Math.sin(racer.heading);
       const fz = Math.cos(racer.heading);
-      desiredPos.set(racer.x - fx * 9, 4.6, racer.z - fz * 9);
-      desiredLook.set(racer.x + fx * 7, 1.4, racer.z + fz * 7);
+      desiredPos.set(racer.x - fx * 9, 4.6 + racer.y * 0.7, racer.z - fz * 9);
+      desiredLook.set(racer.x + fx * 7, 1.4 + racer.y, racer.z + fz * 7);
       view.pos.lerp(desiredPos, blend);
       view.look.lerp(desiredLook, blend);
       view.camera.position.copy(view.pos);
@@ -588,6 +618,7 @@ export class KartGame {
 
   destroy() {
     this.projectiles?.dispose();
+    this.features?.dispose();
     this.hud?.destroy();
     this.chooser?.destroy();
     this.garage?.destroy();

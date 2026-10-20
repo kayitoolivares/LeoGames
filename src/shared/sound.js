@@ -132,6 +132,11 @@ export const sfx = {
     tone({ freq: freq * 2, ms: 260, type: 'sine', volume: 0.06 });
   },
   boing: () => tone({ freq: 200, to: 620, ms: 240, type: 'sine', volume: 0.22 }),
+  // Karts locos: turbo (flechas del piso, mini turbo del derrape).
+  boost: () => {
+    tone({ freq: 220, to: 900, ms: 320, type: 'sawtooth', volume: 0.07 });
+    noise({ ms: 260, volume: 0.12, filter: 2400 });
+  },
   // Bloquecito cambia de número: una nota que sube con el número (del 1 al 10).
   count: (n) => {
     const freq = PENTATONIC[Math.min(Math.max(n, 0), PENTATONIC.length - 1)];

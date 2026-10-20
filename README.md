@@ -63,6 +63,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   bien, **Monstruo** pesado que casi no se frena en el pasto), color, llantas y adorno. Al final, podio con los 3
   primeros (**A** = otra carrera, **X** = regresar al taller).
   **A / RT** = acelerar, **B / LT** = frenar y reversa, **stick** = girar, **RB** = nitro (3 cargas que se recargan),
+  **LB** = derrapar (mantenerlo en la curva junta chispas azules, naranjas y moradas; al soltarlo, turbito) y, en el
+  aire después de una rampa, truco (turbito al caer). Las flechas naranjas del piso dan turbo,
   **X** = lanzar el poder de las cajitas "?" (🚀 cohete, 🍌 plátano, ⚡ súper turbo, 🛡️ burbuja).
   Pistas: **Pradera** y **Montaña nevada** (se desbloquea al ganar una carrera; tiene nieve cayendo, monos de nieve
   y una curva en "S"). Al terminar, **B** regresa a escoger pista.

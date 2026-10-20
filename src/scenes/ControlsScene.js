@@ -101,6 +101,7 @@ const PAGES = [
       [['a'], 'Acelerar (en el control también RT)'],
       [['b'], 'Frenar y reversa (en el control también LT)'],
       [['rb'], 'Nitro'],
+      [['lb'], 'Derrapar (mantener en la curva) · en el aire: truco'],
       [['x'], 'Lanzar el poder de la cajita "?"'],
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],

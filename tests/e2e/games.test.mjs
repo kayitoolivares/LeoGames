@@ -489,6 +489,56 @@ test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { 
   await p.context.close();
 });
 
+// Derrape con LB (al soltarlo, turbito), salto en la rampa con truco (turbito al caer) y flechas de turbo.
+test('karts locos: derrape, rampa con truco y flecha de turbo', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'empezar la carrera');
+  // Un kart solo en una recta, sin nadie que estorbe.
+  const place = (at, lane, speed) =>
+    p.page.evaluate(([where, side, v]) => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      for (const cpu of k.racers.filter((r) => r.isCpu)) Object.assign(cpu, { x: 9999, z: 9999 });
+      const r = k.humans[0];
+      const spot = k.track.pointAt(where, side);
+      Object.assign(r, { x: spot.x, z: spot.z, heading: spot.heading, index: spot.index, speed: v, boostMs: 0, y: 0, vy: 0 });
+    }, [at, lane, speed]);
+  const me = () => p.page.evaluate(() => {
+    const r = window.leogames.scene.getScene('Kart').game3d.humans[0];
+    return { drifting: r.drifting, level: r.driftLevel, boost: r.boostMs, y: r.y };
+  });
+
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  await place(20, 0, 30);
+  await p.page.evaluate(() => ((window.__pads[0].axes = [0.9, 0, 0, 0]), window.__button(0, 4, true)));
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].driftLevel >= 1, ms(6000), 'juntar chispas derrapando');
+  assert.ok((await me()).drifting);
+  await p.page.evaluate(() => ((window.__pads[0].axes = [0, 0, 0, 0]), window.__button(0, 4, false)));
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].boostMs > 0, ms(3000), 'turbito al soltar el derrape');
+
+  // La rampa: sale volando, hace truco con LB y al caer le da turbito.
+  const ramp = await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.features.ramps[0].start);
+  await place(ramp - 8, 0, 40);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].vy > 0, ms(5000), 'saltar en la rampa');
+  await p.tap(0, BUTTON.LB);
+  await p.until(() => { const r = window.leogames.scene.getScene('Kart').game3d.humans[0]; return r.y === 0 && r.boostMs > 0; }, ms(5000), 'caer con el turbito del truco');
+
+  // La flecha: justo antes de ella, con el carril de la flecha.
+  const pad = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const [at, lane] = k.trackLook.pads[0];
+    return [Math.round(at * k.track.count) - 3, lane];
+  });
+  await place(pad[0], pad[1], 20);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].boostFactor === 1.5, ms(3000), 'turbo de la flecha');
+  await p.page.evaluate(() => window.__release());
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(180000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));
