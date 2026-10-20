@@ -9,7 +9,23 @@ import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { HEIGHT, WIDTH } from '../three/stage.js';
 import { buildKartModel, disposeKartModel } from '../three/kartModel.js';
 import { driverView } from './drivers.js';
-import { DECALS, DECAL_KEYS, EXTRAS, EXTRA_KEYS, KART_TYPES, KART_TYPE_KEYS, PAINTS, WHEELS, WHEEL_KEYS, decalTexture, kartPicks } from './karts.js';
+import {
+  DECALS,
+  DECAL_KEYS,
+  EXTRAS,
+  EXTRA_KEYS,
+  KART_TYPES,
+  KART_TYPE_KEYS,
+  PAINTS,
+  SHOP_PAINTS,
+  WHEELS,
+  WHEEL_KEYS,
+  decalTexture,
+  kartPicks,
+  owns,
+  wallet,
+} from './karts.js';
+import { ShopPanel } from './shop.js';
 
 // El taller de Karts locos: cada jugador escoge su piloto, su kart, el color, las llantas, un adorno y una calcomanía,
 // y lo ve en 3D dando vueltas. ↑ ↓ = qué cambiar, ◀ ▶ = cambiarlo, Y = modo peque, A = ¡listo!, B = ya no estoy listo
@@ -69,8 +85,10 @@ export class Garage {
     this.drivers = drivers;
     this.el = document.createElement('div');
     this.el.className = 'kart-garage';
-    this.el.innerHTML = `<h1>🔧 Taller</h1>
-      <p>↑ ↓ qué cambiar  ·  ◀ ▶ cambiarlo  ·  Y = modo peque 🐣  ·  A = ¡listo!  ·  B = regresar</p><div class="exit"><div></div></div>`;
+    this.el.innerHTML = `<h1>🔧 Taller  <span class="coins"></span></h1>
+      <p>↑ ↓ qué cambiar  ·  ◀ ▶ cambiarlo  ·  Y = modo peque 🐣  ·  X = tienda 🛒  ·  A = ¡listo!  ·  B = regresar</p><div class="exit"><div></div></div>`;
+    this.coinsEl = this.el.querySelector('.coins');
+    this.showCoins();
     view.stage.append(this.el);
     this.exitBar = this.el.querySelector('.exit > div');
 
@@ -128,8 +146,9 @@ export class Garage {
       rows: el.querySelector('.rows'),
       stats: el.querySelector('.stats'),
       status: el.querySelector('.status'),
-      // Colores: primero el del jugador, luego los demás.
-      paints: [playerColor, ...PAINTS.filter((color) => color !== playerColor)],
+      // Colores: primero el del jugador, luego los demás (y los que ya se compraron en la tienda).
+      playerColor,
+      paints: paintsFor(playerColor),
       setup,
       row: 0,
       ready: false,
@@ -146,14 +165,18 @@ export class Garage {
     return card;
   }
 
-  // Las opciones de cada renglón.
+  // Las opciones de cada renglón (solo lo que ya se tiene: lo de la tienda hay que comprarlo).
   options(card, row) {
     if (row === 'character') return CHARACTER_KEYS;
-    if (row === 'type') return KART_TYPE_KEYS;
+    if (row === 'type') return KART_TYPE_KEYS.filter((key) => owns('type', key));
     if (row === 'color') return card.paints;
-    if (row === 'wheels') return WHEEL_KEYS;
-    if (row === 'decal') return DECAL_KEYS;
-    return EXTRA_KEYS;
+    if (row === 'wheels') return WHEEL_KEYS.filter((key) => owns('wheels', key));
+    if (row === 'decal') return DECAL_KEYS.filter((key) => owns('decal', key));
+    return EXTRA_KEYS.filter((key) => owns('extra', key));
+  }
+
+  showCoins() {
+    this.coinsEl.textContent = `· 🪙 ${wallet.get()}`;
   }
 
   // Vuelve a armar el kart en 3D (y el piloto, si cambió).
@@ -204,8 +227,13 @@ export class Garage {
 
   // Devuelve 'done' cuando todos están listos, 'exit' si el Jugador 1 se regresa al menú, o null.
   update(dtMs) {
+    for (const card of this.cards) card.turntable.rotation.y += (SPIN_SPEED * dtMs) / 1000;
+    // Con la tienda abierta, el que la abrió solo maneja la tienda (también el cuadro en que la cierra con B,
+    // para que esa B no lo saque del taller).
+    const shopper = this.shop?.deviceId;
+    if (this.shop && this.shop.update()) this.closeShop();
     for (const card of this.cards) {
-      card.turntable.rotation.y += (SPIN_SPEED * dtMs) / 1000;
+      if (card.id === shopper) continue;
       if (this.handle(card) === 'exit') return 'exit';
     }
     this.render();
@@ -250,6 +278,11 @@ export class Garage {
       this.rebuild(card, row === 'character');
       this.refresh(card);
     }
+    if (controls.justPressed(id, 'x') && !this.shop) {
+      sfx.confirm();
+      this.shop = new ShopPanel(this.el, id);
+      return null;
+    }
     if (controls.justPressed(id, 'y')) {
       card.setup = { ...card.setup, peque: !card.setup.peque };
       sfx.select();
@@ -286,12 +319,25 @@ export class Garage {
     renderer.setScissorTest(false);
   }
 
+  // Al cerrar la tienda: lo que se compró ya aparece en las opciones de todos.
+  closeShop() {
+    this.shop.destroy();
+    this.shop = null;
+    this.showCoins();
+    for (const card of this.cards) {
+      card.paints = paintsFor(card.playerColor);
+      if (!card.paints.includes(card.setup.color)) card.paints.push(card.setup.color);
+      this.refresh(card);
+    }
+  }
+
   setExitProgress(fraction) {
     const width = `${Math.round(fraction * 100)}%`;
     if (this.exitBar.style.width !== width) this.exitBar.style.width = width;
   }
 
   destroy() {
+    this.shop?.destroy();
     for (const card of this.cards) {
       disposeKartModel(card.model);
       card.driver.dispose();
@@ -300,4 +346,10 @@ export class Garage {
     this.floorMaterial.dispose();
     this.el.remove();
   }
+}
+
+// Los colores que puede escoger un jugador: el suyo primero, los de siempre y los que ya se compraron.
+function paintsFor(playerColor) {
+  const bought = SHOP_PAINTS.filter((paint) => owns('color', paint.hex)).map((paint) => paint.hex);
+  return [playerColor, ...[...PAINTS, ...bought].filter((color) => color !== playerColor)];
 }

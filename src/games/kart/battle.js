@@ -322,7 +322,7 @@ export class Battle {
     if (!winner.isCpu) rewards.earn('kart-batalla');
     game.hud.showResults(
       ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color), name: racer.driver.name, image: racer.driver.imageUrl })),
-      { title: `¡Ganó ${winner.label}!`, footer: 'A = otra batalla  ·  X = taller' },
+      { title: `¡Ganó ${winner.label}!`, footer: 'A = otra batalla  ·  B = cambiar modo  ·  X = taller', note: game.payout(ranking) },
     );
     say(`¡Ganó la batalla ${winner.label}, ${winner.driver.name}!`);
     game.startCeremony(ranking);

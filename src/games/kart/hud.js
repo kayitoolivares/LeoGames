@@ -60,6 +60,7 @@ const CSS = `
   background: rgba(27, 21, 48, 0.7); padding: 6px 16px; border-radius: 12px; }
 .kart-results .dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 3px #1b1530; }
 .kart-results p { margin-top: 12px; font-size: 22px; }
+.kart-results .note { font-size: 21px; font-weight: 700; color: #ffc93c; background: rgba(27, 21, 48, 0.75); padding: 4px 16px; border-radius: 12px; }
 .kart-results .standings { display: flex; flex-direction: column; gap: 6px; min-width: 560px; }
 .kart-results .standing { display: flex; align-items: center; gap: 14px; font-size: 22px; font-weight: 700;
   background: rgba(27, 21, 48, 0.75); padding: 2px 18px; border-radius: 12px; }
@@ -213,7 +214,7 @@ export class KartHud {
 
   // Podio con los 3 primeros (su personaje arriba de su escalón) y los demás abajo.
   // `rows`: [{ label, color, name, image }] en orden de llegada. `title` y `footer`: lo de arriba y lo de abajo.
-  showResults(rows, { title = '¡Llegaron!', footer = 'A = otra carrera  ·  B = cambiar pista  ·  X = taller' } = {}) {
+  showResults(rows, { title = '¡Llegaron!', footer = 'A = otra carrera  ·  B = cambiar pista  ·  X = taller', note = '' } = {}) {
     const who = (row) => `<span style="color:${row.color}">${row.label}</span> · ${row.name}`;
     const place = (row, n) =>
       row
@@ -226,13 +227,13 @@ export class KartHud {
       .map((row, i) => `<div class="row"><span>${i + 4}°</span><span class="dot" style="background:${row.color}"></span>${who(row)}</div>`)
       .join('');
     this.results.innerHTML = `<h1>${title}</h1><div class="podium">${podium}</div><div class="rest">${rest}</div>
-      <p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
+      ${note ? `<div class="note">${note}</div>` : ''}<p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 
   // Gran Premio: la tabla de puntos (`rows` ya ordenados, con total y lo que ganó en esta carrera).
   // `trophy` = { image, emoji, winner } al terminar la copa: el trofeo junto al ganador.
-  showStandings({ title, rows, footer, trophy = null }) {
+  showStandings({ title, rows, footer, trophy = null, note = '' }) {
     const list = rows
       .map(
         (row, i) => `<div class="standing${i === 0 ? ' first' : ''}"><span>${i + 1}°</span>
@@ -244,7 +245,7 @@ export class KartHud {
     const cup = trophy ? (trophy.image ? `<img class="cup" src="${trophy.image}" alt="">` : `<span class="emoji">${trophy.emoji}</span>`) : '';
     const winner = trophy?.winner.image ? `<img class="winner" src="${trophy.winner.image}" alt="">` : '';
     this.results.innerHTML = `${trophy ? `<div class="trophy">${winner}${cup}</div>` : ''}<h1>${title}</h1>
-      <div class="standings">${list}</div><p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
+      <div class="standings">${list}</div>${note ? `<div class="note">${note}</div>` : ''}<p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 

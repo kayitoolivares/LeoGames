@@ -39,6 +39,8 @@ const WHEEL_LOOKS = {
   doradas: { tire: 0x222222, hub: 0xffc93c },
   colores: { tire: null, hub: 0xffffff },
   blancas: { tire: 0xf2f2f2, hub: 0xe53935 },
+  fuego: { tire: 0x2b1b1b, hub: 0xff5a1e },
+  neon: { tire: 0x1b1530, hub: 0x3fe0ff },
 };
 const RAINBOW_TIRES = [0xff5a5f, 0x3fa7ff, 0x4cd97b, 0xffc93c];
 
@@ -88,6 +90,39 @@ const BODIES = {
     add(new THREE.CylinderGeometry(0.08, 0.08, 1.6, 6).rotateZ(Math.PI / 2), METAL, 0, 2.95, -0.9);
     return { wheels: corners(1.45, 1.1, 0.8), top: 1.7, back: -1.5, front: 1.6, seat: [0, 1.6, -0.3], side: [1.16, 1.4, 0, 2.4, 0.5] };
   },
+  // De la tienda. Un cohete con ruedas: cuerpo largo y redondo, nariz blanca y aletas rojas; el piloto va encima.
+  cohete(add) {
+    add(new THREE.CylinderGeometry(0.85, 0.85, 3.4, 16).rotateX(Math.PI / 2), 'paint', 0, 0.95, -0.1);
+    add(new THREE.ConeGeometry(0.85, 1.4, 16).rotateX(Math.PI / 2), 0xf2f2f2, 0, 0.95, 2.3);
+    for (const side of [-1, 1]) add(new THREE.BoxGeometry(0.9, 0.12, 0.9), 0xe53935, side * 1.15, 0.95, -1.4);
+    add(new THREE.BoxGeometry(0.12, 0.9, 0.9), 0xe53935, 0, 1.95, -1.4);
+    add(new THREE.CylinderGeometry(0.55, 0.7, 0.4, 12).rotateX(Math.PI / 2), METAL, 0, 0.95, -1.95);
+    cockpit(add, 1.75, -0.2);
+    return { wheels: corners(1.0, 1.2, 0.4), top: 1.8, back: -2.0, front: 3.0, seat: [0, 1.7, -0.3], side: [0.87, 0.95, -0.1, 2.4, 0.55] };
+  },
+  // Una tina de baño con espuma: el piloto va adentro, bañándose.
+  tina(add) {
+    add(new RoundedBoxGeometry(2.2, 0.9, 3.2, 3, 0.4), 'paint', 0, 0.95, 0);
+    add(new RoundedBoxGeometry(1.75, 0.2, 2.7, 2, 0.1), 0x9fd8ff, 0, 1.33, 0);
+    for (const [x, z, r] of [[-0.55, 0.85, 0.3], [0.4, 1.05, 0.24], [0.6, -0.9, 0.32], [-0.6, -0.75, 0.22], [0.05, 1.2, 0.2]]) {
+      add(new THREE.SphereGeometry(r, 8, 6), 0xffffff, x, 1.45, z);
+    }
+    add(new THREE.CylinderGeometry(0.07, 0.07, 0.6, 6), METAL, 0, 1.65, -1.45);
+    add(new THREE.CylinderGeometry(0.07, 0.07, 0.5, 6).rotateX(Math.PI / 2), METAL, 0, 1.92, -1.25);
+    return { wheels: corners(1.1, 1.1, 0.38), top: 1.4, back: -1.6, front: 1.6, seat: [0, 1.15, -0.3], side: [1.11, 0.95, 0, 2.4, 0.6] };
+  },
+  // Un pato de hule gigante: el piloto va sentado en su espalda.
+  pato(add) {
+    add(new THREE.SphereGeometry(1.25, 18, 14).scale(1, 0.75, 1.4), 'paint', 0, 1.0, -0.1);
+    add(new THREE.SphereGeometry(0.75, 16, 12), 'paint', 0, 1.95, 1.0);
+    add(new THREE.ConeGeometry(0.3, 0.7, 10).rotateX(Math.PI / 2).scale(1.4, 0.6, 1), 0xff8a1e, 0, 1.85, 1.85);
+    for (const side of [-1, 1]) {
+      add(new THREE.SphereGeometry(0.17, 8, 6), 0xffffff, side * 0.33, 2.13, 1.58);
+      add(new THREE.SphereGeometry(0.09, 6, 4), DARK, side * 0.35, 2.15, 1.72);
+    }
+    add(new THREE.ConeGeometry(0.4, 0.8, 10).rotateX(-1.0), 'paint', 0, 1.45, -1.75);
+    return { wheels: corners(1.05, 0.95, 0.36), top: 1.55, back: -1.8, front: 1.9, seat: [0, 1.55, -0.55], side: [1.25, 1.0, -0.1, 2.2, 0.55] };
+  },
 };
 
 // Asiento bajito (atrás del piloto, para no taparlo desde atrás) y volante (adelante).
@@ -101,8 +136,9 @@ function corners(x, z, radius) {
 }
 
 // Un carrito que mira hacia +z. Opciones (todas tienen valor de siempre):
-//   type: clasico | bolido | mini | monstruo     wheels: normales | doradas | colores | blancas
-//   extra: aleron | bandera | cuernos | antena | nada
+//   type: clasico | bolido | mini | monstruo | cohete | tina | pato
+//   wheels: normales | doradas | colores | blancas | fuego | neon
+//   extra: aleron | bandera | cuernos | antena | corona | cohetes | globo | nada
 //   decal: textura de la calcomanía de los lados (o null)
 //   driver: true = el piloto lo pone quien lo usa (en `seat`); si no, lleva una bolita con ojos.
 // Devuelve { group, flame, seat } (seat = dónde van los pies del piloto).
@@ -196,6 +232,24 @@ function addExtra(extra, add, color, body) {
   } else if (extra === 'antena') {
     add(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 6), DARK, -0.75, top + 1.2, back + 0.2);
     add(new THREE.SphereGeometry(0.3, 10, 8), 0xffc93c, -0.75, top + 2.45, back + 0.2);
+  } else if (extra === 'corona') {
+    // Corona dorada en la trompa.
+    const z = front - 0.8;
+    add(new THREE.CylinderGeometry(0.45, 0.45, 0.25, 12), 0xffc93c, 0, top + 0.2, z);
+    for (let k = 0; k < 5; k += 1) {
+      const a = (k / 5) * Math.PI * 2;
+      add(new THREE.ConeGeometry(0.12, 0.35, 6), 0xffc93c, Math.cos(a) * 0.4, top + 0.48, z + Math.sin(a) * 0.4);
+    }
+    add(new THREE.SphereGeometry(0.1, 6, 4), 0xe53935, 0, top + 0.25, z + 0.46);
+  } else if (extra === 'cohetes') {
+    // Dos cohetes a los lados, atrás.
+    for (const side of [-1, 1]) {
+      add(new THREE.CylinderGeometry(0.22, 0.22, 1.4, 10).rotateX(Math.PI / 2), 0xf2f2f2, side * 1.35, top - 0.05, back + 0.7);
+      add(new THREE.ConeGeometry(0.22, 0.45, 10).rotateX(Math.PI / 2), 0xe53935, side * 1.35, top - 0.05, back + 1.6);
+    }
+  } else if (extra === 'globo') {
+    add(new THREE.CylinderGeometry(0.02, 0.02, 2.4, 4), 0xffffff, 0.8, top + 1.2, back + 0.3);
+    add(new THREE.SphereGeometry(0.55, 12, 10).scale(1, 1.2, 1), 0xff5a5f, 0.8, top + 2.8, back + 0.3);
   }
 }
 

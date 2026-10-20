@@ -68,6 +68,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   Polvito al salirse del camino, chispas al rozar las llantas y estrellitas al pegarle a alguien.
   **Modo peque** (Y en el taller, por jugador): el kart acelera solo, el volante le ayuda a seguir la pista (sin tocar
   el stick va solo), si se voltea al revés se endereza solo y los golpes duran menos.
+  **Tienda del taller** (X en el taller): las monedas de cada carrera (más 5, 3 o 2 por llegar en 1°, 2° o 3°) se
+  guardan para toda la familia y con ellas se compran karts (Cohete, Tina de baño, Pato de hule), llantas de fuego y
+  neón, adornos (corona, cohetes, globo), colores (dorado, plateado, menta, chocolate) y calcomanías.
   **Premiación en 3D** al final de cada carrera, copa o batalla: los 3 primeros suben al podio con su kart, con confeti
   y fuegos artificiales; en el Gran Premio la copa flota arriba del ganador. Al final, podio con los 3
   primeros (**A** = otra carrera, **X** = regresar al taller). Después del taller se escoge el modo: **Carrera** (una

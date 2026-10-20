@@ -744,6 +744,29 @@ test('karts locos: carrera por equipos', { timeout: ms(120000) }, async () => {
   await p.context.close();
 });
 
+// Tienda del taller (X): con monedas se compra el kart Cohete y luego se puede escoger; B cierra la tienda sin salir.
+test('karts locos: tienda del taller', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('kartWallet', 70)));
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'garage', ms(30000), 'ver el taller');
+  await p.tap(0, BUTTON.X);
+  await p.until(() => Boolean(document.querySelector('.kart-shop')), ms(5000), 'abrir la tienda');
+  await p.tap(0, BUTTON.A);
+  const state = () => p.page.evaluate(() => import('/src/games/kart/karts.js').then((m) => ({ coins: m.wallet.get(), cohete: m.owns('type', 'cohete') })));
+  assert.deepEqual(await state(), { coins: 10, cohete: true });
+  await p.tap(0, BUTTON.B);
+  await p.until(() => !document.querySelector('.kart-shop'), ms(5000), 'cerrar la tienda');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d?.phase), 'garage', 'sigue en el taller');
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.LEFT);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.garage.cards[0].setup.type), 'cohete');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 // Batalla de globos: un cohete revienta un globo; sin globos quedas fuera; gana el último con globos.
 test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);

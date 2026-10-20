@@ -20,7 +20,7 @@ import { Particles } from './particles.js';
 import { DriverArt, driverView } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
-import { kartPicks, randomSetup } from './karts.js';
+import { kartPicks, randomSetup, wallet } from './karts.js';
 import { Snowfall, addScenery, addSnowmen } from './scenery.js';
 import { CUPS, CUP_KEYS, CUP_POINTS, TRACKS, TRACK_KEYS } from './tracks.js';
 import { numberStep } from '../smash/bloquecito.js';
@@ -53,6 +53,8 @@ const HIT_COLORS = [0xffd84d, 0xffffff, 0xff9a3c];
 const BOX_COLORS = [0xff5a5f, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
 const COIN_COLORS = [0xffd84d, 0xfff3b0];
 const SPARK_COLORS = [0xffe14d, 0xffffff];
+// Monedas extra para la tienda por llegar en 1°, 2° y 3° lugar (además de las que junte en la pista).
+const PODIUM_BONUS = [5, 3, 2];
 // Modo peque: sin mover el stick el kart sigue solo la pista; moviéndolo, cuánto cuenta lo que pide el niño.
 const PEQUE_DEADZONE = 0.15;
 const PEQUE_MIX = 0.55;
@@ -943,8 +945,9 @@ export class KartGame {
     this.phaseMs = 0;
     this.hud.setCenter('');
     const ranking = this.ranking();
+    const note = this.payout(ranking);
     if (this.gp) {
-      this.showStandings(ranking);
+      this.showStandings(ranking, note);
       return;
     }
     const rows = ranking.map((racer) => ({
@@ -959,17 +962,27 @@ export class KartGame {
       ranking.forEach((racer, place) => (points[racer.team] += CUP_POINTS[place] ?? 0));
       const winner = points[0] === points[1] ? null : TEAMS[points[0] > points[1] ? 0 : 1];
       const score = `${TEAMS[0].emoji} ${points[0]}  a  ${points[1]} ${TEAMS[1].emoji}`;
-      this.hud.showResults(rows, { title: winner ? `¡Ganaron los ${winner.name}! ${score}` : `¡Empate! ${score}` });
+      this.hud.showResults(rows, { title: winner ? `¡Ganaron los ${winner.name}! ${score}` : `¡Empate! ${score}`, note });
       say(winner ? `¡Ganaron los ${winner.name}!` : '¡Empate!');
     } else {
-      this.hud.showResults(rows);
+      this.hud.showResults(rows, { note });
       say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
     }
     this.startCeremony(ranking);
   }
 
+  // Monedas para la tienda: las que juntó cada jugador más un premio por su lugar. Devuelve el letrero.
+  payout(ranking) {
+    const parts = this.humans.map((racer) => {
+      const earned = (this.battle ? 0 : racer.coins) + (PODIUM_BONUS[ranking.indexOf(racer)] ?? 0);
+      wallet.add(earned);
+      return `${racer.label} +${earned}`;
+    });
+    return `🪙 ${parts.join('  ·  ')} para la tienda`;
+  }
+
   // Gran Premio: suma los puntos de esta carrera y muestra la tabla. En la última, la copa para el que juntó más.
-  showStandings(ranking) {
+  showStandings(ranking, note) {
     const cup = CUPS[this.gp.cup];
     const gained = new Map(ranking.map((racer, place) => [racer, CUP_POINTS[place] ?? 0]));
     this.racers.forEach((racer, i) => (this.gp.points[i] += gained.get(racer)));
@@ -986,7 +999,7 @@ export class KartGame {
       .sort((a, b) => b.total - a.total);
     this.gp.last = this.gp.race === cup.tracks.length - 1;
     if (!this.gp.last) {
-      this.hud.showStandings({ title: `${cup.emoji} ${cup.name} · carrera ${this.gp.race + 1} de ${cup.tracks.length}`, rows, footer: 'A = siguiente carrera' });
+      this.hud.showStandings({ title: `${cup.emoji} ${cup.name} · carrera ${this.gp.race + 1} de ${cup.tracks.length}`, rows, footer: 'A = siguiente carrera', note });
       say(`Va ganando ${rows[0].label}, ${rows[0].name}`);
       return;
     }
@@ -1000,6 +1013,7 @@ export class KartGame {
       rows,
       trophy: { image: trophy, emoji: '🏆', winner },
       footer: 'A = otra copa  ·  X = taller',
+      note,
     });
     say(`¡${winner.label}, ${winner.name}, ganó la ${cup.name}!`);
   }
