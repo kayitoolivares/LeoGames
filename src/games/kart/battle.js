@@ -4,7 +4,7 @@ import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { hexToCss } from '../../ui/style.js';
 import { ITEMS } from './items.js';
-import { INK_MS, RACER_RADIUS, SHIELD_MS } from './Racer.js';
+import { INK_MS, RACER_RADIUS, SHIELD_MS, THROW_POSE_MS } from './Racer.js';
 
 // Batalla de globos: en una arena redonda, cada kart trae 3 globos. Los poderes (y aplastar a uno encogido)
 // revientan un globo; sin globos quedas fuera. Gana el último con globos, o el que tenga más al acabarse el tiempo.
@@ -213,6 +213,8 @@ export class Battle {
     victim.balloons -= 1;
     victim.safeMs = SAFE_MS;
     sfx.poof();
+    // El globo revienta: pedacitos de su color.
+    this.game.particles.burst('spark', victim.x, 4.5, victim.z, 12, [victim.color, 0xffffff], { speed: 6, up: 4, lifeMs: 600 });
     if (attacker && attacker !== victim) {
       attacker.hits += 1;
       if (!attacker.isCpu) {
@@ -237,6 +239,7 @@ export class Battle {
     const item = racer.item;
     racer.itemUses -= 1;
     if (racer.itemUses <= 0) racer.item = null;
+    racer.throwMs = THROW_POSE_MS;
     const rivals = this.alive().filter((other) => other !== racer);
     if (item === 'rocket') game.projectiles.addRocket(racer, nearest(racer, rivals));
     else if (item === 'banana' || item === 'banana3') game.projectiles.addBanana(racer);

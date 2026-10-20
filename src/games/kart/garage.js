@@ -8,6 +8,7 @@ import { hexToCss } from '../../ui/style.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { HEIGHT, WIDTH } from '../three/stage.js';
 import { buildKartModel, disposeKartModel } from '../three/kartModel.js';
+import { driverView } from './drivers.js';
 import { DECALS, DECAL_KEYS, EXTRAS, EXTRA_KEYS, KART_TYPES, KART_TYPE_KEYS, PAINTS, WHEELS, WHEEL_KEYS, decalTexture, kartPicks } from './karts.js';
 
 // El taller de Karts locos: cada jugador escoge su piloto, su kart, el color, las llantas y un adorno,
@@ -134,6 +135,7 @@ export class Garage {
       ready: false,
       turntable,
       camera,
+      spotX: spot.position.x,
       rect: { x: left + BORDER, y: CARD_TOP + BORDER + TITLE_H, w: CARD_W - BORDER * 2, h: PREVIEW_H },
       model: null,
       driver: null,
@@ -266,7 +268,9 @@ export class Garage {
     renderer.setClearColor(BACKGROUND);
     renderer.clear();
     renderer.setScissorTest(true);
-    for (const { rect, camera } of this.cards) {
+    for (const { rect, camera, turntable, driver, spotX } of this.cards) {
+      // El piloto se ve de espaldas, de lado o de frente según cómo va girando el kart.
+      driver.show(driverView({ x: spotX, z: 0, heading: turntable.rotation.y }, camera));
       const y = HEIGHT - rect.y - rect.h;
       renderer.setViewport(rect.x, y, rect.w, rect.h);
       renderer.setScissor(rect.x, y, rect.w, rect.h);

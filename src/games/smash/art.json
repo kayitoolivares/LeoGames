@@ -289,6 +289,7 @@
       "salto"
     ],
     "rayo": [
+      "atras",
       "caminar1",
       "caminar2",
       "caminar3",
@@ -296,8 +297,11 @@
       "cubrirse",
       "dolor",
       "especial",
+      "frente",
       "gana",
+      "giro",
       "golpe",
+      "lado",
       "normal",
       "patada",
       "salto"
@@ -313,6 +317,7 @@
       "salto"
     ],
     "resorte": [
+      "atras",
       "caminar1",
       "caminar2",
       "caminar3",
@@ -320,8 +325,11 @@
       "cubrirse",
       "dolor",
       "especial",
+      "frente",
       "gana",
+      "giro",
       "golpe",
+      "lado",
       "normal",
       "patada",
       "salto"
@@ -361,6 +369,7 @@
       "salto"
     ],
     "tanque": [
+      "atras",
       "caminar1",
       "caminar2",
       "caminar3",
@@ -368,8 +377,11 @@
       "cubrirse",
       "dolor",
       "especial",
+      "frente",
       "gana",
+      "giro",
       "golpe",
+      "lado",
       "normal",
       "patada",
       "salto"

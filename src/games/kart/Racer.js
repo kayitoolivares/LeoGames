@@ -31,6 +31,8 @@ export const SHRINK_MS = 6000;
 const SHRINK_SCALE = 0.55;
 const SHRINK_SPEED = 0.72;
 export const INK_MS = 4500;
+// Cuánto se ve al piloto lanzando el poder.
+export const THROW_POSE_MS = 400;
 // Cada moneda da un poquito más de velocidad; un golpe tira 3.
 const COIN_BOOST = 0.01;
 const COINS_LOST = 3;
@@ -116,6 +118,9 @@ export class Racer {
     this.inkMs = 0;
     this.size = 1;
     this.coins = 0;
+    // Para el dibujo del piloto: hacia dónde gira y si acaba de lanzar un poder.
+    this.steerInput = 0;
+    this.throwMs = 0;
     // Cuándo apretó acelerar durante la cuenta regresiva (para el arranque turbo).
     this.startPress = null;
     this.nitro = NITRO_CHARGES;
@@ -202,6 +207,7 @@ export class Racer {
     this.messageMs = Math.max(0, this.messageMs - dtMs);
     this.shrinkMs = Math.max(0, this.shrinkMs - dtMs);
     this.inkMs = Math.max(0, this.inkMs - dtMs);
+    this.throwMs = Math.max(0, this.throwMs - dtMs);
     if (this.rollMs > 0) {
       this.rollMs = Math.max(0, this.rollMs - dtMs);
       if (this.rollMs === 0) {
@@ -221,6 +227,7 @@ export class Racer {
     const spinning = this.spinMs > 0;
     const gas = spinning ? 0 : input.gas;
     const steer = spinning ? 0 : input.steer;
+    this.steerInput = steer;
     if (input.nitro && !spinning && this.nitro >= 1) {
       this.nitro -= 1;
       this.boost(NITRO_FACTOR, NITRO_MS);

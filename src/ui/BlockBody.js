@@ -30,6 +30,8 @@ export class BlockBody extends Phaser.GameObjects.Container {
   constructor(scene, { unit, form = 1 }) {
     super(scene, 0, 0);
     this.unit = unit;
+    // front | back | side (de espaldas y de lado: para los karts).
+    this.view = 'front';
     this.g = scene.add.graphics();
     const discR = Math.max(11, unit * 0.32);
     this.discR = discR;
@@ -206,7 +208,8 @@ export class BlockBody extends Phaser.GameObjects.Container {
     for (const limb of behind) drawLimb(g, limb, 0, limb.color, true);
     for (const b of live) this.drawBlock(b, look, paint, top, size);
 
-    const face = this.drawFace({ cx, top, width, size, rows, look, ink, live });
+    // De espaldas (manejando un kart, visto desde atrás) no hay cara.
+    const face = this.view === 'back' ? null : this.drawFace({ cx, top, width, size, rows, look, ink, live });
     this.drawExtras({ cx, top, width, size, rows, look, ink, live, face, paint });
     for (const limb of front) {
       drawLimb(g, limb, ink, COLORS.ink);
@@ -348,9 +351,11 @@ export class BlockBody extends Phaser.GameObjects.Container {
     const cyclops = look === 'cyclops';
     const eyeR = size * (cyclops ? 0.26 : cols === 1 ? 0.17 : cols === 2 ? 0.2 : 0.23);
     const gap = cyclops ? 0 : size * (cols === 1 ? 0.22 : cols === 2 ? 0.45 : 0.62);
-    const faceX = cx + f * size * 0.06;
+    // De lado (manejando un kart), la cara se corre a la orilla de enfrente y se ve un solo ojo.
+    const sideView = this.view === 'side';
+    const faceX = sideView ? cx + f * width * 0.3 : cx + f * size * 0.06;
     const eyeY = top + size * 0.42;
-    const eyes = cyclops ? [faceX] : [faceX - gap, faceX + gap];
+    const eyes = cyclops || sideView ? [faceX] : [faceX - gap, faceX + gap];
     const pose = this.pose;
     const hurt = pose === 'dolor';
     const blink = !hurt && this.clock % BLINK_EVERY_MS < BLINK_MS;
@@ -405,12 +410,14 @@ export class BlockBody extends Phaser.GameObjects.Container {
   // Lo que distingue a cada número: lentes, corona, cejas, pestañas...
   drawExtras({ cx, top, width, size, rows, look, ink, live, face, paint }) {
     const g = this.g;
-    const { eyes, eyeY, eyeR } = face;
+    // De espaldas solo se ve lo de arriba de la cabeza (la corona del 3, el pelo del 7).
+    if (!face && look !== 'crown' && look !== 'rainbow') return;
+    const { eyes = [], eyeY = 0, eyeR = 0 } = face ?? {};
     const outline = Math.max(1.5, ink * 0.9);
     if (look === 'glasses') {
       g.lineStyle(Math.max(2, eyeR * 0.28), 0x8e44ad, 1);
       for (const x of eyes) g.strokeCircle(x, eyeY, eyeR * 1.3);
-      g.lineBetween(eyes[0] + eyeR * 1.3, eyeY, eyes[1] - eyeR * 1.3, eyeY);
+      if (eyes.length > 1) g.lineBetween(eyes[0] + eyeR * 1.3, eyeY, eyes[1] - eyeR * 1.3, eyeY);
     } else if (look === 'crown') {
       // Corona de bufón con bolitas en las puntas, y tres botones rojos en la panza.
       const w = size * 0.48;
@@ -427,7 +434,7 @@ export class BlockBody extends Phaser.GameObjects.Container {
         g.fillCircle(p.x, p.y, size * 0.09);
         g.strokeCircle(p.x, p.y, size * 0.09);
       }
-      if (rows > 1) {
+      if (rows > 1 && face) {
         g.fillStyle(0xe53935, 1);
         for (let k = 0; k < 3; k += 1) g.fillCircle(cx, top + size * (1.35 + k * 0.5 * Math.min(1, (rows - 1) / 2)), size * 0.07);
       }
@@ -449,7 +456,7 @@ export class BlockBody extends Phaser.GameObjects.Container {
       // Lentes amarillos y pelo de arcoíris.
       g.lineStyle(Math.max(2, eyeR * 0.28), 0xffd02a, 1);
       for (const x of eyes) g.strokeRoundedRect(x - eyeR * 1.3, eyeY - eyeR * 1.35, eyeR * 2.6, eyeR * 2.7, eyeR * 0.5);
-      g.lineBetween(eyes[0] + eyeR * 1.3, eyeY, eyes[1] - eyeR * 1.3, eyeY);
+      if (eyes.length > 1) g.lineBetween(eyes[0] + eyeR * 1.3, eyeY, eyes[1] - eyeR * 1.3, eyeY);
       RAINBOW.slice(1, 6).forEach((color, k) => {
         const x = cx + (k - 2) * size * 0.18;
         g.lineStyle(Math.max(3, size * 0.12), COLORS.ink, 1);
@@ -513,7 +520,7 @@ export class BlockBody extends Phaser.GameObjects.Container {
 // Dibuja a Bloquecito en un <canvas> (para los juegos 3D, que no usan Phaser): el mismo dibujo de BlockBody,
 // con un pincel de canvas que entiende las órdenes de Phaser.Graphics. Ajusta el tamaño del canvas a la figura
 // (con los pies abajo al centro) y lo devuelve.
-export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', facing = 1 } = {}) {
+export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', facing = 1, view = 'front' } = {}) {
   const body = Object.create(BlockBody.prototype);
   Object.assign(body, {
     unit,
@@ -522,6 +529,7 @@ export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', 
     form: null,
     shape: null,
     pose,
+    view,
     action: null,
     facing,
     walkStep: 0,

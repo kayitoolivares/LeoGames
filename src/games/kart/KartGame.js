@@ -8,14 +8,15 @@ import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { hexToCss } from '../../ui/style.js';
 import { createStage, WIDTH, HEIGHT } from '../three/stage.js';
 import { Track } from '../three/track.js';
-import { INK_MS, Racer, RACER_RADIUS, NITRO_CHARGES, SHIELD_MS } from './Racer.js';
+import { INK_MS, Racer, RACER_RADIUS, NITRO_CHARGES, SHIELD_MS, THROW_POSE_MS } from './Racer.js';
 import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
 import { Arena, Battle, BATTLE_RACERS } from './battle.js';
 import { Coins } from './coins.js';
-import { DriverArt } from './drivers.js';
+import { Particles } from './particles.js';
+import { DriverArt, driverView } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
 import { kartPicks, randomSetup } from './karts.js';
@@ -46,6 +47,11 @@ const LAP_CHOICES = [1, 2, 3];
 // Arranque turbo: acelerar cuando sale el "1" de la cuenta regresiva (ni antes ni después).
 const START_WINDOW_MS = [COUNTDOWN_STEP_MS * 2.1, COUNTDOWN_STEP_MS * 3];
 const START_BOOST = { factor: 1.55, ms: 1200 };
+// Efectos: estrellitas al pegarle a alguien, brillitos de colores al agarrar una cajita y dorados con las monedas.
+const HIT_COLORS = [0xffd84d, 0xffffff, 0xff9a3c];
+const BOX_COLORS = [0xff5a5f, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
+const COIN_COLORS = [0xffd84d, 0xfff3b0];
+const SPARK_COLORS = [0xffe14d, 0xffffff];
 // Cada cuánto puede volver a decir "¡Vas en primero!".
 const FIRST_PLACE_SAY_MS = 6000;
 // El paisaje de fondo: un cilindro gigante alrededor de todo con el dibujo repetido (en espejo) varias veces.
@@ -301,6 +307,8 @@ export class KartGame {
     this.features = new TrackFeatures(this.scene, this.track, { pads: look.pads, ramps: look.ramps });
     this.coins = new Coins(this.scene, this.track);
     this.boxes = new ItemBoxes(this.scene, this.track);
+    this.particles = new Particles(this.scene);
+    this.dustColor = look.dust ?? 0xb59a6a;
     this.projectiles = new Projectiles(this.scene);
     this.createRacers();
     this.createViews();
@@ -333,6 +341,7 @@ export class KartGame {
     if (!this.addPanorama('arena')) this.addMountains(0x8a86b8);
     this.boxes = new ItemBoxes(this.scene, this.track, this.track.boxSpots);
     this.projectiles = new Projectiles(this.scene);
+    this.particles = new Particles(this.scene);
     this.createRacers(BATTLE_RACERS);
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views);
@@ -527,6 +536,7 @@ export class KartGame {
 
     for (const racer of this.racers) racer.render(now);
     this.battle?.render();
+    this.particles?.update(dtMs);
     this.updateCameras(dtMs / 1000);
     this.updatePanels(now);
     this.render();
@@ -577,6 +587,7 @@ export class KartGame {
       // Pequeña ayuda a los jugadores que van atrás, para que la carrera sea pareja.
       const topFactor = racer.isCpu ? 1 : 1 + this.level.help * ranking.indexOf(racer);
       racer.update(dtMs, input, offroad, topFactor);
+      if (offroad) this.kickDust(racer);
       if (input.useItem) this.useItem(racer, ranking);
       if (input.change) racer.driver.changeNumber(input.change);
       this.keepInside(racer);
@@ -588,6 +599,7 @@ export class KartGame {
     });
     this.coins.update(dtMs, now, this.racers, (racer) => {
       if (!racer.isCpu) sfx.coin();
+      this.particles.burst('spark', racer.x, 1.4, racer.z, 6, COIN_COLORS, { speed: 4, up: 5, lifeMs: 450 });
     });
     this.announceFirstPlace(ranking);
     for (const racer of this.racers) {
@@ -676,7 +688,24 @@ export class KartGame {
     return chased || Math.random() < 0.003;
   }
 
+  // Polvito detrás del kart cuando va por el pasto (la arena, la nieve...).
+  kickDust(racer) {
+    if (racer.y > 0.1 || Math.abs(racer.speed) < 12 || Math.random() > 0.6) return;
+    const back = -1.6;
+    const side = (Math.random() - 0.5) * 2;
+    const x = racer.x + Math.sin(racer.heading) * back + Math.cos(racer.heading) * side;
+    const z = racer.z + Math.cos(racer.heading) * back - Math.sin(racer.heading) * side;
+    this.particles.emit('dust', x, 0.4, z, (Math.random() - 0.5) * 2, 1.5 + Math.random(), (Math.random() - 0.5) * 2, this.dustColor, 700);
+  }
+
+  // Chispas donde roza las llantas de la orilla.
+  scrape(racer, nx, nz) {
+    if (Math.abs(racer.speed) < 8 || Math.random() > 0.5) return;
+    this.particles.emit('spark', racer.x + nx * 1.7, 0.6, racer.z + nz * 1.7, nx * 3 + (Math.random() - 0.5) * 4, 3 + Math.random() * 3, nz * 3 + (Math.random() - 0.5) * 4, SPARK_COLORS[Math.floor(Math.random() * 2)], 350);
+  }
+
   giveItem(racer) {
+    this.particles.burst('spark', racer.x, 1.6, racer.z, 8, BOX_COLORS, { speed: 5, up: 5, lifeMs: 500 });
     if (racer.item || racer.rollMs > 0) return;
     const ranking = this.ranking();
     // En la batalla no hay primero ni último: todos reciben poderes de los de en medio.
@@ -694,6 +723,7 @@ export class KartGame {
     const item = racer.item;
     racer.itemUses -= 1;
     if (racer.itemUses <= 0) racer.item = null;
+    racer.throwMs = THROW_POSE_MS;
     if (item === 'rocket') this.projectiles.addRocket(racer, ranking[ranking.indexOf(racer) - 1] ?? null);
     else if (item === 'banana' || item === 'banana3') this.projectiles.addBanana(racer);
     else if (item === 'turbo') racer.boost(1.7, 2000);
@@ -732,6 +762,7 @@ export class KartGame {
 
   onProjectileHit(victim, projectile) {
     const hurt = victim.hit();
+    if (hurt) this.particles.burst('spark', victim.x, 1.5, victim.z, 14, HIT_COLORS);
     if (hurt && (!victim.isCpu || !projectile.owner.isCpu)) sfx.hit(projectile.kind === 'comet' ? 1 : 0.7);
     if (!victim.isCpu) victim.say(hurt ? '¡Te dieron! 💫' : '¡La burbuja te salvó!');
     if (hurt && projectile.owner !== victim && !projectile.owner.isCpu) {
@@ -750,6 +781,7 @@ export class KartGame {
     racer.x -= normal.x * push;
     racer.z -= normal.z * push;
     racer.speed *= 0.94;
+    this.scrape(racer, normal.x * Math.sign(lateral), normal.z * Math.sign(lateral));
   }
 
   // Avance en la pista y conteo de vueltas: una vuelta cuenta al cruzar la meta
@@ -1000,6 +1032,8 @@ export class KartGame {
       // Alto del letrero: en el mapa, en unidades del mundo; en las cámaras de atrás, unos 28 px en pantalla.
       const labelHeight = isMap ? 9 : (LABEL_PX / view.h) * 2 * Math.tan(THREE.MathUtils.degToRad(view.camera.fov / 2));
       for (const racer of this.racers) {
+        // El piloto, visto desde esta cámara (de espaldas, de lado, de frente...).
+        if (!isMap) racer.driver.show(driverView(racer, view.camera));
         // Nadie ve su propio letrero encima de su carro.
         racer.labelSprite.visible = racer !== view.racer;
         racer.labelSprite.scale.set(labelHeight * 2, labelHeight, 1);

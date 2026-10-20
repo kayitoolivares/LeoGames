@@ -7,8 +7,10 @@ export const ITEM_ART = { hammer: 'martillo', bomb: 'bomba', heart: 'corazon', s
 // La caminata son 4 cuadros (caminar1 a caminar4) que se repiten mientras el personaje camina.
 export const WALK_FRAMES = 4;
 const WALK_POSES = Array.from({ length: WALK_FRAMES }, (_, i) => `caminar${i + 1}`);
-// Las poses que usan todos los juegos; las demás (patada, cubrirse...) solo el Duelo, que las pide con `allPoses`.
+// Las poses que usan todos los juegos; las de pelea (patada, cubrirse...) solo el Duelo, que las pide con `allPoses`.
+// (Las de manejar un kart, atras/giro/lado/frente, las carga el juego de karts por su cuenta.)
 const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor', ...WALK_POSES];
+const DUEL_POSES = ['patada', 'cubrirse', 'especial', 'gana'];
 
 // Se llama en preload(): pone en la fila de carga lo que todavía no esté cargado.
 export function loadSmashArt(scene, { allPoses = false } = {}) {
@@ -17,7 +19,7 @@ export function loadSmashArt(scene, { allPoses = false } = {}) {
   };
   for (const [character, poses] of Object.entries(manifest.characters)) {
     for (const pose of poses) {
-      if (allPoses || BASIC_POSES.includes(pose)) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
+      if (BASIC_POSES.includes(pose) || (allPoses && DUEL_POSES.includes(pose))) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
     }
   }
   for (const item of manifest.items) queue(`smash:objeto-${item}`, `${BASE}objetos/${item}.png`);
