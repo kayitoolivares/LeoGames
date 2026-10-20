@@ -58,6 +58,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   transformarte en súper—),
   si hay objetos, cuántos CPUs y su nivel (fácil, normal, difícil). Con un solo jugador siempre hay al menos un CPU.
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
+  Antes de correr, en el **taller** cada quien escoge piloto (los personajes de Bolitas Bros, con su imagen
+  manejando; Bloquecito cambia de número con Y), kart (**Clásico**, **Bólido** rápido, **Mini** que arranca y gira
+  bien, **Monstruo** pesado que casi no se frena en el pasto), color, llantas y adorno. Al final, podio con los 3
+  primeros (**A** = otra carrera, **X** = regresar al taller).
   **A / RT** = acelerar, **B / LT** = frenar y reversa, **stick** = girar, **RB** = nitro (3 cargas que se recargan),
   **X** = lanzar el poder de las cajitas "?" (🚀 cohete, 🍌 plátano, ⚡ súper turbo, 🛡️ burbuja).
   Pistas: **Pradera** y **Montaña nevada** (se desbloquea al ganar una carrera; tiene nieve cayendo, monos de nieve

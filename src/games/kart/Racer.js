@@ -1,13 +1,10 @@
 import * as THREE from 'three';
 import { buildKartLabel, buildKartModel } from '../three/kartModel.js';
+import { kartStats } from './karts.js';
 
-const MAX_SPEED = 40;
-const ACCEL = 24;
 const BRAKE = 50;
 const REVERSE_MAX = 12;
 const COAST = 10;
-const TURN_RATE = 2.4;
-const OFFROAD_FACTOR = 0.6;
 export const NITRO_CHARGES = 3;
 const NITRO_FACTOR = 1.45;
 const NITRO_MS = 1200;
@@ -20,15 +17,22 @@ const shieldGeometry = new THREE.SphereGeometry(2.7, 16, 12);
 
 // Un kart con manejo "desde atrás": el stick gira a la izquierda o derecha,
 // A / RT acelera, B / LT frena (y da reversa), RB usa nitro y X lanza el poder que traiga.
+// `setup` es lo que se escogió en el taller ({ character, type, color, wheels, extra }); `drivers`, un DriverArt.
+// `color` es el del jugador (su letrero); el kart va pintado del color que escogió.
 export class Racer {
-  constructor({ color, label, deviceId = null }) {
+  constructor({ color, label, deviceId = null, setup, drivers }) {
     this.color = color;
     this.label = label;
     this.deviceId = deviceId;
     this.isCpu = deviceId === null;
-    const { group, flame } = buildKartModel(color);
+    this.setup = setup;
+    this.stats = kartStats(setup.type);
+    const { group, flame, seat } = buildKartModel(setup.color, { type: setup.type, wheels: setup.wheels, extra: setup.extra, driver: true });
     this.object = group;
     this.flame = flame;
+    this.driver = drivers.createDriver(setup.character, deviceId);
+    this.driver.sprite.position.copy(seat).setY(seat.y - this.driver.sink);
+    this.object.add(this.driver.sprite);
     this.labelSprite = buildKartLabel(label, color);
     // Con la cámara detrás, el letrero mide lo mismo en pantalla esté cerca o lejos
     // (si no, un carro pegado a la cámara tapa media pantalla con su letrero).
@@ -117,21 +121,22 @@ export class Racer {
       this.boost(NITRO_FACTOR, NITRO_MS);
     }
 
-    const top = MAX_SPEED * topFactor * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? OFFROAD_FACTOR : 1);
+    const { maxSpeed, accel, turn } = this.stats;
+    const top = maxSpeed * topFactor * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? this.stats.offroad : 1);
     if (this.boostMs > 0) {
-      this.speed = approach(this.speed, top, ACCEL * 2 * dt);
+      this.speed = approach(this.speed, top, accel * 2 * dt);
     } else if (gas > 0.1) {
       const target = top * gas;
-      this.speed = approach(this.speed, target, (this.speed < target ? ACCEL : COAST) * dt);
+      this.speed = approach(this.speed, target, (this.speed < target ? accel : COAST) * dt);
     } else if (input.brake > 0.1 && !spinning) {
-      this.speed = this.speed > 0 ? Math.max(0, this.speed - BRAKE * dt) : Math.max(-REVERSE_MAX, this.speed - ACCEL * 0.6 * dt);
+      this.speed = this.speed > 0 ? Math.max(0, this.speed - BRAKE * dt) : Math.max(-REVERSE_MAX, this.speed - accel * 0.6 * dt);
     } else {
       this.speed = approach(this.speed, 0, COAST * dt);
     }
 
     // Parado no gira; en reversa el volante se invierte, como un carro de verdad.
     const grip = Math.min(1, Math.abs(this.speed) / 10) * (this.speed < 0 ? -1 : 1);
-    this.heading -= steer * TURN_RATE * grip * dt;
+    this.heading -= steer * turn * grip * dt;
     this.x += Math.sin(this.heading) * this.speed * dt;
     this.z += Math.cos(this.heading) * this.speed * dt;
   }

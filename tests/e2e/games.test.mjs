@@ -428,6 +428,12 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
   await p.context.close();
 });
 
+// En el taller de Karts locos los primeros `count` controles dan A (con lo que ya traían escogido).
+async function passGarage(p, count) {
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'garage', ms(30000), 'ver el taller');
+  for (let i = 0; i < count; i += 1) await p.tap(i, BUTTON.A);
+}
+
 // Bot de karts: cada jugador apunta a un punto de la pista más adelante, acelera y lanza lo que agarre.
 function startKartBot(page) {
   return page.evaluate(() => {
@@ -454,9 +460,19 @@ test('karts locos: dos bots dan una vuelta con cajitas y ven los resultados', { 
   const p = await openPage(game);
   await p.joinPlayers(2);
   await p.openGameCard('Karts locos');
-  await p.page.waitForFunction(() => Boolean(window.leogames.scene.getScene('Kart')?.game3d), null, { timeout: ms(30000) });
+  // En el taller el Jugador 1 escoge el kart Mini (↓ y dos veces ▶).
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'garage', ms(30000), 'ver el taller');
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await passGarage(p, 2);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase !== 'garage', ms(10000), 'salir del taller');
   // Sin calcomanías no hay pista que escoger: arranca en la Pradera.
   assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'pradera');
+  const racers = await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => [r.setup.type, r.setup.character]));
+  assert.equal(racers.length, 6);
+  assert.equal(racers[0][0], 'mini');
+  assert.ok(racers.every(([type, character]) => type && character), 'todos traen kart y piloto');
   await startKartBot(p.page);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans.every((r) => r.lap >= 1), ms(150000), 'completar una vuelta');
   assert.ok((await p.page.evaluate(() => window.__boxes)) > 0, 'nadie agarró cajitas');
@@ -478,6 +494,7 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));
   await p.joinPlayers(1);
   await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver las pistas');
   await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.A);

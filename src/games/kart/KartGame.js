@@ -11,8 +11,13 @@ import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
+import { DriverArt } from './drivers.js';
+import { Garage } from './garage.js';
+import { kartPicks, randomSetup } from './karts.js';
 import { Snowfall, addSnowmen } from './scenery.js';
 import { TRACKS, TRACK_KEYS } from './tracks.js';
+import { numberStep } from '../smash/bloquecito.js';
+import { CHARACTER_KEYS } from '../smash/characters.js';
 
 const LAPS = 3;
 const TOTAL_RACERS = 6;
@@ -40,6 +45,8 @@ const ROLL_ICONS = Object.values(ITEM_ICONS);
 
 // La última pista que se escogió, para que salga seleccionada la próxima vez.
 let lastTrack = 'pradera';
+// Al pedir "cambiar pista" en los resultados el juego se vuelve a abrir: esa vez no pasa por el taller.
+let skipGarage = false;
 
 // Cómo se reparte la pantalla: 1 jugador = completa, 2 = arriba/abajo,
 // 3 o 4 = cuatro cuadros (con 3, el cuarto muestra el mapa).
@@ -73,9 +80,33 @@ export class KartGame {
     this.scene = new THREE.Scene();
     this.deviceIds = players.sorted().map((player) => player.deviceId);
     for (const name of manifest.objetos) new Image().src = `kart/objetos/${name}.png`;
-
-    // Si ya se ganó otra pista se escoge; si no, directo a la de siempre.
+    this.drivers = new DriverArt();
     this.openTracks = TRACK_KEYS.filter((key) => rewards.unlocked(TRACKS[key].unlock));
+
+    // Primero el taller (cada quien escoge piloto y kart), luego la pista.
+    if (skipGarage) {
+      skipGarage = false;
+      this.afterGarage();
+    } else {
+      this.phase = 'garage';
+      this.garage = new Garage(this.view, this.drivers);
+    }
+  }
+
+  updateGarage(dtMs) {
+    const result = this.garage.update(dtMs);
+    if (result === 'exit' && !this.exited) {
+      this.exited = true;
+      this.onExit();
+    } else if (result === 'done') {
+      this.garage.destroy();
+      this.garage = null;
+      this.afterGarage();
+    }
+  }
+
+  // Si ya se ganó otra pista se escoge; si no, directo a la de siempre.
+  afterGarage() {
     if (this.openTracks.length > 1) this.showChooser();
     else this.build('pradera');
   }
@@ -152,15 +183,22 @@ export class KartGame {
     this.scene.add(mountains);
   }
 
+  // Los jugadores con lo que escogieron en el taller; la compu, con personajes y karts al azar.
   createRacers() {
     const humans = players.sorted();
     const taken = new Set(humans.map((player) => player.colorIndex));
     const cpuColors = PLAYER_COLORS.filter((_, i) => !taken.has(i));
-    this.racers = humans.map(
-      (player) => new Racer({ color: players.color(player).hex, label: `J${player.slot + 1}`, deviceId: player.deviceId }),
-    );
+    const drivers = this.drivers;
+    this.racers = humans.map((player, i) => {
+      const color = players.color(player).hex;
+      const setup = kartPicks.get(player.deviceId) ?? { character: CHARACTER_KEYS[i], type: 'clasico', color, wheels: 'normales', extra: 'aleron' };
+      return new Racer({ color, label: `J${player.slot + 1}`, deviceId: player.deviceId, setup, drivers });
+    });
+    const characters = new Set(this.racers.map((racer) => racer.setup.character));
     for (let i = 0; this.racers.length < TOTAL_RACERS; i += 1) {
-      this.racers.push(new Racer({ color: cpuColors[i % cpuColors.length].hex, label: 'CPU' }));
+      const setup = randomSetup(characters);
+      characters.add(setup.character);
+      this.racers.push(new Racer({ color: cpuColors[i % cpuColors.length].hex, label: 'CPU', setup, drivers }));
     }
     this.racers.forEach((racer, i) => {
       racer.lane = CPU_LANES[i];
@@ -224,6 +262,10 @@ export class KartGame {
     const now = performance.now();
     this.phaseMs += dtMs;
     this.updateExit(dtMs);
+    if (this.phase === 'garage') {
+      this.updateGarage(dtMs);
+      return;
+    }
     if (this.phase === 'choose') {
       this.updateChooser();
       return;
@@ -269,6 +311,7 @@ export class KartGame {
       const topFactor = racer.isCpu ? 1 : 1 + 0.03 * ranking.indexOf(racer);
       racer.update(dtMs, input, offroad, topFactor);
       if (input.useItem) this.useItem(racer, ranking);
+      if (input.change) racer.driver.changeNumber(input.change);
       this.keepInside(racer);
       this.updateProgress(racer);
       this.updateWrongWay(racer, dtMs);
@@ -290,6 +333,8 @@ export class KartGame {
       brake: controls.isDown(id, 'b') || controls.isDown(id, 'lt') ? 1 : 0,
       nitro: controls.justPressed(id, 'rb'),
       useItem: controls.justPressed(id, 'x'),
+      // Bloquecito cambia de número (Y sube, ↓ + Y baja).
+      change: numberStep(id),
     };
   }
 
@@ -415,11 +460,13 @@ export class KartGame {
         const dist = Math.hypot(dx, dz) || 0.01;
         const min = RACER_RADIUS * 2;
         if (dist >= min) continue;
-        const push = (min - dist) / 2;
-        a.x -= (dx / dist) * push;
-        a.z -= (dz / dist) * push;
-        b.x += (dx / dist) * push;
-        b.z += (dz / dist) * push;
+        // El más pesado empuja más (un Monstruo casi no se mueve si lo choca un Mini).
+        const overlap = min - dist;
+        const share = b.stats.weight / (a.stats.weight + b.stats.weight);
+        a.x -= (dx / dist) * overlap * share;
+        a.z -= (dz / dist) * overlap * share;
+        b.x += (dx / dist) * overlap * (1 - share);
+        b.z += (dz / dist) * overlap * (1 - share);
         a.speed *= 0.97;
         b.speed *= 0.97;
       }
@@ -437,16 +484,29 @@ export class KartGame {
     this.hud.setCenter('');
     const ranking = this.ranking();
     this.hud.showResults(
-      ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color) })),
+      ranking.map((racer) => ({
+        label: racer.label,
+        color: hexToCss(racer.color),
+        name: racer.driver.name,
+        image: racer.driver.imageUrl,
+      })),
       this.openTracks.length > 1,
     );
-    say(`¡Ganó ${ranking[0].label}!`);
+    say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
   }
 
+  // A = otra carrera, B = cambiar pista (si hay más de una), X = regresar al taller.
   updateResults() {
     if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
-    if (this.humans.some((racer) => controls.justPressed(racer.deviceId, 'a'))) this.startRace();
-    else if (this.openTracks.length > 1 && this.humans.some((racer) => controls.justPressed(racer.deviceId, 'b'))) this.onRestart?.();
+    const pressed = (button) => this.humans.some((racer) => controls.justPressed(racer.deviceId, button));
+    if (pressed('a')) {
+      this.startRace();
+    } else if (this.openTracks.length > 1 && pressed('b')) {
+      skipGarage = true;
+      this.onRestart?.();
+    } else if (pressed('x')) {
+      this.onRestart?.();
+    }
   }
 
   updatePanels(now) {
@@ -519,7 +579,7 @@ export class KartGame {
   updateExit(dtMs) {
     const holding = this.deviceIds.some((id) => controls.holdingExit(id));
     this.exitMs = holding ? this.exitMs + dtMs : 0;
-    (this.hud ?? this.chooser)?.setExitProgress(Math.min(1, this.exitMs / EXIT_HOLD_MS));
+    (this.hud ?? this.chooser ?? this.garage)?.setExitProgress(Math.min(1, this.exitMs / EXIT_HOLD_MS));
     if (this.exitMs >= EXIT_HOLD_MS && !this.exited) {
       this.exited = true;
       this.onExit();
@@ -530,6 +590,9 @@ export class KartGame {
     this.projectiles?.dispose();
     this.hud?.destroy();
     this.chooser?.destroy();
+    this.garage?.destroy();
+    for (const racer of this.racers ?? []) racer.driver.dispose();
+    this.drivers.dispose();
     this.view.destroy(this.scene);
   }
 }

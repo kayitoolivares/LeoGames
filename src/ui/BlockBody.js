@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { frameDelta } from '../shared/clock.js';
 import { NUMBERS, OCTO, RAINBOW } from '../games/smash/bloquecito.js';
+import { CanvasGraphics } from './CanvasGraphics.js';
 import { COLORS, textStyle } from './style.js';
 
 // Medidas en bloques (1 = el lado de un bloque, `unit` px).
@@ -507,6 +508,58 @@ export class BlockBody extends Phaser.GameObjects.Container {
       g.fillTriangle(cx - width * w, 0, cx + width * w, 0, cx, u * h * flicker);
     }
   }
+}
+
+// Dibuja a Bloquecito en un <canvas> (para los juegos 3D, que no usan Phaser): el mismo dibujo de BlockBody,
+// con un pincel de canvas que entiende las órdenes de Phaser.Graphics. Ajusta el tamaño del canvas a la figura
+// (con los pies abajo al centro) y lo devuelve.
+export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', facing = 1 } = {}) {
+  const body = Object.create(BlockBody.prototype);
+  Object.assign(body, {
+    unit,
+    discR: Math.max(11, unit * 0.32),
+    blocks: [],
+    form: null,
+    shape: null,
+    pose,
+    action: null,
+    facing,
+    walkStep: 0,
+    // (con el reloj en 0 saldría parpadeando)
+    clock: BLINK_MS * 2,
+    flashMs: 0,
+    tint: null,
+    rollAngle: 0,
+    discText: { setText() {} },
+    disc: { setVisible() {}, setPosition(x, y) { Object.assign(this, { x, y }); } },
+  });
+  body.setForm(form, { animate: false });
+  const margin = unit * 1.3;
+  const top = body.target.height + body.discR * 2 + unit * 0.4;
+  canvas.width = Math.ceil(body.target.width + margin * 2);
+  canvas.height = Math.ceil(top + unit * 0.15);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width / 2, canvas.height - unit * 0.1);
+  body.g = new CanvasGraphics(ctx);
+  body.draw();
+  // El número de arriba.
+  const { x, y } = body.disc;
+  ctx.beginPath();
+  ctx.arc(x, y, body.discR, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fill();
+  ctx.lineWidth = Math.max(2, unit * 0.07);
+  ctx.strokeStyle = '#1b1530';
+  ctx.stroke();
+  ctx.fillStyle = '#1b1530';
+  ctx.font = `bold ${Math.round(body.discR * 1.3)}px "Segoe UI", Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(form === OCTO ? '8' : String(form), x, y + 1);
+  ctx.restore();
+  return canvas;
 }
 
 // Dónde va cada bloque (su centro, en px, con los pies en 0, 0), su tamaño y su color.

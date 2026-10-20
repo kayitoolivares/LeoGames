@@ -29,10 +29,22 @@ const CSS = `
   justify-content: center; gap: 10px; background: rgba(20, 17, 43, 0.75); }
 .kart-results[hidden] { display: none; }
 .kart-results h1 { margin: 0 0 10px; font-size: 64px; color: #ffc93c; }
-.kart-results .row { display: flex; align-items: center; gap: 14px; font-size: 30px; font-weight: 700;
-  background: rgba(27, 21, 48, 0.6); padding: 6px 28px; border-radius: 14px; min-width: 340px; }
-.kart-results .dot { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 3px #1b1530; }
-.kart-results p { margin-top: 16px; font-size: 22px; }
+.kart-results .podium { display: flex; align-items: flex-end; gap: 16px; }
+.kart-results .place { display: flex; flex-direction: column; align-items: center; width: 220px; }
+.kart-results .place img { height: 150px; max-width: 200px; object-fit: contain; filter: drop-shadow(0 4px 0 #1b1530); }
+.kart-results .place.p1 img { height: 180px; animation: kart-hop 0.6s ease-in-out infinite alternate; }
+@keyframes kart-hop { from { transform: translateY(0); } to { transform: translateY(-16px); } }
+.kart-results .place .who { margin: 6px 0; font-size: 22px; font-weight: 700; text-align: center; }
+.kart-results .step { width: 100%; display: flex; align-items: flex-start; justify-content: center; padding-top: 6px;
+  font-size: 54px; font-weight: 800; color: #1b1530; text-shadow: none; border-radius: 14px 14px 0 0; box-sizing: border-box; }
+.kart-results .p1 .step { height: 150px; background: #ffc93c; }
+.kart-results .p2 .step { height: 110px; background: #d6dcea; }
+.kart-results .p3 .step { height: 80px; background: #e0975a; }
+.kart-results .rest { display: flex; gap: 12px; margin-top: 4px; }
+.kart-results .row { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700;
+  background: rgba(27, 21, 48, 0.7); padding: 6px 16px; border-radius: 12px; }
+.kart-results .dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 3px #1b1530; }
+.kart-results p { margin-top: 12px; font-size: 22px; }
 .kart-help { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 17px;
   transition: opacity 0.6s; }
 .kart-help.hidden { opacity: 0; }
@@ -40,7 +52,6 @@ const CSS = `
 .kart-exit > div { height: 100%; width: 0; background: #fff; border-radius: 3px; }
 `;
 
-const MEDALS = ['🥇', '🥈', '🥉'];
 
 export class KartHud {
   // `views`: [{ x, y, w, h, scale, kind: 'player' | 'map' }] en pixeles del escenario de 1280x720.
@@ -72,7 +83,7 @@ export class KartHud {
     this.el.insertAdjacentHTML(
       'beforeend',
       `<div class="kart-center"></div><div class="kart-results" hidden></div>
-       <div class="kart-help">A = acelerar  ·  B = frenar  ·  X = lanzar poder  ·  RB = nitro  ·  Mantén LB + RB + Y = salir</div>
+       <div class="kart-help">A = acelerar  ·  B = frenar  ·  X = lanzar poder  ·  RB = nitro  ·  Bloquecito: Y = número  ·  Mantén LB + RB + Y = salir</div>
        <div class="kart-exit"><div></div></div>`,
     );
     this.center = this.el.querySelector('.kart-center');
@@ -108,16 +119,23 @@ export class KartHud {
     if (this.exitBar.style.width !== width) this.exitBar.style.width = width;
   }
 
-  // `canChoose`: hay más de una pista abierta, así que B regresa a escogerla.
+  // Podio con los 3 primeros (su personaje arriba de su escalón) y los demás abajo.
+  // `rows`: [{ label, color, name, image }] en orden de llegada. `canChoose`: hay más de una pista, B la cambia.
   showResults(rows, canChoose = false) {
-    const list = rows
-      .map(
-        (row, i) => `<div class="row"><span>${MEDALS[i] ?? `${i + 1}°`}</span>
-          <span class="dot" style="background:${row.color}"></span><span>${row.label}</span></div>`,
-      )
+    const who = (row) => `<span style="color:${row.color}">${row.label}</span> · ${row.name}`;
+    const place = (row, n) =>
+      row
+        ? `<div class="place p${n}">${row.image ? `<img src="${row.image}" alt="">` : ''}<div class="who">${who(row)}</div>
+            <div class="step">${n}</div></div>`
+        : '';
+    const podium = [place(rows[1], 2), place(rows[0], 1), place(rows[2], 3)].join('');
+    const rest = rows
+      .slice(3)
+      .map((row, i) => `<div class="row"><span>${i + 4}°</span><span class="dot" style="background:${row.color}"></span>${who(row)}</div>`)
       .join('');
     const choose = canChoose ? '  ·  B = cambiar pista' : '';
-    this.results.innerHTML = `<h1>¡Llegaron!</h1>${list}<p>A = otra carrera${choose}  ·  Mantén LB + RB + Y = salir</p>`;
+    this.results.innerHTML = `<h1>¡Llegaron!</h1><div class="podium">${podium}</div><div class="rest">${rest}</div>
+      <p>A = otra carrera${choose}  ·  X = taller  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 

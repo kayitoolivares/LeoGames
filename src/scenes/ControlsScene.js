@@ -102,8 +102,10 @@ const PAGES = [
       [['b'], 'Frenar y reversa (en el control también LT)'],
       [['rb'], 'Nitro'],
       [['x'], 'Lanzar el poder de la cajita "?"'],
+      [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
+    note: 'Antes de correr, en el taller: ↑ ↓ qué cambiar, ◀ ▶ cambiarlo (piloto, kart, color, llantas y adorno).',
   },
   {
     title: 'Carreras',
