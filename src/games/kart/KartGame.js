@@ -52,6 +52,10 @@ const HIT_COLORS = [0xffd84d, 0xffffff, 0xff9a3c];
 const BOX_COLORS = [0xff5a5f, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
 const COIN_COLORS = [0xffd84d, 0xfff3b0];
 const SPARK_COLORS = [0xffe14d, 0xffffff];
+// Modo peque: sin mover el stick el kart sigue solo la pista; moviéndolo, cuánto cuenta lo que pide el niño.
+const PEQUE_DEADZONE = 0.15;
+const PEQUE_MIX = 0.55;
+const PEQUE_TURN_AROUND_MS = 1200;
 // Cada cuánto puede volver a decir "¡Vas en primero!".
 const FIRST_PLACE_SAY_MS = 6000;
 // El paisaje de fondo: un cilindro gigante alrededor de todo con el dibujo repetido (en espejo) varias veces.
@@ -617,10 +621,13 @@ export class KartGame {
 
   humanInput(racer) {
     const id = racer.deviceId;
+    const brake = controls.isDown(id, 'b') || controls.isDown(id, 'lt') ? 1 : 0;
+    const peque = racer.setup.peque;
     return {
-      steer: controls.getStick(id).x,
-      gas: controls.isDown(id, 'a') || controls.isDown(id, 'rt') ? 1 : 0,
-      brake: controls.isDown(id, 'b') || controls.isDown(id, 'lt') ? 1 : 0,
+      steer: peque ? this.helpSteer(racer, controls.getStick(id).x) : controls.getStick(id).x,
+      // Modo peque: acelera solo (con B frena).
+      gas: (peque && !brake) || controls.isDown(id, 'a') || controls.isDown(id, 'rt') ? 1 : 0,
+      brake,
       nitro: controls.justPressed(id, 'rb'),
       useItem: controls.justPressed(id, 'x'),
       // LB: derrapar (mantener en la curva) y truco (apretarlo en el aire).
@@ -629,6 +636,17 @@ export class KartGame {
       // Bloquecito cambia de número (Y sube, ↓ + Y baja).
       change: numberStep(id),
     };
+  }
+
+  // Modo peque: el volante ayuda. Sin tocar el stick, el kart sigue la pista solo; tocándolo, se mezcla lo que
+  // pide el niño con lo que haría falta para no salirse. (En la arena de la batalla no hay pista que seguir.)
+  helpSteer(racer, stick) {
+    if (this.battle) return stick;
+    const target = this.track.pointAt(racer.index + CPU_LOOKAHEAD, 0);
+    const diff = angleDiff(Math.atan2(target.x - racer.x, target.z - racer.z), racer.heading);
+    const auto = clamp(-diff * 2.5, -1, 1);
+    if (Math.abs(stick) < PEQUE_DEADZONE) return auto;
+    return clamp(stick * PEQUE_MIX + auto * (1 - PEQUE_MIX), -1, 1);
   }
 
   // La CPU apunta a un punto un poco más adelante sobre su carril y usa sus poderes con sentido.
@@ -832,8 +850,15 @@ export class KartGame {
 
   updateWrongWay(racer, dtMs) {
     const t = this.track.tangents[racer.index];
-    const wrong = racer.speed > 4 && Math.abs(angleDiff(racer.heading, Math.atan2(t.x, t.z))) > 2.1;
+    const along = Math.atan2(t.x, t.z);
+    const wrong = racer.speed > 4 && Math.abs(angleDiff(racer.heading, along)) > 2.1;
     racer.wrongWayMs = wrong ? racer.wrongWayMs + dtMs : 0;
+    // Modo peque: si se voltea al revés, se le endereza solo.
+    if (racer.setup.peque && racer.wrongWayMs > PEQUE_TURN_AROUND_MS) {
+      racer.heading = along;
+      racer.wrongWayMs = 0;
+      racer.say('¡Por acá! ➡️', 1200);
+    }
   }
 
   separateRacers() {
@@ -970,7 +995,7 @@ export class KartGame {
       const battle = this.battle?.panel(racer);
       this.hud.setPanel(i, {
         pos: battle?.pos ?? `${ranking.indexOf(racer) + 1}°`,
-        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>`,
+        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>${racer.setup.peque ? ' 🐣' : ''}`,
         lap: battle?.lap ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
         coins: this.battle ? '' : `🪙 ${racer.coins}`,
         item,

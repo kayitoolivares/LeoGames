@@ -189,10 +189,13 @@ export class Racer {
       this.shieldMs = 0;
       return false;
     }
-    this.spinMs = SPIN_MS;
+    // En modo peque el golpe dura menos y tira menos monedas.
+    const peque = this.setup.peque;
+    this.spinMs = SPIN_MS * (peque ? 0.6 : 1);
+    this.spinTotal = this.spinMs;
     this.speed *= 0.3;
     this.boostMs = 0;
-    this.coins = Math.max(0, this.coins - COINS_LOST);
+    this.coins = Math.max(0, this.coins - (peque ? 1 : COINS_LOST));
     if (this.drifting) this.endDrift(true);
     return true;
   }
@@ -304,7 +307,7 @@ export class Racer {
   }
 
   render(timeMs) {
-    const spin = this.spinMs > 0 ? (1 - this.spinMs / SPIN_MS) * Math.PI * 4 : 0;
+    const spin = this.spinMs > 0 ? (1 - this.spinMs / (this.spinTotal ?? SPIN_MS)) * Math.PI * 4 : 0;
     this.object.position.set(this.x, this.y, this.z);
     // Encogido por el rayo: se hace chiquito poco a poco (y vuelve a crecer igual).
     this.size += ((this.shrinkMs > 0 ? SHRINK_SCALE : 1) - this.size) * 0.15;

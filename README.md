@@ -65,7 +65,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   tonos y contorno negro) y cada uno se dibuja de una sola pasada, para que el Xbox no se trabe.
   El piloto se ve de espaldas, girando en las curvas, de lado o de frente según de dónde lo veas (dibujos de
   Gemini: <personaje>-atras|giro|lado|frente); le duele cuando le pegan, salta en el truco y festeja en la meta.
-  Polvito al salirse del camino, chispas al rozar las llantas y estrellitas al pegarle a alguien. Al final, podio con los 3
+  Polvito al salirse del camino, chispas al rozar las llantas y estrellitas al pegarle a alguien.
+  **Modo peque** (Y en el taller, por jugador): el kart acelera solo, el volante le ayuda a seguir la pista (sin tocar
+  el stick va solo), si se voltea al revés se endereza solo y los golpes duran menos. Al final, podio con los 3
   primeros (**A** = otra carrera, **X** = regresar al taller). Después del taller se escoge el modo: **Carrera** (una
   pista) o **Gran Premio** (copas de 3 pistas seguidas con puntos: 10, 8, 6, 4, 2 y 1; la compu trae el mismo kart en
   toda la copa y el que junta más gana el trofeo). **Copa Hoja**: Pradera, Playa y Dulcelandia. **Copa Estrella**

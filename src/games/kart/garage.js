@@ -11,8 +11,8 @@ import { buildKartModel, disposeKartModel } from '../three/kartModel.js';
 import { driverView } from './drivers.js';
 import { DECALS, DECAL_KEYS, EXTRAS, EXTRA_KEYS, KART_TYPES, KART_TYPE_KEYS, PAINTS, WHEELS, WHEEL_KEYS, decalTexture, kartPicks } from './karts.js';
 
-// El taller de Karts locos: cada jugador escoge su piloto, su kart, el color, las llantas y un adorno,
-// y lo ve en 3D dando vueltas. ↑ ↓ = qué cambiar, ◀ ▶ = cambiarlo, A = ¡listo!, B = ya no estoy listo
+// El taller de Karts locos: cada jugador escoge su piloto, su kart, el color, las llantas, un adorno y una calcomanía,
+// y lo ve en 3D dando vueltas. ↑ ↓ = qué cambiar, ◀ ▶ = cambiarlo, Y = modo peque, A = ¡listo!, B = ya no estoy listo
 // (si no estaba listo, el Jugador 1 regresa al menú). Cuando todos están listos, update() devuelve 'done'.
 const STYLE_ID = 'kart-garage-style';
 const CARD_W = 290;
@@ -70,7 +70,7 @@ export class Garage {
     this.el = document.createElement('div');
     this.el.className = 'kart-garage';
     this.el.innerHTML = `<h1>🔧 Taller</h1>
-      <p>↑ ↓ qué cambiar  ·  ◀ ▶ cambiarlo  ·  A = ¡listo!  ·  B = regresar</p><div class="exit"><div></div></div>`;
+      <p>↑ ↓ qué cambiar  ·  ◀ ▶ cambiarlo  ·  Y = modo peque 🐣  ·  A = ¡listo!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     view.stage.append(this.el);
     this.exitBar = this.el.querySelector('.exit > div');
 
@@ -197,7 +197,8 @@ export class Garage {
     card.stats.innerHTML = Object.entries(KART_TYPES[setup.type].stats)
       .map(([name, value]) => `<span>${name}</span><span>${'●'.repeat(value)}${'○'.repeat(3 - value)}</span>`)
       .join('');
-    card.status.textContent = card.ready ? '¡Listo!' : 'A = listo';
+    // Modo peque: el kart acelera solo y el volante le ayuda (para los más chiquitos).
+    card.status.textContent = `${card.setup.peque ? '🐣 Peque · ' : ''}${card.ready ? '¡Listo!' : 'A = listo'}`;
     card.el.classList.toggle('ready', card.ready);
   }
 
@@ -247,6 +248,12 @@ export class Garage {
       if (row === 'character') say(CHARACTERS[next].name);
       else if (row === 'type') say(KART_TYPES[next].name);
       this.rebuild(card, row === 'character');
+      this.refresh(card);
+    }
+    if (controls.justPressed(id, 'y')) {
+      card.setup = { ...card.setup, peque: !card.setup.peque };
+      sfx.select();
+      say(card.setup.peque ? 'Modo peque: el kart acelera solo' : 'Sin modo peque');
       this.refresh(card);
     }
     if (controls.justPressed(id, 'a')) {

@@ -689,6 +689,30 @@ test('karts locos: vueltas, arranque turbo y monedas', { timeout: ms(120000) }, 
   await p.context.close();
 });
 
+// Modo peque (Y en el taller): sin tocar nada, el kart acelera solo y sigue la pista.
+test('karts locos: modo peque acelera solo y sigue la pista', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'garage', ms(30000), 'ver el taller');
+  await p.tap(0, BUTTON.Y);
+  await passGarage(p, 1);
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'empezar la carrera');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.humans[0].setup.peque), 'modo peque prendido');
+  const start = await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.humans[0].progress);
+  await p.page.waitForFunction((s0) => window.leogames.scene.getScene('Kart').game3d.humans[0].progress > s0 + 0.15, start, { timeout: ms(30000) });
+  const kart = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const r = k.humans[0];
+    return { lateral: Math.abs(k.track.lateral(r.x, r.z, r.index)), half: k.track.roadWidth / 2 };
+  });
+  assert.ok(kart.lateral < kart.half + 2, 'sigue en el camino');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 // Batalla de globos: un cohete revienta un globo; sin globos quedas fuera; gana el último con globos.
 test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);
