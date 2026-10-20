@@ -67,9 +67,9 @@ export class ItemBoxes {
     const places = spots ?? BOX_ROWS.flatMap((row) => BOX_LANES.map((lane) => track.pointAt(Math.round(row * track.count), lane)));
     for (const spot of places) {
       const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(spot.x, 1.6, spot.z);
+      mesh.position.set(spot.x, (spot.y ?? 0) + 1.6, spot.z);
       scene.add(mesh);
-      this.boxes.push({ x: spot.x, z: spot.z, mesh, respawnMs: 0, phase: Math.random() * 6 });
+      this.boxes.push({ x: spot.x, y: spot.y ?? 0, z: spot.z, mesh, respawnMs: 0, phase: Math.random() * 6 });
     }
   }
 
@@ -82,7 +82,7 @@ export class ItemBoxes {
       }
       box.mesh.rotation.y = timeMs / 600 + box.phase;
       box.mesh.rotation.x = 0.4;
-      box.mesh.position.y = 1.6 + Math.sin(timeMs / 300 + box.phase) * 0.3;
+      box.mesh.position.y = box.y + 1.6 + Math.sin(timeMs / 300 + box.phase) * 0.3;
       const taker = racers.find((r) => Math.hypot(r.x - box.x, r.z - box.z) < RACER_RADIUS + 1.2);
       if (!taker) continue;
       box.respawnMs = BOX_RESPAWN_MS;
@@ -174,6 +174,7 @@ export class Projectiles {
       x: owner.x - Math.sin(owner.heading) * 3.5,
       z: owner.z - Math.cos(owner.heading) * 3.5,
       heading: owner.heading,
+      index: owner.index,
       ageMs: 0,
     });
   }
@@ -210,7 +211,8 @@ export class Projectiles {
         return this.remove(p);
       }
 
-      p.mesh.position.set(p.x, p.kind === 'rocket' ? 1 : 0.35, p.z);
+      // (Sobre el camino, que puede ir de subida o de bajada.)
+      p.mesh.position.set(p.x, track.roadHeight(p.x, p.z, p.index) + (p.kind === 'rocket' ? 1 : 0.35), p.z);
       p.mesh.rotation.y = p.heading;
       return true;
     });
@@ -232,7 +234,7 @@ export class Projectiles {
       for (const r of racers) if (r !== p.owner && !teammate(r) && Math.hypot(r.x - p.x, r.z - p.z) < COMET_BLAST) onHit(r, p);
       return this.remove(p);
     }
-    p.mesh.position.set(p.x, COMET_HEIGHT + Math.sin(p.ageMs / 90) * 0.2, p.z);
+    p.mesh.position.set(p.x, track.roadHeight(p.x, p.z, p.index) + COMET_HEIGHT + Math.sin(p.ageMs / 90) * 0.2, p.z);
     p.mesh.rotation.y = p.heading;
     return true;
   }

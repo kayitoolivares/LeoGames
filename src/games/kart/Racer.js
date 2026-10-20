@@ -26,6 +26,8 @@ const GRAVITY = 28;
 const AIR_STEER = 0.4;
 const TRICK_BOOST = { factor: 1.3, ms: 800 };
 const TRICK_SPIN_MS = 420;
+// En las bajadas el kart se queda pegado al camino si la diferencia es poca (si no, iría "volando" todo el tiempo).
+const STICK = 0.6;
 // El rayo encoge: más chiquito y más lento un rato. La tinta mancha la pantalla.
 export const SHRINK_MS = 6000;
 const SHRINK_SCALE = 0.55;
@@ -135,6 +137,10 @@ export class Racer {
     this.y = 0;
     this.vy = 0;
     this.floor = 0;
+    this.flying = false;
+    this.ramp = 0;
+    // Qué tan inclinado va (subiendo o bajando una loma).
+    this.pitch = 0;
     this.onPad = false;
     this.drifting = false;
     this.driftDir = 0;
@@ -155,7 +161,7 @@ export class Racer {
   }
 
   get airborne() {
-    return this.y > this.floor + 0.05 || this.vy > 0;
+    return this.flying || this.y > this.floor + STICK;
   }
 
   // Nivel de las chispas del derrape: 0 (todavía nada) a 3 (moradas).
@@ -167,6 +173,7 @@ export class Racer {
   launch(vy) {
     if (this.drifting) this.endDrift(false);
     this.vy = vy;
+    this.flying = true;
     this.trick = false;
     this.events.push('jump');
   }
@@ -293,6 +300,7 @@ export class Racer {
       if (this.y <= this.floor) {
         this.y = this.floor;
         this.vy = 0;
+        this.flying = false;
         if (this.trick) this.boost(TRICK_BOOST.factor, TRICK_BOOST.ms);
         this.trick = false;
         this.events.push('land');
@@ -317,6 +325,9 @@ export class Racer {
   render(timeMs) {
     const spin = this.spinMs > 0 ? (1 - this.spinMs / (this.spinTotal ?? SPIN_MS)) * Math.PI * 4 : 0;
     this.object.position.set(this.x, this.y, this.z);
+    // Subiendo, la trompa va hacia arriba; bajando, hacia abajo.
+    this.object.rotation.order = 'YXZ';
+    this.object.rotation.x = -this.pitch;
     // Encogido por el rayo: se hace chiquito poco a poco (y vuelve a crecer igual).
     this.size += ((this.shrinkMs > 0 ? SHRINK_SCALE : 1) - this.size) * 0.15;
     this.object.scale.setScalar(this.size);

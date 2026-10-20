@@ -19,7 +19,7 @@ export class Coins {
       const start = Math.round(row * track.count);
       for (let i = 0; i < PER_ROW; i += 1) {
         const spot = track.pointAt(start + i * GAP, LANES[k]);
-        this.coins.push({ x: spot.x, z: spot.z, respawnMs: 0 });
+        this.coins.push({ x: spot.x, y: spot.y, z: spot.z, respawnMs: 0 });
       }
     });
     // Todas en una sola pasada (InstancedMesh): ligero para el Xbox.
@@ -45,7 +45,7 @@ export class Coins {
           onCollect(taker);
         }
       }
-      this.dummy.position.set(coin.x, HEIGHT + Math.sin(timeMs / 250 + i) * 0.15, coin.z);
+      this.dummy.position.set(coin.x, coin.y + HEIGHT + Math.sin(timeMs / 250 + i) * 0.15, coin.z);
       this.dummy.rotation.set(0, timeMs / 300 + i, 0);
       this.dummy.scale.setScalar(coin.respawnMs === 0 ? 1 : 0.001);
       this.dummy.updateMatrix();

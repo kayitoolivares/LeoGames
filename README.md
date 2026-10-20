@@ -97,6 +97,11 @@ Abre http://localhost:5173 en Edge o Chrome.
   monos de nieve), **Castillo** (de noche, con antorchas; se desbloquea al pegarle a alguien con un poder) y
   **Arcoíris espacial** (camino de colores entre estrellas y planetas; se desbloquea al ganar una copa del Gran
   Premio). Al terminar, **B** regresa a escoger pista.
+  **Lomas y peligros**: las pistas suben y bajan (el piso de alrededor sube con ellas y el kart se inclina) y cada una
+  trae su peligro: ovejas que cruzan (Pradera), cangrejos (Playa), donas que ruedan de bajada (Dulcelandia), bolas
+  de nieve que crecen (Montaña nevada), bloques de piedra que caen de dos en dos con su sombra de aviso (Castillo) y
+  meteoritos con un círculo rojo donde van a caer (Arcoíris espacial). Si te pegan das vueltas (la burbuja te
+  protege) y saltando se esquivan. Se dibujan con un emoji mientras llega su dibujo de Gemini (kart/peligros).
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,
   **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),

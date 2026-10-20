@@ -18,8 +18,9 @@ const ORBIT = { radius: 21, height: 7.5, speed: 0.00018, swing: 0.5 };
 
 export class Ceremony {
   // `podium`: los karts del 1° al 3° (Racer). `trophy`: imagen de la copa (o null). `scenery`: cosas de la pista
-  // que también se ven atrás (el paisaje y el piso), se comparten sin copiarlas.
-  constructor(podium, { background, scenery = [], trophy = null }) {
+  // que también se ven atrás (el paisaje y el piso), se comparten sin copiarlas. `floor`: qué tan alto está el piso
+  // donde va el podio (si la pista tiene lomas ahí, el paisaje se baja para que el podio no quede enterrado).
+  constructor(podium, { background, scenery = [], trophy = null, floor = 0 }) {
     this.scene = new THREE.Scene();
     this.scene.background = background;
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x6a6a7a, 1.3));
@@ -27,7 +28,11 @@ export class Ceremony {
     sun.position.set(10, 30, 20);
     this.scene.add(sun);
     // Copias que comparten figura y material (no gastan memoria): el paisaje y el piso de la pista.
-    for (const mesh of scenery) this.scene.add(mesh.clone());
+    for (const mesh of scenery) {
+      const copy = mesh.clone();
+      copy.position.y -= floor;
+      this.scene.add(copy);
+    }
     this.owned = [];
     this.podium = podium;
     this.homes = podium.map((racer) => racer.object.parent);

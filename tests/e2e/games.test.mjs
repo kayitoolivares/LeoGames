@@ -537,7 +537,7 @@ test('karts locos: derrape, rampa con truco y flecha de turbo', { timeout: ms(12
   await place(ramp - 8, 0, 40);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].vy > 0, ms(5000), 'saltar en la rampa');
   await p.tap(0, BUTTON.LB);
-  await p.until(() => { const r = window.leogames.scene.getScene('Kart').game3d.humans[0]; return r.y === 0 && r.boostMs > 0; }, ms(5000), 'caer con el turbito del truco');
+  await p.until(() => { const r = window.leogames.scene.getScene('Kart').game3d.humans[0]; return !r.flying && r.boostMs > 0; }, ms(5000), 'caer con el turbito del truco');
 
   // La flecha: justo antes de ella, con el carril de la flecha.
   const pad = await p.page.evaluate(() => {
@@ -708,6 +708,39 @@ test('karts locos: modo peque acelera solo y sigue la pista', { timeout: ms(1200
     return { lateral: Math.abs(k.track.lateral(r.x, r.z, r.index)), half: k.track.roadWidth / 2 };
   });
   assert.ok(kart.lateral < kart.half + 2, 'sigue en el camino');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Lomas: el kart sube y se inclina con el camino. Peligros: la oveja de la Pradera lo hace dar vueltas.
+test('karts locos: lomas y peligros', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'empezar la carrera');
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  // Lo más empinado de subida: ahí el kart va más alto y con la trompa arriba.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    for (const cpu of k.racers.filter((r) => r.isCpu)) Object.assign(cpu, { x: 9999, z: 9999 });
+    const steepest = k.track.slopes.indexOf(Math.max(...k.track.slopes));
+    const spot = k.track.pointAt(steepest - 3, 0);
+    Object.assign(k.humans[0], { x: spot.x, z: spot.z, heading: spot.heading, index: spot.index, speed: 20 });
+  });
+  await p.until(() => { const r = window.leogames.scene.getScene('Kart').game3d.humans[0]; return r.y > 1 && r.pitch > 0.05; }, ms(5000), 'subir la loma inclinado');
+
+  // La oveja: el kart se queda parado justo donde va a pasar.
+  await p.page.evaluate(() => {
+    window.__button(0, 0, false);
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const sheep = k.hazards.list[0];
+    const spot = k.track.pointAt(sheep.index, 0);
+    Object.assign(k.humans[0], { x: spot.x, z: spot.z, heading: spot.heading, index: spot.index, speed: 0, shieldMs: 0, spinMs: 0 });
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].spinMs > 0, ms(15000), 'la oveja lo hace dar vueltas');
   await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.deepEqual(p.errors, []);
   await p.context.close();

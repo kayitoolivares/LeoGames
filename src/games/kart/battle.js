@@ -67,6 +67,19 @@ export class Arena {
     return 0;
   }
 
+  // La arena es plana.
+  heightAt() {
+    return 0;
+  }
+
+  roadHeight() {
+    return 0;
+  }
+
+  groundHeight() {
+    return 0;
+  }
+
   addTo(scene) {
     const outside = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.MeshLambertMaterial({ color: 0x6abf4b }));
     outside.rotation.x = -Math.PI / 2;

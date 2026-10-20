@@ -22,10 +22,10 @@ export class TrackFeatures {
     this.pads = pads.map(([at, lane]) => {
       const spot = track.pointAt(Math.round(at * track.count), lane);
       const mesh = new THREE.Mesh(this.padGeometry, this.padMaterial);
-      // Acostada sobre el piso y apuntando hacia adelante.
+      // Acostada sobre el piso (inclinada como la loma) y apuntando hacia adelante.
       mesh.rotation.order = 'YXZ';
-      mesh.rotation.set(-Math.PI / 2, spot.heading, 0);
-      mesh.position.set(spot.x, 0.05, spot.z);
+      mesh.rotation.set(-Math.PI / 2 - Math.atan(track.slopes[spot.index]), spot.heading, 0);
+      mesh.position.set(spot.x, spot.y + 0.06, spot.z);
       scene.add(mesh);
       return { x: spot.x, z: spot.z };
     });
@@ -40,8 +40,8 @@ export class TrackFeatures {
     });
   }
 
-  // Altura del piso bajo un carro: arriba de una rampa sube poco a poco. 0 = el piso de siempre.
-  floorAt(racer) {
+  // Cuánto sube la rampa bajo un carro (0 = no está en una rampa).
+  rampAt(racer) {
     if (Math.abs(this.track.lateral(racer.x, racer.z, racer.index)) > this.track.roadWidth / 2 + 0.5) return 0;
     for (const ramp of this.ramps) {
       const along = (racer.index - ramp.start + this.track.count) % this.track.count;
@@ -55,13 +55,16 @@ export class TrackFeatures {
   update(dtMs, racers, { onBoost, onJump }) {
     this.padTexture.offset.y = (this.padTexture.offset.y - (PAD_SCROLL * dtMs) / 1000) % 1;
     for (const racer of racers) {
-      const floor = this.floorAt(racer);
-      if (racer.floor > RAMP_HEIGHT * 0.6 && floor === 0 && racer.y >= racer.floor - 0.05 && racer.speed > RAMP_MIN_SPEED) {
+      // El piso bajo el kart: la altura del camino (lomas) más la rampa, si va en una.
+      const ramp = this.rampAt(racer);
+      const floor = this.track.roadHeight(racer.x, racer.z, racer.index) + ramp;
+      if (racer.ramp > RAMP_HEIGHT * 0.6 && ramp === 0 && racer.y >= racer.floor - 0.05 && racer.speed > RAMP_MIN_SPEED) {
         racer.launch(racer.speed * RAMP_LAUNCH);
         onJump?.(racer);
       }
       racer.floor = floor;
-      if (racer.y > 0.5) continue;
+      racer.ramp = ramp;
+      if (racer.y > floor + 0.5) continue;
       const onPad = this.pads.some((pad) => Math.hypot(pad.x - racer.x, pad.z - racer.z) < PAD_REACH);
       if (onPad && !racer.onPad) {
         racer.boost(PAD_BOOST.factor, PAD_BOOST.ms);
@@ -115,7 +118,7 @@ function rampMesh(track, start, samples) {
     const i = (start + k) % track.count;
     const p = track.points[i];
     const n = track.normals[i];
-    return [p.x + n.x * side * half, high ? (RAMP_HEIGHT * k) / samples + 0.06 : 0.06, p.z + n.z * side * half];
+    return [p.x + n.x * side * half, p.y + (high ? (RAMP_HEIGHT * k) / samples + 0.06 : 0.06), p.z + n.z * side * half];
   };
   const quad = (a, b, c, d, hex) => {
     positions.push(...a, ...b, ...c, ...a, ...c, ...d);

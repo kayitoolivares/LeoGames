@@ -43,9 +43,18 @@ const GAMES = {
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella'] },
-    fondos: { kind: 'background', names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena'] },
-    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto'] },
-    calcomanias: { kind: 'cutout', max: 256, names: ['llamas', 'estrellas', 'rayos', 'corazones', 'flores'] },
+    fondos: { kind: 'background', names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes'] },
+    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto', 'roca', 'selva', 'alfombra'] },
+    calcomanias: {
+      kind: 'cutout',
+      max: 256,
+      names: ['llamas', 'estrellas', 'rayos', 'corazones', 'flores', 'calavera', 'dinos', 'unicornio', 'balones', 'notas'],
+    },
+    peligros: {
+      kind: 'cutout',
+      max: 256,
+      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'bloque', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota'],
+    },
   },
   futbol: {
     fondos: { kind: 'background', names: ['estadio'] },

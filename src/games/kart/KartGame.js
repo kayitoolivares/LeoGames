@@ -19,6 +19,7 @@ import { Coins } from './coins.js';
 import { Particles } from './particles.js';
 import { DriverArt, driverView } from './drivers.js';
 import { TrackFeatures } from './features.js';
+import { Hazards } from './hazards.js';
 import { Garage } from './garage.js';
 import { kartPicks, randomSetup, wallet } from './karts.js';
 import { Snowfall, addScenery, addSnowmen } from './scenery.js';
@@ -53,6 +54,8 @@ const HIT_COLORS = [0xffd84d, 0xffffff, 0xff9a3c];
 const BOX_COLORS = [0xff5a5f, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
 const COIN_COLORS = [0xffd84d, 0xfff3b0];
 const SPARK_COLORS = [0xffe14d, 0xffffff];
+// Qué tan cerca tiene que estar un jugador para oír cuando cae un bloque o un meteorito.
+const HAZARD_SOUND_REACH = 70;
 // Monedas extra para la tienda por llegar en 1°, 2° y 3° lugar (además de las que junte en la pista).
 const PODIUM_BONUS = [5, 3, 2];
 // Modo peque: sin mover el stick el kart sigue solo la pista; moviéndolo, cuánto cuenta lo que pide el niño.
@@ -322,6 +325,7 @@ export class KartGame {
     }
     this.features = new TrackFeatures(this.scene, this.track, { pads: look.pads, ramps: look.ramps });
     this.coins = new Coins(this.scene, this.track);
+    this.hazards = look.hazards ? new Hazards(this.scene, this.track, look.hazards) : null;
     this.boxes = new ItemBoxes(this.scene, this.track);
     this.particles = new Particles(this.scene);
     this.dustColor = look.dust ?? 0xb59a6a;
@@ -340,7 +344,7 @@ export class KartGame {
   // Cielo, neblina a lo lejos y luz (`light` menos de 1 = de noche).
   setSky(sky, groundLight, light) {
     this.scene.background = new THREE.Color(sky);
-    this.fog = new THREE.Fog(sky, 140, 420);
+    this.fog = new THREE.Fog(sky, 180, 560);
     this.scene.fog = this.fog;
     this.scene.add(new THREE.HemisphereLight(0xffffff, groundLight, 1.2 * light));
     const sun = new THREE.DirectionalLight(0xffffff, 1.6 * light);
@@ -493,7 +497,8 @@ export class KartGame {
       if (view.kind === 'map') return { ...view, camera: this.mapCamera(view) };
       // En la franja ancha de 2 jugadores se abre menos el ángulo para que no se vea estirado.
       const fov = view.w / view.h > 3 ? 42 : 62;
-      const camera = new THREE.PerspectiveCamera(fov, view.w / view.h, 0.5, 450);
+      // (Que alcance a ver el paisaje del otro lado aunque el kart vaya en la orilla de la pista.)
+      const camera = new THREE.PerspectiveCamera(fov, view.w / view.h, 0.5, 900);
       return { ...view, camera, baseFov: fov, racer: this.humans[i], pos: new THREE.Vector3(), look: new THREE.Vector3() };
     });
   }
@@ -626,9 +631,11 @@ export class KartGame {
     this.features.update(dtMs, this.racers, {
       onBoost: (racer) => this.announce(racer, 'pad'),
     });
+    for (const racer of this.racers) this.tilt(racer);
+    this.updateHazards(dtMs, now);
     this.coins.update(dtMs, now, this.racers, (racer) => {
       if (!racer.isCpu) sfx.coin();
-      this.particles.burst('spark', racer.x, 1.4, racer.z, 6, COIN_COLORS, { speed: 4, up: 5, lifeMs: 450 });
+      this.particles.burst('spark', racer.x, racer.y + 1.4, racer.z, 6, COIN_COLORS, { speed: 4, up: 5, lifeMs: 450 });
     });
     this.announceFirstPlace(ranking);
     for (const racer of this.racers) {
@@ -733,22 +740,30 @@ export class KartGame {
 
   // Polvito detrás del kart cuando va por el pasto (la arena, la nieve...).
   kickDust(racer) {
-    if (racer.y > 0.1 || Math.abs(racer.speed) < 12 || Math.random() > 0.6) return;
+    if (racer.airborne || Math.abs(racer.speed) < 12 || Math.random() > 0.6) return;
     const back = -1.6;
     const side = (Math.random() - 0.5) * 2;
     const x = racer.x + Math.sin(racer.heading) * back + Math.cos(racer.heading) * side;
     const z = racer.z + Math.cos(racer.heading) * back - Math.sin(racer.heading) * side;
-    this.particles.emit('dust', x, 0.4, z, (Math.random() - 0.5) * 2, 1.5 + Math.random(), (Math.random() - 0.5) * 2, this.dustColor, 700);
+    this.particles.emit('dust', x, racer.y + 0.4, z, (Math.random() - 0.5) * 2, 1.5 + Math.random(), (Math.random() - 0.5) * 2, this.dustColor, 700);
+  }
+
+  // En las lomas el kart se inclina: con la trompa arriba al subir y abajo al bajar (de lado, casi nada).
+  tilt(racer) {
+    const t = this.track.tangents[racer.index];
+    const along = Math.cos(angleDiff(racer.heading, Math.atan2(t.x, t.z)));
+    const target = racer.airborne ? racer.pitch : Math.atan(this.track.slopes[racer.index]) * along;
+    racer.pitch += (target - racer.pitch) * 0.25;
   }
 
   // Chispas donde roza las llantas de la orilla.
   scrape(racer, nx, nz) {
     if (Math.abs(racer.speed) < 8 || Math.random() > 0.5) return;
-    this.particles.emit('spark', racer.x + nx * 1.7, 0.6, racer.z + nz * 1.7, nx * 3 + (Math.random() - 0.5) * 4, 3 + Math.random() * 3, nz * 3 + (Math.random() - 0.5) * 4, SPARK_COLORS[Math.floor(Math.random() * 2)], 350);
+    this.particles.emit('spark', racer.x + nx * 1.7, racer.y + 0.6, racer.z + nz * 1.7, nx * 3 + (Math.random() - 0.5) * 4, 3 + Math.random() * 3, nz * 3 + (Math.random() - 0.5) * 4, SPARK_COLORS[Math.floor(Math.random() * 2)], 350);
   }
 
   giveItem(racer) {
-    this.particles.burst('spark', racer.x, 1.6, racer.z, 8, BOX_COLORS, { speed: 5, up: 5, lifeMs: 500 });
+    this.particles.burst('spark', racer.x, racer.y + 1.6, racer.z, 8, BOX_COLORS, { speed: 5, up: 5, lifeMs: 500 });
     if (racer.item || racer.rollMs > 0) return;
     const ranking = this.ranking();
     // En la batalla no hay primero ni último: todos reciben poderes de los de en medio.
@@ -817,12 +832,30 @@ export class KartGame {
 
   onProjectileHit(victim, projectile) {
     const hurt = victim.hit();
-    if (hurt) this.particles.burst('spark', victim.x, 1.5, victim.z, 14, HIT_COLORS);
+    if (hurt) this.particles.burst('spark', victim.x, victim.y + 1.5, victim.z, 14, HIT_COLORS);
     if (hurt && (!victim.isCpu || !projectile.owner.isCpu)) sfx.hit(projectile.kind === 'comet' ? 1 : 0.7);
     if (!victim.isCpu) victim.say(hurt ? '¡Te dieron! 💫' : '¡La burbuja te salvó!');
     if (hurt && projectile.owner !== victim && !projectile.owner.isCpu) {
       projectile.owner.say('¡Le diste! 🎯');
       rewards.earn('kart-poder');
+    }
+  }
+
+  // Los peligros de la pista: si le pegan a alguien da vueltas; donde cae un bloque o un meteorito, chispas
+  // (y ruido, si hay un jugador cerca).
+  updateHazards(dtMs, now) {
+    if (!this.hazards) return;
+    const events = this.hazards.update(dtMs, now, this.racers, (racer, hazards) => {
+      const hurt = racer.hit();
+      if (hurt) this.particles.burst('spark', racer.x, racer.y + 1.5, racer.z, 12, HIT_COLORS);
+      if (racer.isCpu) return;
+      if (hurt) sfx.hit(0.7);
+      racer.say(hurt ? hazards.ouch : '¡La burbuja te salvó!');
+    });
+    for (const event of events) {
+      this.particles.burst('dust', event.x, event.y + 0.5, event.z, 16, [this.dustColor, 0xffffff], { speed: 9, up: 4, lifeMs: 700 });
+      if (event.kind === 'meteorito') this.particles.burst('spark', event.x, event.y + 1, event.z, 14, [0xff9a3c, 0xffe066], { speed: 8, up: 7 });
+      if (this.humans.some((racer) => Math.hypot(racer.x - event.x, racer.z - event.z) < HAZARD_SOUND_REACH)) sfx.boom();
     }
   }
 
@@ -1092,8 +1125,11 @@ export class KartGame {
       const racer = view.racer;
       const fx = Math.sin(racer.heading);
       const fz = Math.cos(racer.heading);
-      desiredPos.set(racer.x - fx * 9, 4.6 + racer.y * 0.7, racer.z - fz * 9);
-      desiredLook.set(racer.x + fx * 7, 1.4 + racer.y, racer.z + fz * 7);
+      // La altura del camino bajo el kart (las lomas) se sigue toda; los saltos, solo un poco.
+      const road = racer.floor - racer.ramp;
+      const up = racer.y - road;
+      desiredPos.set(racer.x - fx * 9, road + 4.6 + up * 0.7, racer.z - fz * 9);
+      desiredLook.set(racer.x + fx * 7, road + 1.4 + up + Math.tan(racer.pitch) * 7, racer.z + fz * 7);
       view.pos.lerp(desiredPos, blend);
       view.look.lerp(desiredLook, blend);
       view.camera.position.copy(view.pos);
@@ -1110,7 +1146,12 @@ export class KartGame {
   startCeremony(podium, trophy = null) {
     this.endCeremony();
     const scenery = [this.panorama, this.track.groundMesh].filter(Boolean);
-    this.ceremony = new Ceremony(podium.slice(0, 3), { background: this.scene.background, scenery, trophy });
+    this.ceremony = new Ceremony(podium.slice(0, 3), {
+      background: this.scene.background,
+      scenery,
+      trophy,
+      floor: this.track.groundHeight(0, 0),
+    });
     this.hud.setCeremony(true);
   }
 
@@ -1165,6 +1206,7 @@ export class KartGame {
     music.setTempo(1);
     this.projectiles?.dispose();
     this.features?.dispose();
+    this.hazards?.dispose();
     this.hud?.destroy();
     this.chooser?.destroy();
     this.garage?.destroy();

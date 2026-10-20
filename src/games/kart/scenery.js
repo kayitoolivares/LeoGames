@@ -31,7 +31,7 @@ export function addSnowmen(scene, track) {
     tip.rotation.x = Math.PI / 2;
     tip.position.set(0, 4.7, 1.1);
     snowman.add(tip);
-    snowman.position.set(spot.x, 0, spot.z);
+    snowman.position.set(spot.x, track.groundHeight(spot.x, spot.z), spot.z);
     // Viendo hacia la pista.
     snowman.rotation.y = spot.heading + (side > 0 ? -Math.PI / 2 : Math.PI / 2);
     scene.add(snowman);
@@ -126,9 +126,9 @@ function addBeach(scene, track) {
   const colors = [0xff5a5f, 0xffd02a, 0x3fa7ff, 0x4cd97b];
   const matrix = new THREE.Matrix4();
   const color = new THREE.Color();
-  spots.forEach(({ x, z }, i) => {
-    poles.setMatrixAt(i, matrix.makeTranslation(x, 1.7, z));
-    tops.setMatrixAt(i, matrix.makeTranslation(x, 3.6, z));
+  spots.forEach(({ x, y, z }, i) => {
+    poles.setMatrixAt(i, matrix.makeTranslation(x, y + 1.7, z));
+    tops.setMatrixAt(i, matrix.makeTranslation(x, y + 3.6, z));
     tops.setColorAt(i, color.setHex(colors[i % colors.length]));
   });
   scene.add(tops, poles);
@@ -145,8 +145,8 @@ function addGumdrops(scene, track) {
   const colors = [0xff5fa8, 0x7fe0c8, 0xffd02a, 0xb07cff, 0xff8a5c, 0x6fd3ff];
   const matrix = new THREE.Matrix4();
   const color = new THREE.Color();
-  spots.forEach(({ x, z }, i) => {
-    drops.setMatrixAt(i, matrix.makeTranslation(x, 0, z));
+  spots.forEach(({ x, y, z }, i) => {
+    drops.setMatrixAt(i, matrix.makeTranslation(x, y, z));
     drops.setColorAt(i, color.setHex(colors[i % colors.length]));
   });
   scene.add(drops);
@@ -182,10 +182,10 @@ function addCastle(scene, track) {
   const spots = roadside(track, 30, 2.5);
   const posts = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.25, 3.4, 6), dark, spots.length);
   const matrix = new THREE.Matrix4();
-  const flames = spots.map(({ x, z }, i) => {
-    posts.setMatrixAt(i, matrix.makeTranslation(x, 1.7, z));
+  const flames = spots.map(({ x, y, z }, i) => {
+    posts.setMatrixAt(i, matrix.makeTranslation(x, y + 1.7, z));
     const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xff9a3c, blending: THREE.AdditiveBlending, depthWrite: false }));
-    flame.position.set(x, 3.8, z);
+    flame.position.set(x, y + 3.8, z);
     flame.scale.setScalar(2.2);
     scene.add(flame);
     return flame;
@@ -231,10 +231,14 @@ function addSpace(scene) {
   scene.add(ring);
 }
 
-// Lugares a los lados del camino (afuera de las llantas), cada `every` muestras y alternando de lado.
+// Lugares a los lados del camino (afuera de las llantas), cada `every` muestras y alternando de lado (con la altura
+// del piso ahí, por las lomas).
 function roadside(track, every, gap) {
   const spots = [];
-  for (let i = 10, side = 1; i < track.count; i += every, side = -side) spots.push(track.pointAt(i, side * (track.wallDistance + gap)));
+  for (let i = 10, side = 1; i < track.count; i += every, side = -side) {
+    const spot = track.pointAt(i, side * (track.wallDistance + gap));
+    spots.push({ ...spot, y: track.groundHeight(spot.x, spot.z) });
+  }
   return spots;
 }
 
