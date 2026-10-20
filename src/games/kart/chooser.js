@@ -1,11 +1,13 @@
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 
-// Pantalla para escoger (HTML encima del 3D): pista, modo de juego o copa. Cuadrícula de 3 por renglón; cada
+// Pantalla para escoger (HTML encima del 3D): pista, modo de juego o copa. Cuadrícula de 3 por renglón (5 y más
+// chiquitas si son muchas, para que quepan en dos renglones); cada
 // tarjeta con su emoji, su nombre y, si es pista, el dibujo de su trazo. ◀ ▶ ↑ ↓ escoger, A = ¡a jugar!, B = regresar.
 // Las cerradas dicen qué hay que ganar para abrirlas.
 const STYLE_ID = 'kart-choose-style';
 const COLUMNS = 3;
+const MANY = { after: 6, columns: 5 };
 const MAP_W = 200;
 const MAP_H = 80;
 const CSS = `
@@ -17,6 +19,13 @@ const CSS = `
 .kart-choose .card { height: 212px; border-radius: 22px; background: #231d45; border: 4px solid #3a3170;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-sizing: border-box; }
 .kart-choose .card.on { border-color: #ffc93c; box-shadow: 0 0 0 6px #ffc93c; }
+.kart-choose .cards.many { grid-template-columns: repeat(${MANY.columns}, 230px); gap: 18px; }
+.kart-choose .cards.many .card { height: 196px; padding: 0 8px; }
+.kart-choose .cards.many .card .title { flex-direction: column; gap: 2px; }
+.kart-choose .cards.many .card .emoji { font-size: 38px; }
+.kart-choose .cards.many .card b { font-size: 22px; text-align: center; }
+.kart-choose .cards.many .card svg { width: ${MAP_W * 0.9}px; height: ${MAP_H * 0.9}px; }
+.kart-choose .cards.many .card small { font-size: 14px; }
 .kart-choose .card .title { display: flex; align-items: center; gap: 10px; }
 .kart-choose .card .emoji { font-size: 46px; line-height: 1; }
 .kart-choose .card b { font-size: 27px; }
@@ -51,7 +60,8 @@ export class TrackChooser {
           <b>${track.name}</b></div>${outlineSvg(track.outline, track.color)}${track.info ? `<div class="info">${track.info}</div>` : ''}<small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
       )
       .join('');
-    this.el.innerHTML = `<h1>${title}</h1><div class="cards">${cards}</div><div class="options"></div>
+    this.columns = tracks.length > MANY.after ? MANY.columns : COLUMNS;
+    this.el.innerHTML = `<h1>${title}</h1><div class="cards${this.columns === COLUMNS ? '' : ' many'}">${cards}</div><div class="options"></div>
       <p>◀ ▶ ↑ ↓ escoger  ·  A = ¡a jugar!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     stage.append(this.el);
     this.cards = [...this.el.querySelectorAll('.card')];
@@ -72,14 +82,14 @@ export class TrackChooser {
     say(track.open ? track.name : `${track.name}. Todavía no: ${track.lock}`);
   }
 
-  // ◀ ▶ = de uno en uno; ↑ ↓ = un renglón (3).
+  // ◀ ▶ = de uno en uno; ↑ ↓ = un renglón.
   move(step) {
     sfx.select();
     this.select((this.selected + step + this.tracks.length) % this.tracks.length);
   }
 
   moveRow(step) {
-    const next = this.selected + step * COLUMNS;
+    const next = this.selected + step * this.columns;
     if (next < 0 || next >= this.tracks.length) return;
     sfx.select();
     this.select(next);

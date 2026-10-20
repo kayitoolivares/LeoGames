@@ -76,7 +76,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   primeros (**A** = otra carrera, **X** = regresar al taller). Después del taller se escoge el modo: **Carrera** (una
   pista) o **Gran Premio** (copas de 3 pistas seguidas con puntos: 10, 8, 6, 4, 2 y 1; la compu trae el mismo kart en
   toda la copa y el que junta más gana el trofeo). **Copa Hoja**: Pradera, Playa y Dulcelandia. **Copa Estrella**
-  (se abre al ganar una copa): Montaña nevada, Castillo y Arcoíris espacial.
+  (se abre al ganar una copa): Montaña nevada, Castillo y Arcoíris espacial. **Copa Aventura** (4 carreras): Selva,
+  Fondo del mar, Ciudad de juguete y Volcán.
   En las pantallas de escoger, el Jugador 1 cambia con **LB** el nivel de la compu (fácil, normal, difícil) y con **RB**
   las vueltas (1, 2 o 3). **Arranque turbo**: acelerar justo cuando sale el "1". **Monedas** en la pista: cada una te hace
   un poco más rápido (hasta 10) y un golpe te tira 3. Mini mapa en la esquina, motor que suena según la velocidad y
@@ -96,11 +97,15 @@ Abre http://localhost:5173 en Edge o Chrome.
   (camino de chocolate, paletas y gomitas), **Montaña nevada** (se desbloquea al ganar una carrera; nieve cayendo y
   monos de nieve), **Castillo** (de noche, con antorchas; se desbloquea al pegarle a alguien con un poder) y
   **Arcoíris espacial** (camino de colores entre estrellas y planetas; se desbloquea al ganar una copa del Gran
-  Premio). Al terminar, **B** regresa a escoger pista.
+  Premio), **Selva** (camino de tierra entre palmeras, matorrales y flores), **Fondo del mar** (corales, algas que se
+  mecen y burbujas), **Ciudad de juguete** (pista de plástico naranja entre bloques gigantes y crayolas) y **Volcán**
+  (un volcán enorme en medio con lava escurriendo, charcos de lava y chispas). Al terminar, **B** regresa a escoger
+  pista.
   **Lomas y peligros**: las pistas suben y bajan (el piso de alrededor sube con ellas y el kart se inclina) y cada una
   trae su peligro: ovejas que cruzan (Pradera), cangrejos (Playa), donas que ruedan de bajada (Dulcelandia), bolas
-  de nieve que crecen (Montaña nevada), bloques de piedra que caen de dos en dos con su sombra de aviso (Castillo) y
-  meteoritos con un círculo rojo donde van a caer (Arcoíris espacial). Si te pegan das vueltas (la burbuja te
+  de nieve que crecen (Montaña nevada), bloques de piedra que caen de dos en dos con su sombra de aviso (Castillo),
+  meteoritos con un círculo rojo donde van a caer (Arcoíris espacial), troncos rodando (Selva), peces globo que se
+  inflan (Fondo del mar), pelotas que botan —por abajo se pasa— (Ciudad de juguete) y bolas de lava (Volcán). Si te pegan das vueltas (la burbuja te
   protege) y saltando se esquivan. Se dibujan con un emoji mientras llega su dibujo de Gemini (kart/peligros).
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,

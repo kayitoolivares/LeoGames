@@ -746,6 +746,30 @@ test('karts locos: lomas y peligros', { timeout: ms(120000) }, async () => {
   await p.context.close();
 });
 
+// Las pistas nuevas (selva, mar, juguetes, volcán): cada una arranca, sus adornos y su peligro se mueven sin errores.
+test('karts locos: las pistas de la Copa Aventura', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await pickRaceMode(p);
+  for (const key of ['selva', 'mar', 'juguetes', 'volcan']) {
+    await p.page.evaluate((k) => import('/src/games/kart/tracks.js').then((m) => {
+      window.leogames.scene.getScene('Kart').game3d.chooser.select(m.TRACK_KEYS.indexOf(k));
+    }), key);
+    await p.tap(0, BUTTON.A);
+    await p.page.waitForFunction((k) => window.leogames.scene.getScene('Kart').game3d?.trackKey === k, key, { timeout: ms(15000) });
+    await p.until(() => window.leogames.scene.getScene('Kart').game3d.raceMs > 1500, ms(15000), `correr en ${key}`);
+    assert.ok(await p.page.evaluate(() => Boolean(window.leogames.scene.getScene('Kart').game3d.hazards)), `${key} sin peligro`);
+    await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.showResults());
+    await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda cambiar de pista');
+    await p.tap(0, BUTTON.B);
+    await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(30000), 'regresar a escoger pista');
+  }
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 // Por equipos: Rojos contra Azules (3 y 3), los poderes no le pegan a tu equipo y al final se suman los puntos.
 test('karts locos: carrera por equipos', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);
@@ -846,8 +870,8 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
   await pickRaceMode(p);
-  // La nieve está en el segundo renglón, abajo de la Pradera.
-  await p.tap(0, BUTTON.DOWN);
+  // La nieve es la cuarta del primer renglón.
+  for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.trackKey === 'nieve', ms(10000), 'entrar a la nieve');
   assert.ok(await p.page.evaluate(() => Boolean(window.leogames.scene.getScene('Kart').game3d.snow)), 'no está nevando');

@@ -43,6 +43,7 @@ const CONTROL_POINTS = [
 //   treeColors: los colores de las copas de los pinos   avoid: { x, z, radius } donde no poner nada (el castillo)
 //   sea: del lado de abajo hay mar (ahí no se ponen árboles)
 //   groundMap / groundTint: textura del piso (y de qué color se tiñe) · roadMap: textura del camino (asfalto)
+//   plain: camino liso, sin la textura (de plástico, como el de los carritos de juguete)
 export class Track {
   constructor({ roadWidth = 14, scale = 1, barriers = false, points = CONTROL_POINTS, ground = 0x6abf4b, snowy = false, theme = {} } = {}) {
     this.roadWidth = roadWidth;
@@ -206,7 +207,7 @@ export class Track {
     // El camino de arcoíris va de colores (cambia poco a poco) y brilla solo, sin depender de la luz.
     const roadColor = rainbow ? (i) => new THREE.Color().setHSL((i / this.count) * 6 % 1, 0.85, 0.6).getHex() : () => road;
     // El asfalto (si hay textura) es gris claro y se multiplica por el color del camino: se aclara el color para compensar.
-    const roadMap = rainbow ? null : this.theme.roadMap;
+    const roadMap = rainbow || this.theme.plain ? null : this.theme.roadMap;
     const roadTone = roadMap ? (i) => new THREE.Color(roadColor(i)).multiplyScalar(ROAD_TEXTURE_BOOST).getHex() : roadColor;
     if (roadMap) prepareTile(roadMap, 1);
     scene.add(this.ribbon(-half, half, 0.02, roadTone, rainbow, roadMap));

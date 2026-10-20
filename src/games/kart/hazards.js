@@ -2,17 +2,33 @@ import * as THREE from 'three';
 import manifest from './art.json';
 
 // Los peligros de cada pista (ver `hazards` en tracks.js). Cada uno se mueve a su manera:
-//   cross: un animalito cruza el camino de lado a lado, se espera tantito y regresa (ovejas, cangrejos).
-//   roll:  una bola rueda por la pista en sentido contrario, de bajada (donas, bolas de nieve que van creciendo).
+//   cross: un animalito cruza el camino de lado a lado, se espera tantito y regresa (ovejas, cangrejos y peces globo,
+//          que nadan flotando y se inflan de vez en cuando).
+//   roll:  una bola rueda por la pista en sentido contrario, de bajada (donas, troncos, bolas de nieve que van
+//          creciendo y pelotas que botan: cuando va arriba se puede pasar por abajo).
 //   slam:  bloques de piedra flotan arriba del camino y caen de golpe; su sombra avisa antes (de dos en dos:
 //          siempre queda un lado libre).
-//   fall:  meteoritos que caen adelante de los karts; un círculo rojo avisa dónde van a caer.
+//   fall:  meteoritos (o bolas de lava del volcán) que caen adelante de los karts; un círculo rojo avisa dónde.
 // Si al kart le pega uno, da vueltas como con un plátano (la burbuja lo protege). Saltando se esquivan.
 // Se dibujan con su imagen de Gemini (kart/peligros/<nombre>.png) o, mientras no haya, con un emoji.
 
-const EMOJI = { oveja: '🐑', cangrejo: '🦀', dona: '🍩', 'bola-nieve': '⛄', meteorito: '☄️', bloque: '😠' };
+const EMOJI = {
+  oveja: '🐑',
+  cangrejo: '🦀',
+  dona: '🍩',
+  'bola-nieve': '⛄',
+  meteorito: '☄️',
+  bloque: '😠',
+  lava: '🔥',
+  tronco: '🪵',
+  'pez-globo': '🐡',
+  pelota: '🏐',
+};
 // Tamaño de cada uno (alto, en unidades del mundo) y qué tan cerca hay que pasar para que pegue.
-const SIZES = { oveja: 3.2, cangrejo: 2.6, dona: 3.6, 'bola-nieve': 2.4, meteorito: 3.4 };
+const SIZES = { oveja: 3.2, cangrejo: 2.6, dona: 3.6, 'bola-nieve': 2.4, meteorito: 3.4, lava: 3.6, tronco: 3.4, 'pez-globo': 2.8, pelota: 3.2 };
+// Los que van flotando (qué tan alto) y los que botan (qué tan alto brincan).
+const FLOAT = { 'pez-globo': 1.6 };
+const BOUNCE = { pelota: 4.5 };
 const REACH = 1.8;
 // Después de que le pega a alguien, no le vuelve a pegar a ese mismo en un rato.
 const COOLDOWN_MS = 1800;
@@ -153,14 +169,18 @@ export class Hazards {
     }
     const spot = this.track.pointAt(c.index, c.lateral);
     const walking = c.waitMs <= 0;
-    const hop = walking ? Math.abs(Math.sin(c.walked * 2.2)) * CROSS.hop : 0;
+    const float = FLOAT[this.kind];
+    // Los que nadan suben y bajan despacito y de vez en cuando se inflan.
+    const hop = float ? float + Math.sin(timeMs / 400 + c.index) * 0.4 : walking ? Math.abs(Math.sin(c.walked * 2.2)) * CROSS.hop : 0;
+    const puff = float ? 1 + 0.4 * Math.max(0, Math.sin(timeMs / 650 + c.index)) : 1;
     c.sprite.position.set(spot.x, spot.y + hop, spot.z);
     // Viendo hacia donde camina, como lo ven los karts (la imagen ve a la izquierda; a la derecha del camino es
     // a la derecha de la pantalla).
     c.sprite.material.map = c.side < 0 ? this.flipped : this.texture;
-    const size = SIZES[this.kind];
+    const size = SIZES[this.kind] * puff;
+    c.sprite.scale.set(size, size, 1);
     this.lay(c.shadow, spot, 0.06);
-    this.touch(c, spot.x, spot.z, REACH + 0.6, size * 0.6, racers, onHit);
+    this.touch(c, spot.x, spot.z, REACH + 0.6 * puff, hop + size * 0.6, racers, onHit);
   }
 
   updateBall(b, dtMs, racers, onHit) {
@@ -192,10 +212,12 @@ export class Hazards {
     b.shadow.visible = true;
     b.sprite.material.rotation = b.spin;
     b.sprite.scale.set(scale, scale, 1);
-    b.sprite.position.set(spot.x, spot.y + scale / 2, spot.z);
+    // La pelota bota: muy arriba no le pega a nadie (se puede pasar por abajo).
+    const bounce = BOUNCE[this.kind] ? Math.abs(Math.sin(b.phase * 2.6)) * BOUNCE[this.kind] : 0;
+    b.sprite.position.set(spot.x, spot.y + scale / 2 + bounce, spot.z);
     this.lay(b.shadow, spot, 0.06);
-    b.shadow.scale.setScalar(scale * 0.45);
-    this.touch(b, spot.x, spot.z, REACH + scale * 0.4, scale * 0.8, racers, onHit);
+    b.shadow.scale.setScalar(scale * (0.45 - bounce * 0.03));
+    if (bounce < 1.5) this.touch(b, spot.x, spot.z, REACH + scale * 0.4, scale * 0.8, racers, onHit);
   }
 
   updateBlock(b, dtMs, timeMs, racers, onHit) {
@@ -243,7 +265,7 @@ export class Hazards {
       this.scene.add(ring);
       const shadow = this.shadow(0.1);
       this.lay(shadow, spot, 0.08);
-      const rock = this.sprite(SIZES.meteorito, 0.5);
+      const rock = this.sprite(SIZES[this.kind], 0.5);
       rock.visible = false;
       this.list.push({ x: spot.x, z: spot.z, ground: spot.y, ageMs: 0, ring, rock, shadow, hits: new Map() });
     }
@@ -256,7 +278,7 @@ export class Hazards {
       if (left <= FALL.dropMs && left > 0) {
         const k = 1 - left / FALL.dropMs;
         m.rock.visible = true;
-        m.rock.position.set(m.x, m.ground + FALL.top * (1 - k) + SIZES.meteorito / 2, m.z);
+        m.rock.position.set(m.x, m.ground + FALL.top * (1 - k) + SIZES[this.kind] / 2, m.z);
         m.rock.material.rotation = timeMs / 120;
       }
       if (left > 0) return true;
@@ -290,6 +312,10 @@ const OUCH = {
   'bola-nieve': '¡Bola de nieve! ❄️',
   bloque: '¡Pum! El bloque 💥',
   meteorito: '¡Meteorito! ☄️',
+  lava: '¡Lava caliente! 🔥',
+  tronco: '¡Te aplastó un tronco! 🪵',
+  'pez-globo': '¡Auch, un pez globo! 🐡',
+  pelota: '¡Pelotazo! 🏐',
 };
 
 // La imagen de Gemini si ya está; si no, el emoji en un cuadrito transparente. El bloque es la cara de una

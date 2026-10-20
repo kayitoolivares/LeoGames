@@ -1,11 +1,12 @@
 // Pistas de Karts locos. `points`: el trazo [x, z, alto] antes de escalar (el alto hace lomas y bajadas).
 // `pads`: flechas de turbo [dónde (0 a 1 de la vuelta), carril]; `ramps`: rampas [dónde] (en rectas).
 // `unlock`: qué hay que ganar antes (ver UNLOCKS en rewards.js). `theme`: cómo se ve el camino (ver Track).
-// `scenery`: adornos de la pista (snow = nieve y monos de nieve; beach, candy, castle, space: ver scenery.js).
+// `scenery`: adornos de la pista (snow = nieve y monos de nieve; beach, candy, castle, space, jungle, sea, toys,
+// volcano: ver scenery.js). `hazards`: su peligro (ver hazards.js).
 // `mapColor`: color del dibujo de la pista al escogerla (si no, el del piso).
 // `texture`: textura del piso (kart/texturas, de Gemini) y `textureTint` de qué color se tiñe. El paisaje de fondo
 // es kart/fondos/<pista>.jpg (si existe; si no, montañas de colores).
-// `dust`: color del polvito al salirse del camino.
+// `dust`: color del polvito al salirse del camino. `fog`: [cerca, lejos] de la neblina (si no, la de siempre).
 // `light`: qué tanta luz hay (menos de 1 = de noche). `mountains`: color de las montañas de lejos (null = sin montañas).
 export const TRACKS = {
   pradera: {
@@ -137,14 +138,94 @@ export const TRACKS = {
     theme: { decor: 'none', rainbow: true, curbs: [0xffffff, 0xbfe6ff], barrierColors: [0x3fe0ff, 0xff4dd2], glow: true },
     scenery: 'space',
   },
+  selva: {
+    name: 'Selva',
+    emoji: '🌴',
+    unlock: null,
+    points: [[-95, -30, 0], [-60, -70, 0], [0, -60, 4], [40, -78, 8], [90, -55, 10], [100, 0, 6], [70, 30, 2], [30, 10, 6], [0, 40, 10], [-20, 72, 6], [-60, 75, 2], [-100, 35, 0]],
+    pads: [[0.04, 0], [0.27, 3], [0.58, -3], [0.88, 0]],
+    ramps: [0.16, 0.76],
+    hazards: { kind: 'tronco', pattern: 'roll', spots: [0.35, 0.68] },
+    sky: 0x9be3c4,
+    ground: 0x3f8a3a,
+    groundLight: 0x2f5a2a,
+    mountains: 0x2f7a4a,
+    texture: 'selva',
+    dust: 0x8a6a3a,
+    // Camino de tierra entre palmeras, con orillas de hojas y plátanos.
+    theme: { decor: 'palm', road: 0x9a6a44, curbs: [0x3cc44f, 0xffd02a], barrierColors: [0x7a4a2a, 0x3cc44f] },
+    scenery: 'jungle',
+  },
+  mar: {
+    name: 'Fondo del mar',
+    emoji: '🐠',
+    unlock: null,
+    mapColor: 0x3fa7ff,
+    points: [[-100, 0, 0], [-80, -55, 2], [-30, -75, 6], [20, -55, 2], [60, -80, 0], [100, -50, 4], [95, 10, 8], [60, 50, 4], [20, 30, 0], [-20, 60, 4], [-70, 70, 2]],
+    pads: [[0.04, 0], [0.3, -3], [0.6, 3], [0.85, 0]],
+    ramps: [0.48],
+    hazards: { kind: 'pez-globo', pattern: 'cross', spots: [0.2, 0.42, 0.78] },
+    sky: 0x1f6fb5,
+    ground: 0xe8d29a,
+    groundLight: 0x2a5a8a,
+    mountains: 0x2a7ab0,
+    texture: 'arena',
+    textureTint: 0xc9e2ff,
+    dust: 0xe8f4ff,
+    light: 0.9,
+    // Bajo el agua todo se ve azul a lo lejos.
+    fog: [50, 340],
+    theme: { decor: 'none', road: 0x7f9fc0, curbs: [0xff7f6a, 0xffffff], barrierColors: [0xff6f91, 0xffd02a] },
+    scenery: 'sea',
+  },
+  juguetes: {
+    name: 'Ciudad de juguete',
+    emoji: '🧸',
+    unlock: null,
+    mapColor: 0xff8a1e,
+    points: [[-90, -60, 0], [0, -70, 0], [80, -60, 0], [100, -10, 4], [70, 20, 10], [20, 10, 12], [-10, 40, 8], [-20, 75, 4], [-60, 80, 0], [-98, 40, 0], [-105, -20, 0]],
+    pads: [[0.04, 0], [0.35, 3], [0.75, 0], [0.9, -3]],
+    ramps: [0.22, 0.62],
+    hazards: { kind: 'pelota', pattern: 'roll', spots: [0.47, 0.98] },
+    sky: 0xbfe3ff,
+    ground: 0x5b8fd9,
+    groundLight: 0x3a5a8a,
+    mountains: 0xffd6a0,
+    texture: 'alfombra',
+    dust: 0xd9e6ff,
+    // Pista de plástico naranja (sin asfalto), como las de los carritos de juguete.
+    theme: { decor: 'none', road: 0xff8a1e, plain: true, curbs: [0xffffff, 0x3a5bd6], barrierColors: [0xffd02a, 0xe53935] },
+    scenery: 'toys',
+  },
+  volcan: {
+    name: 'Volcán',
+    emoji: '🌋',
+    unlock: null,
+    mapColor: 0xff6a00,
+    points: [[-100, 0, 0], [-75, -60, 2], [-10, -80, 6], [55, -70, 10], [100, -30, 14], [95, 30, 10], [50, 70, 6], [0, 60, 12], [-45, 80, 6], [-90, 55, 2]],
+    pads: [[0.04, 0], [0.35, 3], [0.62, -3], [0.9, 0]],
+    ramps: [0.2, 0.7],
+    hazards: { kind: 'lava', pattern: 'fall' },
+    sky: 0x6b2a1f,
+    ground: 0x3a2f2f,
+    groundLight: 0x2a1a1a,
+    mountains: 0x4a2a2a,
+    texture: 'roca',
+    dust: 0x5a4a4a,
+    light: 0.8,
+    // Camino de piedra oscura con orillas de lava; el volcán en medio.
+    theme: { decor: 'none', road: 0x4a4550, curbs: [0xff6a00, 0x2b2b33], barrierColors: [0xff6a00, 0x3a3a44] },
+    scenery: 'volcano',
+  },
 };
 
 export const TRACK_KEYS = Object.keys(TRACKS);
 
-// Copas del Gran Premio: 3 pistas seguidas y el que junte más puntos gana la copa. `image`: su trofeo (Gemini).
+// Copas del Gran Premio: 3 o 4 pistas seguidas y el que junte más puntos gana la copa. `image`: su trofeo (Gemini).
 export const CUPS = {
   hoja: { name: 'Copa Hoja', emoji: '🍃', image: 'copa-hoja', tracks: ['pradera', 'playa', 'dulces'], unlock: null },
   estrella: { name: 'Copa Estrella', emoji: '⭐', image: 'copa-estrella', tracks: ['nieve', 'castillo', 'espacio'], unlock: 'kart-espacio' },
+  aventura: { name: 'Copa Aventura', emoji: '🧭', image: 'copa-aventura', tracks: ['selva', 'mar', 'juguetes', 'volcan'], unlock: null },
 };
 export const CUP_KEYS = Object.keys(CUPS);
 

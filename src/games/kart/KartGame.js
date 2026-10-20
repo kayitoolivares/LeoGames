@@ -68,6 +68,8 @@ const FIRST_PLACE_SAY_MS = 6000;
 // `sink`: qué parte de abajo de la imagen queda bajo el piso (el suelo del dibujo), para que su horizonte quede
 // a la altura de los ojos y no se vea como una pared.
 const PANORAMA = { radius: 400, repeats: 5, sink: 0.3 };
+// La neblina: empieza y se pone completa a estas distancias.
+const FOG = [180, 560];
 const CPU_LANES = [-5, 5, -2, 2, -7, 7];
 const LABEL_PX = 28;
 // Íconos de los poderes hechos con Gemini (npm run arte); si falta alguno se usa su emoji.
@@ -311,7 +313,7 @@ export class KartGame {
     const look = TRACKS[key];
     this.trackKey = key;
     this.trackLook = look;
-    this.setSky(look.sky, look.groundLight, look.light ?? 1);
+    this.setSky(look.sky, look.groundLight, look.light ?? 1, look.fog);
 
     const theme = { ...look.theme, groundMap: this.artTexture('texturas', look.texture), groundTint: look.textureTint, roadMap: this.artTexture('texturas', 'asfalto') };
     this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points: look.points, ground: look.ground, snowy: look.snowy, theme });
@@ -341,10 +343,10 @@ export class KartGame {
     }
   }
 
-  // Cielo, neblina a lo lejos y luz (`light` menos de 1 = de noche).
-  setSky(sky, groundLight, light) {
+  // Cielo, neblina a lo lejos (`fog`: [desde, hasta]) y luz (`light` menos de 1 = de noche).
+  setSky(sky, groundLight, light, fog = FOG) {
     this.scene.background = new THREE.Color(sky);
-    this.fog = new THREE.Fog(sky, 180, 560);
+    this.fog = new THREE.Fog(sky, ...fog);
     this.scene.fog = this.fog;
     this.scene.add(new THREE.HemisphereLight(0xffffff, groundLight, 1.2 * light));
     const sun = new THREE.DirectionalLight(0xffffff, 1.6 * light);
@@ -854,7 +856,7 @@ export class KartGame {
     });
     for (const event of events) {
       this.particles.burst('dust', event.x, event.y + 0.5, event.z, 16, [this.dustColor, 0xffffff], { speed: 9, up: 4, lifeMs: 700 });
-      if (event.kind === 'meteorito') this.particles.burst('spark', event.x, event.y + 1, event.z, 14, [0xff9a3c, 0xffe066], { speed: 8, up: 7 });
+      if (event.kind === 'meteorito' || event.kind === 'lava') this.particles.burst('spark', event.x, event.y + 1, event.z, 14, [0xff9a3c, 0xffe066], { speed: 8, up: 7 });
       if (this.humans.some((racer) => Math.hypot(racer.x - event.x, racer.z - event.z) < HAZARD_SOUND_REACH)) sfx.boom();
     }
   }
