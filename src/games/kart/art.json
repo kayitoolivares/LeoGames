@@ -2,7 +2,16 @@
   "objetos": [
     "burbuja",
     "cohete",
+    "cometa",
+    "globos",
     "platano",
+    "platanos3",
+    "rayo",
+    "tinta",
     "turbo"
+  ],
+  "copas": [
+    "copa-estrella",
+    "copa-hoja"
   ]
 }

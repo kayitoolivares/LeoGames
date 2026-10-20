@@ -119,3 +119,13 @@ export const TRACKS = {
 };
 
 export const TRACK_KEYS = Object.keys(TRACKS);
+
+// Copas del Gran Premio: 3 pistas seguidas y el que junte más puntos gana la copa. `image`: su trofeo (Gemini).
+export const CUPS = {
+  hoja: { name: 'Copa Hoja', emoji: '🍃', image: 'copa-hoja', tracks: ['pradera', 'playa', 'dulces'], unlock: null },
+  estrella: { name: 'Copa Estrella', emoji: '⭐', image: 'copa-estrella', tracks: ['nieve', 'castillo', 'espacio'], unlock: 'kart-espacio' },
+};
+export const CUP_KEYS = Object.keys(CUPS);
+
+// Puntos por lugar en cada carrera del Gran Premio (1° a 6°).
+export const CUP_POINTS = [10, 8, 6, 4, 2, 1];

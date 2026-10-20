@@ -1,8 +1,9 @@
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 
-// Pantalla para escoger pista (HTML encima del 3D): cuadrícula de 3 por renglón, cada una con el dibujo de su
-// trazo. ◀ ▶ ↑ ↓ escoger, A = ¡a correr!, B = regresar. Las pistas cerradas dicen qué hay que ganar para abrirlas.
+// Pantalla para escoger (HTML encima del 3D): pista, modo de juego o copa. Cuadrícula de 3 por renglón; cada
+// tarjeta con su emoji, su nombre y, si es pista, el dibujo de su trazo. ◀ ▶ ↑ ↓ escoger, A = ¡a jugar!, B = regresar.
+// Las cerradas dicen qué hay que ganar para abrirlas.
 const STYLE_ID = 'kart-choose-style';
 const COLUMNS = 3;
 const MAP_W = 200;
@@ -23,13 +24,14 @@ const CSS = `
 .kart-choose .card.locked { opacity: 0.6; }
 .kart-choose .card.locked b, .kart-choose .card small { color: #a9a3d6; }
 .kart-choose .card small { font-size: 16px; text-align: center; max-width: 300px; min-height: 20px; }
+.kart-choose .card .info { font-size: 18px; color: #d9d4ff; text-align: center; max-width: 290px; line-height: 1.3; }
 .kart-choose p { margin: 0; font-size: 24px; color: #ffc93c; }
 .kart-choose .exit { position: absolute; bottom: 0; left: 50%; width: 200px; height: 6px; margin-left: -100px; }
 .kart-choose .exit > div { height: 100%; width: 0; background: #fff; border-radius: 3px; }
 `;
 
 export class TrackChooser {
-  // `tracks`: [{ name, emoji, open, lock, outline: [{ x, z }...] (el trazo), color (para dibujarlo) }].
+  // `tracks`: [{ name, emoji, open, lock, outline?: [{ x, z }...] (el trazo), color? (para dibujarlo), info? (texto) }].
   constructor(stage, tracks, selected = 0, title = 'Escoge pista') {
     if (!document.getElementById(STYLE_ID)) {
       const style = document.createElement('style');
@@ -43,11 +45,11 @@ export class TrackChooser {
     const cards = tracks
       .map(
         (track) => `<div class="card${track.open ? '' : ' locked'}"><div class="title"><span class="emoji">${track.emoji}</span>
-          <b>${track.name}</b></div>${outlineSvg(track.outline, track.color)}<small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
+          <b>${track.name}</b></div>${outlineSvg(track.outline, track.color)}${track.info ? `<div class="info">${track.info}</div>` : ''}<small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
       )
       .join('');
     this.el.innerHTML = `<h1>${title}</h1><div class="cards">${cards}</div>
-      <p>◀ ▶ ↑ ↓ escoger  ·  A = ¡a correr!  ·  B = regresar</p><div class="exit"><div></div></div>`;
+      <p>◀ ▶ ↑ ↓ escoger  ·  A = ¡a jugar!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     stage.append(this.el);
     this.cards = [...this.el.querySelectorAll('.card')];
     this.exitBar = this.el.querySelector('.exit > div');

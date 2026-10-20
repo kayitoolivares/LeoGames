@@ -55,6 +55,18 @@ const CSS = `
   background: rgba(27, 21, 48, 0.7); padding: 6px 16px; border-radius: 12px; }
 .kart-results .dot { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 3px #1b1530; }
 .kart-results p { margin-top: 12px; font-size: 22px; }
+.kart-results .standings { display: flex; flex-direction: column; gap: 6px; min-width: 560px; }
+.kart-results .standing { display: flex; align-items: center; gap: 14px; font-size: 22px; font-weight: 700;
+  background: rgba(27, 21, 48, 0.75); padding: 2px 18px; border-radius: 12px; }
+.kart-results .standing.first { box-shadow: 0 0 0 3px #ffc93c; }
+.kart-results .standing img { height: 40px; width: 40px; object-fit: contain; }
+.kart-results .standing .who { flex: 1; }
+.kart-results .standing .gain { color: #4cd97b; font-size: 20px; }
+.kart-results .standing b { min-width: 52px; text-align: right; color: #ffc93c; font-size: 30px; }
+.kart-results .trophy { display: flex; align-items: flex-end; gap: 20px; margin-bottom: 6px; }
+.kart-results .trophy .cup { height: 130px; filter: drop-shadow(0 4px 0 #1b1530); animation: kart-hop 0.6s ease-in-out infinite alternate; }
+.kart-results .trophy .emoji { font-size: 130px; line-height: 1; }
+.kart-results .trophy .winner { height: 115px; filter: drop-shadow(0 4px 0 #1b1530); }
 .kart-help { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 17px;
   transition: opacity 0.6s; }
 .kart-help.hidden { opacity: 0; }
@@ -170,6 +182,24 @@ export class KartHud {
     const choose = canChoose ? '  ·  B = cambiar pista' : '';
     this.results.innerHTML = `<h1>¡Llegaron!</h1><div class="podium">${podium}</div><div class="rest">${rest}</div>
       <p>A = otra carrera${choose}  ·  X = taller  ·  Mantén LB + RB + Y = salir</p>`;
+    this.results.hidden = false;
+  }
+
+  // Gran Premio: la tabla de puntos (`rows` ya ordenados, con total y lo que ganó en esta carrera).
+  // `trophy` = { image, emoji, winner } al terminar la copa: el trofeo junto al ganador.
+  showStandings({ title, rows, footer, trophy = null }) {
+    const list = rows
+      .map(
+        (row, i) => `<div class="standing${i === 0 ? ' first' : ''}"><span>${i + 1}°</span>
+          ${row.image ? `<img src="${row.image}" alt="">` : ''}
+          <span class="who"><span style="color:${row.color}">${row.label}</span> · ${row.name}</span>
+          <span class="gain">+${row.gained}</span><b>${row.total}</b></div>`,
+      )
+      .join('');
+    const cup = trophy ? (trophy.image ? `<img class="cup" src="${trophy.image}" alt="">` : `<span class="emoji">${trophy.emoji}</span>`) : '';
+    const winner = trophy?.winner.image ? `<img class="winner" src="${trophy.winner.image}" alt="">` : '';
+    this.results.innerHTML = `${trophy ? `<div class="trophy">${winner}${cup}</div>` : ''}<h1>${title}</h1>
+      <div class="standings">${list}</div><p>${footer}  ·  Mantén LB + RB + Y = salir</p>`;
     this.results.hidden = false;
   }
 

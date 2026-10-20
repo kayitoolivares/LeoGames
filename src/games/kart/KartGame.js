@@ -17,7 +17,7 @@ import { TrackFeatures } from './features.js';
 import { Garage } from './garage.js';
 import { kartPicks, randomSetup } from './karts.js';
 import { Snowfall, addScenery, addSnowmen } from './scenery.js';
-import { TRACKS, TRACK_KEYS } from './tracks.js';
+import { CUPS, CUP_KEYS, CUP_POINTS, TRACKS, TRACK_KEYS } from './tracks.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTER_KEYS } from '../smash/characters.js';
 
@@ -36,7 +36,16 @@ const CPU_GAS = 0.86;
 const CPU_LANES = [-5, 5, -2, 2, -7, 7];
 const LABEL_PX = 28;
 // Íconos de los poderes hechos con Gemini (npm run arte); si falta alguno se usa su emoji.
-const ITEM_ART = { rocket: 'cohete', banana: 'platano', turbo: 'turbo', shield: 'burbuja' };
+const ITEM_ART = {
+  rocket: 'cohete',
+  banana: 'platano',
+  turbo: 'turbo',
+  shield: 'burbuja',
+  banana3: 'platanos3',
+  comet: 'cometa',
+  lightning: 'rayo',
+  ink: 'tinta',
+};
 const ITEM_ICONS = Object.fromEntries(
   Object.entries(ITEMS).map(([key, item]) => [
     key,
@@ -55,8 +64,15 @@ const SQUASH_SPEED = 10;
 
 // La última pista que se escogió, para que salga seleccionada la próxima vez.
 let lastTrack = 'pradera';
-// Al pedir "cambiar pista" en los resultados el juego se vuelve a abrir: esa vez no pasa por el taller.
-let skipGarage = false;
+// Para cambiar de pista el juego se vuelve a abrir desde cero (así se libera la memoria de la pista anterior,
+// que en el Xbox es poca). Esto dice a dónde ir al reabrirlo, sin pasar otra vez por el taller:
+//   { to: 'tracks' } escoger pista · { to: 'cups' } escoger copa · { gp } la siguiente carrera del Gran Premio.
+let resume = null;
+// Los modos de juego (la primera pantalla después del taller).
+const MODES = [
+  { key: 'race', emoji: '🏁', name: 'Carrera', info: 'Una carrera en la pista que quieras' },
+  { key: 'cup', emoji: '🏆', name: 'Gran Premio', info: '3 pistas seguidas: el que junte más puntos gana la copa' },
+];
 
 // Cómo se reparte la pantalla: 1 jugador = completa, 2 = arriba/abajo,
 // 3 o 4 = cuatro cuadros (con 3, el cuarto muestra el mapa).
@@ -93,10 +109,16 @@ export class KartGame {
     this.drivers = new DriverArt();
     this.openTracks = TRACK_KEYS.filter((key) => rewards.unlocked(TRACKS[key].unlock));
 
-    // Primero el taller (cada quien escoge piloto y kart), luego la pista.
-    if (skipGarage) {
-      skipGarage = false;
-      this.afterGarage();
+    // Primero el taller (cada quien escoge piloto y kart), luego el modo y la pista (o la copa).
+    const next = resume;
+    resume = null;
+    if (next?.gp) {
+      this.gp = next.gp;
+      this.build(CUPS[this.gp.cup].tracks[this.gp.race]);
+    } else if (next?.to === 'tracks') {
+      this.showTracks();
+    } else if (next?.to === 'cups') {
+      this.showCups();
     } else {
       this.phase = 'garage';
       this.garage = new Garage(this.view, this.drivers);
@@ -115,14 +137,35 @@ export class KartGame {
     }
   }
 
-  // Si ya se ganó otra pista se escoge; si no, directo a la de siempre.
   afterGarage() {
-    if (this.openTracks.length > 1) this.showChooser();
-    else this.build('pradera');
+    this.showModes();
   }
 
-  showChooser() {
+  // Una pantalla de tarjetas para escoger (modo, pista o copa). `onPick(i)` con la que escogió el Jugador 1
+  // (solo si está abierta); `onBack` con B (si no hay, B sale al menú).
+  choose(cards, selected, title, onPick, onBack = null) {
     this.phase = 'choose';
+    this.chooser?.destroy();
+    this.chooser = new TrackChooser(this.view.stage, cards, selected, title);
+    this.chooserCards = cards;
+    this.onPick = onPick;
+    this.onBack = onBack;
+  }
+
+  closeChooser() {
+    this.chooser.destroy();
+    this.chooser = null;
+  }
+
+  showModes() {
+    this.choose(MODES.map((mode) => ({ ...mode, open: true })), 0, '¿Qué jugamos?', (i) => {
+      this.closeChooser();
+      if (MODES[i].key === 'cup') this.showCups();
+      else this.showTracks();
+    });
+  }
+
+  showTracks() {
     const cards = TRACK_KEYS.map((key) => ({
       ...TRACKS[key],
       open: this.openTracks.includes(key),
@@ -130,7 +173,40 @@ export class KartGame {
       outline: trackOutline(TRACKS[key]),
       color: hexToCss(TRACKS[key].mapColor ?? TRACKS[key].ground),
     }));
-    this.chooser = new TrackChooser(this.view.stage, cards, Math.max(0, TRACK_KEYS.indexOf(lastTrack)));
+    this.choose(
+      cards,
+      Math.max(0, TRACK_KEYS.indexOf(lastTrack)),
+      'Escoge pista',
+      (i) => {
+        this.closeChooser();
+        this.build(TRACK_KEYS[i]);
+      },
+      () => this.showModes(),
+    );
+  }
+
+  showCups() {
+    const cards = CUP_KEYS.map((key) => {
+      const cup = CUPS[key];
+      return {
+        ...cup,
+        emoji: manifest.copas?.includes(cup.image) ? `<img src="kart/copas/${cup.image}.png" alt="" style="height:64px">` : cup.emoji,
+        open: rewards.unlocked(cup.unlock),
+        lock: cup.unlock ? UNLOCKS[cup.unlock].label : '',
+        info: cup.tracks.map((track) => `${TRACKS[track].emoji} ${TRACKS[track].name}`).join('<br>'),
+      };
+    });
+    this.choose(
+      cards,
+      0,
+      'Gran Premio: escoge copa',
+      (i) => {
+        this.closeChooser();
+        this.gp = { cup: CUP_KEYS[i], race: 0, points: null, setups: null };
+        this.build(CUPS[this.gp.cup].tracks[0]);
+      },
+      () => this.showModes(),
+    );
   }
 
   updateChooser() {
@@ -141,14 +217,15 @@ export class KartGame {
     const row = (controls.justPressed(id, 'down') ? 1 : 0) - (controls.justPressed(id, 'up') ? 1 : 0);
     if (row !== 0) this.chooser.moveRow(row);
     if (controls.justPressed(id, 'a')) {
-      const key = TRACK_KEYS[this.chooser.selected];
-      if (!this.openTracks.includes(key)) return;
-      this.chooser.destroy();
-      this.chooser = null;
-      this.build(key);
-    } else if (controls.justPressed(id, 'b') && !this.exited) {
-      this.exited = true;
-      this.onExit();
+      if (this.chooserCards[this.chooser.selected].open) this.onPick(this.chooser.selected);
+    } else if (controls.justPressed(id, 'b')) {
+      if (this.onBack) {
+        this.closeChooser();
+        this.onBack();
+      } else if (!this.exited) {
+        this.exited = true;
+        this.onExit();
+      }
     }
   }
 
@@ -183,6 +260,10 @@ export class KartGame {
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views);
     this.startRace();
+    if (this.gp) {
+      const cup = CUPS[this.gp.cup];
+      say(`${cup.name}. Carrera ${this.gp.race + 1} de ${cup.tracks.length}: ${look.name}`);
+    }
   }
 
   // Montañas a lo lejos para que el horizonte no se vea vacío.
@@ -213,12 +294,16 @@ export class KartGame {
       const setup = kartPicks.get(player.deviceId) ?? { character: CHARACTER_KEYS[i], type: 'clasico', color, wheels: 'normales', extra: 'aleron' };
       return new Racer({ color, label: `J${player.slot + 1}`, deviceId: player.deviceId, setup, drivers });
     });
+    // En el Gran Premio la compu trae el mismo personaje y kart en todas las carreras de la copa.
     const characters = new Set(this.racers.map((racer) => racer.setup.character));
+    const saved = this.gp?.setups;
     for (let i = 0; this.racers.length < TOTAL_RACERS; i += 1) {
-      const setup = randomSetup(characters);
+      const setup = saved?.[i] ?? randomSetup(characters);
       characters.add(setup.character);
       this.racers.push(new Racer({ color: cpuColors[i % cpuColors.length].hex, label: 'CPU', setup, drivers }));
     }
+    if (this.gp && !saved) this.gp.setups = this.racers.filter((racer) => racer.isCpu).map((racer) => racer.setup);
+    if (this.gp && !this.gp.points) this.gp.points = this.racers.map(() => 0);
     this.racers.forEach((racer, i) => {
       racer.lane = CPU_LANES[i];
       this.scene.add(racer.object);
@@ -567,6 +652,10 @@ export class KartGame {
     this.phaseMs = 0;
     this.hud.setCenter('');
     const ranking = this.ranking();
+    if (this.gp) {
+      this.showStandings(ranking);
+      return;
+    }
     this.hud.showResults(
       ranking.map((racer) => ({
         label: racer.label,
@@ -574,19 +663,63 @@ export class KartGame {
         name: racer.driver.name,
         image: racer.driver.imageUrl,
       })),
-      this.openTracks.length > 1,
+      true,
     );
     say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
   }
 
-  // A = otra carrera, B = cambiar pista (si hay más de una), X = regresar al taller.
+  // Gran Premio: suma los puntos de esta carrera y muestra la tabla. En la última, la copa para el que juntó más.
+  showStandings(ranking) {
+    const cup = CUPS[this.gp.cup];
+    const gained = new Map(ranking.map((racer, place) => [racer, CUP_POINTS[place] ?? 0]));
+    this.racers.forEach((racer, i) => (this.gp.points[i] += gained.get(racer)));
+    const rows = this.racers
+      .map((racer, i) => ({
+        label: racer.label,
+        color: hexToCss(racer.color),
+        name: racer.driver.name,
+        image: racer.driver.imageUrl,
+        total: this.gp.points[i],
+        gained: gained.get(racer),
+        human: !racer.isCpu,
+      }))
+      .sort((a, b) => b.total - a.total);
+    this.gp.last = this.gp.race === cup.tracks.length - 1;
+    if (!this.gp.last) {
+      this.hud.showStandings({ title: `${cup.emoji} ${cup.name} · carrera ${this.gp.race + 1} de ${cup.tracks.length}`, rows, footer: 'A = siguiente carrera' });
+      say(`Va ganando ${rows[0].label}, ${rows[0].name}`);
+      return;
+    }
+    const winner = rows[0];
+    if (winner.human) rewards.earn('kart-copa');
+    const trophy = manifest.copas?.includes(cup.image) ? `kart/copas/${cup.image}.png` : null;
+    this.hud.showStandings({
+      title: `¡${winner.label} ganó la ${cup.name}!`,
+      rows,
+      trophy: { image: trophy, emoji: '🏆', winner },
+      footer: 'A = otra copa  ·  X = taller',
+    });
+    say(`¡${winner.label}, ${winner.name}, ganó la ${cup.name}!`);
+  }
+
+  // A = otra carrera, B = cambiar pista, X = regresar al taller.
+  // En el Gran Premio: A = siguiente carrera (y al final, otra copa; X = taller).
   updateResults() {
     if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
     const pressed = (button) => this.humans.some((racer) => controls.justPressed(racer.deviceId, button));
+    if (this.gp) {
+      if (pressed('a')) {
+        resume = this.gp.last ? { to: 'cups' } : { gp: { ...this.gp, race: this.gp.race + 1 } };
+        this.onRestart?.();
+      } else if (this.gp.last && pressed('x')) {
+        this.onRestart?.();
+      }
+      return;
+    }
     if (pressed('a')) {
       this.startRace();
-    } else if (this.openTracks.length > 1 && pressed('b')) {
-      skipGarage = true;
+    } else if (pressed('b')) {
+      resume = { to: 'tracks' };
       this.onRestart?.();
     } else if (pressed('x')) {
       this.onRestart?.();

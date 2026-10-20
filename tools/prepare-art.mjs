@@ -40,7 +40,8 @@ const GAMES = {
     fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan'] },
   },
   kart: {
-    objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja'] },
+    objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos'] },
+    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella'] },
   },
   futbol: {
     fondos: { kind: 'background', names: ['estadio'] },
@@ -150,6 +151,14 @@ async function cutOut(input, output, maxSize) {
     for (let i = 0; i < data.length; i += 4) {
       const g = data[i + 1];
       if (g > 140 && g - Math.max(data[i], data[i + 2]) > 70) data[i + 3] = 0;
+    }
+  }
+  // Igual con fondo magenta (las asas de una copa): solo el magenta fuerte, no el rosa de unos cachetes.
+  const magentaScreen = backgrounds.some(([r, g, b]) => r > 200 && b > 200 && g < 80);
+  if (magentaScreen) {
+    for (let i = 0; i < data.length; i += 4) {
+      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+      if (r > 180 && b > 180 && g < 90 && Math.abs(r - b) < 60) data[i + 3] = 0;
     }
   }
   softenEdges(data, width, height, backgrounds, greenScreen);

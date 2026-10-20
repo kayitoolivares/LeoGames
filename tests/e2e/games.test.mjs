@@ -434,9 +434,16 @@ async function passGarage(p, count) {
   for (let i = 0; i < count; i += 1) await p.tap(i, BUTTON.A);
 }
 
-// En la pantalla de pistas, A = la que ya está escogida (la Pradera, la primera vez).
+// Después del taller: A = el modo "Carrera" y se espera la pantalla de pistas.
+async function pickRaceMode(p) {
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(10000), 'ver las pistas');
+}
+
+// Modo carrera y, en las pistas, A = la que ya está escogida (la Pradera, la primera vez).
 async function pickTrack(p) {
-  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver las pistas');
+  await pickRaceMode(p);
   await p.tap(0, BUTTON.A);
 }
 
@@ -605,13 +612,58 @@ test('karts locos: triple plátano, rayo, tinta y cometa', { timeout: ms(120000)
   await p.context.close();
 });
 
+// Gran Premio: 3 carreras de la Copa Hoja con puntos; la compu trae el mismo kart en todas; al final, la copa.
+test('karts locos: gran premio de tres carreras con puntos y copa', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent.includes('Gran Premio'), ms(10000), 'ver las copas');
+  await p.tap(0, BUTTON.A);
+  const state = () =>
+    p.page.evaluate(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      return { track: k.trackKey, race: k.gp?.race, points: k.gp?.points, cpus: k.racers?.filter((r) => r.isCpu).map((r) => r.setup.character) };
+    });
+  const expected = ['pradera', 'playa', 'dulces'];
+  let cpus = null;
+  for (let race = 0; race < 3; race += 1) {
+    await p.page.waitForFunction((n) => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      return k?.gp?.race === n && k.phase === 'countdown';
+    }, race, { timeout: ms(30000) });
+    const now = await state();
+    assert.equal(now.track, expected[race]);
+    cpus ??= now.cpus;
+    assert.deepEqual(now.cpus, cpus, 'la compu trae el mismo personaje en toda la copa');
+    // Al final el jugador junta más puntos que nadie.
+    await p.page.evaluate((last) => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      if (last) k.gp.points[0] = 100;
+      k.showResults();
+    }, race === 2);
+    const total = (await state()).points.reduce((sum, value) => sum + value, 0);
+    assert.ok(total >= 31 * (race + 1), 'se suman los puntos de cada carrera');
+    await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda seguir');
+    await p.tap(0, BUTTON.A);
+  }
+  assert.ok((await stickers(p.page)).includes('kart-copa'), 'ganar la copa da su calcomanía');
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent.includes('Gran Premio'), ms(30000), 'regresar a las copas');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(180000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));
   await p.joinPlayers(1);
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
-  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver las pistas');
+  await pickRaceMode(p);
   // La nieve está en el segundo renglón, abajo de la Pradera.
   await p.tap(0, BUTTON.DOWN);
   await p.tap(0, BUTTON.A);
