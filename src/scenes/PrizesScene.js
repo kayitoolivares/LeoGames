@@ -6,8 +6,8 @@ import { sfx } from '../shared/sound.js';
 import { say } from '../shared/voice.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
 
-const COLUMNS = 8;
-const CELL_W = 142;
+const COLUMNS = 10;
+const CELL_W = 118;
 const CELL_H = 150;
 const GAP = 10;
 // Dónde va el álbum (de arriba hacia abajo): si son muchas calcomanías, los cuadros se hacen más bajitos para que quepan.

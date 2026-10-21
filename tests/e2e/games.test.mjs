@@ -1541,6 +1541,166 @@ test('duelo de bolitas: 2 contra 2 a la vez', { timeout: ms(120000) }, async () 
   await p.context.close();
 });
 
+// Parada perfecta (cubrirse justo a tiempo), movimiento secreto (↓ + X), ayudante (Y) y un objeto (corazón).
+test('duelo de bolitas: parada perfecta, secretos, ayudante y objetos', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(10000), 'empezar a pelear');
+  // La compu es el muñeco; el jugador se cubre y en ese momento el muñeco le pega.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    const [me, cpu] = s.fighters;
+    cpu.dummy = true;
+    cpu.reset(800, -1);
+    me.reset(800 - (me.radius + cpu.radius) * 0.7 - 10, 1);
+    // (En GitHub los cuadros van lentos: se da más tiempo para la parada.)
+    me.parryWindow = 3000;
+  });
+  await p.page.evaluate(() => window.__button(0, 4, true));
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].blocking, ms(3000), 'cubrirse');
+  await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[1].startAttack('punch'));
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[1].hurtMs > 0, ms(3000), 'que la parada marée al muñeco');
+  await p.page.evaluate(() => window.__button(0, 4, false));
+  assert.ok((await stickers(p.page)).includes('duelo-parada'), 'falta la calcomanía de la parada');
+
+  // ↓ + X: el secreto de agachado.
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].canAct(), ms(3000), 'poder moverse');
+  await p.page.evaluate(() => {
+    window.leogames.scene.getScene('Duelo').fighters[0].cooldownMs = 0;
+    window.__pads[0].axes = [0, 1, 0, 0];
+  });
+  await p.tap(0, BUTTON.X);
+  await p.until(() => {
+    const me = window.leogames.scene.getScene('Duelo').fighters[0];
+    return me.special?.name === me.secrets.low.name || me.cooldownMs > 0;
+  }, ms(3000), 'hacer el movimiento secreto');
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+
+  // Y: el ayudante entra corriendo.
+  await p.tap(0, BUTTON.Y);
+  await p.until(() => window.leogames.scene.getScene('Duelo').shots.some((shot) => shot.solid), ms(3000), 'llamar al ayudante');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[0].assistUsed));
+
+  // Un corazón que cae junto al jugador lo cura.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    const me = s.fighters[0];
+    me.health = 50;
+    s.items.spawn('heart');
+    s.items.list.at(-1).x = me.x;
+  });
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].health > 50, ms(5000), 'agarrar el corazón');
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Los modos nuevos: escuela, retos, torneo familiar, jefes secretos y el salón de la fama.
+test('duelo de bolitas: escuela, retos, torneo familiar, jefes y salón de la fama', { timeout: ms(240000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  const pickMode = async (mode) => {
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'setup', ms(10000), 'regresar a escoger');
+    await p.page.evaluate((m) => {
+      const s = window.leogames.scene.getScene('Duelo');
+      s.setup.mode = m;
+      s.setup.cupSize = 4;
+      s.refreshSetup();
+    }, mode);
+    await p.tap(0, BUTTON.A);
+  };
+  const win = () =>
+    p.page.evaluate(() => {
+      const s = window.leogames.scene.getScene('Duelo');
+      const me = s.fighters.find((f) => !f.isCpu);
+      const rival = s.fighters.find((f) => f !== me);
+      me.roundWins = s.roundsToWin - 1;
+      rival.health = 0;
+      s.endRound(me, 'ko');
+    });
+  const toSetup = () => p.page.evaluate(() => window.leogames.scene.getScene('Duelo').backToSetup());
+
+  // Escuela: la primera lección se cumple caminando; luego se brinca hasta la última.
+  await pickMode('escuela');
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), 'empezar la escuela');
+  await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
+  await p.until(() => window.leogames.scene.getScene('Duelo').school.index >= 1, ms(8000), 'cumplir la lección de caminar');
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  await p.page.evaluate(async () => {
+    const { LESSONS } = await import('/src/games/duelo/school.js');
+    const school = window.leogames.scene.getScene('Duelo').school;
+    school.index = LESSONS.length - 1;
+    school.doneMs = 0;
+    school.show();
+    school.mark('final');
+  });
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(8000), 'terminar la escuela');
+  assert.ok((await stickers(p.page)).includes('duelo-escuela'));
+  await toSetup();
+
+  // Retos: el primero (ganar sin cubrirse).
+  await pickMode('retos');
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'menu', ms(5000), 'ver los retos');
+  await p.wait(400);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), 'empezar el reto');
+  await win();
+  await p.until(() => window.leogames.scene.getScene('Duelo').challengeResolved, ms(15000), 'cumplir el reto');
+  assert.ok((await stickers(p.page)).includes('duelo-reto'));
+  await toSetup();
+
+  // Torneo familiar de 4: semifinal y final.
+  await pickMode('familiar');
+  for (let fight = 1; fight <= 2; fight += 1) {
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end' && window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(15000), `ver las llaves (${fight})`);
+    await p.tap(0, BUTTON.A);
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), `empezar la pelea ${fight} de las llaves`);
+    await win();
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(15000), `ganar la pelea ${fight}`);
+    await p.until(() => window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(10000), 'poder seguir');
+    await p.tap(0, BUTTON.A);
+  }
+  await p.until(() => window.leogames.scene.getScene('Duelo').cup.done, ms(10000), 'terminar el torneo familiar');
+  assert.ok((await stickers(p.page)).includes('duelo-familiar'));
+  await toSetup();
+
+  // Jefes secretos: Dragonzote, Robotote y el Rey Bolón.
+  await pickMode('jefes');
+  for (const [fight, name] of [[1, 'Dragonzote'], [2, 'Robotote'], [3, 'Rey Bolón']]) {
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end' && window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(15000), `ver la escalera de jefes (${fight})`);
+    await p.tap(0, BUTTON.A);
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), `pelear con ${name}`);
+    assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[1].name), name);
+    await win();
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(15000), `vencer a ${name}`);
+    if (fight < 3) {
+      await p.until(() => window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(10000), 'poder seguir');
+      await p.tap(0, BUTTON.A);
+    }
+  }
+  assert.ok((await stickers(p.page)).includes('duelo-jefes'));
+  await toSetup();
+
+  // Salón de la fama: ya trae victorias.
+  await pickMode('fama');
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'menu', ms(5000), 'ver el salón de la fama');
+  const fights = await p.page.evaluate(() => import('/src/games/duelo/records.js').then((m) => m.loadFame().fights));
+  assert.ok(fights > 0, 'el salón de la fama no contó las peleas');
+  await p.wait(400);
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'setup', ms(5000), 'regresar del salón de la fama');
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { timeout: ms(90000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(3);

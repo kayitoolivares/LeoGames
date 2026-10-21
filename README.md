@@ -214,6 +214,32 @@ Abre http://localhost:5173 en Edge o Chrome.
   libre), pétalos de cerezo en el Dojo, hojas en el Bosque y la Pradera, chispas de lava en el Volcán, confeti en el
   Estadio, y escenarios nuevos: **Lucha libre** (con reflectores de colores), **Azotea** (de noche, con brillitos) y
   el **Castillo del Rey** (donde se pelea contra el Rey Bolón).
+  **Ronda 3** (con dibujos de Gemini donde hace falta):
+  - **Parada perfecta**: si te cubres (LB / RB) justo antes de que te peguen, el golpe rebota, el rival se queda
+    mareado y tu barra sube; lo que te lanzan se le regresa.
+  - **Movimientos secretos**: cada personaje tiene dos más, **↓ + X** (agachado) y **X en el aire**: terremotos,
+    picadas, lluvia de estrellas, shurikens, puño cohete, bola de estambre que bota, bola de nieve que congela, curita
+    del hada, burbuja sin gravedad...
+  - **Ayudante** (**Y**, una vez por round; Bloquecito: **↑ + Y**): un amigo entra corriendo, le da un golpazo al rival
+    y se va.
+  - **Objetos que caen** (se puede apagar): corazón (cura), martillo (los siguientes 3 golpes pegan más y tumban),
+    bomba (la avientas) y escudo (una burbuja que aguanta 2 golpes).
+  - **Modos nuevos**: **Escuela de peleas** (15 lecciones con letrero y voz: caminar, saltar, golpe, patada, remate,
+    cubrirse, parada perfecta —el muñeco avisa «¡Ahí va!»—, gancho, barrida, especial, secretos, ayudante, súper y
+    golpe final), **Retos** (10 misiones: sin cubrirse, combo de 6, golpe final, perfecto, solo patadas, 3 paradas,
+    en menos de 30 segundos, secretos, ayudante y contra Dragonzote; se guardan las cumplidas), **Torneo familiar**
+    (llaves de 4 u 8 peleadores, jugadores y compu; las peleas de la compu se deciden solas), **Jefes secretos**
+    (**Dragonzote**, un dragón gigante que echa llamaradas, en su guarida del volcán; **Robotote**, un robot gigante con
+    puño cohete, en su fábrica; y el Rey Bolón) y **Salón de la fama** (victorias de cada personaje y récords: combo
+    más largo, rounds perfectos, paradas, golpes finales y supervivencia).
+  - **Escenarios nuevos**: Playa (caen cocos), Pueblito nevado (los empujones resbalan), Estación espacial (se salta
+    más alto) y Cueva de cristales (caen cristales), más las guaridas de los jefes.
+  - **Repetición del K.O.**: el golpe que gana la pelea otra vez en cámara lenta, con zoom y un «¡K.O.!» gigante
+    (A la brinca).
+  - **Trajes**: en la pantalla de antes de pelear, cada quien cambia el color de su traje con **X** en su control
+    (si dos traen el mismo personaje, el segundo sale de otro color).
+  - **Narrador**: comenta el primer golpe, los combos, las paradas, los secretos, el ayudante, los objetos y quién
+    tiene poquita vida (con voz y letrero).
 - **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, dibujado con
   figuras (sin imágenes de Gemini). **Y** sube de número y **↓ + Y** baja (del 10 regresa al 1), cuando quieras y sin
   límite; la voz dice el número. Cada número tiene su color y su forma, y entre más grande es más fuerte y pesado pero
@@ -304,7 +330,9 @@ antes de cada publicación, y si alguna falla no se publica.
   (`FutbolPlayer.js`), la compu (`cpu.js`), canchas (`pitches.js`), poderes (`powers.js`), penales
   (`penalties.js`), público y narrador (`crowd.js`) y las pantallas de la Copa y del final (`screens.js`).
 - `src/games/duelo/`: Duelo de bolitas (Phaser): peleador, golpes y especiales (`moves.js`), lo que se lanza
-  (`shots.js`), escenarios y la compu.
+  (`shots.js`), escenarios y la compu; secretos (`secrets.js`), ayudante (`assist.js`), objetos (`items.js`), escuela
+  (`school.js`), retos (`challenges.js`), torneo familiar (`family.js`), salón de la fama (`records.js`), repetición
+  del K.O. (`replay.js`), narrador (`talk.js`) y los jefes (`boss.js`).
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.

@@ -2,11 +2,12 @@ import { METER_MAX } from './DueloFighter.js';
 
 // Qué tan bien pelea la compu: `speed` al caminar (1 = como un jugador), `attack` golpes por segundo
 // cuando está cerca, `block` probabilidad de cubrirse cuando le van a pegar, `special` especiales por
-// segundo y `jump` saltos por segundo. En Fácil los peques le pueden ganar.
+// segundo y `jump` saltos por segundo. `parry`: qué tan seguido le sale la parada perfecta al cubrirse;
+// `assist`: ayudantes por segundo (cuando el rival está a media distancia). En Fácil los peques le pueden ganar.
 export const CPU_LEVELS = {
-  facil: { name: 'Fácil', speed: 0.6, attack: 1.2, block: 0.15, special: 0.15, jump: 0.05 },
-  normal: { name: 'Normal', speed: 0.8, attack: 2.4, block: 0.4, special: 0.3, jump: 0.1 },
-  dificil: { name: 'Difícil', speed: 1, attack: 4.5, block: 0.7, special: 0.5, jump: 0.15 },
+  facil: { name: 'Fácil', speed: 0.6, attack: 1.2, block: 0.15, special: 0.15, jump: 0.05, parry: 0.1, assist: 0.05 },
+  normal: { name: 'Normal', speed: 0.8, attack: 2.4, block: 0.4, special: 0.3, jump: 0.1, parry: 0.3, assist: 0.1 },
+  dificil: { name: 'Difícil', speed: 1, attack: 4.5, block: 0.7, special: 0.5, jump: 0.15, parry: 0.55, assist: 0.15 },
 };
 
 // El muñeco de práctica (Entrenamiento): no camina, no pega y no se cubre.
@@ -15,13 +16,17 @@ export const DUMMY = { name: 'Muñeco', passive: true };
 const BLOCK_MS = 350;
 const BLOCK_CHANGES_PER_SECOND = 0.35;
 const DASHES_PER_SECOND = 0.5;
+// Va por un objeto si está más cerca que esto (y el rival no lo está atacando).
+const ITEM_REACH = 380;
 
 // Decide qué "aprieta" la compu este cuadro (mismo formato que un control).
 // Se acerca hasta tener al rival a su alcance (a veces de un arrancón) y pega: golpes, patadas, barridas,
 // agarres y, si el rival viene saltando, un gancho. Si lo van a golpear o le lanzan algo, a veces se cubre,
 // salta o se va rodando. Los que lanzan cosas (estrella, láser...) prefieren pelear de lejos.
-export function cpuInput(me, foe, shots, level, dtMs) {
-  const input = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
+// También usa sus movimientos secretos (agachado y en el aire), llama a su ayudante y va por los objetos.
+// `items`: los objetos de la pelea (o null).
+export function cpuInput(me, foe, shots, level, dtMs, items = null) {
+  const input = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0, assist: false };
   const ai = (me.ai ??= { blockMs: 0, retreatMs: 0, threat: null });
   ai.blockMs -= dtMs;
   ai.retreatMs -= dtMs;
@@ -48,10 +53,27 @@ export function cpuInput(me, foe, shots, level, dtMs) {
   }
 
   if (me.meter >= METER_MAX && chance(0.6)) input.transform = true;
+  // El ayudante: a media distancia, una vez por round.
+  if (!me.assistUsed && gap > 200 && chance(level.assist ?? 0)) input.assist = true;
+  // En el aire: su secreto del aire, de vez en cuando.
+  if (!me.grounded && me.cooldownMs === 0 && chance(level.special * 1.5)) {
+    input.special = true;
+    return input;
+  }
+  // Un objeto cerca y nadie atacándolo: va por él.
+  const item = items?.nearest(me.x);
+  if (item && Math.abs(item.x - me.x) < ITEM_REACH && Math.abs(item.x - me.x) < Math.abs(foe.x - me.x) && !threat) {
+    input.x = Math.sign(item.x - me.x) * level.speed;
+    return input;
+  }
   // Bloquecito cambia de número de vez en cuando (sube más de lo que baja).
   if (me.blocks && chance(BLOCK_CHANGES_PER_SECOND)) input.change = Math.random() < 0.6 ? 1 : -1;
   const ranged = me.specialData.kind === 'shot';
-  if (me.cooldownMs === 0 && chance(level.special) && (ranged ? gap > 200 : gap < 150)) input.special = true;
+  if (me.cooldownMs === 0 && chance(level.special) && (ranged ? gap > 200 : gap < 150)) {
+    input.special = true;
+    // A veces el secreto de agachado en vez del especial.
+    if (Math.random() < 0.35) input.down = true;
+  }
 
   const reach = me.radius * 0.9;
   // El rival viene saltando encima: gancho.

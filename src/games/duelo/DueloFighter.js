@@ -3,11 +3,12 @@ import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { hasPose, superArtKey } from '../smash/art.js';
+import { hasPose, itemTexture, superArtKey } from '../smash/art.js';
 import { isBlockCharacter, lerp, numberSize } from '../smash/bloquecito.js';
 import { CHARACTERS } from '../smash/characters.js';
-import { BOSS, BOSS_STATS, addCrown } from './boss.js';
+import { BOSSES, addCrown, isBoss } from './boss.js';
 import { ATTACKS, BLOCK_SPECIALS, SPECIALS, SPECIAL_COOLDOWN_MS } from './moves.js';
+import { SECRETS } from './secrets.js';
 
 // El piso y las paredes del escenario (la pantalla completa, sin cámara).
 export const FLOOR = 650;
@@ -45,6 +46,18 @@ const CROUCH_HEIGHT = 0.62;
 const DASH = { forward: { ms: 220, speed: 2.8 }, back: { ms: 300, speed: 2.2, invulnerableMs: 260 } };
 // Qué tan cerca (en radios, entre las orillas) tiene que estar el rival para agarrarlo.
 const GRAB_GAP = 0.7;
+// Parada perfecta: cubrirse justo antes del golpe (a lo mucho este rato antes) lo rebota.
+export const PARRY_WINDOW_MS = 220;
+// Objetos: el corazón cura, el martillo hace más fuertes los siguientes golpes y el escudo aguanta golpes.
+const HEART_HEAL = 20;
+const HAMMER_HITS = 3;
+const HAMMER_POWER = 1.6;
+const SHIELD_HITS = 2;
+// La bola de nieve deja azulito y quieto un rato.
+const CHILL_TINT = 0x9fdcff;
+// Los trajes de colores (se le pone ese tinte a su dibujo; null = el de siempre).
+export const COSTUMES = [null, 0xff9a9a, 0x9ad0ff, 0xa8f0a0, 0xffe08a, 0xd0b0ff, 0x8a8aa0];
+export const COSTUME_NAMES = ['normal', 'rojo', 'azul', 'verde', 'dorado', 'morado', 'sombra'];
 
 // Qué imagen usa cada cosa, en orden de preferencia: las poses de pelea son opcionales
 // (si no hay, usa la más parecida de las 4 de siempre).
@@ -80,9 +93,13 @@ export class DueloFighter {
     this.deviceId = deviceId;
     this.isCpu = deviceId === null;
     this.character = character;
-    // El jefe del torneo no es de Bolitas Bros: trae sus propios datos (ver boss.js).
-    this.boss = character === BOSS;
-    const stats = this.boss ? BOSS_STATS : CHARACTERS[character];
+    // Los jefes no son de Bolitas Bros: traen sus propios datos (ver boss.js).
+    this.boss = isBoss(character);
+    const stats = this.boss ? BOSSES[character] : CHARACTERS[character];
+    this.stats = stats;
+    // Los movimientos secretos: ↓ + X y X en el aire (ver secrets.js).
+    this.secrets = SECRETS[character] ?? null;
+    this.costume = null;
     this.name = stats.name;
     this.superName = stats.superName;
     this.specialData = this.boss ? stats.special : SPECIALS[character];
@@ -100,7 +117,7 @@ export class DueloFighter {
     const r = this.radius;
     this.blob = new Blob(scene, 0, FLOOR - r, color, r).setDepth(100);
     this.look = new CharacterLook(scene, this.blob, character, { height: LOOK_HEIGHT });
-    if (this.boss && !this.look.hasArt) addCrown(scene, this.blob);
+    if (stats.crown && !this.look.hasArt) addCrown(scene, this.blob);
     this.superArt = superArtKey(scene, character);
     // Estatura (para las cajas de golpe): la imagen trae un borde blanco alrededor.
     this.height = this.look.hasArt ? r * LOOK_HEIGHT * 0.9 : r * 2.2;
@@ -115,7 +132,13 @@ export class DueloFighter {
     this.tag = scene.add
       .text(0, this.look.top - 16, label, textStyle(20, hexToCss(color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 }))
       .setOrigin(0.5);
-    figure.add([this.shield, this.fist, this.tag]);
+    // Objetos: la burbuja del escudo y el martillo en la mano.
+    this.bubble = scene.add.circle(0, r - this.height / 2, Math.max(r * 1.4, this.height * 0.62), 0x9fe3ff, 0.18).setStrokeStyle(5, 0xffffff, 0.8).setVisible(false);
+    const hammer = itemTexture(scene, 'hammer');
+    this.hammer = hammer ? scene.add.image(r * 0.9, r - this.height * 0.75, hammer) : scene.add.text(r * 0.9, r - this.height * 0.75, '🔨', textStyle(44, '#ffffff')).setOrigin(0.5);
+    if (hammer) this.hammer.setScale((r * 1.3) / this.hammer.height);
+    this.hammer.setVisible(false);
+    figure.add([this.shield, this.bubble, this.hammer, this.fist, this.tag]);
 
     this.meter = 0;
     this.superMs = 0;
@@ -178,7 +201,32 @@ export class DueloFighter {
     this.defeated = false;
     this.flashMs = 0;
     this.walkPhase = 0;
+    this.blockHeldMs = 0;
+    this.hammerHits = 0;
+    this.bubbleHits = 0;
+    this.chillMs = 0;
     this.blob.figure.setAngle(0).setAlpha(1);
+  }
+
+  // Le pegaron a su parada perfecta: se queda mareado un momento.
+  stagger(ms) {
+    this.attack = null;
+    this.special = null;
+    this.buffered = null;
+    this.dash = null;
+    this.vx = 0;
+    this.hurtMs = Math.max(this.hurtMs, ms);
+  }
+
+  // Agarró un objeto (ver items.js).
+  takeItem(kind) {
+    if (kind === 'heart') this.health = Math.min(this.maxHealth, this.health + HEART_HEAL);
+    else if (kind === 'hammer') this.hammerHits = HAMMER_HITS;
+    else if (kind === 'shield') this.bubbleHits = SHIELD_HITS;
+  }
+
+  setCostume(tint) {
+    this.costume = tint;
   }
 
   get grounded() {
@@ -297,6 +345,7 @@ export class DueloFighter {
     this.blockStunMs = Math.max(0, this.blockStunMs - dtMs);
     this.invulnerableMs = Math.max(0, this.invulnerableMs - dtMs);
     this.flashMs = Math.max(0, this.flashMs - dtMs);
+    this.chillMs = Math.max(0, this.chillMs - dtMs);
     this.cooldownMs = Math.max(0, this.cooldownMs - dtMs * (this.superMs > 0 ? 2 : 1));
     this.sinceAttackMs += dtMs;
     if (this.superMs > 0) {
@@ -306,6 +355,7 @@ export class DueloFighter {
   }
 
   act(input, dt, opponent) {
+    const wasBlocking = this.blocking;
     this.blocking = false;
     this.crouching = false;
     if (input.transform && this.transform()) {
@@ -320,12 +370,15 @@ export class DueloFighter {
     if (!this.grounded) {
       if (input.punch && !this.airAttackUsed) this.startAttack('airPunch');
       else if (input.kick && !this.airAttackUsed) this.startAttack('airKick');
-      else if (input.special && this.cooldownMs === 0) this.startSpecial();
+      // En el aire, X es su movimiento secreto del aire.
+      else if (input.special && this.cooldownMs === 0) this.startSpecial(this.secrets?.air, 'secretAir');
       const max = this.walkSpeed * 1.2 * this.speed;
       this.vx = Phaser.Math.Clamp(this.vx + input.x * AIR_CONTROL * dt, -max, max);
       return;
     }
     if (input.block || this.blockStunMs > 0) {
+      // Cuánto lleva cubriéndose (para la parada perfecta).
+      this.blockHeldMs = wasBlocking ? this.blockHeldMs + dt * 1000 : 0;
       this.blocking = true;
       this.crouching = Boolean(input.down);
       this.vx = 0;
@@ -345,7 +398,7 @@ export class DueloFighter {
       this.vx = 0;
       if (input.punch) this.startAttack('uppercut');
       else if (input.kick) this.startAttack('sweep');
-      else if (input.special && this.cooldownMs === 0) this.startSpecial();
+      else if (input.special && this.cooldownMs === 0) this.startSpecial(this.secrets?.low, 'secretLow');
     } else if (input.kick && Math.sign(input.x) === this.facing && Math.abs(input.x) > 0.4 && this.canGrab(opponent)) {
       // Adelante + B pegadito al rival: lo agarra y lo avienta (aunque se esté cubriendo).
       this.startAttack('grab');
@@ -420,12 +473,15 @@ export class DueloFighter {
     if (next && this.grounded && this.hurtMs <= 0) this.startAttack(next);
   }
 
-  // El especial (X). En `special`, `t` es cuánto lleva y `ms` lo que dura la parte que pega.
-  startSpecial() {
-    this.special = { ...this.specialData, t: 0, fired: false };
+  // El especial (X), o uno de sus movimientos secretos (`data`, con `practice` = 'secretLow' o 'secretAir').
+  // En `special`, `t` es cuánto lleva y `ms` lo que dura la parte que pega.
+  startSpecial(data = null, practice = 'special') {
+    const move = data ?? this.specialData;
+    this.special = { ...move, t: 0, fired: false };
     this.landed = new Set();
     this.cooldownMs = SPECIAL_COOLDOWN_MS;
-    this.scene.practiced?.(this, 'special');
+    this.scene.practiced?.(this, data ? practice : 'special');
+    if (data) this.scene.secretUsed?.(this, move);
     this.punchChain = 0;
     if (this.grounded) this.vx = 0;
     sfx.special();
@@ -455,6 +511,27 @@ export class DueloFighter {
         this.vx = this.facing * s.speed * this.speed;
       }
       // Termina al caer al piso (ver land()).
+    } else if (s.kind === 'dive') {
+      // En picada hacia adelante y abajo; termina al caer al piso (ver land()).
+      if (!s.fired) {
+        s.fired = true;
+        this.vx = this.facing * s.speed * this.speed;
+        this.vy = s.fall;
+      }
+      if (this.grounded) done = true;
+    } else if (s.kind === 'quake') {
+      if (!s.fired) {
+        s.fired = true;
+        this.scene.quake?.(this);
+      }
+      done = since > s.ms + SPECIAL_RECOVERY_MS;
+    } else if (s.kind === 'heal') {
+      if (!s.fired) {
+        s.fired = true;
+        this.health = Math.min(this.maxHealth, this.health + s.amount);
+        this.scene.healed?.(this, s.amount);
+      }
+      done = since > 300;
     } else if (s.kind === 'spin') {
       done = since > s.ms + SPECIAL_RECOVERY_MS;
     } else if (s.kind === 'flurry') {
@@ -492,7 +569,9 @@ export class DueloFighter {
       const a = this.attack.data;
       const t = this.attack.ms;
       if (t < a.startup || t >= a.startup + a.active) return null;
-      return { ...front(a.reach, a.hi, a.lo), data: { ...a, power: this.power }, key: 'attack' };
+      // Con el martillo, más fuerte y tumba.
+      const hammer = this.hammerHits > 0 ? { power: this.power * HAMMER_POWER, launch: true, hammer: true } : { power: this.power };
+      return { ...front(a.reach, a.hi, a.lo), data: { ...a, ...hammer }, key: 'attack' };
     }
     const s = this.special;
     if (!s) return null;
@@ -511,17 +590,34 @@ export class DueloFighter {
       if (k < s.hits && since - k * s.gapMs < 80) return { ...front(0.9, 0.85, 0.3), data: { ...data, stunMs: 220 }, key: `flurry-${k}` };
     }
     if (s.kind === 'teleport' && since > 60 && since < 220) return { ...front(1, 0.9, 0.2), data, key: 'teleport' };
+    if (s.kind === 'dive' && s.fired && !this.grounded) return { ...front(0.6, 0.85, -0.25), data, key: 'dive' };
+    // El pisotón: bajito, a los dos lados (saltando se esquiva).
+    if (s.kind === 'quake' && since < s.ms) {
+      const reach = r * (s.reach ?? 2.4);
+      return { left: this.x - reach, right: this.x + reach, top: this.y - h * 0.3, bottom: this.y + 10, data, key: 'quake' };
+    }
     return null;
   }
 
-  // Recibe un golpe desde `fromX`. Devuelve { blocked, dealt } o null si no le hizo nada.
+  // Recibe un golpe desde `fromX`. Devuelve { blocked, dealt, parried?, absorbed? } o null si no le hizo nada.
   takeHit(data, fromX) {
     if (this.isInvulnerable() || this.celebrating) return null;
     const fromFront = Math.sign(fromX - this.x) === this.facing || fromX === this.x;
     const dir = Math.sign(this.x - fromX) || -this.facing;
     // Un agarre solo funciona en el piso, pero ni cubriéndose se salva.
     if (data.grab && !this.grounded) return null;
+    // El escudo (objeto) aguanta el golpe completito.
+    if (this.bubbleHits > 0 && !data.grab) {
+      this.bubbleHits -= 1;
+      this.pushVx = dir * data.push * 0.4;
+      return { blocked: true, absorbed: true, dealt: 0 };
+    }
     if (this.blocking && this.grounded && fromFront && !data.grab && !data.unblockable) {
+      // Parada perfecta: se cubrió justo a tiempo (la compu solo a veces, según su nivel).
+      if (this.blockHeldMs <= (this.parryWindow ?? PARRY_WINDOW_MS) && (!this.isCpu || Math.random() < (this.parryChance ?? 0))) {
+        this.blockStunMs = 0;
+        return { blocked: true, parried: true, dealt: 0 };
+      }
       const chip = data.special ? Math.ceil(data.damage * data.power * 0.25) : 0;
       this.health = Math.max(1, this.health - chip);
       this.pushVx = dir * data.push * 0.6;
@@ -554,6 +650,7 @@ export class DueloFighter {
       this.pushVx = dir * data.push;
     }
     if (this.launched) this.y = Math.min(this.y, FLOOR - 1);
+    if (data.freeze) this.chillMs = data.stunMs;
     if (this.look.hasArt) this.flashMs = 70;
     else this.blob.flash();
     this.blob.squish();
@@ -568,7 +665,8 @@ export class DueloFighter {
     }
     this.x += (this.vx + this.pushVx) * dt;
     if (this.grounded) {
-      const step = FRICTION * dt;
+      // (En la nieve resbala más: `friction` lo pone el escenario.)
+      const step = FRICTION * (this.friction ?? 1) * dt;
       this.pushVx = Math.abs(this.pushVx) <= step ? 0 : this.pushVx - Math.sign(this.pushVx) * step;
     }
     // Acostado ocupa más de lado: se queda más lejos de la pared para que no se salga de la pantalla.
@@ -582,8 +680,8 @@ export class DueloFighter {
     this.vy = 0;
     this.airAttackUsed = false;
     if (this.attack?.type.startsWith('air')) this.attack = null;
-    if (this.special?.stomp) this.scene.landed?.(this, true);
-    if (this.special?.kind === 'rise') this.special = null;
+    if (this.special?.stomp || this.special?.kind === 'dive') this.scene.landed?.(this, true);
+    if (this.special?.kind === 'rise' || this.special?.kind === 'dive') this.special = null;
     if (!this.attack && !this.special) this.vx = 0;
     if (this.launched) {
       this.launched = false;
@@ -661,6 +759,8 @@ export class DueloFighter {
     this.blob.list[0].setScale(Math.max(0.4, 1 - (FLOOR - this.y) / 400));
 
     this.shield.setVisible(this.blocking);
+    this.bubble.setVisible(this.bubbleHits > 0).setScale(1 + 0.04 * Math.sin(now / 120));
+    this.hammer.setVisible(this.hammerHits > 0 && !this.koed);
     const box = this.attack || (this.special && this.special.kind !== 'shot') ? this.hitbox() : null;
     const showFist = Boolean(box) && shown !== 'golpe' && shown !== 'patada' && shown !== 'especial';
     this.fist.setVisible(showFist);
@@ -675,6 +775,9 @@ export class DueloFighter {
     if (image) {
       if (this.flashMs > 0) image.setTintMode(Phaser.TintModes.FILL).setTint(0xffffff);
       else if (this.superMs > 0 && !this.superArt) image.setTintMode(Phaser.TintModes.SCREEN).setTint(SUPER_TINT);
+      else if (this.chillMs > 0) image.setTintMode(Phaser.TintModes.MULTIPLY).setTint(CHILL_TINT);
+      // Su traje de color (si escogió uno).
+      else if (this.costume) image.setTintMode(Phaser.TintModes.MULTIPLY).setTint(this.costume);
       else image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
     }
   }

@@ -1,8 +1,14 @@
 {
   "fondos": [
     "azotea",
+    "cueva",
     "dojo",
+    "espacio",
+    "fabrica",
+    "guarida",
     "lucha",
+    "nieve",
+    "playa",
     "trono"
   ],
   "efectos": [
@@ -14,10 +20,18 @@
     "zas"
   ],
   "jefe": [
+    "dragonzote-dolor",
+    "dragonzote-golpe",
+    "dragonzote-normal",
+    "dragonzote-salto",
     "rey-dolor",
     "rey-golpe",
     "rey-normal",
-    "rey-salto"
+    "rey-salto",
+    "robotote-dolor",
+    "robotote-golpe",
+    "robotote-normal",
+    "robotote-salto"
   ],
   "publico": [
     "fan1",

@@ -32,6 +32,8 @@ export const QUOTES = {
   bombero: '¡Apagué tu fuego!',
   bloquecito: '¡Uno, dos, tres... gané!',
   rey: '¡Jo, jo, jo! ¡Soy el rey!',
+  dragonzote: '¡GRRR! ¡Mi tesoro es mío!',
+  robotote: '¡BIP BUP! ¡Misión cumplida!',
 };
 
 // La imagen de un peleador en una pose (la primera de `poses` que tenga). Bloquecito se pinta con bloques.

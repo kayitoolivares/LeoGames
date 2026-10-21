@@ -70,9 +70,13 @@ const GAMES = {
     copas: { kind: 'cutout', max: 256, names: ['copa-futbol'] },
   },
   duelo: {
-    fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono'] },
+    fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono', 'playa', 'nieve', 'espacio', 'cueva', 'guarida', 'fabrica'] },
     efectos: { kind: 'cutout', max: 256, names: ['pow', 'zas', 'chispa', 'polvo', 'onda', 'mareo'] },
-    jefe: { kind: 'cutout', max: 384, names: ['rey-normal', 'rey-golpe', 'rey-salto', 'rey-dolor'] },
+    jefe: {
+      kind: 'cutout',
+      max: 384,
+      names: ['normal', 'golpe', 'salto', 'dolor'].flatMap((pose) => ['rey', 'dragonzote', 'robotote'].map((boss) => `${boss}-${pose}`)),
+    },
     publico: { kind: 'cutout', max: 192, names: ['fan1', 'fan2', 'fan3', 'fan4', 'fan5', 'fan6'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-torneo'] },
   },

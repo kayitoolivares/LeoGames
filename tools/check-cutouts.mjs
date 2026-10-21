@@ -5,17 +5,21 @@
 //            del personaje, es que lo cortaron.
 //   pedazos: piezas sueltas pegadas a la orilla (un pedazo de la pose de al lado). Las que flotan en medio, como las
 //            estrellitas de mareo o los brillitos, no cuentan.
-// Uso: node tools/check-cutouts.mjs [filtro]      (filtro: parte del nombre, p. ej. "caminar")
+// Uso: node tools/check-cutouts.mjs [filtro] [--dir carpeta]   (filtro: parte del nombre, p. ej. "caminar";
+//      carpeta: otra carpeta de recortes, p. ej. public/duelo/jefe)
 import { readdirSync } from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 
-const DIR = path.resolve(import.meta.dirname, '..', 'public', 'smash', 'personajes');
+const args = process.argv.slice(2);
+const dirAt = args.indexOf('--dir');
+const DIR = dirAt >= 0 ? path.resolve(args[dirAt + 1]) : path.resolve(import.meta.dirname, '..', 'public', 'smash', 'personajes');
+if (dirAt >= 0) args.splice(dirAt, 2);
 // Una orilla cuenta como cortada si tiene al menos estos pixeles de color (no blancos) seguidos.
 const CUT_RUN = 6;
 // Una pieza suelta cuenta si mide al menos esta fracción del personaje.
 const PIECE = 0.002;
-const filter = process.argv[2] ?? '';
+const filter = args[0] ?? '';
 
 const files = readdirSync(DIR).filter((f) => f.endsWith('.png') && f.includes(filter));
 const bad = [];

@@ -17,6 +17,13 @@ const AMBIENTS = {
   embers: { colors: [0xff9a3c, 0xffd84d, 0xff5a3c], size: [3, 6], vy: [-90, -40], sway: 30, shape: 'dot', glow: true },
   confetti: { colors: [0xff5a5f, 0xffd84d, 0x3fa7ff, 0x4cd97b, 0xb07cff], size: [6, 10], vy: [60, 110], sway: 50, shape: 'square' },
   sparkles: { colors: [0xffffff, 0xfff3a8, 0x9fe3ff], size: [3, 5], vy: [-5, 5], sway: 0, shape: 'dot', glow: true, twinkle: true },
+  snow: { colors: [0xffffff, 0xe8f4ff], size: [4, 8], vy: [40, 80], sway: 40, shape: 'dot' },
+  crystals: { colors: [0xd36bff, 0x6fd8ff, 0xff8fe0], size: [3, 6], vy: [-30, -10], sway: 20, shape: 'dot', glow: true, twinkle: true },
+};
+// Lo que cae en algunos escenarios: primero una sombra avisa dónde, luego cae y al que le pegue lo tumba.
+const HAZARDS = {
+  coconut: { everyMs: [5000, 9000], warnMs: 1100, fallMs: 380, damage: 7, size: 26 },
+  crystal: { everyMs: [4500, 8000], warnMs: 1000, fallMs: 340, damage: 8, size: 30 },
 };
 const LIGHT_COLORS = [0xff5a5f, 0x3fa7ff, 0xffd84d, 0x4cd97b];
 const FAN_COLORS = [0xe53935, 0x3a5bd6, 0xffd02a, 0xff8a1e, 0x8158d8, 0x8b5a3c];
@@ -39,6 +46,62 @@ export class StageLife {
     this.bits = this.style ? Array.from({ length: AMBIENT_COUNT }, () => this.makeBit(true)) : [];
     this.cheerMs = 0;
     this.time = 0;
+    this.hazard = HAZARDS[arena.hazard] ? { kind: arena.hazard, ...HAZARDS[arena.hazard] } : null;
+    this.falling = [];
+    this.nextFallMs = this.hazard ? Phaser.Math.Between(...this.hazard.everyMs) : Infinity;
+  }
+
+  // Cocos o cristales que caen (solo mientras pelean). `onHit(fighter, damage)` cuando le pegan a alguien.
+  updateHazards(dtMs, fighters, onHit) {
+    if (!this.hazard) return;
+    const h = this.hazard;
+    this.nextFallMs -= dtMs;
+    if (this.nextFallMs <= 0) {
+      this.nextFallMs = Phaser.Math.Between(...h.everyMs);
+      // Casi siempre cerca de alguien, para que haya que moverse.
+      const near = Phaser.Utils.Array.GetRandom(fighters);
+      const x = Phaser.Math.Clamp((near?.x ?? 640) + Phaser.Math.Between(-140, 140), WALLS.left + 60, WALLS.right - 60);
+      const shadow = this.scene.add.ellipse(x, FLOOR - 4, 20, 8, 0x000000, 0.35).setDepth(90);
+      const rock = this.drawFalling(h.kind, h.size).setPosition(x, -60).setDepth(160).setVisible(false);
+      this.falling.push({ x, ms: 0, shadow, rock });
+    }
+    this.falling = this.falling.filter((f) => {
+      f.ms += dtMs;
+      const k = Math.min(1, f.ms / h.warnMs);
+      f.shadow.setSize(20 + k * h.size * 2.2, 8 + k * 10);
+      if (f.ms < h.warnMs) return true;
+      const t = Math.min(1, (f.ms - h.warnMs) / h.fallMs);
+      f.rock.setVisible(true).setY(-60 + (FLOOR - h.size + 60) * t).setAngle(f.ms * 0.4);
+      if (t < 1) return true;
+      for (const fighter of fighters) {
+        const box = fighter.hurtbox;
+        if (f.x > box.left - h.size && f.x < box.right + h.size && box.bottom > FLOOR - 10) onHit(fighter, h.damage, f.x);
+      }
+      this.scene.poof?.(f.x, FLOOR - h.size);
+      f.shadow.destroy();
+      f.rock.destroy();
+      return false;
+    });
+  }
+
+  drawFalling(kind, size) {
+    const c = this.scene.add.container(0, 0);
+    if (kind === 'coconut') {
+      c.add(this.scene.add.circle(0, 0, size, 0x7a4a2a).setStrokeStyle(4, 0x1b1530));
+      for (const [x, y] of [[-6, -8], [6, -8], [0, 2]]) c.add(this.scene.add.circle(x, y, 4, 0x3a2414));
+    } else {
+      c.add(this.scene.add.triangle(0, 0, -size * 0.6, -size, size * 0.6, -size, 0, size * 1.2, 0xb07cff).setStrokeStyle(4, 0x1b1530));
+      c.add(this.scene.add.triangle(-4, -6, -size * 0.2, -size * 0.8, size * 0.1, -size * 0.8, -4, size * 0.4, 0xffffff, 0.6));
+    }
+    return c;
+  }
+
+  clearHazards() {
+    for (const f of this.falling) {
+      f.shadow.destroy();
+      f.rock.destroy();
+    }
+    this.falling = [];
   }
 
   // Tres de cada lado, en el piso, junto a las orillas (los peleadores pasan por enfrente).
@@ -123,6 +186,7 @@ export class StageLife {
   }
 
   destroy() {
+    this.clearHazards();
     this.root.destroy();
   }
 }
