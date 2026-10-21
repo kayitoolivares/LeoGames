@@ -122,6 +122,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   hacia atrás (rodando no te pegan). **Golpe final**: en súper forma, el primer **X** oscurece la pantalla, cruza una
   franja con tu personaje y el nombre de su golpe (Meteoro de puños, Mil relámpagos, Lluvia de estrellas...), le da
   una ráfaga de golpes al rival y un golpazo que no se puede cubrir; después se acaba la súper forma.
+  Presentación: antes de cada pelea, pantalla de **VS** con los dos en su pose de entrada; la voz anuncia los rounds,
+  los combos («¡Combo de 5!») y los últimos diez segundos. Los golpes salen con estallidos de cómic (¡POW!, ¡ZAS!,
+  ¡Remate!), chispas y ondas de choque; abajo de la barra se cuentan los golpes seguidos; el que queda tirado ve
+  estrellitas, y al final el ganador sale festejando con su frase («¡Soy una muralla!», «¡Ni me viste llegar!»...).
   Con un solo jugador se pelea contra la compu; con más, se turnan: el que gana se queda y el que pierde se forma
   al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
   de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).

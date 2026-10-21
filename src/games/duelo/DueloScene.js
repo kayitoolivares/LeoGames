@@ -16,6 +16,8 @@ import { ARENAS, ARENA_KEYS, drawArena, loadArenaArt } from './arenas.js';
 import { CPU_LEVELS, DUMMY, cpuInput } from './cpu.js';
 import { DueloFighter, FLOOR, MAX_HEALTH, METER_MAX, SUPER_MS, WALLS } from './DueloFighter.js';
 import { FinalMove } from './final.js';
+import { DizzyStars, comicHit, dustPuff, loadFxArt, shockwave as shockRing, spark } from './fx.js';
+import { showVersus, showVictory } from './show.js';
 import { Shot } from './shots.js';
 
 const ROUND_SECONDS = 60;
@@ -35,6 +37,9 @@ const ARENA_CHOICES = ['azar', ...ARENA_KEYS];
 const IDLE = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
 // Doble toque al stick (para el arrancón o la rodada): el segundo toque tiene que llegar antes de esto.
 const DOUBLE_TAP_MS = 260;
+// Golpes seguidos (sin que el rival se reponga) cuentan como combo.
+const COMBO_GAP_MS = 1000;
+const LOW_HEALTH = 25;
 
 // Lo último que se escogió, para no escogerlo otra vez.
 const lastSetup = { rival: 'versus', rounds: 2, level: 'facil', arena: 'azar' };
@@ -54,6 +59,7 @@ export class DueloScene extends Phaser.Scene {
   preload() {
     loadSmashArt(this, { allPoses: true });
     loadArenaArt(this);
+    loadFxArt(this);
   }
 
   create() {
@@ -194,16 +200,23 @@ export class DueloScene extends Phaser.Scene {
   createFighter(entry, i) {
     const taken = new Set(this.humans.map((player) => player.colorIndex));
     const cpuColor = PLAYER_COLORS.find((_, k) => !taken.has(k)) ?? PLAYER_COLORS[0];
-    return new DueloFighter(this, {
+    const fighter = new DueloFighter(this, {
       color: entry.player ? players.color(entry.player).hex : cpuColor.hex,
       label: entry.player ? this.labelOf(entry.player) : 'CPU',
       character: entry.character,
       deviceId: entry.player?.deviceId ?? null,
     });
+    fighter.dizzy = new DizzyStars(this);
+    return fighter;
   }
 
   clearFighters() {
-    for (const fighter of this.fighters) fighter.destroy();
+    this.victory?.destroy();
+    this.victory = null;
+    for (const fighter of this.fighters) {
+      fighter.dizzy?.destroy();
+      fighter.destroy();
+    }
     this.fighters = [];
     this.clearShots();
     this.hud?.forEach((side) => side.root.setVisible(false));
@@ -233,7 +246,12 @@ export class DueloScene extends Phaser.Scene {
     this.round = 0;
     this.hud.forEach((side, i) => this.fillHud(side, this.fighters[i]));
     this.timerBox.setVisible(true);
-    this.startRound();
+    // Primero la pantalla de "VS" (los dos en su pose de entrada) y luego el primer round.
+    this.phase = 'versus';
+    this.phaseMs = 0;
+    this.timeLeftMs = ROUND_SECONDS * 1000;
+    this.fighters.forEach((fighter, i) => fighter.reset(START_X[i], i === 0 ? 1 : -1));
+    showVersus(this, this.fighters[0], this.fighters[1], () => this.startRound());
   }
 
   startRound() {
@@ -244,6 +262,12 @@ export class DueloScene extends Phaser.Scene {
     this.phase = 'intro';
     this.phaseMs = 0;
     this.slowMs = 0;
+    this.warnedTime = false;
+    for (const fighter of this.fighters) {
+      fighter.posing = true;
+      fighter.combo = 0;
+      fighter.warnedLow = false;
+    }
     const last = this.fighters.every((fighter) => fighter.roundWins === this.setup.rounds - 1) && this.setup.rounds > 1;
     const [a, b] = this.fighters;
     this.showBanner(last ? '¡Round final!' : `Round ${this.round}`, `${a.label} ${a.name}  vs  ${b.label} ${b.name}`, ROUND_INTRO_MS);
@@ -269,6 +293,7 @@ export class DueloScene extends Phaser.Scene {
     if (this.phase === 'intro' && this.phaseMs >= ROUND_INTRO_MS) {
       this.phase = 'go';
       this.phaseMs = 0;
+      for (const fighter of this.fighters) fighter.posing = false;
       this.showBanner('¡Peleen!', '', FIGHT_INTRO_MS);
       sfx.countdown(true);
     } else if (this.phase === 'go' && this.phaseMs >= FIGHT_INTRO_MS * 0.5) {
@@ -292,7 +317,10 @@ export class DueloScene extends Phaser.Scene {
     } else if (this.phase === 'end') {
       this.updateEnd();
     }
-    for (const fighter of this.fighters) fighter.render(step);
+    for (const fighter of this.fighters) {
+      fighter.render(step);
+      fighter.dizzy?.update(fighter.downMs > 0 && !fighter.koed, fighter.x, fighter.y - fighter.radius * 1.2, this.time.now);
+    }
     this.updateHud();
   }
 
@@ -332,18 +360,40 @@ export class DueloScene extends Phaser.Scene {
 
   // Polvito en los pies (al arrancar o rodar), hacia `dir`.
   dust(x, y, dir) {
-    for (let i = 0; i < 5; i += 1) {
-      const puff = this.add.circle(x, y - 6, 9 + Math.random() * 6, 0xe8dcc8, 0.8).setDepth(150);
-      this.tweens.add({
-        targets: puff,
-        x: x + dir * (30 + Math.random() * 40),
-        y: y - 10 - Math.random() * 24,
-        alpha: 0,
-        scale: 1.6,
-        duration: 380,
-        onComplete: () => puff.destroy(),
-      });
+    dustPuff(this, x, y, dir);
+  }
+
+  // Lo llama el peleador al caer al piso después de salir volando: polvo y una ondita.
+  landed(fighter) {
+    dustPuff(this, fighter.x, fighter.y, 0, 7);
+    shockRing(this, fighter.x, fighter.y - 10, 0xe8dcc8);
+  }
+
+  shockwave(x, y, color) {
+    shockRing(this, x, y, color);
+  }
+
+  // Cuenta los golpes seguidos (combo) y lo anuncia; avisa cuando a alguien le queda poquita vida.
+  countHit(attacker, victim) {
+    const now = this.time.now;
+    attacker.combo = now - (attacker.lastHitAt ?? -Infinity) < COMBO_GAP_MS ? (attacker.combo ?? 0) + 1 : 1;
+    attacker.lastHitAt = now;
+    if (attacker.combo >= 2) this.showCombo(attacker);
+    if ([3, 5, 8].includes(attacker.combo)) say(`¡Combo de ${attacker.combo}!`);
+    if (!victim.warnedLow && victim.health > 0 && victim.health <= LOW_HEALTH) {
+      victim.warnedLow = true;
+      popText(this, victim.x, victim.y - victim.height - 60, '¡Poquita vida!', '#ff5a5f');
     }
+  }
+
+  // "3 golpes" grandote abajo de la barra de vida del que pegó.
+  showCombo(attacker) {
+    const side = this.hud[this.fighters.indexOf(attacker)];
+    if (!side) return;
+    side.combo.setText(`${attacker.combo} golpes`).setAlpha(1).setScale(1.4);
+    this.tweens.killTweensOf(side.combo);
+    this.tweens.add({ targets: side.combo, scale: 1, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: side.combo, alpha: 0, delay: COMBO_GAP_MS, duration: 300 });
   }
 
   // No se enciman: se empujan de lado (saltando sí se pueden pasar por arriba).
@@ -386,15 +436,20 @@ export class DueloScene extends Phaser.Scene {
   afterHit(attacker, victim, { blocked, dealt }, data, x, y, finisher = false) {
     attacker.dealtDamage(dealt);
     if (blocked) {
+      spark(this, x, y, 0x7fdcff);
       burst(this, x, y, 0x7fdcff, 6);
       sfx.block();
       return;
     }
-    burst(this, x, y, 0xffffff, data.launch ? 12 : 7);
+    spark(this, x, y);
+    burst(this, x, y, 0xffffff, data.launch ? 10 : 5);
+    const big = data.grab || finisher || dealt >= 10;
     const word = data.grab ? '¡Agarrado!' : finisher ? '¡Remate!' : randomPow();
-    popText(this, x, y - 40, word, data.grab || finisher ? '#ff9a3c' : '#ffc93c');
+    comicHit(this, x, y - 50, word, { big, red: big });
     sfx.hit(Math.min(1, dealt / 12));
     if (data.launch) this.cameras.main.shake(140, 0.007);
+    if (big) shockRing(this, x, y, attacker.color);
+    this.countHit(attacker, victim);
     if (victim.koed) this.endRound(attacker, 'ko');
   }
 
@@ -491,6 +546,10 @@ export class DueloScene extends Phaser.Scene {
 
   updateTimer(dt) {
     this.timeLeftMs = Math.max(0, this.timeLeftMs - dt);
+    if (!this.warnedTime && this.timeLeftMs <= 10000) {
+      this.warnedTime = true;
+      say('¡Diez segundos!');
+    }
     if (this.timeLeftMs > 0) return;
     // Se acabó el tiempo: gana el que tenga más vida.
     const [a, b] = this.fighters;
@@ -540,7 +599,9 @@ export class DueloScene extends Phaser.Scene {
     const next = this.nextQueue();
     const [a, b] = this.pairingFor(next);
     const nextText = `Sigue: ${this.describe(a)} vs ${this.describe(b)}`;
-    this.showBanner(`¡Ganó ${winner.label}!`, `${nextText}\nA = siguiente pelea  ·  B = cambiar personajes  ·  Mantén LB + RB + Y = salir`, 0, hexToCss(winner.color));
+    this.hideBanner();
+    this.victory = showVictory(this, winner, `¡Ganó ${winner.label}!`, `${nextText}\n\nA = siguiente pelea\nB = cambiar personajes\nMantén LB + RB + Y = salir`);
+    say(`¡Ganó ${winner.label}!`);
     confetti(this, [winner.color, 0xffffff, 0xffc93c], 90);
     sfx.win();
   }
@@ -598,8 +659,10 @@ export class DueloScene extends Phaser.Scene {
       const meterBack = this.add.rectangle(meterX, BAR.y + 32, 260, 10, 0xffffff, 0.2).setOrigin(origin, 0.5);
       const meter = this.add.rectangle(meterX, BAR.y + 32, 260, 10, 0xffd84d).setOrigin(origin, 0.5);
       const special = this.add.text(side === 0 ? meterX + 275 : meterX - 275, BAR.y + 32, 'X', textStyle(20, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(origin, 0.5);
-      root.add([back, trail, fill, name, wins, meterBack, meter, special]);
-      return { root, trail, fill, name, wins, meter, special, trailHealth: MAX_HEALTH };
+      // El contador de combo ("3 golpes"), abajo de la barra.
+      const combo = this.add.text(anchorX, BAR.y + 76, '', textStyle(34, '#ffd84d', { fontStyle: 'bold', ...OUTLINE, strokeThickness: 7 })).setOrigin(origin, 0.5).setAlpha(0);
+      root.add([back, trail, fill, name, wins, meterBack, meter, special, combo]);
+      return { root, trail, fill, name, wins, meter, special, combo, trailHealth: MAX_HEALTH };
     });
     this.timerBox = this.add.container(width / 2, BAR.y).setDepth(HUD_DEPTH).setVisible(false);
     this.timerText = this.add.text(0, 0, '', textStyle(44, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5);

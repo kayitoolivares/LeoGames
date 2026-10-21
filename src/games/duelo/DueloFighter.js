@@ -578,6 +578,7 @@ export class DueloFighter {
       if (!this.koed) this.downMs = DOWN_MS;
       this.blob.squish();
       sfx.hit(0.3);
+      this.scene.landed?.(this);
     }
   }
 
