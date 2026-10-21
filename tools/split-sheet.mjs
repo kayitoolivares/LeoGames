@@ -79,7 +79,9 @@ const enoughPoses = () => {
   const sorted = bySize();
   return sorted.length >= names.length && sorted[names.length - 1].size > sorted[0].size * 0.25;
 };
+let forced = 0;
 for (let tries = 0; tries < names.length && !enoughPoses(); tries += 1) {
+  forced += 1;
   const widest = bySize()
     .slice(0, names.length)
     .reduce((a, b) => (b.right - b.left > a.right - a.left ? b : a));
@@ -126,6 +128,8 @@ for (const pose of [...poses].sort((a, b) => a.top - b.top)) {
 }
 const ordered = rows.flatMap((row) => row.poses.sort((a, b) => a.left - b.left));
 console.log(`  ${rows.length} fila(s): ${rows.map((row) => row.poses.length).join(' + ')} poses`);
+// Cortar poses pegadas casi siempre deja algo mocho (un ala, la punta de un sombrero) o un pedazo de la de al lado.
+if (forced) console.log(`  ⚠ ${forced} vez/veces hubo que separar poses que se tocaban: revisa con node tools/check-cutouts.mjs (o pide la hoja otra vez en 2 filas de 2)`);
 
 // Las piezas sueltas (estrellitas de mareo, gotas, chispas) se le dan a la pose más cercana; el ruido se ignora,
 // y también las piezas sueltas grandes (copias borrosas o estelas que a veces dibuja Gemini).
