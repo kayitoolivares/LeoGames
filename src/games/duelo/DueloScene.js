@@ -20,6 +20,7 @@ import { FinalMove } from './final.js';
 import { BOSS_ARENA, Drills, MODES, SURVIVAL_STICKER_AT, Survival, Tournament, showLadder, survivalRecord } from './modes.js';
 import { DizzyStars, comicHit, dustPuff, loadFxArt, shockwave as shockRing, spark } from './fx.js';
 import { showVersus, showVictory } from './show.js';
+import { StageLife, loadStageArt } from './stage.js';
 import { Shot } from './shots.js';
 
 const ROUND_SECONDS = 60;
@@ -67,6 +68,7 @@ export class DueloScene extends Phaser.Scene {
     loadArenaArt(this);
     loadFxArt(this);
     loadBossArt(this);
+    loadStageArt(this);
   }
 
   create() {
@@ -368,6 +370,8 @@ export class DueloScene extends Phaser.Scene {
     this.ladder = null;
     this.drills?.destroy();
     this.drills = null;
+    this.stageLife?.destroy();
+    this.stageLife = null;
     for (const fighter of this.fighters) {
       fighter.dizzy?.destroy();
       fighter.destroy();
@@ -404,6 +408,7 @@ export class DueloScene extends Phaser.Scene {
     if (mode === 'torneo') arena = this.tour.current.boss && ARENAS[BOSS_ARENA]?.has ? BOSS_ARENA : 'azar';
     this.arena = arena === 'azar' ? Phaser.Utils.Array.GetRandom(ARENA_KEYS.filter((k) => ARENAS[k].has && k !== BOSS_ARENA)) ?? 'dojo' : arena;
     this.drawArenaFor(this.arena);
+    this.stageLife = new StageLife(this, ARENAS[this.arena]);
     this.round = 0;
     this.hud.forEach((side, i) => this.fillHud(side, this.fighters[i]));
     this.timerBox.setVisible(true);
@@ -450,6 +455,7 @@ export class DueloScene extends Phaser.Scene {
       return;
     }
     this.phaseMs += dt;
+    this.stageLife?.update(dt);
     if (this.phase === 'final') {
       this.updateFinal(dt);
       return;
@@ -616,6 +622,7 @@ export class DueloScene extends Phaser.Scene {
     const word = data.grab ? '¡Agarrado!' : finisher ? '¡Remate!' : randomPow();
     comicHit(this, x, y - 50, word, { big, red: big });
     sfx.hit(Math.min(1, dealt / 12));
+    this.stageLife?.cheer(Math.min(1, dealt / 12));
     if (data.launch) this.cameras.main.shake(140, 0.007);
     if (big) shockRing(this, x, y, attacker.color);
     this.countHit(attacker, victim);
@@ -734,6 +741,7 @@ export class DueloScene extends Phaser.Scene {
     this.roundWinner = winner;
     this.celebrated = false;
     if (reason === 'ko') {
+      this.stageLife?.cheer(2);
       this.slowMs = SLOW_MOTION_MS;
       this.cameras.main.shake(250, 0.012);
       sfx.ko();

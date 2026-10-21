@@ -137,6 +137,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   y **Entrenamiento** (contra un muñeco que no pega, sin reloj ni K.O., la vida y la barra de poder se rellenan
   solas y arriba hay 12 retos que se palomean: golpe, patada, remate, gancho, barrida, patada voladora, agarre,
   arrancón, rodada, especial, súper y golpe final).
+  **Escenarios vivos**: público a los lados que brinca con cada golpe y festeja el K.O. (Estadio, Castillo y Lucha
+  libre), pétalos de cerezo en el Dojo, hojas en el Bosque y la Pradera, chispas de lava en el Volcán, confeti en el
+  Estadio, y escenarios nuevos: **Lucha libre** (con reflectores de colores), **Azotea** (de noche, con brillitos) y
+  el **Castillo del Rey** (donde se pelea contra el Rey Bolón).
 - **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, dibujado con
   figuras (sin imágenes de Gemini). **Y** sube de número y **↓ + Y** baja (del 10 regresa al 1), cuando quieras y sin
   límite; la voz dice el número. Cada número tiene su color y su forma, y entre más grande es más fuerte y pesado pero

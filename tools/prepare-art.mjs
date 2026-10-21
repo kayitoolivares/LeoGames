@@ -60,7 +60,11 @@ const GAMES = {
     fondos: { kind: 'background', names: ['estadio'] },
   },
   duelo: {
-    fondos: { kind: 'background', names: ['dojo'] },
+    fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono'] },
+    efectos: { kind: 'cutout', max: 256, names: ['pow', 'zas', 'chispa', 'polvo', 'onda', 'mareo'] },
+    jefe: { kind: 'cutout', max: 384, names: ['rey-normal', 'rey-golpe', 'rey-salto', 'rey-dolor'] },
+    publico: { kind: 'cutout', max: 192, names: ['fan1', 'fan2', 'fan3', 'fan4', 'fan5', 'fan6'] },
+    copas: { kind: 'cutout', max: 256, names: ['copa-torneo'] },
   },
 };
 const IMAGE = /\.(png|jpe?g|webp)$/i;

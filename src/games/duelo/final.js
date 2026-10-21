@@ -135,6 +135,7 @@ export class FinalMove {
     scene.cameras.main.shake(320, 0.016);
     sfx.boom();
     if (result) scene.countHit?.(a, v, result, data);
+    scene.stageLife?.cheer(2);
   }
 
   finish() {
