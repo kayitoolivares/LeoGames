@@ -57,6 +57,23 @@ Abre http://localhost:5173 en Edge o Chrome.
   desbloqueables **Espacio** con gravedad baja —al ganar una pelea— y **Volcán** con géiseres de lava —al
   transformarte en súper—),
   si hay objetos, cuántos CPUs y su nivel (fácil, normal, difícil). Con un solo jugador siempre hay al menos un CPU.
+  **Modos**: **Vidas** (el de siempre), **Tiempo** (2 minutos y vidas sin fin: +1 por cada rival que saques, -1 si te
+  caes), **Equipos** (Rojos J1 y J3 contra Azules J2 y J4, la compu completa los equipos y no le pegas a tu compañero),
+  **Jefe** (todos juntos —la compu de tu lado— contra el **Rey Bolón** gigante con su barra de vida; si lo sacan de la
+  pantalla regresa pero pierde vida) y **Blancos** (rompe las 10 dianas lo más rápido que puedas; se guarda el récord
+  de cada escenario).
+  Más movimientos: **escudo + X** pegadito agarra al rival (aunque se cubra) y lo avienta hacia donde apuntes;
+  **escudo + ◀ ▶** = rodar (no te pegan) y escudo en el aire = esquivar; cayendo junto a la orilla te **agarras de ella**
+  (A, ↑ o hacia el escenario para subirte). Objetos nuevos: **bate** (4 batazos que mandan lejísimos), **pistola de
+  rayos**, **patineta** (corres más) y **huevo sorpresa** (sale un ayudante que pelea de tu lado un rato). De vez en
+  cuando aparece la **bola súper**: el que la rompe brilla de colores y con **B** hace su **golpe final**, que le pega
+  a todos los rivales.
+  Al empezar, todos en fila en su pose de entrada; al terminar, un **podio** con a cuántos sacó cada quien, cuántas
+  veces se cayó y cuánto pegó. Golpes con estallidos de cómic y ondas de choque.
+  Escenarios nuevos: **Selva** (tronco gigante, hojas y un columpio de liana; caen cocos), **Ciudad de juguete**
+  (bloques de colores; caen bloques que aplastan y se quedan un rato de plataforma) y **Fondo del mar** (flotas un
+  poquito; de unas bocas salen burbujas que te suben). Y los de siempre traen su **sorpresa**, siempre con aviso:
+  rayo en el Castillo, viento en las Nubes, la ola que ladea el Barco y un cohete que cruza el Espacio.
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
   Antes de correr, en el **taller** cada quien escoge piloto (los personajes de Bolitas Bros, con su imagen
   manejando; Bloquecito cambia de número con Y), kart (**Clásico**, **Bólido** rápido, **Mini** que arranca y gira

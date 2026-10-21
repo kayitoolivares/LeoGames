@@ -2,8 +2,9 @@ import { COLORS } from '../../ui/style.js';
 import { itemTexture } from './art.js';
 
 // Objetos que caen del cielo en Bolitas Bros. Se agarran tocándolos:
-// martillo y bomba se cargan (X los usa); corazón y estrella hacen efecto al instante.
-export const ITEM_TYPES = ['hammer', 'bomb', 'heart', 'star'];
+// martillo, bomba, bate y pistola de rayos se cargan (X los usa); corazón, estrella y patineta hacen efecto al instante,
+// y el huevo sorpresa se abre y sale un ayudante que pelea de tu lado un rato.
+export const ITEM_TYPES = ['hammer', 'bomb', 'heart', 'star', 'bat', 'raygun', 'skate', 'egg'];
 const SPAWN_EVERY_MS = [7000, 11000];
 const FIRST_SPAWN_MS = 5000;
 const MAX_ITEMS = 2;
@@ -42,6 +43,31 @@ export function drawItem(scene, type) {
     ]);
   } else if (type === 'star') {
     box.add(scene.add.star(0, 0, 5, 10, 22, COLORS.accent).setStrokeStyle(3, 0xffffff));
+  } else if (type === 'bat') {
+    box.add(scene.add.rectangle(0, 0, 10, 52, 0x9a6a44).setRounded(4).setStrokeStyle(2, COLORS.ink).setAngle(30));
+  } else if (type === 'raygun') {
+    box.add([
+      scene.add.rectangle(4, -4, 40, 16, 0xff5a5f).setRounded(6).setStrokeStyle(2, COLORS.ink),
+      scene.add.rectangle(-8, 10, 10, 18, 0x3fa7ff).setStrokeStyle(2, COLORS.ink),
+      scene.add.circle(26, -4, 5, 0xffd02a),
+    ]);
+  } else if (type === 'skate') {
+    box.add([
+      scene.add.rectangle(0, 0, 54, 10, 0x8158d8).setRounded(5).setStrokeStyle(2, COLORS.ink),
+      scene.add.circle(-16, 9, 5, 0xffd02a).setStrokeStyle(2, COLORS.ink),
+      scene.add.circle(16, 9, 5, 0xffd02a).setStrokeStyle(2, COLORS.ink),
+    ]);
+  } else if (type === 'egg') {
+    box.add([
+      scene.add.ellipse(0, 0, 34, 44, 0xffffff).setStrokeStyle(3, COLORS.ink),
+      scene.add.circle(-6, -8, 4, 0xff5fa8),
+      scene.add.circle(7, 4, 5, 0x3fa7ff),
+      scene.add.circle(-4, 12, 4, 0xffd02a),
+    ]);
+  } else if (type === 'superball') {
+    box.add([scene.add.circle(0, 0, 22, 0xb07cff).setStrokeStyle(4, 0xffffff), scene.add.star(0, 0, 5, 6, 13, 0xffffff)]);
+  } else if (type === 'target') {
+    box.add([scene.add.circle(0, 0, 22, 0xe53935).setStrokeStyle(3, COLORS.ink), scene.add.circle(0, 0, 14, 0xffffff), scene.add.circle(0, 0, 7, 0xe53935)]);
   }
   return box;
 }

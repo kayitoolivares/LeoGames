@@ -6,6 +6,8 @@ import Phaser from 'phaser';
 // `look` = cómo se dibujan ('island', 'plank', 'cloud', 'deck', 'barrel', 'moon', 'asteroid', 'rock', 'stone').
 // `unlock`: qué hay que ganar para que aparezca (ver UNLOCKS en rewards.js). `gravity`: multiplica la gravedad.
 // `geysers`: géiseres de lava en la plataforma principal (ver geysers.js).
+// `move.swing` = { length, angle (radianes), periodMs }: se columpia colgada de una liana (la Selva).
+// `events`: la sorpresa del escenario (ver events.js): rayo, ola, viento, cohete, cocos, bloques o burbujas.
 export const STAGES = {
   castillo: {
     name: 'Castillo',
@@ -20,6 +22,7 @@ export const STAGES = {
     respawn: { x: 1000, y: 260 },
     spawns: [600, 1400, 850, 1150],
     drawBackground: drawCastle,
+    events: 'lightning',
   },
   nubes: {
     name: 'Nubes',
@@ -34,6 +37,7 @@ export const STAGES = {
     respawn: { x: 1000, y: 280 },
     spawns: [650, 1350, 850, 1150],
     drawBackground: drawSky,
+    events: 'wind',
   },
   barco: {
     name: 'Barco pirata',
@@ -50,6 +54,55 @@ export const STAGES = {
     drawBackground: drawSea,
     // El barco se dibuja aunque haya imagen de fondo: sin él, la cubierta flotaría en el mar.
     drawProps: drawShip,
+    events: 'wave',
+  },
+  selva: {
+    name: 'Selva',
+    sky: 0x9be3c4,
+    platforms: [
+      { left: 380, right: 1620, top: 800, main: true, look: 'log' },
+      { left: 520, right: 780, top: 620, soft: true, look: 'leaf' },
+      { left: 1220, right: 1480, top: 620, soft: true, look: 'leaf' },
+      // Columpio colgado de una liana: va y viene en arco.
+      { left: 880, right: 1120, top: 470, soft: true, look: 'swing', move: { swing: { length: 230, angle: 0.55 }, periodMs: 4200, phase: 0 } },
+    ],
+    blast: { left: -250, right: 2250, top: -450, bottom: 1400 },
+    respawn: { x: 1000, y: 230 },
+    spawns: [600, 1400, 850, 1150],
+    drawBackground: drawSky,
+    events: 'coconuts',
+  },
+  juguetes: {
+    name: 'Ciudad de juguete',
+    sky: 0xbfe3ff,
+    platforms: [
+      { left: 360, right: 1640, top: 800, main: true, look: 'toys' },
+      { left: 560, right: 800, top: 620, soft: true, look: 'block' },
+      { left: 1200, right: 1440, top: 620, soft: true, look: 'block' },
+      { left: 880, right: 1120, top: 440, soft: true, look: 'block', move: { x: 200, periodMs: 6500, phase: 0 } },
+    ],
+    blast: { left: -250, right: 2250, top: -450, bottom: 1400 },
+    respawn: { x: 1000, y: 250 },
+    spawns: [600, 1400, 850, 1150],
+    drawBackground: drawSky,
+    events: 'blocks',
+  },
+  mar: {
+    name: 'Fondo del mar',
+    sky: 0x1f6fb5,
+    // Bajo el agua todo flota un poquito.
+    gravity: 0.8,
+    platforms: [
+      { left: 420, right: 1580, top: 800, main: true, look: 'sand' },
+      { left: 540, right: 780, top: 610, soft: true, look: 'shell', move: { y: 60, periodMs: 5000, phase: 0 } },
+      { left: 1220, right: 1460, top: 610, soft: true, look: 'shell', move: { y: 60, periodMs: 5000, phase: Math.PI } },
+      { left: 880, right: 1120, top: 430, soft: true, look: 'shell' },
+    ],
+    blast: { left: -300, right: 2300, top: -500, bottom: 1400 },
+    respawn: { x: 1000, y: 240 },
+    spawns: [620, 1380, 850, 1150],
+    drawBackground: drawSea,
+    events: 'bubbles',
   },
   espacio: {
     name: 'Espacio',
@@ -67,6 +120,7 @@ export const STAGES = {
     respawn: { x: 1000, y: 260 },
     spawns: [650, 1350, 850, 1150],
     drawBackground: drawSpace,
+    events: 'rocket',
   },
   volcan: {
     name: 'Volcán',
@@ -106,8 +160,16 @@ export function movePlatforms(platforms, timeMs) {
   for (const p of platforms) {
     if (!p.move) continue;
     const wave = Math.sin((timeMs / p.move.periodMs) * Math.PI * 2 + p.move.phase);
-    const ox = (p.move.x ?? 0) * wave;
-    const oy = (p.move.y ?? 0) * wave;
+    let ox = (p.move.x ?? 0) * wave;
+    let oy = (p.move.y ?? 0) * wave;
+    // Columpio: cuelga de un punto arriba y va de lado a lado en arco (más alto en las puntas).
+    const swing = p.move.swing;
+    if (swing) {
+      const angle = swing.angle * wave;
+      ox = swing.length * Math.sin(angle);
+      oy = -swing.length * (1 - Math.cos(angle));
+      p.vine?.setAngle(-Phaser.Math.RadToDeg(angle));
+    }
     p.dx = p.baseLeft + ox - p.left;
     p.dy = p.baseTop + oy - p.top;
     p.left = p.baseLeft + ox;
@@ -162,6 +224,48 @@ function drawPlatform(scene, p) {
   } else if (p.look === 'barrel') {
     parts.push(scene.add.rectangle(0, 30, width, 60, 0x9c6b3c).setRounded(24).setStrokeStyle(4, 0x6b4223));
     for (const x of [-width / 4, width / 4]) parts.push(scene.add.rectangle(x, 30, 10, 60, 0x5a5a6e));
+  } else if (p.look === 'log') {
+    // Un tronco gigante acostado, con sus anillos en las puntas y musgo encima.
+    parts.push(scene.add.rectangle(0, 50, width, 100, 0x8b5a2b).setRounded(50).setStrokeStyle(5, 0x5c3a1a));
+    for (const side of [-1, 1]) {
+      parts.push(scene.add.ellipse(side * (width / 2 - 30), 50, 60, 100, 0xc9935a).setStrokeStyle(4, 0x5c3a1a));
+      parts.push(scene.add.ellipse(side * (width / 2 - 30), 50, 30, 54, 0xa8743f));
+    }
+    parts.push(scene.add.rectangle(0, 6, width - 40, 16, 0x4cb050).setRounded(8));
+  } else if (p.look === 'leaf') {
+    parts.push(scene.add.ellipse(0, 14, width + 20, 40, 0x3fa34d).setStrokeStyle(4, 0x267a36));
+    parts.push(scene.add.rectangle(0, 14, width - 30, 4, 0x267a36));
+  } else if (p.look === 'swing') {
+    // La liana sube hasta donde cuelga (gira con el columpio, ver movePlatforms).
+    const length = p.move.swing.length;
+    p.vine = scene.add.container(0, 0, [
+      scene.add.rectangle(-width / 2 + 20, -length / 2, 8, length, 0x3f7a2a).setOrigin(0.5),
+      scene.add.rectangle(width / 2 - 20, -length / 2, 8, length, 0x3f7a2a).setOrigin(0.5),
+    ]);
+    parts.push(p.vine);
+    parts.push(scene.add.rectangle(0, 12, width, 24, 0xa8743f).setRounded(10).setStrokeStyle(4, 0x5c3a1a));
+  } else if (p.look === 'toys') {
+    // Bloques de juguete de colores, uno junto al otro.
+    const colors = [0xe53935, 0xffd02a, 0x3a5bd6, 0x3cc44f, 0xff8a1e, 0x8158d8];
+    const count = Math.round(width / 120);
+    const size = width / count;
+    for (let i = 0; i < count; i += 1) {
+      const x = -width / 2 + size * (i + 0.5);
+      parts.push(scene.add.rectangle(x, 60, size - 4, 120, colors[i % colors.length]).setStrokeStyle(4, 0x1b1530));
+      parts.push(scene.add.circle(x, 60, size * 0.18, 0xffffff, 0.35));
+    }
+  } else if (p.look === 'block') {
+    parts.push(scene.add.rectangle(0, 20, width, 40, 0xff8a1e).setStrokeStyle(4, 0x1b1530));
+    for (const x of [-width / 3, 0, width / 3]) parts.push(scene.add.circle(x, -2, 12, 0xffb35c).setStrokeStyle(3, 0x1b1530));
+  } else if (p.look === 'sand') {
+    parts.push(scene.add.ellipse(0, 90, width, 220, 0xe8d29a).setStrokeStyle(5, 0xc9a85a));
+    parts.push(scene.add.rectangle(0, 14, width - 10, 30, 0xf2e2b2).setRounded(15));
+    for (const [x, color] of [[-0.35, 0xff6f91], [0.3, 0xff9a3c], [0.05, 0xb07cff]]) {
+      parts.push(scene.add.ellipse(x * width, 60, 70, 40, color).setStrokeStyle(3, 0x1b1530));
+    }
+  } else if (p.look === 'shell') {
+    parts.push(scene.add.ellipse(0, 18, width, 46, 0xffc4d6).setStrokeStyle(4, 0xd9668a));
+    for (const x of [-0.25, 0, 0.25]) parts.push(scene.add.rectangle(x * width, 18, 4, 36, 0xd9668a));
   }
   box.add(parts);
   return box;

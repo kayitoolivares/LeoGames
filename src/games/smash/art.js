@@ -3,23 +3,36 @@ import manifest from './art.json';
 // Arte opcional de Bolitas Bros (imágenes hechas con Gemini), preparado con `npm run arte`.
 // art.json dice qué imágenes hay; si falta alguna, el juego la dibuja con figuras como siempre.
 const BASE = 'smash/';
-export const ITEM_ART = { hammer: 'martillo', bomb: 'bomba', heart: 'corazon', star: 'estrella' };
+export const ITEM_ART = {
+  hammer: 'martillo',
+  bomb: 'bomba',
+  heart: 'corazon',
+  star: 'estrella',
+  bat: 'bate',
+  raygun: 'pistola',
+  skate: 'patineta',
+  egg: 'huevo',
+  superball: 'bola-super',
+  target: 'diana',
+};
 // La caminata son 4 cuadros (caminar1 a caminar4) que se repiten mientras el personaje camina.
 export const WALK_FRAMES = 4;
 const WALK_POSES = Array.from({ length: WALK_FRAMES }, (_, i) => `caminar${i + 1}`);
-// Las poses que usan todos los juegos; las de pelea (patada, cubrirse...) solo el Duelo, que las pide con `allPoses`.
+// Las poses que usan todos los juegos; las de pelea (patada, cubrirse...) solo las que las piden con `allPoses` (el Duelo)
+// o, para no llenar la memoria del Xbox, solo para los personajes que van a pelear (`posesFor`, Bolitas Bros).
 // (Las de manejar un kart, atras/giro/lado/frente, las carga el juego de karts por su cuenta.)
 const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor', ...WALK_POSES];
 const DUEL_POSES = ['patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada'];
 
 // Se llama en preload(): pone en la fila de carga lo que todavía no esté cargado.
-export function loadSmashArt(scene, { allPoses = false } = {}) {
+export function loadSmashArt(scene, { allPoses = false, posesFor = [] } = {}) {
   const queue = (key, url) => {
     if (!scene.textures.exists(key)) scene.load.image(key, url);
   };
   for (const [character, poses] of Object.entries(manifest.characters)) {
+    const extra = allPoses || posesFor.includes(character.replace(/_super$/, ''));
     for (const pose of poses) {
-      if (BASIC_POSES.includes(pose) || (allPoses && DUEL_POSES.includes(pose))) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
+      if (BASIC_POSES.includes(pose) || (extra && DUEL_POSES.includes(pose))) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
     }
   }
   for (const item of manifest.items) queue(`smash:objeto-${item}`, `${BASE}objetos/${item}.png`);

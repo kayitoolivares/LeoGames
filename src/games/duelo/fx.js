@@ -4,6 +4,7 @@ import manifest from './art.json';
 
 // Efectos de golpe del Duelo, estilo cómic: estallidos con letrero (¡POW!), chispas, ondas de choque, polvo y
 // estrellitas de mareo. Si ya están los dibujos de Gemini (duelo/efectos/<nombre>.png) se usan; si no, se dibujan.
+// `layer` (opcional): el contenedor donde van (Bolitas Bros pone todo en su mundo con zoom).
 const DEPTH = 9400;
 const STAR_POINTS = 12;
 
@@ -20,9 +21,10 @@ function art(scene, name) {
 }
 
 // Un estallido de cómic con su letrero encima. `big` para remates, agarres y golpes finales.
-export function comicHit(scene, x, y, word, { big = false, red = false } = {}) {
+export function comicHit(scene, x, y, word, { big = false, red = false, layer = null } = {}) {
   const size = big ? 150 : 104;
   const box = scene.add.container(x, y).setDepth(DEPTH).setScale(0.3).setAngle(Phaser.Math.Between(-12, 12));
+  layer?.add(box);
   const key = art(scene, red ? 'zas' : 'pow');
   if (key) {
     const image = scene.add.image(0, 0, key);
@@ -46,34 +48,37 @@ export function comicHit(scene, x, y, word, { big = false, red = false } = {}) {
 }
 
 // Chispa blanca donde pega (y cuando se cubre, azul).
-export function spark(scene, x, y, tint = 0xffffff) {
+export function spark(scene, x, y, tint = 0xffffff, layer = null) {
   const key = art(scene, 'chispa');
   const flash = key ? scene.add.image(x, y, key).setTint(tint) : scene.add.star(x, y, 4, 10, 46, tint).setStrokeStyle(4, 0x7fdcff);
   if (key) flash.setScale(90 / Math.max(flash.width, flash.height));
   flash.setDepth(DEPTH).setAngle(Phaser.Math.Between(0, 90));
+  layer?.add(flash);
   const scale = flash.scale;
   flash.setScale(scale * 0.4);
   scene.tweens.add({ targets: flash, scale: scale * 1.2, alpha: 0, angle: flash.angle + 40, duration: 260, onComplete: () => flash.destroy() });
 }
 
 // Onda de choque: un anillo que crece (golpes fuertes, aterrizajes duros, el golpe final).
-export function shockwave(scene, x, y, color = 0x7fdcff) {
+export function shockwave(scene, x, y, color = 0x7fdcff, layer = null) {
   const key = art(scene, 'onda');
   const ring = key ? scene.add.image(x, y, key).setTint(color) : scene.add.circle(x, y, 40).setStrokeStyle(10, color);
   if (key) ring.setScale(80 / ring.width);
   ring.setDepth(DEPTH - 1);
+  layer?.add(ring);
   const start = ring.scale;
   scene.tweens.add({ targets: ring, scale: start * 4, alpha: 0, duration: 420, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
 }
 
 // Nube de polvo en los pies, que se va hacia `dir` (-1, 0 o 1).
-export function dustPuff(scene, x, y, dir = 0, count = 5) {
+export function dustPuff(scene, x, y, dir = 0, count = 5, layer = null) {
   const key = art(scene, 'polvo');
   for (let i = 0; i < count; i += 1) {
     const size = 18 + Math.random() * 14;
     const puff = key ? scene.add.image(x, y - 8, key) : scene.add.circle(x, y - 6, size / 2, 0xe8dcc8, 0.85);
     if (key) puff.setScale(size / puff.width);
     puff.setDepth(150);
+    layer?.add(puff);
     const spread = dir === 0 ? (i / (count - 1) - 0.5) * 2 : dir;
     scene.tweens.add({
       targets: puff,

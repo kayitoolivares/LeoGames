@@ -11,6 +11,7 @@ import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { characterTexture, loadSmashArt } from './art.js';
 import { isBlockCharacter } from './bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS, addAccessory } from './characters.js';
+import { MODES, MODE_KEYS } from './modes.js';
 import { STAGES, STAGE_KEYS } from './stages.js';
 
 const CARD_W = 270;
@@ -24,9 +25,10 @@ const LEVEL_NAMES = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' };
 
 // Opciones de la pelea que escoge el Jugador 1 (↑ ↓ para elegir cuál, LB / RB para cambiarla).
 const OPTIONS = [
+  { key: 'mode', label: 'Modo', values: () => MODE_KEYS, show: (v) => MODES[v].name },
   { key: 'stage', label: 'Escenario', values: () => openStages(), show: (v) => STAGES[v].name },
   { key: 'items', label: 'Objetos', values: () => [true, false], show: (v) => (v ? 'Sí' : 'No') },
-  { key: 'cpus', label: 'CPUs', values: (humans) => cpuChoices(humans), show: String },
+  { key: 'cpus', label: 'CPUs', values: (humans, settings) => cpuChoices(humans, settings.mode), show: String },
   { key: 'level', label: 'Nivel CPU', values: () => Object.keys(LEVEL_NAMES), show: (v) => LEVEL_NAMES[v] },
 ];
 
@@ -35,16 +37,18 @@ function openStages() {
   return STAGE_KEYS.filter((key) => rewards.unlocked(STAGES[key].unlock));
 }
 
-// Siempre hay al menos un rival, y entre todos no pasan de 4.
-function cpuChoices(humans) {
+// Siempre hay al menos un rival, y entre todos no pasan de 4. Contra el jefe la compu es de tu equipo (puede no haber),
+// y en Rompe los blancos no hay compu.
+function cpuChoices(humans, mode = 'vidas') {
+  if (mode === 'blancos') return [0];
   const list = [];
-  for (let n = humans < 2 ? 1 : 0; n <= 4 - humans; n += 1) list.push(n);
+  for (let n = humans < 2 && mode !== 'jefe' ? 1 : 0; n <= 4 - humans; n += 1) list.push(n);
   return list;
 }
 
 // Lo último que se escogió, para no tener que escogerlo otra vez (el personaje se comparte con los demás juegos).
 const lastPeque = new Map();
-const lastSettings = { stage: 'castillo', items: true, cpus: null, level: 'normal' };
+const lastSettings = { mode: 'vidas', stage: 'castillo', items: true, cpus: null, level: 'normal' };
 
 // Antes de Bolitas Bros: cada jugador escoge su bolita con ◀ ▶, Y activa su modo peque y A = listo.
 // El Jugador 1 además escoge escenario, objetos y CPUs. B quita el "listo"; si no estaba listo,
@@ -66,21 +70,21 @@ export class SmashSelectScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.humans = players.sorted();
     this.settings = { ...lastSettings };
-    const choices = cpuChoices(this.humans.length);
-    if (!choices.includes(this.settings.cpus)) this.settings.cpus = choices[0];
+    this.fixCpus();
     if (!openStages().includes(this.settings.stage)) this.settings.stage = 'castillo';
     this.optionIndex = 0;
 
     this.add.text(width / 2, 36, 'Escoge tu bolita', textStyle(44, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     this.optionChips = OPTIONS.map((option, i) => {
-      const x = width / 2 + (i - (OPTIONS.length - 1) / 2) * 290;
-      const bg = this.add.rectangle(x, 96, 270, 46, COLORS.panel).setRounded(14);
-      const text = this.add.text(x, 96, '', textStyle(19, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+      const x = width / 2 + (i - (OPTIONS.length - 1) / 2) * 245;
+      const bg = this.add.rectangle(x, 96, 232, 46, COLORS.panel).setRounded(14);
+      const text = this.add.text(x, 96, '', textStyle(17, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
       return { option, bg, text };
     });
     this.add
       .text(width / 2, 140, 'Jugador 1:  ↑ ↓ elegir opción  ·  LB / RB cambiarla', textStyle(17, TEXT.muted))
       .setOrigin(0.5);
+    this.modeInfo = this.add.text(width / 2, 192, '', textStyle(17, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5);
     const locked = STAGE_KEYS.filter((key) => !rewards.unlocked(STAGES[key].unlock));
     const lockText = locked.map((key) => `🔒 ${STAGES[key].name}: ${UNLOCKS[STAGES[key].unlock].label}`).join('   ·   ');
     this.add.text(width / 2, 166, lockText, textStyle(15, TEXT.muted)).setOrigin(0.5);
@@ -101,7 +105,14 @@ export class SmashSelectScene extends Phaser.Scene {
     this.startMs = null;
   }
 
+  // Que el número de CPUs sea uno que ese modo permite.
+  fixCpus() {
+    const choices = cpuChoices(this.humans.length, this.settings.mode);
+    if (!choices.includes(this.settings.cpus)) this.settings.cpus = choices[0];
+  }
+
   refreshOptions() {
+    this.modeInfo?.setText(MODES[this.settings.mode].info);
     this.optionChips.forEach(({ option, bg, text }, i) => {
       const selected = i === this.optionIndex;
       text.setText(`${option.label}: ${option.show(this.settings[option.key])}`);
@@ -146,7 +157,7 @@ export class SmashSelectScene extends Phaser.Scene {
     const top = -CARD_H / 2;
     container.add([
       this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(24).setStrokeStyle(3, COLORS.panelBorder),
-      this.add.text(0, top + 28, this.settings.cpus > 1 ? `CPU ${i + 1}` : 'CPU', textStyle(22, TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5),
+      this.add.text(0, top + 28, `${this.settings.cpus > 1 ? `CPU ${i + 1}` : 'CPU'}${this.settings.mode === 'jefe' ? ' (de tu equipo)' : ''}`, textStyle(20, TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5),
       // Bolita sin cara con un "?": el personaje del CPU se escoge al azar al empezar.
       this.add.circle(0, top + 112, 50, 0x8a86b8),
       this.add.text(0, top + 112, '?', textStyle(56, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5),
@@ -265,11 +276,12 @@ export class SmashSelectScene extends Phaser.Scene {
     if (step === 0) return false;
     sfx.select();
     const option = OPTIONS[this.optionIndex];
-    const values = option.values(this.humans.length);
+    const values = option.values(this.humans.length, this.settings);
     const index = values.indexOf(this.settings[option.key]);
     this.settings[option.key] = values[(index + step + values.length) % values.length];
+    if (option.key === 'mode') this.fixCpus();
     this.refreshOptions();
-    if (option.key === 'cpus' || option.key === 'level') {
+    if (option.key === 'cpus' || option.key === 'level' || option.key === 'mode') {
       this.layoutCards();
       return true;
     }

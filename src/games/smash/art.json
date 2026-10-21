@@ -514,16 +514,25 @@
     ]
   },
   "items": [
+    "bate",
+    "bola-super",
     "bomba",
     "corazon",
+    "diana",
     "estrella",
-    "martillo"
+    "huevo",
+    "martillo",
+    "patineta",
+    "pistola"
   ],
   "backgrounds": [
     "barco",
     "castillo",
     "espacio",
+    "juguetes",
+    "mar",
     "nubes",
+    "selva",
     "volcan"
   ]
 }

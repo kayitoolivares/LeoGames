@@ -6,6 +6,7 @@ import { CharacterLook, WALK_FPS } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { characterTexture, hasPose, superArtKey, walkPose } from './art.js';
 import { OCTO, isBlockCharacter, lerp, numberSize } from './bloquecito.js';
+import { addCrown } from '../duelo/boss.js';
 import { CHARACTERS, addAccessory } from './characters.js';
 import { drawItem } from './items.js';
 
@@ -59,6 +60,21 @@ const STAR_POWER_MS = 6000;
 const STAR_SPEED_BONUS = 1.2;
 const HEART_HEAL = 40;
 const BOMB_THROW = { vx: 650, vy: -380 };
+// Objetos nuevos: el bate da pocos batazos (pero avienta lejísimos), la pistola trae sus rayos contados y la patineta
+// hace correr más un rato.
+const BAT_SWINGS = 4;
+const RAYGUN_SHOTS = 8;
+const SKATE_MS = 9000;
+const SKATE_SPEED = 1.5;
+// Agarrar (escudo + X pegadito): lo detiene un momento y lo avienta hacia donde apunte el stick (o hacia adelante).
+const HOLD_MS = 380;
+export const THROW_HIT = { damage: 9, base: 430, scale: 10, angle: 40 };
+// Esquivar: escudo + ◀ ▶ = rodada (no le pegan); escudo en el aire = esquiva en el aire (una vez por salto).
+const ROLL = { ms: 360, speed: 760, invulnerableMs: 320 };
+const AIR_DODGE_MS = 320;
+// Agarrarse de la orilla: qué tan cerca de la esquina tiene que pasar, cuánto aguanta colgado y cuánto dura sin que le
+// peguen al agarrarse.
+const LEDGE = { reach: 1.7, below: 1.6, hangMs: 2600, invulnerableMs: 900, dropMs: 450 };
 // Modo peque: recibe menos daño, sale volando menos y llena su barra más rápido.
 const PEQUE_DAMAGE = 0.7;
 const PEQUE_KNOCKBACK = 0.6;
@@ -95,6 +111,12 @@ export const ATTACKS = {
   spring: { startup: 40, active: 260, recovery: 260, damage: 9, base: 340, scale: 9, angle: 80, hx: 0, hy: -40, radius: 40 },
   // Lanza una estrella (la crea la escena); no golpea con el cuerpo.
   cast: { startup: 90, active: 0, recovery: 200 },
+  // X con el bate: batazo lento que manda lejísimos.
+  bat: { startup: 160, active: 130, recovery: 320, damage: 15, base: 540, scale: 14, angle: 38, hx: 66, hy: -6, radius: 54 },
+  // X con la pistola de rayos: dispara (lo crea la escena).
+  zap: { startup: 60, active: 0, recovery: 170 },
+  // Escudo + X: agarra al que tenga pegadito (la escena se encarga de detenerlo y aventarlo).
+  grabbing: { startup: 50, active: 100, recovery: 260, damage: 0, base: 0, scale: 0, angle: 0, hx: 40, hy: 0, radius: 34, grab: true },
   // Ninja: la escena lo pasa detrás del rival más cercano y luego pega.
   ambush: { startup: 170, active: 110, recovery: 220, damage: 9, base: 330, scale: 9, angle: 40, hx: 48, hy: 0, radius: 34 },
   // Robot: dispara un láser (lo crea la escena).
@@ -172,7 +194,8 @@ const SHOT_LIFT_MAX = 24;
 // se cubre con el escudo, agarra objetos y sale volando más lejos mientras más % de daño lleva.
 // `arena` = { platforms, respawn, gravity } del escenario de la pelea.
 export class SmashFighter {
-  constructor(scene, layer, { color, label, deviceId = null, character = 'resorte', arena, peque = false, cpuLevel = 'normal' }) {
+  // `stats`: para el jefe, que no es de Bolitas Bros (si no, los de su personaje).
+  constructor(scene, layer, { color, label, deviceId = null, character = 'resorte', arena, peque = false, cpuLevel = 'normal', stats: custom = null }) {
     this.scene = scene;
     this.color = color;
     this.label = label;
@@ -188,8 +211,9 @@ export class SmashFighter {
     // y hasta qué altura arriba del centro llegan sus golpes (sus hombros).
     this.tall = 0;
     this.attackLift = 0;
-    const stats = CHARACTERS[character];
+    const stats = custom ?? CHARACTERS[character];
     this.stats = stats;
+    this.baseStats = stats;
     // `radius` crece en súper modo; `baseRadius` es el tamaño normal (con el que se dibuja).
     this.baseRadius = stats.radius;
     this.radius = stats.radius;
@@ -199,13 +223,21 @@ export class SmashFighter {
     this.damage = 0;
     this.meter = 0;
     this.superMs = 0;
+    // Para los resultados: a cuántos sacó, cuántas veces se cayó, cuánto pegó y su golpe más fuerte.
+    this.record = { kos: 0, falls: 0, dealt: 0, best: 0 };
 
     this.sprite = new Blob(scene, 0, 0, color, this.radius);
     addAccessory(scene, this.sprite, character);
     this.setupArt(scene);
+    if (custom && !this.image) addCrown(scene, this.sprite);
     this.fist = scene.add.circle(0, 0, 12, color).setStrokeStyle(3, COLORS.ink).setVisible(false);
     this.hammerSprite = drawItem(scene, 'hammer').setVisible(false);
     this.bombSprite = drawItem(scene, 'bomb').setScale(0.8).setVisible(false);
+    this.batSprite = drawItem(scene, 'bat').setVisible(false);
+    this.gunSprite = drawItem(scene, 'raygun').setScale(0.8).setVisible(false);
+    this.skateSprite = drawItem(scene, 'skate').setScale(1.3).setVisible(false);
+    // La bola súper: brilla de colores alrededor mientras tiene listo su golpe final.
+    this.finalGlow = scene.add.circle(0, 0, this.radius * 1.7, 0xffffff, 0.35).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.flames = scene.add
       .container(0, 0, [
         scene.add.ellipse(0, 0, 92, 46, 0xff9a3c, 0.85),
@@ -220,7 +252,9 @@ export class SmashFighter {
         scene.add.ellipse(-16, 0, 36, 10, 0xffffff, 0.9),
       ])
       .setVisible(false);
-    this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.flames, this.water]);
+    this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.batSprite, this.gunSprite, this.flames, this.water]);
+    this.sprite.add([this.skateSprite]);
+    this.sprite.addAt(this.finalGlow, 0);
     // Brillo detrás del personaje en súper modo.
     this.aura = scene.add.circle(0, 0, this.radius * 1.5, 0xffd84d, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.sprite.addAt(this.aura, 0);
@@ -289,6 +323,17 @@ export class SmashFighter {
     this.shieldHp = SHIELD_MAX;
     this.held = null;
     this.starPowerMs = 0;
+    this.skateMs = 0;
+    this.holding = null;
+    this.heldBy = null;
+    this.rollMs = 0;
+    this.rollDir = 0;
+    this.airDodgeMs = 0;
+    this.airDodgeUsed = false;
+    this.hanging = null;
+    this.ledgeCooldownMs = 0;
+    this.prevShield = false;
+    this.prevX = 0;
     this.invulnerableMs = invulnerableMs;
     this.dropMs = 0;
     this.respawnMs = 0;
@@ -305,17 +350,22 @@ export class SmashFighter {
 
   // Recién reaparecido, con la estrella, transformándose o invisible (Fantasma): no le pasa nada.
   isInvulnerable() {
-    return this.invulnerableMs > 0 || this.starPowerMs > 0 || this.transformMs > 0 || this.ghostMs > 0;
+    return this.invulnerableMs > 0 || this.starPowerMs > 0 || this.transformMs > 0 || this.ghostMs > 0 || this.rollMs > 0 || this.airDodgeMs > 0;
   }
 
   // Se salió de la pantalla: pierde una vida y, si le quedan, reaparece arriba del escenario.
   // Si estaba transformado, se le acaba el súper modo (la barra que llevaba no se pierde).
   knockOut() {
-    this.stocks -= 1;
+    // (En el modo Tiempo y en Rompe los blancos las vidas no se acaban.)
+    if (!this.infinite) this.stocks -= 1;
+    this.record.falls += 1;
     this.out = true;
     this.respawnMs = RESPAWN_MS;
     this.held = null;
     this.starPowerMs = 0;
+    this.skateMs = 0;
+    this.finalReady = false;
+    this.releaseHold();
     if (this.superMs > 0) this.setSuper(false);
     this.sprite.setVisible(false);
   }
@@ -330,9 +380,23 @@ export class SmashFighter {
       this.starPowerMs = STAR_POWER_MS;
       return true;
     }
+    if (type === 'skate') {
+      this.skateMs = SKATE_MS;
+      return true;
+    }
+    // El huevo se abre y sale un ayudante (lo pone la escena).
+    if (type === 'egg') return true;
     if (this.held) return false;
-    this.held = { type, ms: type === 'hammer' ? HAMMER_MS : Infinity };
+    this.held = { type, ms: type === 'hammer' ? HAMMER_MS : Infinity, uses: type === 'bat' ? BAT_SWINGS : type === 'raygun' ? RAYGUN_SHOTS : Infinity };
     return true;
+  }
+
+  // Suelta al que tenía agarrado (o se suelta del que lo tenía).
+  releaseHold() {
+    if (this.holding) this.holding.heldBy = null;
+    if (this.heldBy) this.heldBy.holding = null;
+    this.holding = null;
+    this.heldBy = null;
   }
 
   // --- Barra de poder y súper modo ---
@@ -374,7 +438,7 @@ export class SmashFighter {
       this.applyForm();
       return;
     }
-    const stats = this.stats;
+    const stats = this.baseStats;
     this.radius = on ? Math.round(stats.radius * SUPER.size) : stats.radius;
     this.power = stats.power * (on ? SUPER.power : 1);
     this.weight = stats.weight * (on ? SUPER.weight : 1);
@@ -459,6 +523,10 @@ export class SmashFighter {
     this.invulnerableMs = Math.max(0, this.invulnerableMs - dtMs);
     this.starPowerMs = Math.max(0, this.starPowerMs - dtMs);
     this.dropMs = Math.max(0, this.dropMs - dtMs);
+    this.skateMs = Math.max(0, this.skateMs - dtMs);
+    this.rollMs = Math.max(0, this.rollMs - dtMs);
+    this.airDodgeMs = Math.max(0, this.airDodgeMs - dtMs);
+    this.ledgeCooldownMs = Math.max(0, this.ledgeCooldownMs - dtMs);
     this.hitstunMs = Math.max(0, this.hitstunMs - dtMs);
     this.stunMs = Math.max(0, this.stunMs - dtMs);
     this.dashMs = Math.max(0, this.dashMs - dtMs);
@@ -485,12 +553,49 @@ export class SmashFighter {
       this.vy = 0;
       return;
     }
+    // Lo tienen agarrado: no hace nada (el que lo agarró lo pone enfrente y lo avienta).
+    if (this.heldBy) {
+      this.prevShield = input.shield;
+      return;
+    }
+    // Colgado de la orilla: ↑, A o hacia el escenario = subirse; ↓ o hacia afuera = soltarse.
+    if (this.hanging) {
+      this.updateHanging(dtMs, input);
+      this.prevShield = input.shield;
+      return;
+    }
     // Parado en una plataforma que se mueve: se va con ella.
     if (this.grounded && this.platform) this.x += this.platform.dx;
     this.advanceAttack(dtMs);
+    this.advanceHold(dtMs, input);
 
-    const canAct = this.hitstunMs === 0 && this.stunMs === 0;
-    if (canAct) {
+    const canAct = this.hitstunMs === 0 && this.stunMs === 0 && !this.holding;
+    // Esquivas: escudo + ◀ ▶ en el piso = rodada; escudo recién apretado en el aire = esquiva en el aire.
+    const tilt = Math.abs(input.x) > 0.7 && Math.abs(this.prevX) <= 0.7;
+    if (canAct && this.rollMs === 0 && this.grounded && input.shield && tilt && !this.attack) {
+      this.rollMs = ROLL.ms;
+      this.rollDir = Math.sign(input.x);
+      this.shielding = false;
+      this.scene.dust?.(this.x, this.y + this.radius, -this.rollDir);
+      sfx.jump();
+    }
+    if (canAct && !this.grounded && input.shield && !this.prevShield && !this.airDodgeUsed && !this.attack) {
+      this.airDodgeMs = AIR_DODGE_MS;
+      this.airDodgeUsed = true;
+      this.vx *= 0.3;
+      this.vy = Math.min(this.vy, 0) * 0.3;
+    }
+    this.prevShield = input.shield;
+    this.prevX = input.x;
+    if (canAct && this.rollMs > 0) {
+      this.vx = this.rollDir * ROLL.speed;
+    } else if (canAct) {
+      // Escudo + X: agarrar al de enfrente.
+      if (this.grounded && input.shield && input.attack && !this.attack && !this.held) {
+        this.shielding = false;
+        this.attack = { type: 'grabbing', elapsed: 0, hit: new Set() };
+        this.scene.practiced?.(this, 'grab');
+      }
       // El escudo solo se usa en el piso; saltar lo cancela.
       this.shielding = this.grounded && input.shield && !this.attack && !input.jump;
       if (this.shielding) {
@@ -517,6 +622,95 @@ export class SmashFighter {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.collide(prevFeet);
+    if (!this.grounded) this.tryLedge();
+    else this.airDodgeUsed = false;
+  }
+
+  // Si va cayendo junto a una esquina del escenario principal, se agarra de la orilla.
+  tryLedge() {
+    if (this.vy <= 0 || this.hitstunMs > 0 || this.ledgeCooldownMs > 0 || this.held?.type === 'bomb') return;
+    const main = this.arena.platforms.find((p) => p.main);
+    if (!main) return;
+    for (const side of [-1, 1]) {
+      const edgeX = side < 0 ? main.left : main.right;
+      const outside = (this.x - edgeX) * side;
+      if (outside < this.radius * 0.2 || outside > this.radius * LEDGE.reach) continue;
+      if (this.y < main.top - this.radius || this.y > main.top + this.radius * LEDGE.below) continue;
+      this.hanging = { platform: main, side, ms: LEDGE.hangMs };
+      this.x = edgeX + side * this.radius * 0.8;
+      this.y = main.top + this.radius * 1.15;
+      this.vx = 0;
+      this.vy = 0;
+      this.facing = -side;
+      this.airJumps = this.stats.airJumps;
+      this.rescueUsed = false;
+      this.attack = null;
+      this.invulnerableMs = Math.max(this.invulnerableMs, LEDGE.invulnerableMs);
+      this.scene.practiced?.(this, 'ledge');
+      sfx.select();
+      return;
+    }
+  }
+
+  updateHanging(dtMs, input) {
+    const h = this.hanging;
+    h.ms -= dtMs;
+    const toward = Math.sign(input.x) === -h.side && Math.abs(input.x) > 0.5;
+    const away = Math.sign(input.x) === h.side && Math.abs(input.x) > 0.5;
+    if (input.jump || input.y < -0.5 || toward || h.ms <= 0) {
+      // Se sube de un brinquito al escenario.
+      const p = h.platform;
+      this.hanging = null;
+      this.x = (h.side < 0 ? p.left : p.right) - h.side * this.radius * 1.2;
+      this.y = p.top - this.radius;
+      this.vx = 0;
+      this.vy = 0;
+      this.grounded = true;
+      this.platform = p;
+      sfx.jump();
+    } else if (input.y > 0.5 || away) {
+      this.hanging = null;
+      this.ledgeCooldownMs = LEDGE.dropMs;
+      this.vy = 100;
+    }
+  }
+
+  // Tiene a alguien agarrado: lo pone enfrente y, al rato, lo avienta (hacia donde apunte el stick).
+  advanceHold(dtMs, input) {
+    const victim = this.holding;
+    if (!victim) return;
+    if (!victim.isAlive() || this.hitstunMs > 0) {
+      this.releaseHold();
+      return;
+    }
+    this.holdMs -= dtMs;
+    victim.x = this.x + this.facing * (this.radius + victim.radius) * 0.85;
+    victim.y = this.y + this.radius - victim.radius;
+    victim.vx = 0;
+    victim.vy = 0;
+    if (Math.abs(input.x) > 0.5) this.throwDir = Math.sign(input.x);
+    if (input.y < -0.5) this.throwUp = true;
+    if (this.holdMs > 0) return;
+    const dir = this.throwDir ?? this.facing;
+    this.facing = dir;
+    const hit = { ...THROW_HIT, angle: this.throwUp ? 82 : THROW_HIT.angle };
+    this.releaseHold();
+    this.throwDir = null;
+    this.throwUp = false;
+    this.scene.throwFighter?.(this, victim, hit);
+  }
+
+  // La escena avisa que el agarre le llegó a alguien.
+  startHold(victim) {
+    this.releaseHold();
+    victim.releaseHold();
+    this.holding = victim;
+    victim.heldBy = this;
+    victim.attack = null;
+    victim.shielding = false;
+    victim.hanging = null;
+    this.holdMs = HOLD_MS;
+    this.attack = null;
   }
 
   advanceAttack(dtMs) {
@@ -568,6 +762,15 @@ export class SmashFighter {
       this.projectileRequest = { kind: 'laser', x: this.x + this.facing * (this.radius + 30), y: this.y - 4, dir: this.facing };
       sfx.laser();
     }
+    if (justActive && attack.type === 'zap') {
+      this.projectileRequest = { kind: 'zap', x: this.x + this.facing * (this.radius + 30), y: this.y - 6, dir: this.facing };
+      if (--this.held.uses <= 0) this.held = null;
+      sfx.laser();
+    }
+    if (justActive && attack.type === 'bat' && this.held && --this.held.uses <= 0) {
+      // El último batazo: el bate se rompe después de pegar.
+      this.held.ms = a.active + a.recovery;
+    }
     if (justActive && attack.type === 'throw') {
       this.projectileRequest = {
         kind: 'bomb',
@@ -594,7 +797,7 @@ export class SmashFighter {
   control(dt, input) {
     const stats = this.stats;
     const isSuper = this.superMs > 0;
-    const speedBonus = (this.starPowerMs > 0 ? STAR_SPEED_BONUS : 1) * (isSuper ? SUPER.speed : 1);
+    const speedBonus = (this.starPowerMs > 0 ? STAR_SPEED_BONUS : 1) * (isSuper ? SUPER.speed : 1) * (this.skateMs > 0 ? SKATE_SPEED : 1);
     const jump = stats.jump * (isSuper ? SUPER.jump : 1);
     if (!this.attack && Math.abs(input.x) > 0.2) this.facing = Math.sign(input.x);
     if (this.dashMs > 0) {
@@ -635,6 +838,8 @@ export class SmashFighter {
     let type = 'jab';
     if (this.held?.type === 'hammer') type = 'hammer';
     else if (this.held?.type === 'bomb') type = 'throw';
+    else if (this.held?.type === 'bat') type = 'bat';
+    else if (this.held?.type === 'raygun') type = 'zap';
     else if (input.y < -0.5) type = 'up';
     else if (input.y > 0.5) type = this.grounded ? 'sweep' : 'stomp';
     this.attack = { type, elapsed: 0, hit: new Set() };
@@ -644,6 +849,11 @@ export class SmashFighter {
   // el de Resorte es su súper salto, que además golpea.
   startSpecial(input) {
     if (this.attack) return;
+    // Con la bola súper rota: B = ¡golpe final!
+    if (this.finalReady && this.scene.startFinal?.(this)) {
+      this.finalReady = false;
+      return;
+    }
     const key = this.characterKey;
     if (input.y < -0.5 || key === 'resorte') {
       if (this.rescueUsed) return;
@@ -715,6 +925,16 @@ export class SmashFighter {
     } else if (key === 'bombero') {
       attack('water');
       sound = sfx.fire;
+    } else if (this.isBoss) {
+      // El Rey Bolón: cae aplastando (en el piso, primero da un brinco).
+      if (this.grounded) {
+        this.vy = -this.stats.jump * 0.8;
+        this.grounded = false;
+        this.platform = null;
+      }
+      attack('square');
+      cooldown = this.slamCooldownMs;
+      sound = sfx.jump;
     } else {
       return;
     }
@@ -786,7 +1006,9 @@ export class SmashFighter {
     }
     const peque = this.peque ? PEQUE_DAMAGE : 1;
     const dealt = data.damage * source.power * peque;
-    this.damage += dealt;
+    // El jefe no junta %: se le baja su barra de vida (y casi no se mueve con los golpes).
+    if (this.isBoss) this.bossHp = Math.max(0, this.bossHp - dealt);
+    else this.damage += dealt;
     this.addMeter(dealt * METER_PER_DAMAGE_TAKEN);
     const speed = ((data.base * source.power + this.damage * data.scale) / this.weight) * (this.peque ? PEQUE_KNOCKBACK : 1);
     const angle = (data.angle * Math.PI) / 180;
@@ -796,6 +1018,8 @@ export class SmashFighter {
     this.vy = -Math.sin(angle) * speed;
     this.hitstunMs = speed * HITSTUN_PER_SPEED;
     this.stunMs = 0;
+    this.hanging = null;
+    this.releaseHold();
     this.dashMs = 0;
     this.slideMs = 0;
     this.rocketMs = 0;
@@ -833,13 +1057,21 @@ export class SmashFighter {
     const walking = this.grounded && Math.abs(this.vx) > 40;
     this.walkStep = walking ? (this.walkStep ?? 0) + (frameDelta() * WALK_FPS) / 1000 : 0;
     let pose = (walking && walkPose(this.scene, art, this.walkStep)) || 'normal';
-    if (this.hitstunMs > 0 || this.stunMs > 0) pose = 'dolor';
-    else if (this.attack) pose = 'golpe';
+    const type = this.attack?.type;
+    if (this.hitstunMs > 0 || this.stunMs > 0 || this.heldBy) pose = 'dolor';
+    else if (this.holding || type === 'grabbing') pose = 'agarre';
+    else if (this.hanging) pose = 'salto';
+    else if (type) pose = !this.grounded && AIR_POSE_ATTACKS.includes(type) ? 'aire' : (ATTACK_POSES[type] ?? 'golpe');
+    else if (this.shielding) pose = 'cubrirse';
+    else if (this.celebrating) pose = 'gana';
+    else if (this.posing) pose = 'entrada';
     else if (!this.grounded) pose = 'salto';
-    const key = characterTexture(this.scene, art, pose);
+    // (Las poses de pelea son opcionales: si el personaje no la tiene, usa la más parecida.)
+    const shown = (POSE_CHAIN[pose] ?? [pose]).find((p) => hasPose(this.scene, art, p)) ?? 'normal';
+    const key = characterTexture(this.scene, art, shown);
     if (this.image.texture.key !== key) {
       this.image.setTexture(key);
-      this.image.setScale((this.baseRadius * 2.8) / this.image.height);
+      this.image.setScale((this.baseRadius * 2.8 * (POSE_HEIGHT[shown] ?? 1)) / this.image.height);
     }
     this.image.setFlipX(this.facing < 0);
     this.punchArt = hasPose(this.scene, art, 'golpe');
@@ -870,7 +1102,15 @@ export class SmashFighter {
     // Gira mientras sale volando por un golpe fuerte.
     s.figure.angle = this.hitstunMs > 150 ? s.figure.angle + 25 * this.facing : 0;
     const blinking = this.invulnerableMs > 0 && Math.floor(this.invulnerableMs / 90) % 2 === 1;
-    s.setAlpha(this.ghostMs > 0 ? 0.25 : blinking ? 0.35 : 1);
+    s.setAlpha(this.ghostMs > 0 ? 0.25 : blinking ? 0.35 : this.rollMs > 0 || this.airDodgeMs > 0 ? 0.55 : 1);
+    // Rodando, la bolita da la vuelta.
+    if (this.rollMs > 0) s.figure.angle = this.rollDir * 360 * (1 - this.rollMs / ROLL.ms);
+    // La bola súper: un brillo de colores que cambia.
+    this.finalGlow.setVisible(Boolean(this.finalReady));
+    if (this.finalReady) this.finalGlow.setFillStyle(RAINBOW[Math.floor(this.scene.time.now / 100) % RAINBOW.length], 0.4).setScale(1 + 0.12 * Math.sin(this.scene.time.now / 80));
+    // La patineta va debajo de los pies.
+    this.skateSprite.setVisible(this.skateMs > 0 && this.grounded);
+    if (this.skateMs > 0) this.skateSprite.setPosition(0, this.radius + 6).setScale(1.3 * this.facing, 1.3);
     // Con la estrella cambia de colores como arcoíris; en súper modo sin imagen propia, se pone dorado.
     // En "pantalla" la imagen se aclara con el color (multiplicar la oscurecería casi a negro).
     const rainbow = RAINBOW[Math.floor(this.starPowerMs / 80) % RAINBOW.length];
@@ -897,7 +1137,7 @@ export class SmashFighter {
     const a = this.attack && ATTACKS[this.attack.type];
     const type = this.attack?.type;
     // El puño sale en los golpes normales y en el puñetazo cargado (si la imagen no trae su pose de golpe).
-    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water'];
+    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water', 'bat', 'zap', 'grabbing'];
     const showFist = Boolean(a) && !noFist.includes(type) && !this.punchArt;
     this.fist.setVisible(showFist);
     if (showFist) {
@@ -929,6 +1169,16 @@ export class SmashFighter {
     }
     this.bombSprite.setVisible(this.held?.type === 'bomb');
     if (this.held?.type === 'bomb') this.bombSprite.setPosition(this.facing * this.handReach(0.9), -4 - this.attackLift);
+    // El bate se echa para atrás y da el batazo; la pistola apunta hacia adelante.
+    const hasBat = this.held?.type === 'bat';
+    this.batSprite.setVisible(hasBat);
+    if (hasBat) {
+      let angle = -60;
+      if (type === 'bat') angle = -120 + 200 * Math.min(1, this.attack.elapsed / (a.startup + a.active));
+      this.batSprite.setPosition(this.facing * this.handReach(0.8), -8 - this.attackLift).setScale(this.facing, 1).setAngle(angle * this.facing);
+    }
+    this.gunSprite.setVisible(this.held?.type === 'raygun');
+    if (this.held?.type === 'raygun') this.gunSprite.setPosition(this.facing * this.handReach(0.95), -2 - this.attackLift).setScale(0.8 * this.facing, 0.8);
   }
 
   // Qué tan adelante lleva lo que trae en la mano (Bloquecito, según su ancho).
@@ -952,6 +1202,38 @@ export class SmashFighter {
     this.aura.setFillStyle(Math.floor(now / 200) % 2 === 0 ? 0xffd84d : this.color, 0.5);
   }
 }
+
+// Qué pose usa cada golpe (las que no están aquí, 'golpe'); en el aire, los normales se ven como patada voladora.
+const ATTACK_POSES = {
+  sweep: 'patada',
+  stomp: 'aire',
+  charge: 'especial',
+  cast: 'especial',
+  laser: 'especial',
+  fire: 'especial',
+  tail: 'especial',
+  scratch: 'especial',
+  slide: 'agachado',
+  cannon: 'especial',
+  wand: 'especial',
+  water: 'especial',
+  sting: 'especial',
+  zap: 'especial',
+};
+const AIR_POSE_ATTACKS = ['jab', 'up', 'stomp', 'sweep'];
+// Si no tiene esa pose, la más parecida (las súper formas solo traen las básicas).
+const POSE_CHAIN = {
+  patada: ['patada', 'golpe'],
+  aire: ['aire', 'patada', 'golpe'],
+  especial: ['especial', 'golpe'],
+  agarre: ['agarre', 'golpe'],
+  agachado: ['agachado', 'golpe'],
+  cubrirse: ['cubrirse', 'normal'],
+  gana: ['gana', 'salto'],
+  entrada: ['entrada', 'gana', 'normal'],
+};
+// Las imágenes se ajustan a la misma altura; las más bajitas o más altas en el dibujo se corrigen aquí.
+const POSE_HEIGHT = { cubrirse: 0.85, gana: 1.08, patada: 0.95, agachado: 0.75, aire: 0.95 };
 
 function approach(value, target, step) {
   return value < target ? Math.min(target, value + step) : Math.max(target, value - step);
