@@ -27,6 +27,7 @@ export const FINAL_NAMES = {
   abeja: 'Enjambre furioso',
   bombero: 'Manguerazo máximo',
   bloquecito: 'Torre de bloques',
+  rey: 'Aplastón real',
 };
 export const FINAL_DAMAGE = 30;
 

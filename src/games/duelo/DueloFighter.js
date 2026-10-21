@@ -6,6 +6,7 @@ import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { hasPose, superArtKey } from '../smash/art.js';
 import { isBlockCharacter, lerp, numberSize } from '../smash/bloquecito.js';
 import { CHARACTERS } from '../smash/characters.js';
+import { BOSS, BOSS_STATS, addCrown } from './boss.js';
 import { ATTACKS, BLOCK_SPECIALS, SPECIALS, SPECIAL_COOLDOWN_MS } from './moves.js';
 
 // El piso y las paredes del escenario (la pantalla completa, sin cámara).
@@ -79,10 +80,13 @@ export class DueloFighter {
     this.deviceId = deviceId;
     this.isCpu = deviceId === null;
     this.character = character;
-    const stats = CHARACTERS[character];
+    // El jefe del torneo no es de Bolitas Bros: trae sus propios datos (ver boss.js).
+    this.boss = character === BOSS;
+    const stats = this.boss ? BOSS_STATS : CHARACTERS[character];
     this.name = stats.name;
     this.superName = stats.superName;
-    this.specialData = SPECIALS[character];
+    this.specialData = this.boss ? stats.special : SPECIALS[character];
+    this.maxHealth = stats.health ?? MAX_HEALTH;
     // Bloquecito cambia de tamaño, fuerza y especial según su número (ver applyForm).
     this.blocks = isBlockCharacter(character);
     this.radius = Math.round(stats.radius * SIZE);
@@ -96,6 +100,7 @@ export class DueloFighter {
     const r = this.radius;
     this.blob = new Blob(scene, 0, FLOOR - r, color, r).setDepth(100);
     this.look = new CharacterLook(scene, this.blob, character, { height: LOOK_HEIGHT });
+    if (this.boss && !this.look.hasArt) addCrown(scene, this.blob);
     this.superArt = superArtKey(scene, character);
     // Estatura (para las cajas de golpe): la imagen trae un borde blanco alrededor.
     this.height = this.look.hasArt ? r * LOOK_HEIGHT * 0.9 : r * 2.2;
@@ -149,7 +154,7 @@ export class DueloFighter {
     this.vy = 0;
     this.pushVx = 0;
     this.facing = facing;
-    this.health = MAX_HEALTH;
+    this.health = this.maxHealth;
     this.attack = null;
     this.special = null;
     this.buffered = null;
@@ -247,6 +252,7 @@ export class DueloFighter {
     this.meter = 0;
     this.superMs = SUPER_MS;
     this.finalUsed = false;
+    this.scene.practiced?.(this, 'super');
     if (this.blocks) {
       this.look.setSuper(true);
       this.applyForm();
@@ -367,6 +373,7 @@ export class DueloFighter {
     this.dash = { ms, total: ms, back, vx: dir * this.walkSpeed * speed * this.speed };
     this.invulnerableMs = Math.max(this.invulnerableMs, invulnerableMs);
     this.scene.dust?.(this.x, this.y, -dir);
+    this.scene.practiced?.(this, back ? 'roll' : 'dash');
     sfx.throw();
   }
 
@@ -396,6 +403,7 @@ export class DueloFighter {
     this.attack = { type, data: ATTACKS[type], ms: 0 };
     this.landed = new Set();
     this.buffered = null;
+    this.scene.practiced?.(this, type);
     sfx.throw();
   }
 
@@ -417,6 +425,7 @@ export class DueloFighter {
     this.special = { ...this.specialData, t: 0, fired: false };
     this.landed = new Set();
     this.cooldownMs = SPECIAL_COOLDOWN_MS;
+    this.scene.practiced?.(this, 'special');
     this.punchChain = 0;
     if (this.grounded) this.vx = 0;
     sfx.special();
@@ -492,6 +501,8 @@ export class DueloFighter {
     const data = { damage: s.damage, push: s.push, stunMs: 380, launch: s.launch, special: true, power: this.power };
     if (s.kind === 'rush' && since < s.ms) return { ...front(0.6, s.low ? 0.4 : 0.85, 0), data, key: 'rush' };
     if (s.kind === 'rise' && this.vy < 300) return { ...front(0.5, 1.05, 0.2), data, key: 'rise' };
+    // El salto aplastante del jefe: al caer pega a los dos lados.
+    if (s.kind === 'rise' && s.stomp) return { left: this.x - r * 1.3, right: this.x + r * 1.3, top: this.y - h * 0.5, bottom: this.y + 20, data, key: 'stomp' };
     if (s.kind === 'spin' && since < s.ms) {
       return { left: this.x - r * 1.9, right: this.x + r * 1.9, top: this.y - h * 0.65, bottom: this.y, data, key: 'spin' };
     }
@@ -518,7 +529,8 @@ export class DueloFighter {
       return { blocked: true, dealt: chip };
     }
     const dealt = Math.max(1, Math.round(data.damage * data.power));
-    this.health = Math.max(0, this.health - dealt);
+    // En Entrenamiento nadie queda K.O. (`unbreakable`).
+    this.health = Math.max(this.unbreakable ? 1 : 0, this.health - dealt);
     if (this.superMs <= 0) this.meter = Math.min(METER_MAX, this.meter + dealt);
     this.attack = null;
     this.special = null;
@@ -570,6 +582,7 @@ export class DueloFighter {
     this.vy = 0;
     this.airAttackUsed = false;
     if (this.attack?.type.startsWith('air')) this.attack = null;
+    if (this.special?.stomp) this.scene.landed?.(this, true);
     if (this.special?.kind === 'rise') this.special = null;
     if (!this.attack && !this.special) this.vx = 0;
     if (this.launched) {

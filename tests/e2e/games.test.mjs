@@ -1057,6 +1057,69 @@ test('duelo de bolitas: barrida, arrancón, agarre y golpe final', { timeout: ms
   await p.context.close();
 });
 
+// Modos: torneo (4 rivales y el jefe), supervivencia (sigue con su vida) y entrenamiento (retos palomeados).
+test('duelo de bolitas: torneo con jefe, supervivencia y entrenamiento', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  // El primer renglón es el modo: ▶ = Torneo.
+  await p.tap(0, BUTTON.RIGHT);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').setup.mode), 'torneo');
+  await p.tap(0, BUTTON.A);
+  const win = () =>
+    p.page.evaluate(() => {
+      const s = window.leogames.scene.getScene('Duelo');
+      s.fighters[0].roundWins = s.roundsToWin - 1;
+      s.fighters[1].health = 0;
+      s.endRound(s.fighters[0], 'ko');
+    });
+  for (let fight = 1; fight <= 5; fight += 1) {
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end' && window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(15000), `ver la escalera (pelea ${fight})`);
+    await p.tap(0, BUTTON.A);
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), `empezar la pelea ${fight}`);
+    if (fight === 5) assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[1].name), 'Rey Bolón');
+    await win();
+    await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(15000), `ganar la pelea ${fight}`);
+    if (fight < 5) {
+      await p.until(() => window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(10000), 'poder seguir');
+      await p.tap(0, BUTTON.A);
+    }
+  }
+  assert.ok((await stickers(p.page)).includes('duelo-torneo'));
+
+  // Supervivencia: después de ganar sigue con la vida que le quedó (más un poquito).
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    s.backToSetup();
+    s.setup.mode = 'supervivencia';
+  });
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), 'empezar supervivencia');
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Duelo').fighters[0].health = 40));
+  await win();
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end' && window.leogames.scene.getScene('Duelo').phaseMs > 1300, ms(15000), 'ganar en supervivencia');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), 'siguiente rival');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[0].health), 70);
+
+  // Entrenamiento: el muñeco no pega, no hay reloj y cada golpe nuevo se palomea.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    s.backToSetup();
+    s.setup.mode = 'entrenamiento';
+  });
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), 'empezar entrenamiento');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Duelo').drills.done.has('kick'), ms(3000), 'palomear la patada');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').timerText.text), '∞');
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { timeout: ms(90000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(3);

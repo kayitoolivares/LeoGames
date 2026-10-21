@@ -129,6 +129,14 @@ Abre http://localhost:5173 en Edge o Chrome.
   Con un solo jugador se pelea contra la compu; con más, se turnan: el que gana se queda y el que pierde se forma
   al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
   de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).
+  **Modos** (primer renglón de esa pantalla): **Duelo** (lo de siempre), **Torneo** (4 rivales seguidos, cada vez
+  más difíciles, con una escalera que muestra a quién ya le ganaste, y al final el jefe: el **Rey Bolón**, una
+  bolita gigante morada con corona, más vida y un salto aplastante; si pierdes, A = otra vez esa pelea; ganarlo da
+  la calcomanía «Campeón del torneo»), **Supervivencia** (un rival tras otro con la misma vida —al ganar recuperas
+  un poquito—, la compu se pone más difícil cada 3 victorias, se guarda el récord y con 5 seguidas ganas «Aguante»)
+  y **Entrenamiento** (contra un muñeco que no pega, sin reloj ni K.O., la vida y la barra de poder se rellenan
+  solas y arriba hay 12 retos que se palomean: golpe, patada, remate, gancho, barrida, patada voladora, agarre,
+  arrancón, rodada, especial, súper y golpe final).
 - **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, dibujado con
   figuras (sin imágenes de Gemini). **Y** sube de número y **↓ + Y** baja (del 10 regresa al 1), cuando quieras y sin
   límite; la voz dice el número. Cada número tiene su color y su forma, y entre más grande es más fuerte y pesado pero

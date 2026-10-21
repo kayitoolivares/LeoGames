@@ -13,9 +13,11 @@ import { loadSmashArt } from '../smash/art.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { ARENAS, ARENA_KEYS, drawArena, loadArenaArt } from './arenas.js';
+import { BOSS, BOSS_STATS, loadBossArt } from './boss.js';
 import { CPU_LEVELS, DUMMY, cpuInput } from './cpu.js';
 import { DueloFighter, FLOOR, MAX_HEALTH, METER_MAX, SUPER_MS, WALLS } from './DueloFighter.js';
 import { FinalMove } from './final.js';
+import { BOSS_ARENA, Drills, MODES, SURVIVAL_STICKER_AT, Survival, Tournament, showLadder, survivalRecord } from './modes.js';
 import { DizzyStars, comicHit, dustPuff, loadFxArt, shockwave as shockRing, spark } from './fx.js';
 import { showVersus, showVictory } from './show.js';
 import { Shot } from './shots.js';
@@ -33,6 +35,10 @@ const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
 const BAR = { width: 500, height: 30, y: 52, margin: 40 };
 const ROUND_CHOICES = [1, 2, 3];
 const RIVALS = { versus: 'Entre nosotros', cpu: 'Contra la compu' };
+const SETUP_MODES = ['duelo', 'torneo', 'supervivencia', 'entrenamiento'];
+// Entrenamiento: con menos de esto de vida se rellena sola; la barra de poder se llena sola (por milisegundo).
+const TRAINING_REFILL = 0.3;
+const TRAINING_METER_PER_MS = 0.03;
 const ARENA_CHOICES = ['azar', ...ARENA_KEYS];
 const IDLE = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
 // Doble toque al stick (para el arrancón o la rodada): el segundo toque tiene que llegar antes de esto.
@@ -42,7 +48,7 @@ const COMBO_GAP_MS = 1000;
 const LOW_HEALTH = 25;
 
 // Lo último que se escogió, para no escogerlo otra vez.
-const lastSetup = { rival: 'versus', rounds: 2, level: 'facil', arena: 'azar' };
+const lastSetup = { mode: 'duelo', rival: 'versus', rounds: 2, level: 'facil', arena: 'azar' };
 
 // "Duelo de bolitas": uno contra uno de lado, estilo Street Fighter. Barras de vida, reloj y rounds.
 // Si juegan más de dos, se turnan: el que gana se queda y el que pierde se forma al final.
@@ -60,6 +66,7 @@ export class DueloScene extends Phaser.Scene {
     loadSmashArt(this, { allPoses: true });
     loadArenaArt(this);
     loadFxArt(this);
+    loadBossArt(this);
   }
 
   create() {
@@ -80,11 +87,17 @@ export class DueloScene extends Phaser.Scene {
   // ---------- Antes de pelear: el Jugador 1 escoge rival, rounds, nivel de la compu y escenario ----------
 
   setupKeys() {
-    const keys = [];
-    if (this.humans.length > 1) keys.push('rival');
-    keys.push('rounds');
-    if (this.setup.rival === 'cpu') keys.push('level');
-    keys.push('arena');
+    const keys = ['mode'];
+    const { mode } = this.setup;
+    if (mode === 'duelo') {
+      if (this.humans.length > 1) keys.push('rival');
+      keys.push('rounds');
+      if (this.setup.rival === 'cpu') keys.push('level');
+    } else if (mode === 'torneo') {
+      keys.push('rounds');
+    }
+    // En el torneo los escenarios van tocando solos (y el del jefe es su castillo).
+    if (mode !== 'torneo') keys.push('arena');
     return keys;
   }
 
@@ -98,13 +111,13 @@ export class DueloScene extends Phaser.Scene {
     this.setupLayer = this.add.container(0, 0).setDepth(HUD_DEPTH + 2);
     this.setupLayer.add(this.add.rectangle(width / 2, 360, width, 720, 0x14112b, 0.82));
     this.setupLayer.add(this.add.text(width / 2, 120, 'Duelo de bolitas 🥋', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
-    this.setupRows = Array.from({ length: 4 }, (_, i) => {
-      const bg = this.add.rectangle(width / 2, 210 + i * 64, 580, 52, COLORS.panel).setRounded(16);
-      const text = this.add.text(width / 2, 210 + i * 64, '', textStyle(24, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.setupRows = Array.from({ length: 5 }, (_, i) => {
+      const bg = this.add.rectangle(width / 2, 190 + i * 58, 580, 50, COLORS.panel).setRounded(16);
+      const text = this.add.text(width / 2, 190 + i * 58, '', textStyle(24, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
       this.setupLayer.add([bg, text]);
       return { bg, text };
     });
-    this.matchText = this.add.text(width / 2, 500, '', textStyle(28, TEXT.normal, { align: 'center', fontStyle: 'bold' })).setOrigin(0.5);
+    this.matchText = this.add.text(width / 2, 535, '', textStyle(26, TEXT.normal, { align: 'center', fontStyle: 'bold' })).setOrigin(0.5);
     this.setupLayer.add(this.matchText);
     this.setupLayer.add(
       this.add.text(width / 2, 640, '↑ ↓ elegir  ·  ◀ ▶ cambiar  ·  A = ¡a pelear!  ·  B = regresar', textStyle(22, TEXT.accent)).setOrigin(0.5),
@@ -114,6 +127,7 @@ export class DueloScene extends Phaser.Scene {
 
   refreshSetup() {
     const labels = {
+      mode: `Modo: ${MODES[this.setup.mode].name}`,
       rival: `Rival: ${RIVALS[this.setup.rival]}`,
       rounds: `Rounds para ganar: ${this.setup.rounds}`,
       level: `Nivel de la compu: ${CPU_LEVELS[this.setup.level].name}`,
@@ -129,6 +143,12 @@ export class DueloScene extends Phaser.Scene {
       text.setText(labels[key]);
       bg.setStrokeStyle(i === this.setupRow ? 4 : 2, i === this.setupRow ? COLORS.accent : COLORS.panelBorder);
     });
+    const { mode } = this.setup;
+    if (mode !== 'duelo') {
+      const record = mode === 'supervivencia' ? `\nRécord: ${survivalRecord()} peleas` : '';
+      this.matchText.setText(`${MODES[mode].info}\n\n${this.describe(this.queue[0])}${record}`);
+      return;
+    }
     const [left, right] = this.pairing();
     const turns = this.waiting().map((entry) => this.labelOf(entry.player)).join(', ');
     this.matchText.setText(`${this.describe(left)}   vs   ${this.describe(right)}${turns ? `\n\nDespués: ${turns}` : ''}`);
@@ -149,7 +169,8 @@ export class DueloScene extends Phaser.Scene {
     if (step !== 0) {
       const cycle = (list, value) => list[(list.indexOf(value) + step + list.length) % list.length];
       const key = keys[this.setupRow];
-      if (key === 'rival') this.setup.rival = cycle(Object.keys(RIVALS), this.setup.rival);
+      if (key === 'mode') this.setup.mode = cycle(SETUP_MODES, this.setup.mode);
+      else if (key === 'rival') this.setup.rival = cycle(Object.keys(RIVALS), this.setup.rival);
       else if (key === 'rounds') this.setup.rounds = cycle(ROUND_CHOICES, this.setup.rounds);
       else if (key === 'level') this.setup.level = cycle(Object.keys(CPU_LEVELS), this.setup.level);
       else {
@@ -163,10 +184,122 @@ export class DueloScene extends Phaser.Scene {
       sfx.confirm();
       Object.assign(lastSetup, this.setup);
       this.setupLayer.destroy();
-      this.startMatch();
+      this.beginMode();
     } else if (controls.justPressed(id, 'b')) {
       this.exit();
     }
+  }
+
+  // Empieza el modo escogido (o lo vuelve a empezar desde cero).
+  beginMode() {
+    const { mode } = this.setup;
+    this.cpuCharacter = null;
+    this.tour = mode === 'torneo' ? new Tournament(this.queue[0]) : null;
+    this.survival = mode === 'supervivencia' ? new Survival(MAX_HEALTH) : null;
+    if (this.tour) this.showTourLadder();
+    else this.startMatch();
+  }
+
+  backToSetup() {
+    this.clearFighters();
+    this.hideBanner();
+    this.showSetup();
+  }
+
+  toCharacters() {
+    this.scene.start('Personajes', { selected: this.returnData.selected, next: 'Duelo', title: 'Duelo de bolitas' });
+  }
+
+  // ---------- Torneo y supervivencia ----------
+
+  // La escalera del torneo antes de cada pelea: A = ¡a pelear!, B = salir del torneo.
+  showTourLadder() {
+    this.clearFighters();
+    this.hideBanner();
+    this.phase = 'end';
+    this.phaseMs = END_INPUT_DELAY_MS * 0.6;
+    const fight = this.tour.current;
+    const title = `Torneo · Pelea ${this.tour.index + 1} de ${this.tour.fights.length}`;
+    const hint = `${fight.boss ? '¡Ahora el jefe: el Rey Bolón! 👑\n' : ''}A = ¡a pelear!  ·  B = salir del torneo`;
+    this.ladder = showLadder(this, this.tour, title, hint);
+    say(fight.boss ? '¡Ahora el jefe: el Rey Bolón!' : title);
+    this.endActions = { a: () => this.startMatch(), b: () => this.backToSetup() };
+  }
+
+  endTourMatch(winner) {
+    const human = this.fighters[0];
+    if (winner !== human) {
+      this.showBanner('¡Casi!', 'A = intentar otra vez  ·  B = salir del torneo', 0, TEXT.accent);
+      this.endActions = { a: () => (this.hideBanner(), this.startMatch()), b: () => this.backToSetup() };
+      return;
+    }
+    this.tour.index += 1;
+    if (!this.tour.done) {
+      this.victory = showVictory(this, winner, '¡Ganaste!', `Sigue la pelea ${this.tour.index + 1} de ${this.tour.fights.length}\n\nA = seguir\nB = salir del torneo`);
+      sfx.win();
+      this.endActions = { a: () => this.showTourLadder(), b: () => this.backToSetup() };
+      return;
+    }
+    rewards.earn('duelo-torneo');
+    this.victory = showVictory(this, winner, '¡Campeón del torneo! 🏆', 'A = otro torneo\nB = cambiar personajes\nMantén LB + RB + Y = salir');
+    say('¡Campeón del torneo!');
+    confetti(this, [winner.color, 0xffd84d, 0xffffff], 140);
+    sfx.win();
+    this.endActions = { a: () => this.beginMode(), b: () => this.toCharacters() };
+  }
+
+  endSurvivalMatch(winner) {
+    const human = this.fighters[0];
+    const plural = (n) => (n === 1 ? 'pelea' : 'peleas');
+    if (winner === human) {
+      this.survival.won(human.health);
+      const wins = this.survival.wins;
+      if (wins >= SURVIVAL_STICKER_AT) rewards.earn('duelo-aguante');
+      this.showBanner(`¡${wins} ${wins === 1 ? 'victoria' : 'victorias'}!`, 'Recuperas un poquito de vida\nA = siguiente rival  ·  B = terminar', 0, hexToCss(winner.color));
+      sfx.win();
+      this.endActions = { a: () => (this.hideBanner(), (this.cpuCharacter = null), this.startMatch()), b: () => this.finishSurvival() };
+      return;
+    }
+    this.finishSurvival();
+  }
+
+  finishSurvival() {
+    const wins = this.survival.wins;
+    const { record, isNew } = this.survival.finish();
+    this.phase = 'end';
+    this.phaseMs = 0;
+    this.showBanner(`Aguantaste ${wins} ${wins === 1 ? 'pelea' : 'peleas'}`, `${isNew ? '¡Nuevo récord!' : `Récord: ${record}`}\nA = otra vez  ·  B = cambiar personajes`, 0, TEXT.accent);
+    if (isNew && wins > 0) confetti(this, [0xffd84d, 0xffffff, 0x4cd97b], 90);
+    this.endActions = { a: () => (this.hideBanner(), this.beginMode()), b: () => this.toCharacters() };
+  }
+
+  // ---------- Entrenamiento ----------
+
+  // Lo llama el peleador al hacer cada movimiento: en Entrenamiento se palomea el reto.
+  practiced(fighter, key) {
+    if (!this.drills || fighter.isCpu) return;
+    const name = this.drills.mark(key);
+    if (!name) return;
+    popText(this, fighter.x, fighter.y - fighter.height - 60, `✅ ${name}`, '#4cd97b');
+    sfx.pickup();
+    say(name);
+    if (this.drills.complete) {
+      this.showBanner('¡Ya sabes todos los golpes!', '', 2500, '#4cd97b');
+      confetti(this, [0x4cd97b, 0xffd84d, 0xffffff], 100);
+    }
+  }
+
+  // Nadie se queda sin vida y la barra de poder se llena sola (para probar la súper y el golpe final).
+  updateTraining(dt) {
+    for (const fighter of this.fighters) {
+      const resting = fighter.hurtMs <= 0 && !fighter.launched && fighter.downMs <= 0;
+      if (resting && fighter.health < fighter.maxHealth * TRAINING_REFILL) {
+        fighter.health = fighter.maxHealth;
+        popText(this, fighter.x, fighter.y - fighter.height - 40, '¡Vida llena!', '#4cd97b');
+      }
+    }
+    const me = this.fighters[0];
+    if (me.superMs <= 0) me.meter = Math.min(METER_MAX, me.meter + dt * TRAINING_METER_PER_MS);
   }
 
   // ---------- Quién pelea ----------
@@ -176,11 +309,25 @@ export class DueloScene extends Phaser.Scene {
   }
 
   describe(entry) {
-    return `${entry.player ? this.labelOf(entry.player) : 'CPU'} · ${CHARACTERS[entry.character].name}`;
+    const name = entry.character === BOSS ? BOSS_STATS.name : CHARACTERS[entry.character].name;
+    return `${entry.player ? this.labelOf(entry.player) : 'CPU'} · ${name}`;
   }
 
-  // Los dos que pelean ahora: los primeros dos de la fila, o el primero contra la compu.
+  // Los dos que pelean ahora: los primeros dos de la fila, o el primero contra la compu. En el torneo, el rival
+  // que toca; en supervivencia, uno al azar (más difícil con cada victoria); en entrenamiento, el muñeco.
   pairing() {
+    const { mode } = this.setup;
+    if (mode === 'torneo' && this.tour && !this.tour.done) {
+      const fight = this.tour.current;
+      return [this.queue[0], { player: null, character: fight.character, level: fight.level }];
+    }
+    if (mode === 'supervivencia' || mode === 'entrenamiento') {
+      this.cpuCharacter ??= this.randomCpuCharacter();
+      const rival = { player: null, character: this.cpuCharacter };
+      if (mode === 'supervivencia') rival.level = this.survival?.level ?? 'facil';
+      else rival.dummy = true;
+      return [this.queue[0], rival];
+    }
     if (this.setup.rival === 'versus' && this.queue.length > 1) return [this.queue[0], this.queue[1]];
     this.cpuCharacter ??= this.randomCpuCharacter();
     return [this.queue[0], { player: null, character: this.cpuCharacter }];
@@ -188,6 +335,7 @@ export class DueloScene extends Phaser.Scene {
 
   // Los que esperan su turno.
   waiting() {
+    if (this.setup.mode !== 'duelo') return [];
     return this.queue.slice(this.setup.rival === 'versus' ? 2 : 1);
   }
 
@@ -201,18 +349,25 @@ export class DueloScene extends Phaser.Scene {
     const taken = new Set(this.humans.map((player) => player.colorIndex));
     const cpuColor = PLAYER_COLORS.find((_, k) => !taken.has(k)) ?? PLAYER_COLORS[0];
     const fighter = new DueloFighter(this, {
-      color: entry.player ? players.color(entry.player).hex : cpuColor.hex,
+      color: entry.player ? players.color(entry.player).hex : entry.character === BOSS ? BOSS_STATS.color : cpuColor.hex,
       label: entry.player ? this.labelOf(entry.player) : 'CPU',
       character: entry.character,
       deviceId: entry.player?.deviceId ?? null,
     });
     fighter.dizzy = new DizzyStars(this);
+    fighter.dummy = Boolean(entry.dummy);
+    fighter.cpuLevel = entry.level ?? null;
+    fighter.unbreakable = this.setup.mode === 'entrenamiento';
     return fighter;
   }
 
   clearFighters() {
     this.victory?.destroy();
     this.victory = null;
+    this.ladder?.destroy();
+    this.ladder = null;
+    this.drills?.destroy();
+    this.drills = null;
     for (const fighter of this.fighters) {
       fighter.dizzy?.destroy();
       fighter.destroy();
@@ -241,7 +396,13 @@ export class DueloScene extends Phaser.Scene {
     const [left, right] = this.pairing();
     this.fighters = [left, right].map((entry, i) => this.createFighter(entry, i));
     this.fighters.forEach((fighter) => (fighter.roundWins = 0));
-    this.arena = this.setup.arena === 'azar' ? Phaser.Utils.Array.GetRandom(ARENA_KEYS.filter((k) => ARENAS[k].has)) ?? 'dojo' : this.setup.arena;
+    const { mode } = this.setup;
+    this.roundsToWin = mode === 'supervivencia' ? 1 : this.setup.rounds;
+    this.training = mode === 'entrenamiento';
+    if (this.training) this.drills = new Drills(this);
+    let arena = this.setup.arena;
+    if (mode === 'torneo') arena = this.tour.current.boss && ARENAS[BOSS_ARENA]?.has ? BOSS_ARENA : 'azar';
+    this.arena = arena === 'azar' ? Phaser.Utils.Array.GetRandom(ARENA_KEYS.filter((k) => ARENAS[k].has && k !== BOSS_ARENA)) ?? 'dojo' : arena;
     this.drawArenaFor(this.arena);
     this.round = 0;
     this.hud.forEach((side, i) => this.fillHud(side, this.fighters[i]));
@@ -268,9 +429,16 @@ export class DueloScene extends Phaser.Scene {
       fighter.combo = 0;
       fighter.warnedLow = false;
     }
-    const last = this.fighters.every((fighter) => fighter.roundWins === this.setup.rounds - 1) && this.setup.rounds > 1;
+    // Supervivencia: sigue con la vida que le quedó; entrenamiento: con la barra de poder llena.
+    if (this.survival) this.fighters[0].health = this.survival.health;
+    if (this.training) this.fighters[0].meter = METER_MAX;
+    const last = this.fighters.every((fighter) => fighter.roundWins === this.roundsToWin - 1) && this.roundsToWin > 1;
     const [a, b] = this.fighters;
-    this.showBanner(last ? '¡Round final!' : `Round ${this.round}`, `${a.label} ${a.name}  vs  ${b.label} ${b.name}`, ROUND_INTRO_MS);
+    let title = last ? '¡Round final!' : `Round ${this.round}`;
+    if (this.training) title = '¡A practicar!';
+    else if (this.survival) title = `Rival ${this.survival.wins + 1}`;
+    else if (this.tour) title = this.tour.current.boss ? '¡El jefe!' : `Pelea ${this.tour.index + 1}`;
+    this.showBanner(title, `${a.label} ${a.name}  vs  ${b.label} ${b.name}`, ROUND_INTRO_MS);
     sfx.countdown();
   }
 
@@ -311,7 +479,8 @@ export class DueloScene extends Phaser.Scene {
     if (fighting) {
       this.resolveHits();
       this.announceMeters();
-      this.updateTimer(dt);
+      if (this.training) this.updateTraining(dt);
+      else this.updateTimer(dt);
     } else if (this.phase === 'ko') {
       this.updateKo();
     } else if (this.phase === 'end') {
@@ -325,7 +494,7 @@ export class DueloScene extends Phaser.Scene {
   }
 
   inputFor(fighter, foe, dt) {
-    if (fighter.isCpu) return cpuInput(fighter, foe, this.shots, fighter.dummy ? DUMMY : CPU_LEVELS[this.setup.level], dt);
+    if (fighter.isCpu) return cpuInput(fighter, foe, this.shots, fighter.dummy ? DUMMY : CPU_LEVELS[fighter.cpuLevel ?? this.setup.level], dt);
     const id = fighter.deviceId;
     const stick = controls.getStick(id);
     const transform = controls.isDown(id, 'lb') && controls.isDown(id, 'rb') && (controls.justPressed(id, 'lb') || controls.justPressed(id, 'rb'));
@@ -535,6 +704,7 @@ export class DueloScene extends Phaser.Scene {
     this.phase = 'fight';
     this.phaseMs = 0;
     if (!attacker.isCpu) rewards.earn('duelo-final');
+    this.practiced(attacker, 'final');
     if (victim.koed) this.endRound(attacker, 'ko');
   }
 
@@ -572,7 +742,7 @@ export class DueloScene extends Phaser.Scene {
     let subtitle = winner ? `Round para ${winner.label}` : 'Nadie gana este round';
     if (winner) {
       winner.roundWins += 1;
-      if (winner.health === MAX_HEALTH) {
+      if (winner.health === winner.maxHealth) {
         subtitle = `¡Perfecto! Round para ${winner.label}`;
         if (!winner.isCpu) rewards.earn('duelo-perfecto');
       }
@@ -586,7 +756,7 @@ export class DueloScene extends Phaser.Scene {
       for (const fighter of this.fighters) fighter.celebrate(fighter === this.roundWinner);
     }
     if (this.phaseMs < KO_PAUSE_MS) return;
-    const champion = this.fighters.find((fighter) => fighter.roundWins >= this.setup.rounds);
+    const champion = this.fighters.find((fighter) => fighter.roundWins >= this.roundsToWin);
     if (champion) this.endMatch(champion);
     else this.startRound();
   }
@@ -596,6 +766,14 @@ export class DueloScene extends Phaser.Scene {
     this.phaseMs = 0;
     this.matchWinner = winner;
     if (!winner.isCpu) rewards.earn('duelo-gana');
+    if (this.tour) {
+      this.endTourMatch(winner);
+      return;
+    }
+    if (this.survival) {
+      this.endSurvivalMatch(winner);
+      return;
+    }
     const next = this.nextQueue();
     const [a, b] = this.pairingFor(next);
     const nextText = `Sigue: ${this.describe(a)} vs ${this.describe(b)}`;
@@ -604,6 +782,15 @@ export class DueloScene extends Phaser.Scene {
     say(`¡Ganó ${winner.label}!`);
     confetti(this, [winner.color, 0xffffff, 0xffc93c], 90);
     sfx.win();
+    this.endActions = {
+      a: () => {
+        this.queue = this.nextQueue();
+        this.cpuCharacter = null;
+        this.hideBanner();
+        this.startMatch();
+      },
+      b: () => this.toCharacters(),
+    };
   }
 
   // Cómo queda la fila para la siguiente pelea: entre nosotros, el que perdió se forma al final
@@ -631,14 +818,8 @@ export class DueloScene extends Phaser.Scene {
   updateEnd() {
     if (this.phaseMs < END_INPUT_DELAY_MS) return;
     const ids = this.humans.map((player) => player.deviceId);
-    if (ids.some((id) => controls.justPressed(id, 'a'))) {
-      this.queue = this.nextQueue();
-      this.cpuCharacter = null;
-      this.hideBanner();
-      this.startMatch();
-    } else if (ids.some((id) => controls.justPressed(id, 'b'))) {
-      this.scene.start('Personajes', { selected: this.returnData.selected, next: 'Duelo', title: 'Duelo de bolitas' });
-    }
+    if (ids.some((id) => controls.justPressed(id, 'a'))) this.endActions.a();
+    else if (ids.some((id) => controls.justPressed(id, 'b'))) this.endActions.b();
   }
 
   // ---------- Marcador ----------
@@ -662,7 +843,7 @@ export class DueloScene extends Phaser.Scene {
       // El contador de combo ("3 golpes"), abajo de la barra.
       const combo = this.add.text(anchorX, BAR.y + 76, '', textStyle(34, '#ffd84d', { fontStyle: 'bold', ...OUTLINE, strokeThickness: 7 })).setOrigin(origin, 0.5).setAlpha(0);
       root.add([back, trail, fill, name, wins, meterBack, meter, special, combo]);
-      return { root, trail, fill, name, wins, meter, special, combo, trailHealth: MAX_HEALTH };
+      return { root, trail, fill, name, wins, meter, special, combo, trailHealth: 1 };
     });
     this.timerBox = this.add.container(width / 2, BAR.y).setDepth(HUD_DEPTH).setVisible(false);
     this.timerText = this.add.text(0, 0, '', textStyle(44, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5);
@@ -693,23 +874,23 @@ export class DueloScene extends Phaser.Scene {
     side.root.setVisible(true);
     side.fill.setFillStyle(fighter.color);
     side.name.setText(`${fighter.label} · ${fighter.name}`).setColor(hexToCss(fighter.color));
-    side.trailHealth = MAX_HEALTH;
+    side.trailHealth = fighter.maxHealth;
   }
 
   updateHud() {
     if (!this.fighters.length) return;
     this.hud.forEach((side, i) => {
       const fighter = this.fighters[i];
-      side.fill.setScale(fighter.health / MAX_HEALTH, 1);
+      side.fill.setScale(fighter.health / fighter.maxHealth, 1);
       // La parte blanca se va bajando despacito detrás de la vida: así se ve cuánto le quitaron.
       side.trailHealth = Math.max(fighter.health, side.trailHealth - frameDelta() * 0.03);
-      side.trail.setScale(side.trailHealth / MAX_HEALTH, 1);
-      side.wins.setText('★'.repeat(fighter.roundWins) + '☆'.repeat(Math.max(0, this.setup.rounds - fighter.roundWins)));
+      side.trail.setScale(side.trailHealth / fighter.maxHealth, 1);
+      side.wins.setText(this.training ? '' : '★'.repeat(fighter.roundWins) + '☆'.repeat(Math.max(0, this.roundsToWin - fighter.roundWins)));
       const meter = fighter.superMs > 0 ? fighter.superMs / SUPER_MS : fighter.meter / METER_MAX;
       side.meter.setScale(meter, 1).setFillStyle(fighter.superMs > 0 ? 0xff9a3c : fighter.meter >= METER_MAX ? 0xfff2a8 : 0xffd84d);
       side.special.setAlpha(fighter.cooldownMs === 0 ? 1 : 0.3);
     });
-    this.timerText.setText(String(Math.ceil(this.timeLeftMs / 1000)));
+    this.timerText.setText(this.training ? '∞' : String(Math.ceil(this.timeLeftMs / 1000)));
     this.timerText.setColor(this.timeLeftMs < 10000 ? '#ff5a5f' : TEXT.normal);
     const turns = this.waiting().map((entry) => this.labelOf(entry.player));
     this.turnsText.setText(turns.length ? `Esperan turno: ${turns.join(', ')}` : '');
