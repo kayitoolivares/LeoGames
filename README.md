@@ -106,7 +106,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   de nieve que crecen (Montaña nevada), bloques de piedra que caen de dos en dos con su sombra de aviso (Castillo),
   meteoritos con un círculo rojo donde van a caer (Arcoíris espacial), troncos rodando (Selva), peces globo que se
   inflan (Fondo del mar), pelotas que botan —por abajo se pasa— (Ciudad de juguete) y bolas de lava (Volcán). Si te pegan das vueltas (la burbuja te
-  protege) y saltando se esquivan. Se dibujan con un emoji mientras llega su dibujo de Gemini (kart/peligros).
+  protege) y saltando se esquivan. Los peligros son dibujos de Gemini (kart/peligros), menos el bloque del
+  Castillo, que tiene su cara de enojado dibujada en el juego.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,
   **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),

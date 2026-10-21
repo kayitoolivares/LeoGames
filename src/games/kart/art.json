@@ -11,6 +11,7 @@
     "turbo"
   ],
   "copas": [
+    "copa-aventura",
     "copa-estrella",
     "copa-hoja"
   ],
@@ -19,23 +20,45 @@
     "castillo",
     "dulces",
     "espacio",
+    "juguetes",
+    "mar",
     "nieve",
     "playa",
-    "pradera"
+    "pradera",
+    "selva",
+    "volcan"
   ],
   "texturas": [
+    "alfombra",
     "arena",
     "asfalto",
     "dulce",
     "nieve",
-    "pasto"
+    "pasto",
+    "roca",
+    "selva"
   ],
   "calcomanias": [
+    "balones",
+    "calavera",
     "corazones",
+    "dinos",
     "estrellas",
     "flores",
     "llamas",
-    "rayos"
+    "notas",
+    "rayos",
+    "unicornio"
   ],
-  "peligros": []
+  "peligros": [
+    "bola-nieve",
+    "cangrejo",
+    "dona",
+    "lava",
+    "meteorito",
+    "oveja",
+    "pelota",
+    "pez-globo",
+    "tronco"
+  ]
 }

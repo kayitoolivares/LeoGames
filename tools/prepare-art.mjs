@@ -53,7 +53,7 @@ const GAMES = {
     peligros: {
       kind: 'cutout',
       max: 256,
-      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'bloque', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota'],
+      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota'],
     },
   },
   futbol: {

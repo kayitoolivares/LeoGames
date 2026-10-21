@@ -321,7 +321,8 @@ const OUCH = {
 // La imagen de Gemini si ya está; si no, el emoji en un cuadrito transparente. El bloque es la cara de una
 // piedra: la imagen (o el emoji) va encima de un cuadro gris. `onLoad` cuando llega la imagen.
 function hazardTexture(kind, onLoad) {
-  const art = manifest.peligros?.includes(kind) ? `kart/peligros/${kind}.png` : null;
+  // (El bloque se queda con su cara dibujada aquí: el de Gemini salió como un monstruo de piedra con brazos.)
+  const art = manifest.peligros?.includes(kind) && kind !== 'bloque' ? `kart/peligros/${kind}.png` : null;
   if (art && kind !== 'bloque') {
     const texture = new THREE.TextureLoader().load(art, onLoad);
     texture.colorSpace = THREE.SRGBColorSpace;
