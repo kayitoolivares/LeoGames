@@ -20,7 +20,8 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Las pruebas de todos los juegos ya tardan unos 25 minutos en GitHub (sin tarjeta de video).
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
