@@ -136,7 +136,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   un poquito—, la compu se pone más difícil cada 3 victorias, se guarda el récord y con 5 seguidas ganas «Aguante»)
   y **Entrenamiento** (contra un muñeco que no pega, sin reloj ni K.O., la vida y la barra de poder se rellenan
   solas y arriba hay 12 retos que se palomean: golpe, patada, remate, gancho, barrida, patada voladora, agarre,
-  arrancón, rodada, especial, súper y golpe final).
+  arrancón, rodada, especial, súper y golpe final) y **2 contra 2** (los cuatro al mismo tiempo: J1 y J3 son los
+  Rojos y J2 y J4 los Azules, la compu completa los equipos; los golpes no le hacen nada a tu compañero, el que cae
+  queda fuera del round y gana el equipo que deje al otro sin nadie en pie).
   **Escenarios vivos**: público a los lados que brinca con cada golpe y festeja el K.O. (Estadio, Castillo y Lucha
   libre), pétalos de cerezo en el Dojo, hojas en el Bosque y la Pradera, chispas de lava en el Volcán, confeti en el
   Estadio, y escenarios nuevos: **Lucha libre** (con reflectores de colores), **Azotea** (de noche, con brillitos) y

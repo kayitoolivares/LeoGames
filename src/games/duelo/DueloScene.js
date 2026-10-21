@@ -19,7 +19,7 @@ import { DueloFighter, FLOOR, MAX_HEALTH, METER_MAX, SUPER_MS, WALLS } from './D
 import { FinalMove } from './final.js';
 import { BOSS_ARENA, Drills, MODES, SURVIVAL_STICKER_AT, Survival, Tournament, showLadder, survivalRecord } from './modes.js';
 import { DizzyStars, comicHit, dustPuff, loadFxArt, shockwave as shockRing, spark } from './fx.js';
-import { showVersus, showVictory } from './show.js';
+import { loadShowArt, showVersus, showVictory } from './show.js';
 import { StageLife, loadStageArt } from './stage.js';
 import { Shot } from './shots.js';
 
@@ -36,7 +36,13 @@ const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
 const BAR = { width: 500, height: 30, y: 52, margin: 40 };
 const ROUND_CHOICES = [1, 2, 3];
 const RIVALS = { versus: 'Entre nosotros', cpu: 'Contra la compu' };
-const SETUP_MODES = ['duelo', 'torneo', 'supervivencia', 'entrenamiento'];
+const SETUP_MODES = ['duelo', 'torneo', 'supervivencia', 'entrenamiento', 'equipos'];
+// 2 contra 2: J1 y J3 son los Rojos (a la izquierda), J2 y J4 los Azules; la compu completa los equipos.
+const TEAMS = [
+  { name: 'Rojos', color: 0xff5a5f, x: [WALLS.left + 250, WALLS.left + 450] },
+  { name: 'Azules', color: 0x3fa7ff, x: [WALLS.right - 250, WALLS.right - 450] },
+];
+const TEAM_BAR = { width: 420, height: 18, y: 34, gap: 46 };
 // Entrenamiento: con menos de esto de vida se rellena sola; la barra de poder se llena sola (por milisegundo).
 const TRAINING_REFILL = 0.3;
 const TRAINING_METER_PER_MS = 0.03;
@@ -69,6 +75,7 @@ export class DueloScene extends Phaser.Scene {
     loadFxArt(this);
     loadBossArt(this);
     loadStageArt(this);
+    loadShowArt(this);
   }
 
   create() {
@@ -97,6 +104,8 @@ export class DueloScene extends Phaser.Scene {
       if (this.setup.rival === 'cpu') keys.push('level');
     } else if (mode === 'torneo') {
       keys.push('rounds');
+    } else if (mode === 'equipos') {
+      keys.push('rounds', 'level');
     }
     // En el torneo los escenarios van tocando solos (y el del jefe es su castillo).
     if (mode !== 'torneo') keys.push('arena');
@@ -146,6 +155,11 @@ export class DueloScene extends Phaser.Scene {
       bg.setStrokeStyle(i === this.setupRow ? 4 : 2, i === this.setupRow ? COLORS.accent : COLORS.panelBorder);
     });
     const { mode } = this.setup;
+    if (mode === 'equipos') {
+      const teams = [0, 1].map((t) => `${TEAMS[t].name}: ${this.buildTeams().filter((e) => e.team === t).map((e) => this.describe(e)).join(' + ')}`);
+      this.matchText.setText(`${MODES.equipos.info}\n\n${teams.join('\n')}`);
+      return;
+    }
     if (mode !== 'duelo') {
       const record = mode === 'supervivencia' ? `\nRécord: ${survivalRecord()} peleas` : '';
       this.matchText.setText(`${MODES[mode].info}\n\n${this.describe(this.queue[0])}${record}`);
@@ -198,6 +212,7 @@ export class DueloScene extends Phaser.Scene {
     this.cpuCharacter = null;
     this.tour = mode === 'torneo' ? new Tournament(this.queue[0]) : null;
     this.survival = mode === 'supervivencia' ? new Survival(MAX_HEALTH) : null;
+    this.teamEntries = mode === 'equipos' ? this.buildTeams() : null;
     if (this.tour) this.showTourLadder();
     else this.startMatch();
   }
@@ -243,7 +258,9 @@ export class DueloScene extends Phaser.Scene {
       return;
     }
     rewards.earn('duelo-torneo');
-    this.victory = showVictory(this, winner, '¡Campeón del torneo! 🏆', 'A = otro torneo\nB = cambiar personajes\nMantén LB + RB + Y = salir');
+    this.victory = showVictory(this, winner, '¡Campeón del torneo! 🏆', 'A = otro torneo\nB = cambiar personajes\nMantén LB + RB + Y = salir', {
+      trophy: true,
+    });
     say('¡Campeón del torneo!');
     confetti(this, [winner.color, 0xffd84d, 0xffffff], 140);
     sfx.win();
@@ -335,6 +352,46 @@ export class DueloScene extends Phaser.Scene {
     return [this.queue[0], { player: null, character: this.cpuCharacter }];
   }
 
+  // Los equipos del 2 contra 2: los jugadores se reparten (J1 y J3 rojos, J2 y J4 azules) y la compu completa.
+  buildTeams() {
+    const entries = this.queue.slice(0, 4).map((entry, i) => ({ ...entry, team: i % 2 }));
+    const taken = new Set(entries.map((entry) => entry.character));
+    for (const team of [0, 1]) {
+      while (entries.filter((entry) => entry.team === team).length < 2) {
+        const free = CHARACTER_KEYS.filter((key) => !taken.has(key));
+        const character = Phaser.Utils.Array.GetRandom(free.length ? free : CHARACTER_KEYS);
+        taken.add(character);
+        entries.push({ player: null, character, team });
+      }
+    }
+    // Primero los Rojos y luego los Azules.
+    return [...entries.filter((e) => e.team === 0), ...entries.filter((e) => e.team === 1)];
+  }
+
+  get teamsMode() {
+    return this.setup.mode === 'equipos';
+  }
+
+  // Los del otro equipo.
+  enemiesOf(fighter) {
+    return this.fighters.filter((f) => f.team !== fighter.team);
+  }
+
+  // El rival más cercano que sigue en pie (a ese ve y a ese ataca la compu).
+  foeOf(fighter) {
+    const enemies = this.enemiesOf(fighter);
+    const standing = enemies.filter((f) => !f.koed);
+    const list = standing.length ? standing : enemies;
+    return list.reduce((best, f) => (!best || Math.abs(f.x - fighter.x) < Math.abs(best.x - fighter.x) ? f : best), null);
+  }
+
+  // Dónde empieza cada uno: en el duelo, uno de cada lado; en equipos, dos de cada lado.
+  startOf(fighter) {
+    if (!this.teamsMode) return { x: START_X[fighter.team], facing: fighter.team === 0 ? 1 : -1 };
+    const mates = this.fighters.filter((f) => f.team === fighter.team);
+    return { x: TEAMS[fighter.team].x[mates.indexOf(fighter)], facing: fighter.team === 0 ? 1 : -1 };
+  }
+
   // Los que esperan su turno.
   waiting() {
     if (this.setup.mode !== 'duelo') return [];
@@ -357,6 +414,11 @@ export class DueloScene extends Phaser.Scene {
       deviceId: entry.player?.deviceId ?? null,
     });
     fighter.dizzy = new DizzyStars(this);
+    fighter.team = entry.team ?? i;
+    if (this.teamsMode) {
+      fighter.ring.setStrokeStyle(6, TEAMS[fighter.team].color);
+      fighter.tag.setColor(hexToCss(TEAMS[fighter.team].color));
+    }
     fighter.dummy = Boolean(entry.dummy);
     fighter.cpuLevel = entry.level ?? null;
     fighter.unbreakable = this.setup.mode === 'entrenamiento';
@@ -379,6 +441,7 @@ export class DueloScene extends Phaser.Scene {
     this.fighters = [];
     this.clearShots();
     this.hud?.forEach((side) => side.root.setVisible(false));
+    this.teamHud?.forEach((bar) => bar.root.setVisible(false));
     this.timerBox?.setVisible(false);
     this.turnsText?.setText('');
   }
@@ -397,8 +460,8 @@ export class DueloScene extends Phaser.Scene {
 
   startMatch() {
     this.clearFighters();
-    const [left, right] = this.pairing();
-    this.fighters = [left, right].map((entry, i) => this.createFighter(entry, i));
+    const entries = this.teamsMode ? this.teamEntries : this.pairing();
+    this.fighters = entries.map((entry, i) => this.createFighter(entry, i));
     this.fighters.forEach((fighter) => (fighter.roundWins = 0));
     const { mode } = this.setup;
     this.roundsToWin = mode === 'supervivencia' ? 1 : this.setup.rounds;
@@ -410,20 +473,22 @@ export class DueloScene extends Phaser.Scene {
     this.drawArenaFor(this.arena);
     this.stageLife = new StageLife(this, ARENAS[this.arena]);
     this.round = 0;
-    this.hud.forEach((side, i) => this.fillHud(side, this.fighters[i]));
+    if (this.teamsMode) this.fillTeamHud();
+    else this.hud.forEach((side, i) => this.fillHud(side, this.fighters[i]));
     this.timerBox.setVisible(true);
     // Primero la pantalla de "VS" (los dos en su pose de entrada) y luego el primer round.
     this.phase = 'versus';
     this.phaseMs = 0;
     this.timeLeftMs = ROUND_SECONDS * 1000;
-    this.fighters.forEach((fighter, i) => fighter.reset(START_X[i], i === 0 ? 1 : -1));
-    showVersus(this, this.fighters[0], this.fighters[1], () => this.startRound());
+    this.placeFighters();
+    const sides = [0, 1].map((team) => this.fighters.filter((f) => f.team === team));
+    showVersus(this, sides[0], sides[1], () => this.startRound(), this.teamsMode ? TEAMS : null);
   }
 
   startRound() {
     this.round += 1;
     this.clearShots();
-    this.fighters.forEach((fighter, i) => fighter.reset(START_X[i], i === 0 ? 1 : -1));
+    this.placeFighters();
     this.timeLeftMs = ROUND_SECONDS * 1000;
     this.phase = 'intro';
     this.phaseMs = 0;
@@ -438,13 +503,20 @@ export class DueloScene extends Phaser.Scene {
     if (this.survival) this.fighters[0].health = this.survival.health;
     if (this.training) this.fighters[0].meter = METER_MAX;
     const last = this.fighters.every((fighter) => fighter.roundWins === this.roundsToWin - 1) && this.roundsToWin > 1;
-    const [a, b] = this.fighters;
+    const [a, b] = this.teamsMode ? [] : this.fighters;
     let title = last ? '¡Round final!' : `Round ${this.round}`;
     if (this.training) title = '¡A practicar!';
     else if (this.survival) title = `Rival ${this.survival.wins + 1}`;
     else if (this.tour) title = this.tour.current.boss ? '¡El jefe!' : `Pelea ${this.tour.index + 1}`;
-    this.showBanner(title, `${a.label} ${a.name}  vs  ${b.label} ${b.name}`, ROUND_INTRO_MS);
+    this.showBanner(title, this.teamsMode ? `${TEAMS[0].name}  vs  ${TEAMS[1].name}` : `${a.label} ${a.name}  vs  ${b.label} ${b.name}`, ROUND_INTRO_MS);
     sfx.countdown();
+  }
+
+  placeFighters() {
+    for (const fighter of this.fighters) {
+      const { x, facing } = this.startOf(fighter);
+      fighter.reset(x, facing);
+    }
   }
 
   update() {
@@ -476,10 +548,10 @@ export class DueloScene extends Phaser.Scene {
     }
 
     const fighting = this.phase === 'fight';
-    this.fighters.forEach((fighter, i) => {
-      const foe = this.fighters[1 - i];
+    for (const fighter of this.fighters) {
+      const foe = this.foeOf(fighter);
       fighter.update(step, fighting ? this.inputFor(fighter, foe, step) : IDLE, foe);
-    });
+    }
     this.separate();
     this.updateShots(step);
     if (fighting) {
@@ -563,7 +635,12 @@ export class DueloScene extends Phaser.Scene {
 
   // "3 golpes" grandote abajo de la barra de vida del que pegó.
   showCombo(attacker) {
-    const side = this.hud[this.fighters.indexOf(attacker)];
+    // En equipos las barras son chiquitas: el combo sale arriba del que pegó.
+    if (this.teamsMode) {
+      popText(this, attacker.x, attacker.y - attacker.height - 30, `${attacker.combo} golpes`, '#ffd84d');
+      return;
+    }
+    const side = this.hud[attacker.team];
     if (!side) return;
     side.combo.setText(`${attacker.combo} golpes`).setAlpha(1).setScale(1.4);
     this.tweens.killTweensOf(side.combo);
@@ -573,8 +650,13 @@ export class DueloScene extends Phaser.Scene {
 
   // No se enciman: se empujan de lado (saltando sí se pueden pasar por arriba).
   separate() {
-    const [a, b] = this.fighters;
-    if (!a || a.ghosting || b.ghosting || a.koed || b.koed) return;
+    for (let i = 0; i < this.fighters.length; i += 1) {
+      for (let j = i + 1; j < this.fighters.length; j += 1) this.separatePair(this.fighters[i], this.fighters[j]);
+    }
+  }
+
+  separatePair(a, b) {
+    if (a.ghosting || b.ghosting || a.koed || b.koed) return;
     if (Math.abs(a.y - b.y) > Math.min(a.height, b.height) * 0.45) return;
     const ha = a.hurtbox;
     const hb = b.hurtbox;
@@ -592,20 +674,34 @@ export class DueloScene extends Phaser.Scene {
     }
   }
 
+  // Cada golpe le puede pegar a cada rival una vez (a los de su equipo nunca).
   resolveHits() {
     for (const attacker of this.fighters) {
       const box = attacker.hitbox();
-      if (!box || attacker.landed.has(box.key)) continue;
-      const victim = this.fighters.find((f) => f !== attacker);
-      const body = victim.hurtbox;
-      if (box.right < body.left || box.left > body.right || box.bottom < body.top || box.top > body.bottom) continue;
-      const result = victim.takeHit(box.data, attacker.x);
-      if (!result) continue;
-      attacker.landed.add(box.key);
-      const x = (Math.max(box.left, body.left) + Math.min(box.right, body.right)) / 2;
-      const y = (Math.max(box.top, body.top) + Math.min(box.bottom, body.bottom)) / 2;
-      this.afterHit(attacker, victim, result, box.data, x, y, attacker.attack?.type === 'finisher');
+      if (!box) continue;
+      for (const victim of this.enemiesOf(attacker)) {
+        const key = `${box.key}:${this.fighters.indexOf(victim)}`;
+        if (attacker.landed.has(key)) continue;
+        const body = victim.hurtbox;
+        if (box.right < body.left || box.left > body.right || box.bottom < body.top || box.top > body.bottom) continue;
+        const result = victim.takeHit(box.data, attacker.x);
+        if (!result) continue;
+        attacker.landed.add(key);
+        const x = (Math.max(box.left, body.left) + Math.min(box.right, body.right)) / 2;
+        const y = (Math.max(box.top, body.top) + Math.min(box.bottom, body.bottom)) / 2;
+        this.afterHit(attacker, victim, result, box.data, x, y, attacker.attack?.type === 'finisher');
+      }
     }
+  }
+
+  // Si ya no queda nadie en pie del equipo de `victim`, se acaba el round.
+  checkKo(attacker, victim) {
+    if (!victim.koed || this.phase !== 'fight') return;
+    if (this.fighters.some((f) => f.team === victim.team && !f.koed)) {
+      popText(this, victim.x, victim.y - victim.height - 40, '¡Fuera!', '#ff5a5f');
+      return;
+    }
+    this.endRound(attacker, 'ko');
   }
 
   afterHit(attacker, victim, { blocked, dealt }, data, x, y, finisher = false) {
@@ -626,7 +722,7 @@ export class DueloScene extends Phaser.Scene {
     if (data.launch) this.cameras.main.shake(140, 0.007);
     if (big) shockRing(this, x, y, attacker.color);
     this.countHit(attacker, victim);
-    if (victim.koed) this.endRound(attacker, 'ko');
+    this.checkKo(attacker, victim);
   }
 
   spawnShot(owner, data) {
@@ -641,7 +737,7 @@ export class DueloScene extends Phaser.Scene {
       shot.update(dt);
       if (shot.dead) continue;
       // Dos cosas lanzadas que chocan se deshacen.
-      const other = this.shots.find((s) => s !== shot && !s.dead && s.owner !== shot.owner && overlaps(s.box, shot.box));
+      const other = this.shots.find((s) => s !== shot && !s.dead && s.owner.team !== shot.owner.team && overlaps(s.box, shot.box));
       if (other) {
         burst(this, (shot.x + other.x) / 2, shot.y, 0xffffff, 10);
         sfx.poof();
@@ -649,8 +745,8 @@ export class DueloScene extends Phaser.Scene {
         other.destroy();
         continue;
       }
-      const victim = this.fighters.find((f) => f !== shot.owner);
-      if (this.phase === 'fight' && overlaps(shot.box, victim.hurtbox)) {
+      const victim = this.enemiesOf(shot.owner).find((f) => overlaps(shot.box, f.hurtbox));
+      if (this.phase === 'fight' && victim) {
         const result = victim.takeHit(shot.hit, shot.x - shot.dir * 10);
         if (result) {
           shot.destroy();
@@ -692,7 +788,7 @@ export class DueloScene extends Phaser.Scene {
   // El golpe final (lo pide el peleador en súper forma con X). Devuelve false si ahorita no se puede.
   startFinal(attacker) {
     if (this.phase !== 'fight') return false;
-    const victim = this.fighters.find((f) => f !== attacker);
+    const victim = this.foeOf(attacker);
     if (!victim || victim.koed || victim.celebrating) return false;
     this.clearShots();
     this.phase = 'final';
@@ -712,7 +808,7 @@ export class DueloScene extends Phaser.Scene {
     this.phaseMs = 0;
     if (!attacker.isCpu) rewards.earn('duelo-final');
     this.practiced(attacker, 'final');
-    if (victim.koed) this.endRound(attacker, 'ko');
+    this.checkKo(attacker, victim);
   }
 
   // Lo llama el ninja al desaparecer y aparecer.
@@ -728,10 +824,10 @@ export class DueloScene extends Phaser.Scene {
       say('¡Diez segundos!');
     }
     if (this.timeLeftMs > 0) return;
-    // Se acabó el tiempo: gana el que tenga más vida.
-    const [a, b] = this.fighters;
-    const winner = a.health === b.health ? null : a.health > b.health ? a : b;
-    this.endRound(winner, 'time');
+    // Se acabó el tiempo: gana el que tenga más vida (en equipos, sumando la de los dos).
+    const life = [0, 1].map((team) => this.fighters.filter((f) => f.team === team).reduce((sum, f) => sum + f.health / f.maxHealth, 0));
+    const team = life[0] === life[1] ? null : life[0] > life[1] ? 0 : 1;
+    this.endRound(team === null ? null : this.fighters.find((f) => f.team === team), 'time');
   }
 
   endRound(winner, reason) {
@@ -747,21 +843,22 @@ export class DueloScene extends Phaser.Scene {
       sfx.ko();
     }
     const title = reason === 'ko' ? '¡K.O.!' : winner ? '¡Tiempo!' : '¡Empate!';
-    let subtitle = winner ? `Round para ${winner.label}` : 'Nadie gana este round';
+    let subtitle = winner ? `Round para ${this.teamsMode ? `los ${TEAMS[winner.team].name}` : winner.label}` : 'Nadie gana este round';
     if (winner) {
-      winner.roundWins += 1;
-      if (winner.health === winner.maxHealth) {
+      for (const f of this.fighters) if (f.team === winner.team) f.roundWins += 1;
+      if (!this.teamsMode && winner.health === winner.maxHealth) {
         subtitle = `¡Perfecto! Round para ${winner.label}`;
         if (!winner.isCpu) rewards.earn('duelo-perfecto');
       }
     }
-    this.showBanner(title, subtitle, KO_PAUSE_MS - 600, winner ? hexToCss(winner.color) : TEXT.accent);
+    const color = winner ? (this.teamsMode ? TEAMS[winner.team].color : winner.color) : null;
+    this.showBanner(title, subtitle, KO_PAUSE_MS - 600, color ? hexToCss(color) : TEXT.accent);
   }
 
   updateKo() {
     if (!this.celebrated && this.phaseMs > SLOW_MOTION_MS + 300) {
       this.celebrated = true;
-      for (const fighter of this.fighters) fighter.celebrate(fighter === this.roundWinner);
+      for (const fighter of this.fighters) fighter.celebrate(fighter.team === this.roundWinner?.team);
     }
     if (this.phaseMs < KO_PAUSE_MS) return;
     const champion = this.fighters.find((fighter) => fighter.roundWins >= this.roundsToWin);
@@ -773,7 +870,11 @@ export class DueloScene extends Phaser.Scene {
     this.phase = 'end';
     this.phaseMs = 0;
     this.matchWinner = winner;
-    if (!winner.isCpu) rewards.earn('duelo-gana');
+    if (this.fighters.some((f) => f.team === winner.team && !f.isCpu)) rewards.earn('duelo-gana');
+    if (this.teamsMode) {
+      this.endTeamsMatch(winner);
+      return;
+    }
     if (this.tour) {
       this.endTourMatch(winner);
       return;
@@ -799,6 +900,18 @@ export class DueloScene extends Phaser.Scene {
       },
       b: () => this.toCharacters(),
     };
+  }
+
+  // Ganó un equipo: sale festejando el primero de ellos (de preferencia un jugador). A = revancha.
+  endTeamsMatch(winner) {
+    const team = TEAMS[winner.team];
+    const star = this.fighters.find((f) => f.team === winner.team && !f.isCpu) ?? winner;
+    this.hideBanner();
+    this.victory = showVictory(this, star, `¡Ganan los ${team.name}!`, 'A = revancha\nB = cambiar personajes\nMantén LB + RB + Y = salir');
+    say(`¡Ganan los ${team.name}!`);
+    confetti(this, [team.color, 0xffffff, 0xffc93c], 110);
+    sfx.win();
+    this.endActions = { a: () => (this.hideBanner(), this.startMatch()), b: () => this.toCharacters() };
   }
 
   // Cómo queda la fila para la siguiente pelea: entre nosotros, el que perdió se forma al final
@@ -878,6 +991,34 @@ export class DueloScene extends Phaser.Scene {
     this.exitBar = this.add.rectangle(width / 2 - 100, height - 6, 200, 6, 0xffffff).setOrigin(0, 0.5).setScale(0, 1).setDepth(HUD_DEPTH);
   }
 
+  // En equipos: una barra chiquita por peleador, dos de cada lado (con su nombre y su barra de poder).
+  fillTeamHud() {
+    const { width } = this.scale;
+    this.teamHud ??= [0, 1, 2, 3].map(() => {
+      const root = this.add.container(0, 0).setDepth(HUD_DEPTH);
+      const back = this.add.rectangle(0, 0, TEAM_BAR.width, TEAM_BAR.height, 0x1b1530, 0.75).setStrokeStyle(3, 0xffffff);
+      const fill = this.add.rectangle(0, 0, TEAM_BAR.width, TEAM_BAR.height - 6, 0xffffff);
+      const meter = this.add.rectangle(0, 0, TEAM_BAR.width * 0.5, 6, 0xffd84d);
+      const name = this.add.text(0, 0, '', textStyle(17, TEXT.normal, { fontStyle: 'bold', ...OUTLINE }));
+      root.add([back, fill, meter, name]);
+      return { root, back, fill, meter, name };
+    });
+    this.fighters.forEach((fighter, i) => {
+      const bar = this.teamHud[i];
+      const left = fighter.team === 0;
+      const slot = this.fighters.filter((f) => f.team === fighter.team).indexOf(fighter);
+      const x = left ? BAR.margin : width - BAR.margin;
+      const y = TEAM_BAR.y + slot * TEAM_BAR.gap;
+      const origin = left ? 0 : 1;
+      bar.back.setPosition(x, y).setOrigin(origin, 0.5);
+      bar.fill.setPosition(x, y).setOrigin(origin, 0.5).setFillStyle(TEAMS[fighter.team].color);
+      bar.meter.setPosition(x, y + 15).setOrigin(origin, 0.5);
+      bar.name.setPosition(left ? x + TEAM_BAR.width + 10 : x - TEAM_BAR.width - 10, y).setOrigin(left ? 0 : 1, 0.5);
+      bar.name.setText(`${fighter.label} · ${fighter.name}`).setColor(hexToCss(TEAMS[fighter.team].color));
+      bar.root.setVisible(true);
+    });
+  }
+
   fillHud(side, fighter) {
     side.root.setVisible(true);
     side.fill.setFillStyle(fighter.color);
@@ -887,7 +1028,16 @@ export class DueloScene extends Phaser.Scene {
 
   updateHud() {
     if (!this.fighters.length) return;
-    this.hud.forEach((side, i) => {
+    if (this.teamsMode) {
+      this.fighters.forEach((fighter, i) => {
+        const bar = this.teamHud[i];
+        bar.fill.setScale(fighter.health / fighter.maxHealth, 1);
+        const meter = fighter.superMs > 0 ? fighter.superMs / SUPER_MS : fighter.meter / METER_MAX;
+        bar.meter.setScale(meter, 1).setFillStyle(fighter.superMs > 0 ? 0xff9a3c : 0xffd84d);
+        bar.root.setAlpha(fighter.koed ? 0.4 : 1);
+      });
+    }
+    if (!this.teamsMode) this.hud.forEach((side, i) => {
       const fighter = this.fighters[i];
       side.fill.setScale(fighter.health / fighter.maxHealth, 1);
       // La parte blanca se va bajando despacito detrás de la vida: así se ve cuánto le quitaron.

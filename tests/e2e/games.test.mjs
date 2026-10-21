@@ -1120,6 +1120,41 @@ test('duelo de bolitas: torneo con jefe, supervivencia y entrenamiento', { timeo
   await p.context.close();
 });
 
+// 2 contra 2: con 2 jugadores, cada uno con la compu de compañero; el round se acaba hasta que cae todo un equipo.
+test('duelo de bolitas: 2 contra 2 a la vez', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(2);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  // ◀ en el modo: 2 contra 2 (es el último).
+  await p.tap(0, BUTTON.LEFT);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').setup.mode), 'equipos');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(15000), 'empezar a pelear');
+  const teams = await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters.map((f) => `${f.label}:${f.team}`));
+  assert.deepEqual(teams, ['J1:0', 'CPU:0', 'J2:1', 'CPU:1']);
+  const knockOut = (i) =>
+    p.page.evaluate((k) => {
+      const s = window.leogames.scene.getScene('Duelo');
+      const victim = s.fighters[k];
+      Object.assign(victim, { health: 1, invulnerableMs: 0, downMs: 0, launched: false, blocking: false });
+      victim.takeHit({ damage: 50, power: 1, push: 300, launch: true }, victim.x - 10);
+      s.checkKo(s.fighters[0], victim);
+    }, i);
+  // Con uno de los azules fuera, la pelea sigue.
+  await knockOut(2);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').phase), 'fight');
+  await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters.forEach((f) => (f.roundWins = f.team === 0 ? 1 : 0)));
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Duelo').roundsToWin = 2));
+  await knockOut(3);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'end', ms(15000), 'ganan los rojos');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').matchWinner.team), 0);
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { timeout: ms(90000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(3);

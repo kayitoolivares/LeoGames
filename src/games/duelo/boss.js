@@ -7,7 +7,7 @@ export const BOSS = 'rey';
 export const BOSS_STATS = {
   name: 'Rey Bolón',
   superName: 'Súper Rey Bolón',
-  radius: 50,
+  radius: 58,
   power: 1.3,
   run: 290,
   jump: 700,
