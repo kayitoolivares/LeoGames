@@ -13,8 +13,9 @@ import { loadSmashArt } from '../smash/art.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
 import { ARENAS, ARENA_KEYS, drawArena, loadArenaArt } from './arenas.js';
-import { CPU_LEVELS, cpuInput } from './cpu.js';
+import { CPU_LEVELS, DUMMY, cpuInput } from './cpu.js';
 import { DueloFighter, FLOOR, MAX_HEALTH, METER_MAX, SUPER_MS, WALLS } from './DueloFighter.js';
+import { FinalMove } from './final.js';
 import { Shot } from './shots.js';
 
 const ROUND_SECONDS = 60;
@@ -31,7 +32,9 @@ const BAR = { width: 500, height: 30, y: 52, margin: 40 };
 const ROUND_CHOICES = [1, 2, 3];
 const RIVALS = { versus: 'Entre nosotros', cpu: 'Contra la compu' };
 const ARENA_CHOICES = ['azar', ...ARENA_KEYS];
-const IDLE = { x: 0, up: false, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
+const IDLE = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
+// Doble toque al stick (para el arrancón o la rodada): el segundo toque tiene que llegar antes de esto.
+const DOUBLE_TAP_MS = 260;
 
 // Lo último que se escogió, para no escogerlo otra vez.
 const lastSetup = { rival: 'versus', rounds: 2, level: 'facil', arena: 'azar' };
@@ -255,6 +258,10 @@ export class DueloScene extends Phaser.Scene {
       return;
     }
     this.phaseMs += dt;
+    if (this.phase === 'final') {
+      this.updateFinal(dt);
+      return;
+    }
     // Cámara lenta un momento al dar el K.O.
     this.slowMs = Math.max(0, this.slowMs - dt);
     const step = this.slowMs > 0 ? dt * 0.3 : dt;
@@ -290,13 +297,15 @@ export class DueloScene extends Phaser.Scene {
   }
 
   inputFor(fighter, foe, dt) {
-    if (fighter.isCpu) return cpuInput(fighter, foe, this.shots, CPU_LEVELS[this.setup.level], dt);
+    if (fighter.isCpu) return cpuInput(fighter, foe, this.shots, fighter.dummy ? DUMMY : CPU_LEVELS[this.setup.level], dt);
     const id = fighter.deviceId;
     const stick = controls.getStick(id);
     const transform = controls.isDown(id, 'lb') && controls.isDown(id, 'rb') && (controls.justPressed(id, 'lb') || controls.justPressed(id, 'rb'));
     return {
       x: stick.x,
       up: controls.justPressed(id, 'up'),
+      down: controls.isDown(id, 'down'),
+      dash: this.doubleTap(fighter, id),
       punch: controls.justPressed(id, 'a'),
       kick: controls.justPressed(id, 'b'),
       special: controls.justPressed(id, 'x'),
@@ -304,6 +313,37 @@ export class DueloScene extends Phaser.Scene {
       transform,
       change: numberStep(id),
     };
+  }
+
+  // Doble toque a un lado: devuelve hacia dónde (-1 o 1) o 0.
+  doubleTap(fighter, id) {
+    const now = this.time.now;
+    for (const [dir, name] of [[1, 'right'], [-1, 'left']]) {
+      if (!controls.justPressed(id, name)) continue;
+      const last = fighter.lastTap;
+      fighter.lastTap = { dir, at: now };
+      if (last?.dir === dir && now - last.at < DOUBLE_TAP_MS) {
+        fighter.lastTap = null;
+        return dir;
+      }
+    }
+    return 0;
+  }
+
+  // Polvito en los pies (al arrancar o rodar), hacia `dir`.
+  dust(x, y, dir) {
+    for (let i = 0; i < 5; i += 1) {
+      const puff = this.add.circle(x, y - 6, 9 + Math.random() * 6, 0xe8dcc8, 0.8).setDepth(150);
+      this.tweens.add({
+        targets: puff,
+        x: x + dir * (30 + Math.random() * 40),
+        y: y - 10 - Math.random() * 24,
+        alpha: 0,
+        scale: 1.6,
+        duration: 380,
+        onComplete: () => puff.destroy(),
+      });
+    }
   }
 
   // No se enciman: se empujan de lado (saltando sí se pueden pasar por arriba).
@@ -351,7 +391,8 @@ export class DueloScene extends Phaser.Scene {
       return;
     }
     burst(this, x, y, 0xffffff, data.launch ? 12 : 7);
-    popText(this, x, y - 40, finisher ? '¡Remate!' : randomPow(), finisher ? '#ff9a3c' : '#ffc93c');
+    const word = data.grab ? '¡Agarrado!' : finisher ? '¡Remate!' : randomPow();
+    popText(this, x, y - 40, word, data.grab || finisher ? '#ff9a3c' : '#ffc93c');
     sfx.hit(Math.min(1, dealt / 12));
     if (data.launch) this.cameras.main.shake(140, 0.007);
     if (victim.koed) this.endRound(attacker, 'ko');
@@ -415,6 +456,31 @@ export class DueloScene extends Phaser.Scene {
     say(fighter.superName);
     this.cameras.main.flash(200, 255, 230, 120);
     if (!fighter.isCpu) rewards.earn('duelo-super');
+  }
+
+  // El golpe final (lo pide el peleador en súper forma con X). Devuelve false si ahorita no se puede.
+  startFinal(attacker) {
+    if (this.phase !== 'fight') return false;
+    const victim = this.fighters.find((f) => f !== attacker);
+    if (!victim || victim.koed || victim.celebrating) return false;
+    this.clearShots();
+    this.phase = 'final';
+    this.final = new FinalMove(this, attacker, victim);
+    return true;
+  }
+
+  // Mientras pasa el golpe final nadie más se mueve (ni corre el reloj).
+  updateFinal(dt) {
+    const done = this.final.update(dt);
+    for (const fighter of this.fighters) fighter.render(dt);
+    this.updateHud();
+    if (!done) return;
+    const { attacker, victim } = this.final;
+    this.final = null;
+    this.phase = 'fight';
+    this.phaseMs = 0;
+    if (!attacker.isCpu) rewards.earn('duelo-final');
+    if (victim.koed) this.endRound(attacker, 'ko');
   }
 
   // Lo llama el ninja al desaparecer y aparecer.
@@ -550,9 +616,10 @@ export class DueloScene extends Phaser.Scene {
     this.add
       .text(
         width / 2,
-        height - 22,
-        'Stick = moverse (↑ saltar)  ·  A = golpe (3 seguidos = remate)  ·  B = patada  ·  X = especial  ·  LB / RB = cubrirse  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén LB + RB + Y = salir',
-        textStyle(15, TEXT.normal, OUTLINE),
+        height - 32,
+        'A = golpe (3 seguidos = remate)  ·  B = patada  ·  ↓ + A = gancho  ·  ↓ + B = barrida  ·  adelante + B pegadito = agarrar  ·  X = especial\n' +
+          'LB / RB = cubrirse  ·  dos toques al stick = arrancón o rodada  ·  Barra llena: LB + RB = ¡súper!  ·  Mantén LB + RB + Y = salir',
+        textStyle(15, TEXT.normal, { ...OUTLINE, align: 'center' }),
       )
       .setOrigin(0.5)
       .setDepth(HUD_DEPTH);

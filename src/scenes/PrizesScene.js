@@ -10,6 +10,8 @@ const COLUMNS = 8;
 const CELL_W = 142;
 const CELL_H = 150;
 const GAP = 10;
+// Dónde va el álbum (de arriba hacia abajo): si son muchas calcomanías, los cuadros se hacen más bajitos para que quepan.
+const AREA = { top: 135, bottom: 612 };
 
 // "Mis premios": el álbum de calcomanías. Las que faltan salen con "?" y la pista de cómo ganarlas;
 // al moverse por el álbum la voz lee la calcomanía (para quien todavía no lee). B = regresar.
@@ -29,14 +31,19 @@ export class PrizesScene extends Phaser.Scene {
     this.add.text(width / 2, 96, `${rewards.count()} de ${STICKERS.length} calcomanías`, textStyle(24, TEXT.accent)).setOrigin(0.5);
 
     const startX = (width - (COLUMNS * CELL_W + (COLUMNS - 1) * GAP)) / 2 + CELL_W / 2;
+    const rows = Math.ceil(STICKERS.length / COLUMNS);
+    const cellH = Math.min(CELL_H, (AREA.bottom - AREA.top - (rows - 1) * GAP) / rows);
+    const k = cellH / CELL_H;
     this.cells = STICKERS.map((sticker, i) => {
       const x = startX + (i % COLUMNS) * (CELL_W + GAP);
-      const y = 210 + Math.floor(i / COLUMNS) * (CELL_H + GAP);
+      const y = AREA.top + cellH / 2 + Math.floor(i / COLUMNS) * (cellH + GAP);
       const has = rewards.has(sticker.id);
-      const bg = this.add.rectangle(x, y, CELL_W, CELL_H, has ? COLORS.panel : 0x1b1730).setRounded(18);
-      this.add.text(x, y - 26, has ? sticker.emoji : '?', textStyle(has ? 58 : 50, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5);
+      const bg = this.add.rectangle(x, y, CELL_W, cellH, has ? COLORS.panel : 0x1b1730).setRounded(18);
       this.add
-        .text(x, y + 42, has ? sticker.name : '???', textStyle(16, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold', align: 'center', wordWrap: { width: CELL_W - 14 } }))
+        .text(x, y - 26 * k, has ? sticker.emoji : '?', textStyle(Math.round((has ? 58 : 50) * k), has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold' }))
+        .setOrigin(0.5);
+      this.add
+        .text(x, y + 40 * k, has ? sticker.name : '???', textStyle(16, has ? TEXT.normal : TEXT.muted, { fontStyle: 'bold', align: 'center', wordWrap: { width: CELL_W - 14 } }))
         .setOrigin(0.5);
       return { sticker, has, bg };
     });

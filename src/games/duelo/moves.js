@@ -2,7 +2,8 @@
 // `active` (mientras puede pegar) y `recovery` (lo que tarda en poder hacer otra cosa).
 // La caja del golpe va enfrente: `reach` es qué tanto sale (en radios del personaje) y `hi`/`lo`
 // a qué altura (fracción de su estatura, 0 = pies, 1 = cabeza).
-// `launch`: lo avienta hacia arriba y lo tumba (en vez de solo empujarlo).
+// `launch`: lo avienta hacia arriba y lo tumba (en vez de solo empujarlo); `lift`: qué tan alto (1 = normal).
+// `grab`: agarre (no se puede cubrir, pero solo agarra a los que están en el piso).
 export const ATTACKS = {
   punch: { startup: 60, active: 100, recovery: 120, damage: 5, reach: 1, hi: 0.85, lo: 0.45, push: 170, stunMs: 280 },
   // El tercer golpe seguido es el "remate": más fuerte y tumba.
@@ -10,6 +11,11 @@ export const ATTACKS = {
   kick: { startup: 110, active: 120, recovery: 200, damage: 7, reach: 1.35, hi: 0.55, lo: 0.05, push: 260, stunMs: 340 },
   airPunch: { startup: 50, active: 160, recovery: 80, damage: 6, reach: 1, hi: 0.8, lo: 0.3, push: 200, stunMs: 300 },
   airKick: { startup: 70, active: 200, recovery: 100, damage: 8, reach: 1.25, hi: 0.5, lo: -0.1, push: 280, stunMs: 340 },
+  // Agachado: ↓ + A gancho hacia arriba (le pega al que viene saltando) y ↓ + B barrida (tumba).
+  uppercut: { startup: 90, active: 130, recovery: 280, damage: 9, reach: 0.9, hi: 1.35, lo: 0.4, push: 180, stunMs: 400, launch: true, lift: 1.2 },
+  sweep: { startup: 110, active: 150, recovery: 300, damage: 7, reach: 1.6, hi: 0.28, lo: -0.05, push: 240, stunMs: 400, launch: true, lift: 0.55 },
+  // Adelante + B pegadito: agarra y avienta lejos.
+  grab: { startup: 70, active: 100, recovery: 380, damage: 11, reach: 0.8, hi: 0.9, lo: 0.2, push: 620, stunMs: 0, launch: true, lift: 1.25, grab: true },
 };
 
 // Cada cuánto se puede usar el especial (X).

@@ -116,6 +116,12 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Stick** = caminar (**↑** saltar), **A** = golpe (3 seguidos = remate que tumba), **B** = patada, **X** = especial
   (el de cada personaje: estrella, láser, fuego, bala de cañón, embestida, aparecer por detrás...),
   **LB / RB** (o gatillos) = cubrirse, barra llena + **LB + RB** = súper forma, **mantén LB + RB + Y** = salir.
+  Más movimientos: **↓** agacharse (los golpes altos pasan por arriba), **↓ + A** gancho hacia arriba (le pega al que
+  viene saltando), **↓ + B** barrida que tumba, **B en el aire** patada voladora, **adelante + B** pegadito al rival
+  = agarrarlo y aventarlo (ni cubriéndose se salva) y **dos toques al stick** = arrancón hacia adelante o rodada
+  hacia atrás (rodando no te pegan). **Golpe final**: en súper forma, el primer **X** oscurece la pantalla, cruza una
+  franja con tu personaje y el nombre de su golpe (Meteoro de puños, Mil relámpagos, Lluvia de estrellas...), le da
+  una ráfaga de golpes al rival y un golpazo que no se puede cubrir; después se acaba la súper forma.
   Con un solo jugador se pelea contra la compu; con más, se turnan: el que gana se queda y el que pierde se forma
   al final (o todos por turnos contra la compu). El Jugador 1 escoge rival, rounds para ganar (1, 2 o 3), nivel
   de la compu y escenario (Dojo, Castillo, Bosque, Volcán, Pradera, Estadio o al azar).

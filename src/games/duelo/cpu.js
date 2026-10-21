@@ -9,18 +9,23 @@ export const CPU_LEVELS = {
   dificil: { name: 'Difícil', speed: 1, attack: 4.5, block: 0.7, special: 0.5, jump: 0.15 },
 };
 
+// El muñeco de práctica (Entrenamiento): no camina, no pega y no se cubre.
+export const DUMMY = { name: 'Muñeco', passive: true };
+
 const BLOCK_MS = 350;
 const BLOCK_CHANGES_PER_SECOND = 0.35;
+const DASHES_PER_SECOND = 0.5;
 
 // Decide qué "aprieta" la compu este cuadro (mismo formato que un control).
-// Se acerca hasta tener al rival a su alcance y pega; si lo van a golpear o le lanzan algo, a veces se
-// cubre o salta. Los que lanzan cosas (estrella, láser...) prefieren pelear de lejos.
+// Se acerca hasta tener al rival a su alcance (a veces de un arrancón) y pega: golpes, patadas, barridas,
+// agarres y, si el rival viene saltando, un gancho. Si lo van a golpear o le lanzan algo, a veces se cubre,
+// salta o se va rodando. Los que lanzan cosas (estrella, láser...) prefieren pelear de lejos.
 export function cpuInput(me, foe, shots, level, dtMs) {
-  const input = { x: 0, up: false, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
+  const input = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0 };
   const ai = (me.ai ??= { blockMs: 0, retreatMs: 0, threat: null });
   ai.blockMs -= dtMs;
   ai.retreatMs -= dtMs;
-  if (!me.canAct()) return input;
+  if (!me.canAct() || level.passive) return input;
   const dt = dtMs / 1000;
   const chance = (perSecond) => Math.random() < perSecond * dt;
   const dir = Math.sign(foe.x - me.x) || me.facing;
@@ -31,7 +36,9 @@ export function cpuInput(me, foe, shots, level, dtMs) {
   const swing = foe.attack ?? foe.special;
   const threat = incoming ?? (swing && gap < 220 ? swing : null);
   if (threat && threat !== ai.threat && Math.random() < level.block) {
-    if (incoming && me.grounded && Math.random() < 0.4) input.up = true;
+    const roll = Math.random();
+    if (incoming && me.grounded && roll < 0.4) input.up = true;
+    else if (me.grounded && roll < 0.55) input.dash = -dir;
     else ai.blockMs = BLOCK_MS + Math.random() * 250;
   }
   ai.threat = threat;
@@ -47,15 +54,32 @@ export function cpuInput(me, foe, shots, level, dtMs) {
   if (me.cooldownMs === 0 && chance(level.special) && (ranged ? gap > 200 : gap < 150)) input.special = true;
 
   const reach = me.radius * 0.9;
+  // El rival viene saltando encima: gancho.
+  if (!foe.grounded && gap < reach * 1.2 && me.grounded && chance(level.attack * 0.8)) {
+    input.down = true;
+    input.punch = true;
+    return input;
+  }
   if (ai.retreatMs > 0) {
     input.x = -dir * level.speed;
   } else if (gap > reach) {
     // Los que lanzan cosas se quedan a media distancia mientras tienen listo el especial.
     const wanted = ranged && me.cooldownMs === 0 ? 320 : reach * 0.6;
     if (gap > wanted) input.x = dir * level.speed;
+    if (gap > 320 && me.grounded && chance(DASHES_PER_SECOND * level.speed)) input.dash = dir;
   } else if (chance(level.attack)) {
-    if (Math.random() < 0.6) input.punch = true;
-    else input.kick = true;
+    const pick = Math.random();
+    if (pick < 0.12 && me.canGrab(foe)) {
+      input.x = dir;
+      input.kick = true;
+    } else if (pick < 0.25) {
+      input.down = true;
+      input.kick = true;
+    } else if (pick < 0.65) {
+      input.punch = true;
+    } else {
+      input.kick = true;
+    }
     if (Math.random() < 0.1) ai.retreatMs = 400;
   }
   if (chance(level.jump)) {

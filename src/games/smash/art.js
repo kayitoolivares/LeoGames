@@ -10,7 +10,7 @@ const WALK_POSES = Array.from({ length: WALK_FRAMES }, (_, i) => `caminar${i + 1
 // Las poses que usan todos los juegos; las de pelea (patada, cubrirse...) solo el Duelo, que las pide con `allPoses`.
 // (Las de manejar un kart, atras/giro/lado/frente, las carga el juego de karts por su cuenta.)
 const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor', ...WALK_POSES];
-const DUEL_POSES = ['patada', 'cubrirse', 'especial', 'gana'];
+const DUEL_POSES = ['patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada'];
 
 // Se llama en preload(): pone en la fila de carga lo que todavía no esté cargado.
 export function loadSmashArt(scene, { allPoses = false } = {}) {

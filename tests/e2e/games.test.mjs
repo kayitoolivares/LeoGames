@@ -994,6 +994,69 @@ test('duelo de bolitas: pelear contra la compu, ganar y siguiente pelea', { time
   await p.context.close();
 });
 
+// Movimientos nuevos: barrida agachado, arrancón con doble toque, agarre pegadito y el golpe final en súper forma.
+test('duelo de bolitas: barrida, arrancón, agarre y golpe final', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(10000), 'empezar a pelear');
+  // La compu es el muñeco de práctica: no se mueve, no pega y no se cubre.
+  const place = (gap) => p.page.evaluate((g) => {
+    const s = window.leogames.scene.getScene('Duelo');
+    const [me, cpu] = s.fighters;
+    cpu.dummy = true;
+    Object.assign(cpu, { x: 800, health: 100, downMs: 0, launched: false, hurtMs: 0, invulnerableMs: 0 });
+    Object.assign(me, { x: 800 - (me.radius + cpu.radius) * 0.7 - g, facing: 1 });
+  }, gap);
+  const cpuHealth = () => p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[1].health);
+
+  // ↓ + B: barrida que tumba.
+  await place(10);
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 1, 0, 0]));
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[1].launched || window.leogames.scene.getScene('Duelo').fighters[1].downMs > 0, ms(3000), 'la barrida tumba');
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+
+  // Dos toques a la derecha: arrancón.
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].canAct(), ms(3000), 'poder moverse otra vez');
+  await place(300);
+  for (let i = 0; i < 2; i += 1) {
+    await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
+    await p.wait(70);
+    await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+    await p.wait(70);
+  }
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].dash || window.leogames.scene.getScene('Duelo').fighters[0].x > 560, ms(2000), 'hacer el arrancón');
+
+  // Adelante + B pegadito: agarre (aunque la compu se esté cubriendo).
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].canAct(), ms(3000), 'terminar el arrancón');
+  await place(0);
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Duelo').fighters[1].blocking = true));
+  await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
+  await p.tap(0, BUTTON.B);
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[1].health < 100, ms(3000), 'el agarre pega');
+
+  // Barra llena, LB + RB (súper) y X: el golpe final.
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].canAct(), ms(3000), 'terminar el agarre');
+  await place(200);
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Duelo').fighters[0].meter = 100));
+  await p.page.evaluate(() => (window.__button(0, 4, true), window.__button(0, 5, true)));
+  await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].superMs > 0, ms(3000), 'transformarse');
+  await p.page.evaluate(() => (window.__button(0, 4, false), window.__button(0, 5, false)));
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'final', ms(3000), 'empezar el golpe final');
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase !== 'final', ms(8000), 'terminar el golpe final');
+  assert.ok((await cpuHealth()) <= 70, 'el golpe final quita mucha vida');
+  assert.ok((await stickers(p.page)).includes('duelo-final'));
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { timeout: ms(90000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(3);

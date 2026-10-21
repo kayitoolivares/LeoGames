@@ -19,7 +19,7 @@ const SIZE = 2.15; // radio en el duelo = radio del personaje en Bolitas Bros ×
 const LOOK_HEIGHT = 2.9; // alto de la imagen, en radios
 // Cada imagen se ajusta a la misma altura; las que en el dibujo son más bajitas (agachado cubriéndose)
 // o más altas (celebrando con el brazo arriba) se corrigen aquí.
-const POSE_HEIGHT = { cubrirse: 0.85, gana: 1.08, patada: 0.95 };
+const POSE_HEIGHT = { cubrirse: 0.85, gana: 1.08, patada: 0.95, agachado: 0.72, aire: 0.95 };
 const GRAVITY = 2300;
 const FRICTION = 2400; // cómo se frenan los empujones en el piso
 const WALK = 0.55; // velocidad al caminar = `run` del personaje × WALK
@@ -38,6 +38,12 @@ const SUPER_TINT = 0x806000;
 // los golpes; y si es muy alto, sus golpes y disparos bajan hasta esta altura (px) para pegarle a los bajitos.
 const BLOCK_MIN_HEIGHT = 1.6;
 const BLOCK_LOW_REACH = 180;
+// Agachado ocupa menos de alto (los golpes altos le pasan por arriba).
+const CROUCH_HEIGHT = 0.62;
+// Doble toque al stick: hacia adelante un arrancón; hacia atrás una rodada en la que no le pegan.
+const DASH = { forward: { ms: 220, speed: 2.8 }, back: { ms: 300, speed: 2.2, invulnerableMs: 260 } };
+// Qué tan cerca (en radios, entre las orillas) tiene que estar el rival para agarrarlo.
+const GRAB_GAP = 0.7;
 
 // Qué imagen usa cada cosa, en orden de preferencia: las poses de pelea son opcionales
 // (si no hay, usa la más parecida de las 4 de siempre).
@@ -50,10 +56,20 @@ const POSE_CHAIN = {
   salto: ['salto'],
   dolor: ['dolor'],
   gana: ['gana', 'salto'],
+  aire: ['aire', 'patada', 'golpe'],
+  agachado: ['agachado', 'cubrirse', 'normal'],
+  agarre: ['agarre', 'golpe'],
+  entrada: ['entrada', 'gana', 'normal'],
 };
+// Bloquecito se dibuja con bloques: las poses nuevas usan las suyas más parecidas.
+const BLOCK_POSES = { aire: 'patada', agachado: 'patada', agarre: 'golpe', entrada: 'gana' };
+
+// Qué pose usa cada golpe (las que no están aquí usan 'golpe').
+const ATTACK_POSES = { kick: 'patada', airKick: 'aire', sweep: 'agachado', grab: 'agarre' };
 
 // Un peleador del duelo: el personaje que escogió, de lado, con barra de vida y de poder.
-// `input` = { x (-1 a 1), up, punch, kick, special, block, transform }: de un control o de la compu (cpu.js).
+// `input` = { x (-1 a 1), up, down, dash (-1, 0, 1), punch, kick, special, block, transform }: de un control o de la
+// compu (cpu.js).
 // La posición (x, y) es la de sus pies.
 export class DueloFighter {
   constructor(scene, { color, label, character, deviceId = null }) {
@@ -149,6 +165,10 @@ export class DueloFighter {
     this.koed = false;
     this.blocking = false;
     this.airAttackUsed = false;
+    this.crouching = false;
+    this.dash = null;
+    this.posing = false;
+    this.cinematic = null;
     this.celebrating = false;
     this.defeated = false;
     this.flashMs = 0;
@@ -180,12 +200,13 @@ export class DueloFighter {
   // Lo que ocupa su cuerpo (donde le pueden pegar).
   get hurtbox() {
     const half = this.radius * 0.7 * this.scale;
-    return { left: this.x - half, right: this.x + half, top: this.y - this.height * this.scale, bottom: this.y };
+    const low = this.crouching || this.attack?.type === 'sweep' || this.dash?.back;
+    return { left: this.x - half, right: this.x + half, top: this.y - this.height * this.scale * (low ? CROUCH_HEIGHT : 1), bottom: this.y };
   }
 
   // Si puede hacer algo nuevo (no está pegando, ni lastimado, ni en el piso).
   canAct() {
-    return !this.attack && !this.special && this.hurtMs <= 0 && !this.launched && this.downMs <= 0 && !this.koed && !this.celebrating;
+    return !this.attack && !this.special && !this.dash && this.hurtMs <= 0 && !this.launched && this.downMs <= 0 && !this.koed && !this.celebrating;
   }
 
   isInvulnerable() {
@@ -208,11 +229,24 @@ export class DueloFighter {
     this.vx = 0;
   }
 
+  // Se acaba la súper forma (al terminarse el tiempo o al usar el golpe final).
+  endSuper() {
+    this.superMs = 0;
+    if (this.blocks) {
+      this.look.setSuper(false);
+      this.applyForm();
+    } else {
+      this.look.character = this.character;
+    }
+    sfx.powerDown();
+  }
+
   // Barra de poder llena: se transforma un rato (más fuerte, rápido y grande; con su arte de súper si lo hay).
   transform() {
     if (this.meter < METER_MAX || this.superMs > 0 || this.koed) return false;
     this.meter = 0;
     this.superMs = SUPER_MS;
+    this.finalUsed = false;
     if (this.blocks) {
       this.look.setSuper(true);
       this.applyForm();
@@ -246,6 +280,7 @@ export class DueloFighter {
     if (this.grounded && this.canAct()) this.facing = Math.sign(opponent.x - this.x) || this.facing;
     if (this.canAct()) this.act(input, dt, opponent);
     else if (this.attack && (input.punch || input.kick)) this.buffered = input.punch ? 'punch' : 'kick';
+    this.updateDash(dtMs);
     this.updateAttack(dtMs);
     this.updateSpecial(dtMs, opponent);
     this.move(dt);
@@ -260,22 +295,20 @@ export class DueloFighter {
     this.sinceAttackMs += dtMs;
     if (this.superMs > 0) {
       this.superMs = Math.max(0, this.superMs - dtMs);
-      if (this.superMs === 0) {
-        if (this.blocks) {
-          this.look.setSuper(false);
-          this.applyForm();
-        } else {
-          this.look.character = this.character;
-        }
-        sfx.powerDown();
-      }
+      if (this.superMs === 0) this.endSuper();
     }
   }
 
   act(input, dt, opponent) {
     this.blocking = false;
+    this.crouching = false;
     if (input.transform && this.transform()) {
       this.scene.celebrateSuper?.(this);
+      return;
+    }
+    // En súper forma, el primer X es el golpe final (una vez por transformación).
+    if (input.special && this.superMs > 0 && !this.finalUsed && this.scene.startFinal?.(this)) {
+      this.finalUsed = true;
       return;
     }
     if (!this.grounded) {
@@ -288,13 +321,28 @@ export class DueloFighter {
     }
     if (input.block || this.blockStunMs > 0) {
       this.blocking = true;
+      this.crouching = Boolean(input.down);
       this.vx = 0;
+      return;
+    }
+    if (input.dash) {
+      this.startDash(input.dash);
       return;
     }
     if (input.up) {
       this.vy = -this.jumpSpeed;
       this.vx = Math.abs(input.x) > 0.3 ? Math.sign(input.x) * this.walkSpeed * 1.1 * this.speed : 0;
       sfx.jump();
+    } else if (input.down) {
+      // Agachado: ↓ + A = gancho hacia arriba, ↓ + B = barrida.
+      this.crouching = true;
+      this.vx = 0;
+      if (input.punch) this.startAttack('uppercut');
+      else if (input.kick) this.startAttack('sweep');
+      else if (input.special && this.cooldownMs === 0) this.startSpecial();
+    } else if (input.kick && Math.sign(input.x) === this.facing && Math.abs(input.x) > 0.4 && this.canGrab(opponent)) {
+      // Adelante + B pegadito al rival: lo agarra y lo avienta (aunque se esté cubriendo).
+      this.startAttack('grab');
     } else if (input.punch) {
       this.startAttack('punch');
     } else if (input.kick) {
@@ -304,6 +352,31 @@ export class DueloFighter {
     } else {
       const backwards = Math.sign(input.x) === -this.facing;
       this.vx = Math.abs(input.x) > 0.25 ? input.x * this.walkSpeed * (backwards ? BACK : 1) * this.speed : 0;
+    }
+  }
+
+  canGrab(opponent) {
+    if (!opponent.grounded || opponent.isInvulnerable()) return false;
+    return Math.abs(opponent.x - this.x) - (this.radius + opponent.radius) * 0.7 < this.radius * GRAB_GAP;
+  }
+
+  // Doble toque: `dir` es hacia dónde (en la pantalla). Adelante = arrancón; atrás = rodada sin que le peguen.
+  startDash(dir) {
+    const back = dir !== this.facing;
+    const { ms, speed, invulnerableMs = 0 } = back ? DASH.back : DASH.forward;
+    this.dash = { ms, total: ms, back, vx: dir * this.walkSpeed * speed * this.speed };
+    this.invulnerableMs = Math.max(this.invulnerableMs, invulnerableMs);
+    this.scene.dust?.(this.x, this.y, -dir);
+    sfx.throw();
+  }
+
+  updateDash(dtMs) {
+    if (!this.dash) return;
+    this.dash.ms -= dtMs;
+    this.vx = this.dash.vx;
+    if (this.dash.ms <= 0) {
+      this.dash = null;
+      this.vx = 0;
     }
   }
 
@@ -435,7 +508,9 @@ export class DueloFighter {
     if (this.isInvulnerable() || this.celebrating) return null;
     const fromFront = Math.sign(fromX - this.x) === this.facing || fromX === this.x;
     const dir = Math.sign(this.x - fromX) || -this.facing;
-    if (this.blocking && this.grounded && fromFront) {
+    // Un agarre solo funciona en el piso, pero ni cubriéndose se salva.
+    if (data.grab && !this.grounded) return null;
+    if (this.blocking && this.grounded && fromFront && !data.grab && !data.unblockable) {
       const chip = data.special ? Math.ceil(data.damage * data.power * 0.25) : 0;
       this.health = Math.max(1, this.health - chip);
       this.pushVx = dir * data.push * 0.6;
@@ -449,6 +524,8 @@ export class DueloFighter {
     this.special = null;
     this.buffered = null;
     this.blocking = false;
+    this.crouching = false;
+    this.dash = null;
     this.punchChain = 0;
     this.vx = 0;
     if (this.health === 0) {
@@ -458,7 +535,7 @@ export class DueloFighter {
       this.pushVx = dir * 520;
     } else if (data.launch || !this.grounded) {
       this.launched = true;
-      this.vy = -LAUNCH_SPEED * (this.grounded ? 1 : 0.6);
+      this.vy = -LAUNCH_SPEED * (this.grounded ? 1 : 0.6) * (data.lift ?? 1);
       this.pushVx = dir * data.push * 0.9;
     } else {
       this.hurtMs = data.stunMs;
@@ -508,10 +585,14 @@ export class DueloFighter {
   pose() {
     if (this.celebrating && !this.defeated && !this.koed) return 'gana';
     if (this.defeated || this.koed || this.launched || this.downMs > 0 || this.hurtMs > 0) return 'dolor';
-    if (this.blocking) return 'cubrirse';
-    if (this.attack) return this.attack.type === 'kick' || this.attack.type === 'airKick' ? 'patada' : 'golpe';
+    if (this.cinematic) return this.cinematic;
+    if (this.posing) return 'entrada';
+    if (this.blocking) return this.crouching ? 'agachado' : 'cubrirse';
+    if (this.attack) return ATTACK_POSES[this.attack.type] ?? 'golpe';
     if (this.special) return this.special.kind === 'teleport' && !this.special.fired ? 'normal' : 'especial';
+    if (this.dash) return this.dash.back ? 'salto' : 'caminar';
     if (!this.grounded) return 'salto';
+    if (this.crouching) return 'agachado';
     return Math.abs(this.vx) > 20 ? 'caminar' : 'normal';
   }
 
@@ -524,7 +605,7 @@ export class DueloFighter {
     const ground = this.look.groundPose(pose === 'caminar');
     let shown = pose === 'caminar' ? ground : (POSE_CHAIN[pose].find((p) => hasPose(this.scene, art, p)) ?? 'normal');
     // Bloquecito tiene todas las poses (se dibuja con bloques), y su especial se ve distinto en cada número.
-    if (this.blocks && pose !== 'caminar') shown = pose;
+    if (this.blocks && pose !== 'caminar') shown = BLOCK_POSES[pose] ?? pose;
     const walkFrames = shown.startsWith('caminar');
     this.look.show(shown, this.facing, this.special?.action ?? null);
     if (this.blocks) this.tag.setY(this.look.top - 16);
@@ -549,10 +630,15 @@ export class DueloFighter {
     } else if (pose === 'gana') {
       bob = -Math.abs(Math.sin(now / 160)) * r * 0.5;
     }
+    // El gancho se echa para atrás, el arrancón se inclina hacia adelante y la rodada da la vuelta completa.
+    if (this.attack?.type === 'uppercut') angle = -this.facing * 12;
+    else if (this.dash && !this.dash.back) angle = this.facing * 12;
+    else if (this.dash?.back) angle = -this.facing * 360 * (1 - this.dash.ms / this.dash.total);
+    // Bloquecito agachado (no tiene esa pose): se aplasta.
+    if (this.blocks && (this.crouching || this.attack?.type === 'sweep')) sy *= 0.72;
     // Volando por un golpe se inclina; tirado en el piso, acostado.
-    if (this.launched) angle = -this.facing * 25;
     else if (this.downMs > 0 || (this.koed && this.grounded)) angle = -this.facing * 80;
-    const lying = angle !== 0 && Math.abs(angle) >= 80;
+    const lying = this.downMs > 0 || (this.koed && this.grounded);
     if (!figure.scene.tweens.isTweening(figure)) figure.setScale(s * sx, s * sy);
     figure.setAngle(angle);
     figure.y = this.y - FLOOR - r * (s - 1) + bob + (lying ? r * 0.55 : 0);

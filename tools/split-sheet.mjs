@@ -8,19 +8,24 @@
 //   node tools/split-sheet.mjs hoja.jpg astronauta                  1 fila de 4
 //   node tools/split-sheet.mjs hoja.jpg abeja abeja_super           2 filas: normal arriba, súper abajo
 //   node tools/split-sheet.mjs hoja.jpg hada-dolor pinguino_super-golpe
-// Escribe arte/smash/personajes/<nombre>.jpg
+//   node tools/split-sheet.mjs hoja.jpg pow zas --to duelo/efectos    en otra carpeta de arte/
+// Escribe arte/smash/personajes/<nombre>.jpg (o arte/<carpeta>/<nombre>.jpg con --to).
 import sharp from 'sharp';
+import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
 const POSES = ['normal', 'golpe', 'salto', 'dolor'];
 const ROOT = path.resolve(import.meta.dirname, '..');
-const DEST = path.join(ROOT, 'arte', 'smash', 'personajes');
+const toAt = process.argv.indexOf('--to');
+const DEST = path.join(ROOT, 'arte', ...(toAt > 0 ? process.argv[toAt + 1].split('/') : ['smash', 'personajes']));
+mkdirSync(DEST, { recursive: true });
 // Margen alrededor de cada pose (en pixeles de la hoja) y tamaño mínimo de una pieza suelta.
 const MARGIN = 40;
 const NOISE = 40;
 
-const [input, ...args] = process.argv.slice(2);
-const names = args.flatMap((name) => (name.includes('-') ? [name] : POSES.map((pose) => `${name}-${pose}`)));
+const [input, ...args] = process.argv.slice(2, toAt > 0 ? toAt : undefined);
+// Con --to son nombres sueltos (no personajes con sus 4 poses).
+const names = args.flatMap((name) => (name.includes('-') || toAt > 0 ? [name] : POSES.map((pose) => `${name}-${pose}`)));
 if (!input || !names.length) {
   console.log('Uso: node tools/split-sheet.mjs <hoja.jpg> <nombre> [<nombre> ...]');
   process.exit(1);

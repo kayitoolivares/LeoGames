@@ -30,7 +30,7 @@ const CHARACTERS = [
   'tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma',
   'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero',
 ];
-const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'atras', 'giro', 'lado', 'frente'];
+const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella'];
 const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan'];
 
