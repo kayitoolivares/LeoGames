@@ -90,11 +90,14 @@ const PAGES = [
     rows: [
       [['stick'], 'Correr'],
       [['a'], 'Saltar'],
-      [['x', 'b'], 'Patear (con ↑ globito, con ↓ rasante)'],
+      [['x'], 'Patear (con ↑ globito, con ↓ rasante; en el aire, volea)'],
+      [['b'], 'Barrida (tumba al rival; cerquita del balón, patea)'],
+      [['lb', 'rb'], 'Regate: arrancón en el que no te pueden barrer'],
+      [['lb+rb'], 'Con la barra llena: ¡tiro especial! (fuego, zigzag o cohete)'],
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Siempre pateas hacia la portería contraria.',
+    note: 'Siempre pateas hacia la portería contraria. En los penales: X tira (↑ alto, ↓ rasante) y A salta para atajar.',
   },
   {
     title: 'Karts locos',

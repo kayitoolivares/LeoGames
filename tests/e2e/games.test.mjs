@@ -1076,6 +1076,91 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   await p.context.close();
 });
 
+test('fútbol de bolitas: poderes, tiro especial, gol de oro, penales y copa', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Fútbol de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), 'empezar el partido');
+  // Los poderes: balón gigante, portería chiquita del rival y rivales congelados.
+  const powers = await p.page.evaluate(async () => {
+    const { GOAL_HEIGHT } = await import('/src/games/futbol/field.js');
+    const s = window.leogames.scene.getScene('Futbol');
+    const me = s.team.find((t) => !t.isCpu);
+    for (const kind of ['balon-gigante', 'porteria-chica', 'hielo']) {
+      s.powers.spawn();
+      s.powers.box.kind = kind;
+      s.powers.take(0, me);
+    }
+    return { scale: s.ball.scale, goal: GOAL_HEIGHT[1], frozen: s.team.filter((t) => t.team === 1).every((t) => t.frozenMs > 0) };
+  });
+  assert.ok(powers.scale > 1 && powers.goal < 200 && powers.frozen, JSON.stringify(powers));
+  // Tiro especial: con la barra llena y LB + RB, el balón sale brillando.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Futbol');
+    const me = s.team.find((t) => !t.isCpu);
+    me.addMeter(100);
+    s.ball.reset(me.x + 70, 620);
+  });
+  await p.page.evaluate(() => { window.__button(0, 4, true); window.__button(0, 5, true); });
+  await p.until(() => window.leogames.scene.getScene('Futbol').ball.special || window.leogames.scene.getScene('Futbol').phase !== 'play', ms(5000), 'el tiro especial');
+  await p.page.evaluate(() => window.__release());
+  // Casi siempre entra solito; si pega en el travesaño (o va lento en GitHub), se empuja a la portería.
+  try {
+    await p.until(() => window.leogames.scene.getScene('Futbol').phase !== 'play', ms(4000), 'gol con el tiro especial');
+  } catch {
+    await p.page.evaluate(() => {
+      const s = window.leogames.scene.getScene('Futbol');
+      const me = s.team.find((t) => !t.isCpu);
+      Object.assign(s.ball, { x: 1230, y: 600, vx: 900, vy: 0, lastTouch: me, specialBy: me });
+    });
+    await p.until(() => window.leogames.scene.getScene('Futbol').phase !== 'play', ms(5000), 'que entre el tiro especial');
+  }
+  // Por tiempo: si se acaba empatado, gol de oro.
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(15000), 'seguir jugando');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Futbol');
+    s.match.minutes = 2;
+    s.score = [1, 1];
+    s.clockMs = 200;
+  });
+  await p.until(() => window.leogames.scene.getScene('Futbol').goldenGoal, ms(5000), 'gol de oro');
+  await p.page.evaluate(() => window.leogames.scene.getScene('Futbol').scoreGoal(0));
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'end', ms(15000), 'ganar con gol de oro');
+  // Penales: tira el jugador y luego se acaba la tanda.
+  await p.until(() => window.leogames.scene.getScene('Futbol').phaseMs > 1300, ms(10000), 'poder escoger');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'setup', ms(8000), 'regresar a escoger');
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').shootout?.state === 'aim', ms(10000), 'el primer penal');
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Futbol').shootout.kicks[0].length === 1, ms(10000), 'que cuente el penal');
+  await p.page.evaluate(() => window.leogames.scene.getScene('Futbol').shootout.finish(0));
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'end', ms(5000), 'ganar los penales');
+  // Copa: el camino de 3 partidos; al ganar la final sale la copa.
+  await p.until(() => window.leogames.scene.getScene('Futbol').phaseMs > 1300, ms(10000), 'poder escoger');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'setup', ms(8000), 'regresar a escoger');
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'copa', ms(8000), 'ver el camino de la Copa');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'kickoff', ms(8000), 'empezar el partido de la Copa');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Futbol');
+    s.copa.round = 2;
+    s.finishMatch(0);
+  });
+  const earned = await stickers(p.page);
+  for (const id of ['futbol-especial', 'futbol-penales', 'futbol-copa']) assert.ok(earned.includes(id), `falta ${id}: ${earned}`);
+  await p.holdToMenu(0, EXIT, 'salir del fútbol');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('fútbol de bolitas: meter gol, ganar el partido y revancha', { timeout: ms(150000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(1);

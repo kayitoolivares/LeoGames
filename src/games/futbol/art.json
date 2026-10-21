@@ -1,5 +1,19 @@
 {
   "fondos": [
-    "estadio"
+    "azotea",
+    "estadio",
+    "luna",
+    "nieve",
+    "playa"
+  ],
+  "poderes": [
+    "balon-gigante",
+    "hielo",
+    "iman",
+    "porteria-chica",
+    "tenis"
+  ],
+  "copas": [
+    "copa-futbol"
   ]
 }

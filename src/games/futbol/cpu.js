@@ -1,19 +1,24 @@
-import { attackDir, goalMouthX } from './field.js';
+import { METER_MAX } from './FutbolPlayer.js';
+import { FIELD, attackDir, goalMouthX } from './field.js';
 
 // Qué tan bien juega la compu en cada nivel: velocidad (1 = como un jugador), qué tanto tarda en patear
-// (probabilidad por cuadro) y la fuerza de sus patadas. En Fácil los peques le pueden ganar.
+// (probabilidad por cuadro), la fuerza de sus patadas y qué tan seguido se barre o regatea.
+// En Fácil los peques le pueden ganar.
 export const CPU_LEVELS = {
-  facil: { name: 'Fácil', speed: 0.6, kickChance: 0.03, power: 0.75 },
-  normal: { name: 'Normal', speed: 0.75, kickChance: 0.06, power: 0.9 },
-  dificil: { name: 'Difícil', speed: 0.92, kickChance: 0.15, power: 1 },
+  facil: { name: 'Fácil', speed: 0.6, kickChance: 0.03, power: 0.75, slideChance: 0.004, dribbleChance: 0.002 },
+  normal: { name: 'Normal', speed: 0.75, kickChance: 0.06, power: 0.9, slideChance: 0.01, dribbleChance: 0.005 },
+  dificil: { name: 'Difícil', speed: 0.92, kickChance: 0.15, power: 1, slideChance: 0.02, dribbleChance: 0.01 },
 };
 const GOALIE_ZONE = 420;
+const SLIDE_RANGE = 150;
+const SPECIAL_RANGE = 760;
 
 // Decide qué "aprieta" un jugador de la compu este cuadro (mismo formato que un control).
 // Se pone detrás del balón viendo hacia la portería contraria y lo empuja o lo patea; si el balón
 // quedó atrás de él, salta para pasarse al otro lado. Con `goalie` se queda cuidando su portería
-// hasta que el balón se acerca.
-export function cpuInput(player, ball, goalie = false, level = CPU_LEVELS.facil) {
+// hasta que el balón se acerca. Con `others` (los demás jugadores) también se barre contra el rival
+// que trae el balón y regatea cuando lo vienen a quitar; con la barra llena, hace su tiro especial.
+export function cpuInput(player, ball, goalie = false, level = CPU_LEVELS.facil, others = []) {
   const dir = attackDir(player.team);
   const ownGoal = goalMouthX(player.team);
   const wrongSide = (ball.x - player.x) * dir < 0;
@@ -30,10 +35,26 @@ export function cpuInput(player, ball, goalie = false, level = CPU_LEVELS.facil)
   const near = Math.hypot(ball.x - player.x, ball.y - player.y) < player.radius + ball.radius + 30;
   const highBall = closeX < 90 && ball.y < player.y - 70 && ball.vy > -150;
   const hopOver = wrongSide && closeX < 75 && ball.y > player.y - 40;
+  // Un rival con el balón enfrente, viniendo hacia acá: ¡barrida!
+  const rivals = others.filter((p) => p.team !== player.team && !p.busy);
+  const carrier = rivals.find((p) => Math.abs(p.x - ball.x) < p.radius + ball.radius + 20 && ball.y > p.y - 30);
+  const slide =
+    Boolean(carrier) &&
+    (carrier.x - player.x) * player.facing > 0 &&
+    Math.abs(carrier.x - player.x) < SLIDE_RANGE &&
+    Math.random() < level.slideChance * 6;
+  // Con el balón y un rival muy cerca enfrente: regate.
+  const blocker = rivals.some((p) => (p.x - player.x) * dir > 0 && Math.abs(p.x - player.x) < 130);
+  const dribble = near && !wrongSide && blocker && Math.random() < level.dribbleChance * 6;
+  const shotRange = Math.abs(goalMouthX(1 - player.team) - player.x) < SPECIAL_RANGE;
+  const special = near && !wrongSide && shotRange && ball.y > FIELD.ground - 200 && (player.specialReady || player.meter >= METER_MAX);
   return {
     x,
     jump: highBall || hopOver,
     kick: near && !wrongSide && Math.random() < level.kickChance,
+    slide: slide && !near,
+    dribble,
+    special,
     up: false,
     down: false,
     power: level.power,

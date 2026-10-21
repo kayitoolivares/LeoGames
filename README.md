@@ -139,10 +139,28 @@ Abre http://localhost:5173 en Edge o Chrome.
   protege) y saltando se esquivan. Los peligros son dibujos de Gemini (kart/peligros), menos el bloque del
   Castillo, que tiene su cara de enojado dibujada en el juego.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
-- **Fútbol de bolitas**: vista de lado, Azules contra Rojos en el estadio. **Stick** = correr, **A** = saltar,
-  **X o B** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓** rasante, en el aire volea),
-  **mantén LB + RB + Y** = salir. Antes del partido el Jugador 1 escoge: **todos contra la compu** o **unos contra otros**
-  (la compu completa los equipos), a cuántos goles (3, 5 o 7) y el nivel de la compu (fácil, normal, difícil).
+- **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
+  **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
+  rasante, en el aire volea), **B** = barrida (tumba al rival; cerquita del balón, patea), **LB o RB** = regate (un
+  arrancón en el que no te pueden barrer), **mantén LB + RB + Y** = salir. Tocar y patear el balón llena la barrita de
+  cada quien; llena + **LB + RB** = **tiro especial** de su personaje (de fuego derechito, en zigzag o cohete que sube y
+  cae en picada): atraviesa a todos y tumba a los rivales.
+  Antes del partido el Jugador 1 escoge:
+  - **Modo**: **Partido**, **Copa de fútbol** (3 partidos contra la compu: cuartos, semifinal y la gran final, cada uno
+    más difícil y en otra cancha; si pierdes, intentas otra vez ese partido; al ganar la final sale la copa) o
+    **Penales** (5 tiros por equipo y luego muerte súbita: el que tira escoge **↑** alto, nada = medio o **↓** rasante;
+    el portero adivina: parado ataja los rasantes y brincando a tiempo con **A** los de arriba).
+  - **Equipos**: **todos contra la compu** o **unos contra otros** (la compu completa los equipos).
+  - **Cómo se acaba**: a 3, 5 o 7 goles, o **por tiempo** (2 o 3 minutos; si van empatados, **gol de oro**).
+  - **Nivel de la compu** (fácil, normal, difícil; la compu también se barre, regatea y usa su tiro especial).
+  - **Cancha** (dibujos de Gemini): **Estadio**, **Playa** (la arena frena el balón), **Nieve** (se resbalan),
+    **Luna** (poca gravedad: todo flota) y **Azotea**.
+  - **Uniformes** y **poderes en la cancha** (sí o no): de vez en cuando aparece una cajita flotando; el que la toca
+    (o le pega con el balón) se lleva el poder para su equipo: **balón gigante**, **portería chiquita** (la del rival),
+    **imán** (el balón se te pega), **hielo** (congela a los rivales) o **tenis veloces**.
+  Cada gol trae **repetición en cámara lenta** (A la brinca) y festejo; hay **narrador** (voz y letrero), **público**
+  enfrente que hace la ola con banderas de cada equipo, marcador con reloj, estela en los tiros fuertes, letreros de
+  cómic, la red que se mueve y, al final, el **mejor jugador** con la tabla de goles, tiros, robos y atajadas.
 - **Duelo de bolitas**: uno contra uno de lado, estilo Street Fighter, con barras de vida, reloj de 60 s y rounds.
   **Stick** = caminar (**↑** saltar), **A** = golpe (3 seguidos = remate que tumba), **B** = patada, **X** = especial
   (el de cada personaje: estrella, láser, fuego, bala de cañón, embestida, aparecer por detrás...),
@@ -224,7 +242,8 @@ Para gastar menos del límite de Gemini se le puede pedir una **hoja** con varia
 Deja las poses sueltas en `arte/smash/personajes/`. Todos los juegos usan además `caminar1` a `caminar4`
 (los cuadros de la caminata; con personajes anchos sale mejor pedirlos en 2 filas de 2) y el Duelo
 `patada`, `cubrirse`, `especial` y `gana` (si faltan, usa la pose más parecida); el fondo del dojo va en
-`arte/duelo/fondos/dojo.jpg`.
+`arte/duelo/fondos/dojo.jpg`. El fútbol usa `arte/futbol/fondos/<estadio|playa|nieve|luna|azotea>.jpg`,
+`arte/futbol/poderes/<balon-gigante|porteria-chica|iman|hielo|tenis>.jpg` y `arte/futbol/copas/copa-futbol.jpg`.
 
 ## Jugar en el Xbox
 
@@ -257,7 +276,9 @@ antes de cada publicación, y si alguna falla no se publica.
 - `tools/split-sheet.mjs`: parte una hoja de Gemini con varias poses en imágenes sueltas.
 - `src/games/brawl/`: Pelea en equipo (Phaser).
 - `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
-- `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha, balón, jugadores y la compu (`cpu.js`).
+- `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha y uniformes (`field.js`), balón (`Ball.js`), jugadores
+  (`FutbolPlayer.js`), la compu (`cpu.js`), canchas (`pitches.js`), poderes (`powers.js`), penales
+  (`penalties.js`), público y narrador (`crowd.js`) y las pantallas de la Copa y del final (`screens.js`).
 - `src/games/duelo/`: Duelo de bolitas (Phaser): peleador, golpes y especiales (`moves.js`), lo que se lanza
   (`shots.js`), escenarios y la compu.
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
