@@ -23,11 +23,15 @@ const EMOJI = {
   tronco: '🪵',
   'pez-globo': '🐡',
   pelota: '🏐',
+  espectro: '👻',
+  fresa: '🍓',
+  dino: '🦖',
+  relampago: '⚡',
 };
 // Tamaño de cada uno (alto, en unidades del mundo) y qué tan cerca hay que pasar para que pegue.
-const SIZES = { oveja: 3.2, cangrejo: 2.6, dona: 3.6, 'bola-nieve': 2.4, meteorito: 3.4, lava: 3.6, tronco: 3.4, 'pez-globo': 2.8, pelota: 3.2 };
+const SIZES = { oveja: 3.2, cangrejo: 2.6, dona: 3.6, 'bola-nieve': 2.4, meteorito: 3.4, lava: 3.6, tronco: 3.4, 'pez-globo': 2.8, pelota: 3.2, espectro: 3, fresa: 3.4, dino: 3.6, relampago: 3.6 };
 // Los que van flotando (qué tan alto) y los que botan (qué tan alto brincan).
-const FLOAT = { 'pez-globo': 1.6 };
+const FLOAT = { 'pez-globo': 1.6, espectro: 1.8 };
 const BOUNCE = { pelota: 4.5 };
 const REACH = 1.8;
 // Después de que le pega a alguien, no le vuelve a pegar a ese mismo en un rato.
@@ -316,6 +320,10 @@ const OUCH = {
   tronco: '¡Te aplastó un tronco! 🪵',
   'pez-globo': '¡Auch, un pez globo! 🐡',
   pelota: '¡Pelotazo! 🏐',
+  espectro: '¡Buuu! Un fantasma 👻',
+  fresa: '¡Te aplastó una fresa! 🍓',
+  dino: '¡Pisotón de dino! 🦖',
+  relampago: '¡Te cayó un rayo! ⚡',
 };
 
 // La imagen de Gemini si ya está; si no, el emoji en un cuadrito transparente. El bloque es la cara de una

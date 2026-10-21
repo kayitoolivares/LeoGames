@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import manifest from './art.json';
 import { RACER_RADIUS } from './Racer.js';
 
 // `uses`: cuántas veces se usa (el triple plátano suelta uno con cada X).
@@ -14,19 +15,29 @@ export const ITEMS = {
   lightning: { emoji: '🌩️', name: '¡Rayo!' },
   // Mancha la pantalla de los que van adelante.
   ink: { emoji: '🦑', name: '¡Tinta!' },
+  // Invencible un rato, más rápido, y tumba al que toque.
+  star: { emoji: '⭐', name: '¡Estrella!' },
+  // Le roba su poder a otro y se vuelve fantasma (nada le pega).
+  ghost: { emoji: '👻', name: '¡Fantasma!' },
+  // Se vuelve una bala que maneja sola, rapidísimo, y tumba a todos.
+  bullet: { emoji: '💣', name: '¡Bala!' },
+  // Una abeja que vuela por encima de todo hasta el primero y le pica (y a los que encuentre en el camino).
+  bee: { emoji: '🐝', name: '¡Abeja!' },
 };
 
 // Como en Mario Kart: el que va adelante recibe cosas para defenderse
 // y los de atrás, cosas para alcanzar.
 const TABLES = {
-  front: { banana: 30, shield: 30, banana3: 20, rocket: 10, turbo: 5, ink: 5 },
-  middle: { rocket: 25, banana: 15, turbo: 15, ink: 15, banana3: 10, shield: 10, comet: 5, lightning: 5 },
-  back: { turbo: 25, rocket: 25, comet: 15, lightning: 15, ink: 15, shield: 5 },
+  front: { banana: 28, shield: 26, banana3: 18, rocket: 10, turbo: 5, ink: 5, ghost: 8 },
+  middle: { rocket: 22, banana: 12, turbo: 13, ink: 12, banana3: 8, shield: 8, comet: 5, lightning: 4, ghost: 7, star: 5, bee: 4 },
+  back: { turbo: 17, rocket: 18, comet: 12, lightning: 10, ink: 9, shield: 4, star: 12, bullet: 11, bee: 7 },
+  // En la batalla no hay pista para la bala ni primer lugar para la abeja.
+  battle: { rocket: 22, banana: 12, turbo: 12, ink: 10, banana3: 10, shield: 10, comet: 6, lightning: 6, ghost: 6, star: 6 },
 };
 
-// `place` es 0 para el primer lugar y 1 para el último.
-export function rollItem(place) {
-  const table = place < 0.2 ? TABLES.front : place < 0.7 ? TABLES.middle : TABLES.back;
+// `place` es 0 para el primer lugar y 1 para el último (`battle`: los poderes de la batalla).
+export function rollItem(place, battle = false) {
+  const table = battle ? TABLES.battle : place < 0.2 ? TABLES.front : place < 0.7 ? TABLES.middle : TABLES.back;
   const total = Object.values(table).reduce((sum, weight) => sum + weight, 0);
   let pick = Math.random() * total;
   for (const [item, weight] of Object.entries(table)) {
@@ -104,6 +115,12 @@ const COMET_HOMING = 22;
 const COMET_LIFE_MS = 15000;
 const COMET_BLAST = 6;
 const COMET_HEIGHT = 1.6;
+// La abeja vuela alto, derechito al primero, y le pica también al que se encuentre en el camino.
+const BEE_SPEED = 66;
+const BEE_HEIGHT = 4.5;
+const BEE_STING = 2.8;
+const BEE_LIFE_MS = 14000;
+const BEE_SIZE = 2.6;
 
 // Cohetes que persiguen al de adelante, plátanos que se quedan en la pista y cometas que van por el primero.
 export class Projectiles {
@@ -117,6 +134,37 @@ export class Projectiles {
     this.cometGeometry = new THREE.SphereGeometry(1, 14, 10);
     this.cometMaterial = new THREE.MeshBasicMaterial({ color: 0x5ab8ff });
     this.cometGlow = new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.45, depthWrite: false });
+    // La abeja es su dibujo de Gemini (o una bolita amarilla) que siempre ve a la cámara.
+    this.beeMaterial = new THREE.SpriteMaterial({ color: 0xffffff, depthWrite: false });
+    if (manifest.objetos.includes('abeja')) {
+      new THREE.TextureLoader().load('kart/objetos/abeja.png', (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        this.beeMaterial.map = texture;
+        this.beeMaterial.needsUpdate = true;
+      });
+    } else {
+      this.beeMaterial.color.setHex(0xffd02a);
+    }
+  }
+
+  // La abeja: vuela por encima de todo hacia `target` (el primero).
+  addBee(owner, target) {
+    const mesh = new THREE.Sprite(this.beeMaterial);
+    mesh.scale.setScalar(BEE_SIZE);
+    this.scene.add(mesh);
+    this.list.push({
+      kind: 'bee',
+      owner,
+      target,
+      mesh,
+      stung: new Set(),
+      x: owner.x + Math.sin(owner.heading) * 3,
+      z: owner.z + Math.cos(owner.heading) * 3,
+      y: owner.y + BEE_HEIGHT,
+      heading: owner.heading,
+      index: owner.index,
+      ageMs: 0,
+    });
   }
 
   // El cometa: una bola azul brillante con su estela, que va por el primer lugar (`target`).
@@ -185,6 +233,7 @@ export class Projectiles {
     this.list = this.list.filter((p) => {
       p.ageMs += dtMs;
       if (p.kind === 'comet') return this.updateComet(p, dt, racers, track, onHit);
+      if (p.kind === 'bee') return this.updateBee(p, dt, racers, track, onHit);
       if (p.kind === 'rocket') {
         if (p.target && !p.target.finished) {
           const desired = Math.atan2(p.target.x - p.x, p.target.z - p.z);
@@ -239,6 +288,28 @@ export class Projectiles {
     return true;
   }
 
+  // La abeja va directo al primero (sin seguir la pista, por arriba de todo) y pica al que pase cerca.
+  updateBee(p, dt, racers, track, onHit) {
+    if (!p.target || p.target.finished || p.ageMs > BEE_LIFE_MS) return this.remove(p);
+    p.heading = Math.atan2(p.target.x - p.x, p.target.z - p.z);
+    p.x += Math.sin(p.heading) * BEE_SPEED * dt;
+    p.z += Math.cos(p.heading) * BEE_SPEED * dt;
+    p.index = track.closest(p.x, p.z, p.index).index;
+    const teammate = (r) => r.team !== undefined && r.team === p.owner.team;
+    for (const r of racers) {
+      if (r === p.owner || teammate(r) || p.stung.has(r)) continue;
+      if (Math.hypot(r.x - p.x, r.z - p.z) < RACER_RADIUS + BEE_STING) {
+        p.stung.add(r);
+        onHit(r, p);
+        if (r === p.target) return this.remove(p);
+      }
+    }
+    const ground = track.isArena ? 0 : track.roadHeight(p.x, p.z, p.index);
+    p.y += (ground + BEE_HEIGHT - p.y) * Math.min(1, dt * 3);
+    p.mesh.position.set(p.x, p.y + Math.sin(p.ageMs / 70) * 0.35, p.z);
+    return true;
+  }
+
   remove(p) {
     this.scene.remove(p.mesh);
     return false;
@@ -252,7 +323,8 @@ export class Projectiles {
   // Las piezas compartidas no siempre están en la escena al salir, así que se liberan aparte.
   dispose() {
     this.clear();
-    const shared = [this.rocketGeometry, this.rocketMaterial, this.bananaGeometry, this.bananaMaterial, this.cometGeometry, this.cometMaterial, this.cometGlow];
+    const shared = [this.rocketGeometry, this.rocketMaterial, this.bananaGeometry, this.bananaMaterial, this.cometGeometry, this.cometMaterial, this.cometGlow, this.beeMaterial];
+    this.beeMaterial.map?.dispose();
     for (const resource of shared) resource.dispose();
   }
 }

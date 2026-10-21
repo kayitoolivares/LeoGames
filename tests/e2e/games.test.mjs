@@ -1076,6 +1076,123 @@ test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(
   await p.context.close();
 });
 
+// Valle de los dinos con lluvia: el atajo secreto, el planeador, el túnel de agua y los poderes nuevos.
+test('karts locos: atajo, planeador, agua, lluvia y poderes nuevos', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await pickRaceMode(p);
+  // Y = clima: "De la pista" → "Soleado" → "Lluvia".
+  await p.tap(0, BUTTON.Y);
+  await p.tap(0, BUTTON.Y);
+  assert.match(await p.page.evaluate(() => document.querySelector('.kart-choose .options').textContent), /Lluvia/);
+  await p.page.evaluate(() => import('/src/games/kart/tracks.js').then((m) => window.leogames.scene.getScene('Kart').game3d.chooser.select(m.TRACK_KEYS.indexOf('dinos'))));
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(20000), 'empezar en el valle de los dinos');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.weather.kind), 'lluvia');
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  // Lejos de la compu, para que nadie estorbe.
+  const place = (fn) =>
+    p.page.evaluate((code) => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      for (const cpu of k.racers.filter((r) => r.isCpu)) Object.assign(cpu, { speed: 0, x: 9999, z: 9999, index: (k.humans[0].index + 200) % k.track.count });
+      const r = k.humans[0];
+      const spot = new Function('k', code)(k);
+      Object.assign(r, { x: spot.x, z: spot.z, index: spot.index, heading: spot.heading, speed: spot.speed, boostMs: 0, shortcut: false, y: spot.y, floor: spot.y, vy: 0, flying: false, gliding: false, inkMs: 0 });
+    }, fn);
+
+  // El atajo: pegado a la orilla junto a la entrada, apuntando al caminito; el bot lo sigue hasta salir.
+  await place(`const sc = k.shortcut; const at = k.track.pointAt(sc.i - 2, sc.side * 7.5); const aim = sc.pointAt(0.35);
+    return { ...at, heading: Math.atan2(aim.x - at.x, aim.z - at.z), speed: 25 };`);
+  await p.page.evaluate(() => {
+    window.__bot = setInterval(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      const r = k.humans[0];
+      const target = r.shortcut ? k.shortcut.pointAt(Math.min(1.05, k.shortcut.project(r.x, r.z).t + 0.12)) : k.shortcut.pointAt(0.35);
+      const diff = Math.atan2(Math.sin(Math.atan2(target.x - r.x, target.z - r.z) - r.heading), Math.cos(Math.atan2(target.x - r.x, target.z - r.z) - r.heading));
+      window.__pads[0].axes = [Math.max(-1, Math.min(1, -diff * 2.5)), 0, 0, 0];
+    }, 50);
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].shortcut, ms(5000), 'entrar al atajo');
+  await p.until(() => !window.leogames.scene.getScene('Kart').game3d.humans[0].shortcut, ms(15000), 'salir del atajo');
+  await p.page.evaluate(() => {
+    clearInterval(window.__bot);
+    window.__pads[0].axes = [0, 0, 0, 0];
+  });
+  assert.ok((await stickers(p.page)).includes('kart-atajo'), 'falta la calcomanía del atajo');
+
+  // El planeador: la rampa azul.
+  await place('const g = k.features.gliders[0]; return { ...k.track.pointAt(g.start - 10, 0), speed: 32 };');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].gliding, ms(6000), 'abrir el planeador');
+
+  // El túnel de agua: la hélice.
+  await place('const w = k.features.water; return { ...k.track.pointAt(w.from + 5, 0), speed: 20 };');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].underwater, ms(3000), 'meterse al agua');
+
+  // Poderes nuevos: estrella, bala y fantasma (le roba su poder a la compu).
+  const give = (item) => p.page.evaluate((it) => Object.assign(window.leogames.scene.getScene('Kart').game3d.humans[0], { item: it, itemUses: 1, rollMs: 0 }), item);
+  await give('star');
+  await p.tap(0, BUTTON.X);
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.humans[0].starMs > 0), 'sin estrella');
+  await give('bullet');
+  await p.tap(0, BUTTON.X);
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.humans[0].bulletMs > 0), 'sin bala');
+  // (En el mismo cuadro: si no, la compu dispara su cohete antes.)
+  const ghost = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    for (const r of k.racers) Object.assign(r, { starMs: 0, bulletMs: 0, item: null });
+    Object.assign(k.racers.find((r) => r.isCpu), { item: 'rocket', itemUses: 1, rollMs: 0 });
+    const me = Object.assign(k.humans[0], { item: 'ghost', itemUses: 1, rollMs: 0 });
+    k.useItem(me, k.ranking());
+    return { ghostMs: me.ghostMs, item: me.item };
+  });
+  assert.ok(ghost.ghostMs > 0 && ghost.item === 'rocket', JSON.stringify(ghost));
+  await p.page.evaluate(() => window.__release());
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Contrarreloj: sin compu ni cajitas; al llegar se guarda el récord y la siguiente vez sale el fantasma.
+test('karts locos: contrarreloj con récord y fantasma', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  // Es el quinto modo.
+  for (let i = 0; i < 4; i += 1) await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(10000), 'ver las pistas');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(20000), 'empezar el contrarreloj');
+  const setup = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    return { racers: k.racers.length, boxes: k.boxes.boxes.length, laps: k.laps };
+  });
+  assert.deepEqual(setup, { racers: 1, boxes: 0, laps: 3 });
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  await p.wait(2000);
+  // Ya en la última vuelta, antes de la meta.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const r = k.humans[0];
+    const spot = k.track.pointAt(k.track.count - 30, 0);
+    Object.assign(r, { lap: k.laps - 1, crossedHalf: true, x: spot.x, z: spot.z, index: spot.index, heading: spot.heading, speed: 30 });
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(30000), 'llegar (con la repetición)');
+  assert.ok((await stickers(p.page)).includes('kart-record'), 'falta la calcomanía del récord');
+  await p.page.evaluate(() => window.__release());
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'poder correr otra vez');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(10000), 'otra vez');
+  assert.ok(await p.page.evaluate(() => Boolean(window.leogames.scene.getScene('Kart').game3d.ghost)), 'no salió el fantasma');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('fútbol de bolitas: poderes, tiro especial, gol de oro, penales y copa', { timeout: ms(150000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(1);

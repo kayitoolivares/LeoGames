@@ -138,6 +138,28 @@ Abre http://localhost:5173 en Edge o Chrome.
   inflan (Fondo del mar), pelotas que botan —por abajo se pasa— (Ciudad de juguete) y bolas de lava (Volcán). Si te pegan das vueltas (la burbuja te
   protege) y saltando se esquivan. Los peligros son dibujos de Gemini (kart/peligros), menos el bloque del
   Castillo, que tiene su cara de enojado dibujada en el juego.
+  **Copa Sorpresa** (4 pistas nuevas con paisaje de Gemini): **Casa embrujada** (de noche, calabazas que brillan y
+  fantasmitas que cruzan), **Pastel de cumpleaños** (sube por un pastel gigante con velitas, regalos y globos; fresas
+  que ruedan), **Valle de los dinos** (helechos, huevos y dinosaurios que cruzan; un río) y **Circuito de las nubes**
+  (arcoíris encima del camino, dos planeadores y rayos que caen).
+  **Atajos secretos**: casi todas las pistas tienen uno; un letrero amarillo "¡Atajo!" avisa dónde hay un hueco en las
+  llantas: pegándote a esa orilla entras a un caminito de tierra que corta la curva (la compu también lo usa a veces).
+  **Rebufo**: ir pegadito detrás de otro kart un ratito da un turbito (sale viento a los lados). **Planeador**: las
+  rampas azules abren un ala delta y el kart planea despacito (se puede girar). **Agua**: algunas pistas tienen un túnel
+  de agua (y el Fondo del mar va todo bajo el agua): el kart saca su hélice, salen burbujas y los saltos flotan.
+  Poderes nuevos (dibujos de Gemini): ⭐ **estrella** (invencible, más rápido y tumba al que toques), 👻 **fantasma**
+  (te vuelves transparente, nada te pega y le robas su poder a otro), 💣 **bala** (maneja sola rapidísimo y tumba a
+  todos) y 🐝 **abeja** (vuela por encima de todo hasta el primero y le pica, y a los que encuentre en el camino).
+  **Contrarreloj** (el quinto modo): sin compu ni cajitas, 3 vueltas contra el reloj; se guarda el récord de cada
+  pista con la mejor vuelta, y la siguiente vez corre un **fantasma** transparente con la carrera del récord.
+  En las pantallas de escoger: **X** = velocidad (lento, normal, rapidísimo y **espejo**: las pistas al revés, se abre al
+  ganar una copa) y **Y** = clima (el de la pista, soleado, **lluvia** con charcos que te hacen resbalar, **nieve** o
+  **noche** con faros en los karts y lámparas junto al camino).
+  **Rivales con personalidad**: cada piloto de la compu maneja a su manera (veloz, tramposo, presumido que hace trucos
+  o tranquilo) y tiene un rival entre los jugadores: le echa más ganas si lo trae cerca y le dice cosas al rebasarlo,
+  al pegarle o al final. Un **narrador** (voz y letrero arriba) cuenta quién va primero, los atajos, los golpes grandes
+  y quién cruza la meta. Al terminar, **repetición** de la llegada en cámara lenta con cámaras de tele (A la brinca)
+  y una foto del podio. Chispas de colores al derrapar, salpicadas, rayitas de velocidad con el turbo y confeti en la meta.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
@@ -276,6 +298,8 @@ antes de cada publicación, y si alguna falla no se publica.
 - `tools/split-sheet.mjs`: parte una hoja de Gemini con varias poses en imágenes sueltas.
 - `src/games/brawl/`: Pelea en equipo (Phaser).
 - `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
+- `src/games/kart/`: Karts locos: además de lo de siempre, atajos (`shortcut.js`), clima (`weather.js`), contrarreloj y
+  fantasma (`ghost.js`), repetición de la llegada (`replay.js`) y pilotos con personalidad y narrador (`rivals.js`).
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha y uniformes (`field.js`), balón (`Ball.js`), jugadores
   (`FutbolPlayer.js`), la compu (`cpu.js`), canchas (`pitches.js`), poderes (`powers.js`), penales
   (`penalties.js`), público y narrador (`crowd.js`) y las pantallas de la Copa y del final (`screens.js`).

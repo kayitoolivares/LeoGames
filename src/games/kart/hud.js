@@ -77,13 +77,40 @@ const CSS = `
   transition: opacity 0.6s; }
 .kart-help.hidden { opacity: 0; }
 .kart-exit { position: absolute; bottom: 0; left: 50%; width: 200px; height: 6px; margin-left: -100px; }
+.kart-caption { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); max-width: 900px; text-align: center;
+  background: rgba(20, 17, 43, 0.82); padding: 6px 20px; border-radius: 14px; font-size: 24px; font-weight: 700; }
+.kart-caption:empty { display: none; }
+.kart-panel .speed { position: absolute; inset: 0; opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 58%, rgba(255, 255, 255, 0.28) 0deg 1.5deg, transparent 1.5deg 11deg);
+  -webkit-mask-image: radial-gradient(circle at 50% 58%, transparent 36%, #000 78%); mask-image: radial-gradient(circle at 50% 58%, transparent 36%, #000 78%); }
+.kart-panel .speed.on { opacity: 1; }
+.kart-panel .water { position: absolute; inset: 0; opacity: 0; transition: opacity 0.4s; pointer-events: none;
+  background: linear-gradient(rgba(40, 150, 230, 0.42), rgba(20, 90, 170, 0.3)),
+    repeating-radial-gradient(circle at 50% -30%, rgba(255, 255, 255, 0.12) 0 6px, transparent 6px 40px); }
+.kart-panel .water.on { opacity: 1; }
+.kart-panel .rain { position: absolute; inset: 0; pointer-events: none; background-color: rgba(30, 40, 70, 0.22);
+  background-image: repeating-linear-gradient(104deg, rgba(210, 225, 255, 0.35) 0 2px, transparent 2px 26px);
+  background-size: 100% 160px; animation: kart-rain 0.35s linear infinite; }
+@keyframes kart-rain { to { background-position: -40px 160px; } }
+.kart-replay { display: none; position: absolute; inset: 0; pointer-events: none; }
+.kart-replay::before, .kart-replay::after { content: ''; position: absolute; left: 0; right: 0; height: 64px; background: #000; }
+.kart-replay::before { top: 0; }
+.kart-replay::after { bottom: 0; }
+.kart-replay span { position: absolute; top: 82px; left: 28px; font-size: 30px; font-weight: 800; }
+.kart-replay span::before { content: ''; display: inline-block; width: 18px; height: 18px; margin-right: 10px; border-radius: 50%;
+  background: #ff3b3b; animation: kart-blink 0.8s steps(2) infinite; }
+.kart-replay p { position: absolute; bottom: 74px; left: 0; right: 0; text-align: center; font-size: 20px; margin: 0; }
+@keyframes kart-blink { to { opacity: 0.2; } }
+.kart-hud.replay .kart-panel, .kart-hud.replay .kart-help, .kart-hud.replay .kart-center { display: none; }
+.kart-hud.replay .kart-replay { display: block; }
 .kart-exit > div { height: 100%; width: 0; background: #fff; border-radius: 3px; }
 `;
 
 
 export class KartHud {
   // `views`: [{ x, y, w, h, scale, kind: 'player' | 'map' }] en pixeles del escenario de 1280x720.
-  constructor(stage, views) {
+  // `rain`: lluvia encima de la pantalla de cada jugador.
+  constructor(stage, views, { rain = false } = {}) {
     if (!document.getElementById(STYLE_ID)) {
       const style = document.createElement('style');
       style.id = STYLE_ID;
@@ -102,7 +129,7 @@ export class KartHud {
       panel.innerHTML =
         view.kind === 'map'
           ? '<div class="map-title">Mapa</div>'
-          : '<div class="ink"></div><canvas class="minimap" width="190" height="130"></canvas><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="coins"></div><div class="nitro"></div><div class="msg"></div>';
+          : `${rain ? '<div class="rain"></div>' : ''}<div class="water"></div><div class="speed"></div><div class="ink"></div><canvas class="minimap" width="190" height="130"></canvas><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="coins"></div><div class="nitro"></div><div class="msg"></div>`;
       this.el.append(panel);
       const part = (name) => panel.querySelector(`.${name}`);
       return {
@@ -114,6 +141,8 @@ export class KartHud {
         msg: part('msg'),
         coins: part('coins'),
         inkEl: part('ink'),
+        speedEl: part('speed'),
+        waterEl: part('water'),
         map: part('minimap')?.getContext('2d'),
         last: {},
       };
@@ -121,11 +150,13 @@ export class KartHud {
 
     this.el.insertAdjacentHTML(
       'beforeend',
-      `<div class="kart-flash"></div><div class="kart-center"></div><div class="kart-results" hidden></div>
+      `<div class="kart-flash"></div><div class="kart-center"></div><div class="kart-caption"></div>
+       <div class="kart-replay"><span>REPETICIÓN</span><p>A = brincar</p></div><div class="kart-results" hidden></div>
        <div class="kart-help">A = acelerar  ·  B = frenar  ·  LB = derrapar  ·  X = lanzar poder  ·  RB = nitro  ·  Bloquecito: Y = número  ·  Mantén LB + RB + Y = salir</div>
        <div class="kart-exit"><div></div></div>`,
     );
     this.center = this.el.querySelector('.kart-center');
+    this.caption = this.el.querySelector('.kart-caption');
     this.flashEl = this.el.querySelector('.kart-flash');
     this.results = this.el.querySelector('.kart-results');
     this.help = this.el.querySelector('.kart-help');
@@ -137,7 +168,7 @@ export class KartHud {
   setPanel(i, data) {
     const panel = this.panels[i];
     for (const [key, value] of Object.entries(data)) {
-      if (key === 'rolling' || key === 'ink' || panel.last[key] === value || !panel[key]) continue;
+      if (key === 'rolling' || key === 'ink' || key === 'speed' || key === 'water' || panel.last[key] === value || !panel[key]) continue;
       panel.last[key] = value;
       panel[key].innerHTML = value;
     }
@@ -145,6 +176,15 @@ export class KartHud {
     if (panel.inkEl && panel.last.ink !== data.ink) {
       panel.last.ink = data.ink;
       panel.inkEl.classList.toggle('on', Boolean(data.ink));
+    }
+    if (panel.waterEl && panel.last.water !== Boolean(data.water)) {
+      panel.last.water = Boolean(data.water);
+      panel.waterEl.classList.toggle('on', panel.last.water);
+    }
+    // Rayitas de velocidad con turbo, estrella o bala.
+    if (panel.speedEl && panel.last.speed !== Boolean(data.speed)) {
+      panel.last.speed = Boolean(data.speed);
+      panel.speedEl.classList.toggle('on', panel.last.speed);
     }
   }
 
@@ -197,6 +237,16 @@ export class KartHud {
     el.style.opacity = '0';
   }
 
+  // El letrero del narrador (arriba, en medio). '' lo quita.
+  setCaption(text) {
+    if (this.caption.textContent !== text) this.caption.textContent = text;
+  }
+
+  // La repetición de la llegada: franjas de cine y se esconden los paneles.
+  setReplay(on) {
+    this.el.classList.toggle('replay', on);
+  }
+
   setCenter(text) {
     if (this.lastCenter === text) return;
     this.lastCenter = text;
@@ -239,7 +289,7 @@ export class KartHud {
         (row, i) => `<div class="standing${i === 0 ? ' first' : ''}"><span>${i + 1}°</span>
           ${row.image ? `<img src="${row.image}" alt="">` : ''}
           <span class="who"><span style="color:${row.color}">${row.label}</span> · ${row.name}</span>
-          <span class="gain">+${row.gained}</span><b>${row.total}</b></div>`,
+          <span class="gain">${row.gainText ?? `+${row.gained}`}</span><b>${row.total}</b></div>`,
       )
       .join('');
     const cup = trophy ? (trophy.image ? `<img class="cup" src="${trophy.image}" alt="">` : `<span class="emoji">${trophy.emoji}</span>`) : '';

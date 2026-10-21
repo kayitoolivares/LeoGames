@@ -118,6 +118,10 @@ export function addScenery(scene, track, kind) {
   else if (kind === 'sea') return addSea(scene, track);
   else if (kind === 'toys') addToys(scene, track);
   else if (kind === 'volcano') return addVolcano(scene, track);
+  else if (kind === 'haunted') return addHaunted(scene, track);
+  else if (kind === 'party') return addParty(scene, track);
+  else if (kind === 'dinos') addDinos(scene, track);
+  else if (kind === 'clouds') addClouds(scene, track);
   return null;
 }
 
@@ -403,12 +407,228 @@ function addVolcano(scene, track) {
   };
 }
 
+// Casa embrujada: la casa en medio (con ventanas que brillan), calabazas con su lucecita, árboles secos y
+// lucecitas que flotan.
+function addHaunted(scene, track) {
+  const wall = new THREE.MeshLambertMaterial({ color: 0x4a3a6a });
+  const roof = new THREE.MeshLambertMaterial({ color: 0x2a1f3f });
+  const light = new THREE.MeshBasicMaterial({ color: 0xffd84d });
+  const house = new THREE.Group();
+  const add = (geometry, material, x, y, z, turn = 0) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.rotation.y = turn;
+    house.add(mesh);
+    return mesh;
+  };
+  add(new THREE.BoxGeometry(26, 14, 18), wall, 0, 7, 0);
+  add(new THREE.ConeGeometry(18, 10, 4), roof, 0, 19, 0, Math.PI / 4);
+  add(new THREE.CylinderGeometry(4, 4, 26, 8), wall, 11, 13, 7);
+  add(new THREE.ConeGeometry(5.5, 9, 8), roof, 11, 30.5, 7);
+  for (const [x, y] of [[-7, 9], [0, 9], [7, 9], [-7, 4], [7, 4]]) {
+    add(new THREE.PlaneGeometry(3, 3.4), light, x, y, 9.05);
+    add(new THREE.PlaneGeometry(3, 3.4), light, x, y, -9.05, Math.PI);
+  }
+  add(new THREE.PlaneGeometry(2.4, 2.8), light, 11, 20, 11.05);
+  scene.add(house);
+
+  const spots = roadside(track, 14, 3);
+  const pumpkins = new THREE.InstancedMesh(new THREE.SphereGeometry(1.2, 12, 8), new THREE.MeshLambertMaterial({ color: 0xff8a1e }), spots.length);
+  const matrix = new THREE.Matrix4();
+  const place = new THREE.Vector3();
+  const size = new THREE.Vector3(1.3, 0.85, 1.3);
+  const still = new THREE.Quaternion();
+  const glows = [];
+  spots.forEach(({ x, y, z }, i) => {
+    pumpkins.setMatrixAt(i, matrix.compose(place.set(x, y + 0.9, z), still, size));
+    if (i % 2 === 0) {
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xffb347, blending: THREE.AdditiveBlending, depthWrite: false }));
+      glow.position.set(x, y + 1.2, z);
+      glow.scale.setScalar(3);
+      scene.add(glow);
+      glows.push(glow);
+    }
+  });
+  // Árboles secos: tronco y dos ramas chuecas.
+  const trees = roadside(track, 34, 10);
+  const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.35, 0.6, 8, 6), new THREE.MeshLambertMaterial({ color: 0x3a2a2a }), trees.length * 3);
+  const dummy = new THREE.Object3D();
+  trees.forEach(({ x, y, z }, i) => {
+    dummy.position.set(x, y + 4, z);
+    dummy.rotation.set(0, i, 0);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    trunk.setMatrixAt(i * 3, dummy.matrix);
+    for (const [k, side] of [[1, 1], [2, -1]]) {
+      dummy.position.set(x + side * 1.4, y + 5 + k, z);
+      dummy.rotation.set(0, i, side * 0.9);
+      dummy.scale.set(0.6, 0.45, 0.6);
+      dummy.updateMatrix();
+      trunk.setMatrixAt(i * 3 + k, dummy.matrix);
+    }
+  });
+  scene.add(pumpkins, trunk);
+  const wisps = new Snowfall(scene, track, { count: 120, speed: 1.2, size: 1.4, color: 0xc8f0ff, rise: true, glow: true });
+  let time = 0;
+  return {
+    update(dt) {
+      time += dt;
+      wisps.update(dt);
+      glows.forEach((glow, i) => glow.scale.setScalar(2.8 + Math.sin(time * 6 + i) * 0.4));
+    },
+  };
+}
+
+// Pastel de cumpleaños: un pastel gigante en medio con velitas, regalos junto al camino y globos que flotan.
+function addParty(scene, track) {
+  const cake = new THREE.Group();
+  const tiers = [[24, 8, 0xff9ec8], [17, 7, 0xfff0d6], [10, 6, 0xff7fb0]];
+  let y = 0;
+  for (const [radius, height, color] of tiers) {
+    const tier = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, 28), new THREE.MeshLambertMaterial({ color }));
+    tier.position.y = y + height / 2;
+    const frosting = new THREE.Mesh(new THREE.TorusGeometry(radius, 0.9, 6, 28), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    frosting.rotation.x = Math.PI / 2;
+    frosting.position.y = y + height;
+    cake.add(tier, frosting);
+    y += height;
+  }
+  const flames = [];
+  const candleColors = [0x3fa7ff, 0xffd02a, 0x4cd97b, 0xb07cff, 0xff5a5f];
+  for (let k = 0; k < 5; k += 1) {
+    const angle = (k / 5) * Math.PI * 2;
+    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 6, 8), new THREE.MeshLambertMaterial({ color: candleColors[k] }));
+    candle.position.set(Math.cos(angle) * 6, y + 3, Math.sin(angle) * 6);
+    const flame = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xffb347, blending: THREE.AdditiveBlending, depthWrite: false }));
+    flame.position.set(candle.position.x, y + 7, candle.position.z);
+    flame.scale.setScalar(3);
+    cake.add(candle, flame);
+    flames.push(flame);
+  }
+  cake.position.set(0, 0, -10);
+  scene.add(cake);
+
+  const spots = roadside(track, 16, 4);
+  const boxes = new THREE.InstancedMesh(new THREE.BoxGeometry(2.6, 2.6, 2.6), new THREE.MeshLambertMaterial(), spots.length);
+  const ribbons = new THREE.InstancedMesh(new THREE.BoxGeometry(2.7, 2.7, 0.5), new THREE.MeshLambertMaterial({ color: 0xffd02a }), spots.length);
+  const colors = [0x3fa7ff, 0xff5a5f, 0x4cd97b, 0xb07cff];
+  const matrix = new THREE.Matrix4();
+  const color = new THREE.Color();
+  spots.forEach(({ x, y: ground, z }, i) => {
+    boxes.setMatrixAt(i, matrix.makeTranslation(x, ground + 1.3, z));
+    boxes.setColorAt(i, color.setHex(colors[i % colors.length]));
+    ribbons.setMatrixAt(i, matrix.makeTranslation(x, ground + 1.3, z));
+  });
+  scene.add(boxes, ribbons);
+  // Globos: bolitas de colores que suben y bajan despacito.
+  const air = roadside(track, 22, 8);
+  const balloons = new THREE.InstancedMesh(new THREE.SphereGeometry(1.3, 10, 8), new THREE.MeshLambertMaterial(), air.length);
+  air.forEach((_, i) => balloons.setColorAt(i, color.setHex([0xff5a5f, 0xffd02a, 0x3fa7ff, 0xff9ec8, 0x4cd97b][i % 5])));
+  scene.add(balloons);
+  const dummy = new THREE.Object3D();
+  let time = 0;
+  const bob = () => {
+    air.forEach(({ x, y: ground, z }, i) => {
+      dummy.position.set(x, ground + 7 + Math.sin(time * 1.2 + i) * 0.8, z);
+      dummy.scale.set(1, 1.2, 1);
+      dummy.updateMatrix();
+      balloons.setMatrixAt(i, dummy.matrix);
+    });
+    balloons.instanceMatrix.needsUpdate = true;
+  };
+  bob();
+  return {
+    update(dt) {
+      time += dt;
+      bob();
+      flames.forEach((flame, i) => flame.scale.setScalar(2.8 + Math.sin(time * 9 + i * 1.3) * 0.4));
+    },
+  };
+}
+
+// Valle de los dinos: helechos y huevos gigantes junto al camino, y unos dinosaurios de cuello largo a lo lejos.
+function addDinos(scene, track) {
+  const spots = roadside(track, 10, 4);
+  const ferns = new THREE.InstancedMesh(new THREE.ConeGeometry(1.8, 3.6, 7), new THREE.MeshLambertMaterial(), spots.length);
+  const greens = [0x2e8b3a, 0x4cb050, 0x6abf4b];
+  const matrix = new THREE.Matrix4();
+  const color = new THREE.Color();
+  spots.forEach(({ x, y, z }, i) => {
+    ferns.setMatrixAt(i, matrix.makeTranslation(x, y + 1.8, z));
+    ferns.setColorAt(i, color.setHex(greens[i % greens.length]));
+  });
+  const nests = roadside(track, 40, 7);
+  const eggs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 12, 10), new THREE.MeshLambertMaterial({ color: 0xfff6e0 }), nests.length);
+  const place = new THREE.Vector3();
+  const still = new THREE.Quaternion();
+  const size = new THREE.Vector3(1.3, 1.8, 1.3);
+  nests.forEach(({ x, y, z }, i) => eggs.setMatrixAt(i, matrix.compose(place.set(x, y + 1.6, z), still, size)));
+  scene.add(ferns, eggs);
+  // Dinosaurios de cuello largo, hechos de figuras, lejos de la pista.
+  const skin = new THREE.MeshLambertMaterial({ color: 0x5aa86a });
+  const belly = new THREE.MeshLambertMaterial({ color: 0x8ad08a });
+  for (const { x, y, z, turn } of track.scatter(3, 21)) {
+    const dino = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(5, 14, 10), skin);
+    body.scale.set(1.5, 1, 1);
+    body.position.y = 9;
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.8, 14, 8), skin);
+    neck.position.set(8, 16, 0);
+    neck.rotation.z = -0.5;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(2, 10, 8), belly);
+    head.position.set(11.5, 22.5, 0);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(1.8, 11, 8), skin);
+    tail.position.set(-10, 8, 0);
+    tail.rotation.z = Math.PI / 2 + 0.3;
+    dino.add(body, neck, head, tail);
+    for (const [lx, lz] of [[-3.5, -2.5], [-3.5, 2.5], [3.5, -2.5], [3.5, 2.5]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 6, 8), skin);
+      leg.position.set(lx, 3, lz);
+      dino.add(leg);
+    }
+    dino.position.set(x, y, z);
+    dino.rotation.y = turn;
+    scene.add(dino);
+  }
+}
+
+// Circuito de las nubes: nubes esponjosas junto al camino y arcoíris que pasan por encima de la pista.
+function addClouds(scene, track) {
+  const spots = roadside(track, 9, 6);
+  const puffs = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }), spots.length * 3);
+  const dummy = new THREE.Object3D();
+  spots.forEach(({ x, y, z }, i) => {
+    for (let k = 0; k < 3; k += 1) {
+      dummy.position.set(x + (k - 1) * 2.2, y + 1 + (k === 1 ? 1 : 0), z + (k % 2) * 1.2);
+      dummy.scale.setScalar(2 + (k === 1 ? 1 : 0) + (i % 3) * 0.4);
+      dummy.updateMatrix();
+      puffs.setMatrixAt(i * 3 + k, dummy.matrix);
+    }
+  });
+  scene.add(puffs);
+  // Arcoíris: medios aros de colores que cruzan el camino.
+  const bands = [0xff5a5f, 0xff9a3c, 0xffd02a, 0x4cd97b, 0x3fa7ff, 0xb07cff];
+  for (const at of [0.08, 0.42, 0.68]) {
+    const spot = track.pointAt(Math.round(at * track.count));
+    const arch = new THREE.Group();
+    bands.forEach((band, k) => {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(track.wallDistance + 4 - k * 0.7, 0.36, 6, 28, Math.PI), new THREE.MeshBasicMaterial({ color: band }));
+      arch.add(ring);
+    });
+    arch.position.set(spot.x, spot.y, spot.z);
+    arch.rotation.y = spot.heading;
+    scene.add(arch);
+  }
+}
+
 // Lugares a los lados del camino (afuera de las llantas), cada `every` muestras y alternando de lado (con la altura
 // del piso ahí, por las lomas).
 function roadside(track, every, gap) {
   const spots = [];
   for (let i = 10, side = 1; i < track.count; i += every, side = -side) {
     const spot = track.pointAt(i, side * (track.wallDistance + gap));
+    // (Sin tapar el atajo.)
+    if (track.blocked(spot.x, spot.z)) continue;
     spots.push({ ...spot, y: track.groundHeight(spot.x, spot.z) });
   }
   return spots;

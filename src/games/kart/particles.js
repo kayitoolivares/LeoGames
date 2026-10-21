@@ -7,6 +7,8 @@ const KINDS = {
   dust: { max: 160, size: 1.8, additive: false, gravity: -1.5 },
   // Chispas al rozar las llantas, estrellitas al pegarle a alguien, brillitos de las monedas.
   spark: { max: 160, size: 0.7, additive: true, gravity: 14 },
+  // Chispas del derrape (azules, naranjas o moradas) que salen de las llantas de atrás.
+  drift: { max: 240, size: 0.55, additive: true, gravity: 6 },
   // Confeti de la premiación: de colores, cae despacito.
   confetti: { max: 260, size: 0.55, additive: false, gravity: 2.2 },
 };

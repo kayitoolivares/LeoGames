@@ -49,10 +49,10 @@ const GAMES = {
     objetos: { kind: 'cutout', max: 128, names: ['caja', 'barril', 'jarron', 'pizza', 'helado', 'pollo'] },
   },
   kart: {
-    objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos'] },
-    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura'] },
-    fondos: { kind: 'background', names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes'] },
-    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto', 'roca', 'selva', 'alfombra'] },
+    objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja'] },
+    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura', 'copa-sorpresa'] },
+    fondos: { kind: 'background', names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes', 'embrujada', 'pastel', 'dinos', 'nubes'] },
+    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto', 'roca', 'selva', 'alfombra', 'betun', 'nube'] },
     calcomanias: {
       kind: 'cutout',
       max: 256,
@@ -61,7 +61,7 @@ const GAMES = {
     peligros: {
       kind: 'cutout',
       max: 256,
-      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota'],
+      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota', 'espectro', 'fresa', 'dino', 'relampago'],
     },
   },
   futbol: {

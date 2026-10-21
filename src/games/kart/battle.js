@@ -262,6 +262,7 @@ export class Battle {
       const leader = rivals.sort((a, b) => b.balloons - a.balloons)[0];
       if (leader) game.projectiles.addComet(racer, leader);
     } else if (item === 'lightning') game.strikeLightning(racer);
+    else if (item === 'star' || item === 'ghost') game.usePower(racer, item);
     else if (item === 'ink') {
       for (const other of rivals) {
         other.inkMs = INK_MS;

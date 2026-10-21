@@ -44,6 +44,8 @@ const CONTROL_POINTS = [
 //   sea: del lado de abajo hay mar (ahí no se ponen árboles)
 //   groundMap / groundTint: textura del piso (y de qué color se tiñe) · roadMap: textura del camino (asfalto)
 //   plain: camino liso, sin la textura (de plástico, como el de los carritos de juguete)
+//   gaps: huecos en las llantas [{ side, from, to }] (muestras; side 1 o -1), para entrar a un atajo
+//   clear: caminos donde no se pone nada [{ x1, z1, x2, z2, radius }] (el atajo)
 export class Track {
   constructor({ roadWidth = 14, scale = 1, barriers = false, points = CONTROL_POINTS, ground = 0x6abf4b, snowy = false, theme = {} } = {}) {
     this.roadWidth = roadWidth;
@@ -308,10 +310,30 @@ export class Track {
       const z = (random() - 0.5) * 240 * this.scale;
       if (this.closest(x, z).distance < clearance) continue;
       if (avoid && Math.hypot(x - avoid.x, z - avoid.z) < avoid.radius) continue;
+      if (this.blocked(x, z)) continue;
       if (this.theme.maxZ !== undefined && z > this.theme.maxZ) continue;
       spots.push({ x, z, y: this.groundHeight(x, z), scale: 0.8 + random() * 0.6, turn: random() * Math.PI * 2 });
     }
     return spots;
+  }
+
+  // ¿Ahí va un camino que hay que dejar libre (el atajo)?
+  blocked(x, z) {
+    return (this.theme.clear ?? []).some(({ x1, z1, x2, z2, radius }) => {
+      const dx = x2 - x1;
+      const dz = z2 - z1;
+      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / (dx * dx + dz * dz)));
+      return Math.hypot(x1 + dx * t - x, z1 + dz * t - z) < radius;
+    });
+  }
+
+  // ¿Esta llanta va en un hueco (la entrada o salida de un atajo)?
+  inGap(i, side) {
+    return (this.theme.gaps ?? []).some((gap) => {
+      if (gap.side !== side) return false;
+      const offset = (((i - gap.from) % this.count) + this.count) % this.count;
+      return offset <= (((gap.to - gap.from) % this.count) + this.count) % this.count;
+    });
   }
 
   // Lo que hay alrededor del camino según el tema: pinos, palmeras o paletas gigantes.
@@ -426,6 +448,7 @@ export class Track {
     let n = 0;
     for (let i = 0; i < this.count; i += step) {
       for (const side of [-1, 1]) {
+        if (this.inGap(i, side)) continue;
         const spot = this.pointAt(i, side * (this.wallDistance + 0.9));
         dummy.position.set(spot.x, spot.y + 0.55, spot.z);
         dummy.updateMatrix();
@@ -434,6 +457,7 @@ export class Track {
         n += 1;
       }
     }
+    tires.count = n;
     return tires;
   }
 }

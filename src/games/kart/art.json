@@ -1,8 +1,12 @@
 {
   "objetos": [
+    "abeja",
+    "bala",
     "burbuja",
     "cohete",
     "cometa",
+    "estrella",
+    "fantasma",
     "globos",
     "platano",
     "platanos3",
@@ -13,16 +17,21 @@
   "copas": [
     "copa-aventura",
     "copa-estrella",
-    "copa-hoja"
+    "copa-hoja",
+    "copa-sorpresa"
   ],
   "fondos": [
     "arena",
     "castillo",
+    "dinos",
     "dulces",
+    "embrujada",
     "espacio",
     "juguetes",
     "mar",
     "nieve",
+    "nubes",
+    "pastel",
     "playa",
     "pradera",
     "selva",
@@ -32,8 +41,10 @@
     "alfombra",
     "arena",
     "asfalto",
+    "betun",
     "dulce",
     "nieve",
+    "nube",
     "pasto",
     "roca",
     "selva"
@@ -53,12 +64,16 @@
   "peligros": [
     "bola-nieve",
     "cangrejo",
+    "dino",
     "dona",
+    "espectro",
+    "fresa",
     "lava",
     "meteorito",
     "oveja",
     "pelota",
     "pez-globo",
+    "relampago",
     "tronco"
   ]
 }

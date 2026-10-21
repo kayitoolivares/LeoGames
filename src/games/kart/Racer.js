@@ -38,6 +38,21 @@ export const THROW_POSE_MS = 400;
 // Cada moneda da un poquito más de velocidad; un golpe tira 3.
 const COIN_BOOST = 0.01;
 const COINS_LOST = 3;
+// Planeador (rampas azules): cae despacito y se puede girar como en el piso.
+const GLIDE_GRAVITY = 0.32;
+const GLIDE_MAX_FALL = 5;
+// Bajo el agua: un poco más lento y los saltos flotan.
+const WATER_SPEED = 0.94;
+const WATER_GRAVITY = 0.45;
+// Estrella: invencible, más rápido y tumba al que toca. Bala: maneja sola, rapidísimo. Fantasma: nadie le pega.
+export const STAR_MS = 7000;
+const STAR_SPEED = 1.3;
+export const BULLET_MS = 4000;
+const BULLET_SPEED = 1.75;
+export const GHOST_MS = 4500;
+// Un charco (con lluvia): se resbala tantito de lado.
+const SLIP_MS = 650;
+const SLIP_TURN = 2.4;
 
 const shieldGeometry = new THREE.SphereGeometry(2.7, 16, 12);
 let sparkTexture = null;
@@ -98,6 +113,19 @@ export class Racer {
       this.object.add(sprite);
       return sprite;
     });
+    // El planeador (arriba del kart), la hélice (atrás, bajo el agua), el brillo de la estrella y la bala.
+    this.wing = buildWing(setup.color);
+    this.object.add(this.wing);
+    this.propeller = buildPropeller();
+    this.object.add(this.propeller);
+    this.starGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkMap(), color: 0xffe14d, blending: THREE.AdditiveBlending, depthWrite: false }));
+    this.starGlow.scale.setScalar(7);
+    this.starGlow.position.y = 1.2;
+    this.object.add(this.starGlow);
+    this.bullet = buildBullet();
+    this.object.add(this.bullet);
+    // Qué tan rápido es la carrera (lento, normal o rapidísimo): lo pone el juego.
+    this.speedClass = 1;
     this.reset(0, 0, 0, 0);
   }
 
@@ -148,6 +176,16 @@ export class Racer {
     this.visualYaw = 0;
     this.trick = false;
     this.trickAt = 0;
+    this.gliding = false;
+    this.rampGlider = false;
+    this.underwater = false;
+    this.shortcut = false;
+    this.starMs = 0;
+    this.bulletMs = 0;
+    this.ghostMs = 0;
+    this.slipMs = 0;
+    this.slipDir = 0;
+    this.draftMs = 0;
     // Lo que pasó este cuadro (mini turbo, truco...), para que el juego ponga sonidos y letreros.
     this.events = [];
   }
@@ -169,13 +207,28 @@ export class Racer {
     return DRIFT_LEVEL_MS.filter((ms) => this.driftMs >= ms).length;
   }
 
-  // Sale volando de una rampa con esa velocidad hacia arriba.
-  launch(vy) {
+  // Sale volando de una rampa con esa velocidad hacia arriba (con `glide`, abre el planeador).
+  launch(vy, glide = false) {
     if (this.drifting) this.endDrift(false);
     this.vy = vy;
     this.flying = true;
     this.trick = false;
-    this.events.push('jump');
+    this.gliding = glide;
+    this.events.push(glide ? 'glide' : 'jump');
+  }
+
+  // Con estrella, bala o fantasma no le pasa nada.
+  get invincible() {
+    return this.starMs > 0 || this.bulletMs > 0 || this.ghostMs > 0;
+  }
+
+  // Pisó un charco: se resbala un poquito hacia un lado.
+  slip() {
+    if (this.slipMs > 0 || this.invincible || this.airborne) return false;
+    this.slipMs = SLIP_MS;
+    this.slipDir = Math.random() < 0.5 ? -1 : 1;
+    if (this.drifting) this.endDrift(true);
+    return true;
   }
 
   // Termina el derrape: si juntó chispas (y no fue por un golpe), turbito.
@@ -200,6 +253,7 @@ export class Racer {
 
   // Le pega un poder: si trae burbuja se la revienta; si no, da vueltas y se frena.
   hit() {
+    if (this.invincible) return false;
     if (this.shieldMs > 0) {
       this.shieldMs = 0;
       return false;
@@ -226,6 +280,10 @@ export class Racer {
     this.shrinkMs = Math.max(0, this.shrinkMs - dtMs);
     this.inkMs = Math.max(0, this.inkMs - dtMs);
     this.throwMs = Math.max(0, this.throwMs - dtMs);
+    this.starMs = Math.max(0, this.starMs - dtMs);
+    this.bulletMs = Math.max(0, this.bulletMs - dtMs);
+    this.ghostMs = Math.max(0, this.ghostMs - dtMs);
+    this.slipMs = Math.max(0, this.slipMs - dtMs);
     if (this.rollMs > 0) {
       this.rollMs = Math.max(0, this.rollMs - dtMs);
       if (this.rollMs === 0) {
@@ -251,10 +309,17 @@ export class Racer {
       this.boost(NITRO_FACTOR, NITRO_MS);
     }
 
-    const { maxSpeed, accel, turn } = this.stats;
+    const { turn } = this.stats;
+    const maxSpeed = this.stats.maxSpeed * this.speedClass;
+    const accel = this.stats.accel * this.speedClass;
     const coins = 1 + COIN_BOOST * this.coins;
-    const top = maxSpeed * topFactor * coins * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad ? this.stats.offroad : 1) * (this.shrinkMs > 0 ? SHRINK_SPEED : 1);
-    if (this.boostMs > 0) {
+    const power = this.bulletMs > 0 ? BULLET_SPEED : this.starMs > 0 ? STAR_SPEED : 1;
+    const top =
+      maxSpeed * topFactor * coins * power * (this.boostMs > 0 ? this.boostFactor : 1) * (offroad && this.starMs === 0 ? this.stats.offroad : 1) *
+      (this.shrinkMs > 0 ? SHRINK_SPEED : 1) * (this.underwater ? WATER_SPEED : 1);
+    if (this.bulletMs > 0 || this.starMs > 0) {
+      this.speed = approach(this.speed, top, accel * 3 * dt);
+    } else if (this.boostMs > 0) {
       this.speed = approach(this.speed, top, accel * 2 * dt);
     } else if (gas > 0.1) {
       const target = top * gas;
@@ -283,8 +348,10 @@ export class Racer {
     }
 
     // Parado no gira; en reversa el volante se invierte, como un carro de verdad. En el aire casi no gira.
-    const grip = Math.min(1, Math.abs(this.speed) / 10) * (this.speed < 0 ? -1 : 1) * (air ? AIR_STEER : 1);
-    this.heading -= turning * turn * grip * dt;
+    const grip = Math.min(1, Math.abs(this.speed) / 10) * (this.speed < 0 ? -1 : 1) * (air && !this.gliding ? AIR_STEER : 1);
+    this.heading -= turning * turn * grip * dt * (this.slipMs > 0 ? 0.4 : 1);
+    // En un charco se va de lado solito.
+    if (this.slipMs > 0) this.heading += this.slipDir * SLIP_TURN * (this.slipMs / SLIP_MS) * dt;
     this.x += Math.sin(this.heading) * this.speed * dt;
     this.z += Math.cos(this.heading) * this.speed * dt;
 
@@ -295,12 +362,14 @@ export class Racer {
         this.trickAt = performance.now();
         this.events.push('trick');
       }
-      this.vy -= GRAVITY * dt;
+      this.vy -= GRAVITY * (this.gliding ? GLIDE_GRAVITY : 1) * (this.underwater ? WATER_GRAVITY : 1) * dt;
+      if (this.gliding) this.vy = Math.max(this.vy, -GLIDE_MAX_FALL);
       this.y += this.vy * dt;
       if (this.y <= this.floor) {
         this.y = this.floor;
         this.vy = 0;
         this.flying = false;
+        this.gliding = false;
         if (this.trick) this.boost(TRICK_BOOST.factor, TRICK_BOOST.ms);
         this.trick = false;
         this.events.push('land');
@@ -312,6 +381,7 @@ export class Racer {
 
   // Lo encogió un rayo (la burbuja lo protege). Devuelve true si sí lo encogió.
   shrink() {
+    if (this.invincible) return false;
     if (this.shieldMs > 0) {
       this.shieldMs = 0;
       return false;
@@ -347,7 +417,81 @@ export class Racer {
     if (this.flame.visible) this.flame.scale.setScalar(0.8 + Math.sin(timeMs / 30) * 0.25);
     // La burbuja parpadea cuando está por acabarse.
     this.shield.visible = this.shieldMs > 0 && (this.shieldMs > 1500 || Math.floor(this.shieldMs / 120) % 2 === 0);
+    // El planeador se inclina con el volante; la hélice da vueltas bajo el agua.
+    this.wing.visible = this.gliding;
+    this.wing.rotation.z = this.steerInput * 0.35;
+    this.propeller.visible = this.underwater;
+    if (this.propeller.visible) this.propeller.rotation.z = timeMs / 40;
+    // Estrella: brillo de colores que cambia. Fantasma: se ve y no se ve.
+    this.starGlow.visible = this.starMs > 0;
+    if (this.starGlow.visible) this.starGlow.material.color.setHSL((timeMs / 400) % 1, 1, 0.6);
+    this.bullet.visible = this.bulletMs > 0;
+    this.object.visible = this.ghostMs === 0 || Math.floor(timeMs / 90) % 3 !== 0;
   }
+}
+
+// Planeador: un ala delta del color del kart con dos palitos.
+function buildWing(color) {
+  const wing = new THREE.Group();
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 1.6);
+  shape.lineTo(3.4, -1.2);
+  shape.lineTo(0, -0.5);
+  shape.lineTo(-3.4, -1.2);
+  shape.closePath();
+  const sail = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshLambertMaterial({ color, side: THREE.DoubleSide }));
+  sail.rotation.x = -Math.PI / 2;
+  sail.position.y = 3.2;
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.08, 2.6), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+  stripe.position.set(0, 3.25, 0.2);
+  const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x5a4a3a });
+  for (const x of [-0.8, 0.8]) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 5), poleMaterial);
+    pole.position.set(x, 2.1, -0.2);
+    wing.add(pole);
+  }
+  wing.add(sail, stripe);
+  wing.visible = false;
+  return wing;
+}
+
+// Hélice: tres aspas atrás del kart.
+function buildPropeller() {
+  const propeller = new THREE.Group();
+  const blade = new THREE.BoxGeometry(0.2, 1.1, 0.08).translate(0, 0.55, 0);
+  const material = new THREE.MeshLambertMaterial({ color: 0xffd02a });
+  for (let k = 0; k < 3; k += 1) {
+    const mesh = new THREE.Mesh(blade, material);
+    mesh.rotation.z = (k / 3) * Math.PI * 2;
+    propeller.add(mesh);
+  }
+  propeller.position.set(0, 0.8, -1.9);
+  propeller.visible = false;
+  return propeller;
+}
+
+// Bala: un proyectil negro gigante con ojos enojados que tapa al kart.
+function buildBullet() {
+  const bullet = new THREE.Group();
+  const black = new THREE.MeshLambertMaterial({ color: 0x24202e });
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 3.6, 16).rotateX(Math.PI / 2), black);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), black);
+  nose.position.z = 1.8;
+  const white = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const pupil = new THREE.MeshBasicMaterial({ color: 0x1b1530 });
+  for (const x of [-0.6, 0.6]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), white);
+    eye.position.set(x, 0.55, 2.35);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), pupil);
+    dot.position.set(x, 0.55, 2.7);
+    bullet.add(eye, dot);
+  }
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.15, 0.9), new THREE.MeshLambertMaterial({ color: 0xe53935 }));
+  fin.position.z = -1.6;
+  bullet.add(body, nose, fin);
+  bullet.position.y = 1.5;
+  bullet.visible = false;
+  return bullet;
 }
 
 function approach(value, target, step) {
