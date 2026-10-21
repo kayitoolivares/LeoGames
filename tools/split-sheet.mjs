@@ -9,6 +9,7 @@
 //   node tools/split-sheet.mjs hoja.jpg abeja abeja_super           2 filas: normal arriba, súper abajo
 //   node tools/split-sheet.mjs hoja.jpg hada-dolor pinguino_super-golpe
 //   node tools/split-sheet.mjs hoja.jpg pow zas --to duelo/efectos    en otra carpeta de arte/
+//   ... --any-size   si a propósito una pose es mucho más grande (un jefe junto a sus monstruitos)
 // Escribe arte/smash/personajes/<nombre>.jpg (o arte/<carpeta>/<nombre>.jpg con --to).
 import sharp from 'sharp';
 import { mkdirSync } from 'node:fs';
@@ -23,7 +24,8 @@ mkdirSync(DEST, { recursive: true });
 const MARGIN = 40;
 const NOISE = 40;
 
-const [input, ...args] = process.argv.slice(2, toAt > 0 ? toAt : undefined);
+const anySize = process.argv.includes('--any-size');
+const [input, ...args] = process.argv.slice(2, toAt > 0 ? toAt : undefined).filter((a) => a !== '--any-size');
 // Con --to son nombres sueltos (no personajes con sus 4 poses).
 const names = args.flatMap((name) => (name.includes('-') || toAt > 0 ? [name] : POSES.map((pose) => `${name}-${pose}`)));
 if (!input || !names.length) {
@@ -116,7 +118,7 @@ for (let tries = 0; tries < names.length && !enoughPoses(); tries += 1) {
 const poses = bySize().slice(0, names.length);
 if (poses.length < names.length) throw new Error(`solo encontré ${poses.length} poses en la hoja y pediste ${names.length}`);
 const sizes = poses.map((pose) => pose.size).sort((a, b) => a - b);
-if (sizes.at(-1) > sizes[Math.floor(sizes.length / 2)] * 2.5) {
+if (!anySize && sizes.at(-1) > sizes[Math.floor(sizes.length / 2)] * 2.5) {
   throw new Error('una pose es mucho más grande que las demás: ¿dos poses se tocan en la hoja? Pide más espacio entre ellas');
 }
 const rows = [];

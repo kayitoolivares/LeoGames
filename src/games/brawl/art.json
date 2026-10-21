@@ -1,16 +1,36 @@
 {
   "monstruos": [
+    "almeja",
+    "calabaza",
+    "cangrejo",
+    "capitan-pulpo",
     "dragon-lava",
     "gran-hongo",
+    "gran-yeti",
     "hongo",
+    "muneco-nieve",
+    "murcielago",
+    "rey-calabaza",
     "rey-slime",
     "slime-grande",
     "slime-lava",
-    "slime"
+    "slime",
+    "yeti-bebe"
   ],
   "fondos": [
     "bosque",
+    "castillo",
+    "nieve",
+    "playa",
     "pradera",
     "volcan"
+  ],
+  "objetos": [
+    "barril",
+    "caja",
+    "helado",
+    "jarron",
+    "pizza",
+    "pollo"
   ]
 }

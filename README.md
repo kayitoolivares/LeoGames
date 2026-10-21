@@ -35,11 +35,24 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 - Antes de **Pelea en equipo**, **Fútbol de bolitas** y **Duelo de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
   lo que escojas se recuerda en los demás juegos mientras la página siga abierta.
-- **Pelea en equipo**: todos contra los monstruos en 3 mundos (Pradera, Bosque de hongos y Volcán), de 4 rondas
-  cada uno y con su jefe: el Rey Slime, el Gran Hongo (llama ayudantes) y el Dragón de lava (lanza bolas de
-  fuego; se esquivan saltando). Ganar un mundo desbloquea el siguiente.
-  **X o B** = pegar, **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén LB + RB + Y** = salir.
-  Si alguien cae, un compañero se para junto a él para levantarlo.
+- **Pelea en equipo**: todos contra los monstruos, estilo arcade. Se escoge en el **mapa de mundos** (con candados y
+  hasta 3 estrellas por mundo: ganarlo, que nadie se caiga y hacerlo en menos de 4 minutos). 6 mundos de 4 rondas
+  con su jefe: Pradera (Rey Slime), Bosque de hongos (Gran Hongo, llama ayudantes), Volcán (Dragón de lava, lanza
+  fuego), **Playa** (cangrejos, almejas y el Capitán Pulpo que lanza tinta), **Montaña nevada** (muñecos de nieve,
+  yetis bebé y el Gran Yeti con bolas de nieve) y **Castillo embrujado** (murciélagos, calabazas y el Rey Calabaza,
+  que llama murciélagos y lanza magia). Ganar un mundo desbloquea el siguiente. Cada ronda es un tramo del nivel: al
+  limpiarla sale "¡Adelante!" y se camina a la derecha (la pantalla avanza) hasta el siguiente. Cuando llega el jefe,
+  todo se detiene para presentarlo, con música de jefe. Al final del mundo, **resultados con premios** (más golpes,
+  más monstruos, mejor compañero —el que levantó a más— y el que tumbó al jefe). **Modo sin fin**: rondas que no se
+  acaban, cada vez más difíciles y con jefe cada 5; se guarda el récord.
+  **X** = pegar (tres seguidos = **remate** que avienta lejos), **B** = el **especial** de cada personaje (puñetazo
+  cargado, embestida, súper salto que aplasta, estrellas, aparecer por detrás, láser, fuego, invisible, coletazo,
+  arañazos, deslizón, bala de cañón, polvo mágico que **cura** a los compañeros, mochila cohete, aguijonazo, chorro de
+  agua), **LB o RB** = **agarrar** un monstruo chico y aventarlo (tumba a los demás como boliche), barra llena +
+  **LB + RB** = **súper** (si dos o más se vuelven súper casi juntos: **¡golpe en equipo!** a toda la pantalla),
+  **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén LB + RB + Y** = salir. En cada tramo hay **cajas,
+  barriles y jarrones**: rotos sueltan comida (cura), martillo (pega doble), bomba (X la lanza) o estrella
+  (invencible). Si alguien cae, un compañero se para junto a él para levantarlo.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),

@@ -1,10 +1,15 @@
+import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
 import { players } from '../../shared/players.js';
+import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { numberStep } from '../smash/bloquecito.js';
+import { hasPose, superArtKey } from '../smash/art.js';
+import { isBlockCharacter, numberStep } from '../smash/bloquecito.js';
+import { drawItem } from '../smash/items.js';
 import { ARENA } from './arena.js';
+import { SPECIALS, SPECIAL_COOLDOWN_MS, blockSpecial } from './specials.js';
 
 export const MAX_HP = 5;
 const RADIUS = 34;
@@ -22,15 +27,33 @@ const DODGE_HEIGHT = 30;
 const REVIVE_RADIUS = 70;
 const REVIVE_MS = 1200;
 const REVIVE_HP = 3;
+// Tres golpes seguidos (sin esperar mucho entre uno y otro) = remate, que avienta lejos.
+const COMBO_WINDOW_MS = 700;
+const FINISHER_MS = 220;
+// La barra de poder: se llena pegando (y un poquito cuando te pegan). Llena + LB + RB = súper un rato.
+export const METER_MAX = 100;
+const METER_PER_HIT = 9;
+const METER_PER_HURT = 5;
+export const SUPER_MS = 9000;
+const SUPER_SPEED = 1.25;
+// Agarrar (LB o RB solo): al monstruo de enfrente; si no lo avientas, lo avientas solo a este tiempo.
+const GRAB_REACH = 46;
+const HOLD_MS = 2500;
+// Objetos: el martillo dura un rato; la estrella te hace invencible y lastima a los que toques.
+export const HAMMER_MS = 10000;
+export const STAR_MS = 6000;
+const CELEBRATE_MS = 1500;
 
-// Un jugador en la pelea: se mueve con el stick, salta con A y pega con X o B (Bloquecito cambia de número con Y).
+// Un jugador en la pelea: se mueve con el stick, salta con A, pega con X (tres seguidos = remate), B = su especial,
+// LB o RB = agarrar y aventar, barra llena + LB + RB = súper (Bloquecito cambia de número con Y).
 // Si se queda sin corazones cae, y otro jugador lo levanta parándose junto a él.
-// Se ve como el personaje que escogió (`character`, de Bolitas Bros).
+// Se ve como el personaje que escogió (`character`, de Bolitas Bros). Lo que pega y a quién lo resuelve la escena.
 export class Fighter {
   constructor(scene, player, x, y, character) {
     this.scene = scene;
     this.player = player;
     this.deviceId = player.deviceId;
+    this.character = character;
     this.color = players.color(player).hex;
     this.radius = RADIUS;
     this.x = x;
@@ -43,19 +66,43 @@ export class Fighter {
     this.down = false;
     this.reviveMs = 0;
     this.attackMs = 0;
+    this.finisher = false;
+    this.chain = 0;
+    this.sincePunchMs = Infinity;
     this.cooldownMs = 0;
+    this.specialCooldownMs = 0;
+    this.special = null;
     this.invulnerableMs = 0;
+    this.meter = 0;
+    this.superMs = 0;
+    this.superStartedAt = -Infinity;
+    this.holding = null;
+    this.item = null;
+    this.starMs = 0;
+    this.ghostMs = 0;
+    this.celebrateMs = 0;
+    this.dashMs = 0;
+    this.dashSpeed = 0;
     this.hitThisAttack = new Set();
+    // Para los premios del final del mundo.
+    this.stats = { hits: 0, kills: 0, revives: 0, boss: 0 };
 
     this.sprite = new Blob(scene, x, y, this.color, RADIUS);
     this.look = new CharacterLook(scene, this.sprite, character);
+    this.blocks = isBlockCharacter(character);
+    this.superArt = this.blocks ? null : superArtKey(scene, character);
     // Con imagen, un aro del color del jugador en el piso dice quién es quién.
     if (this.look.hasArt) this.sprite.addAt(scene.add.ellipse(0, RADIUS - 2, RADIUS * 2.4, RADIUS * 0.6).setStrokeStyle(5, this.color), 1);
+    // Brillo en súper y destellos de colores con la estrella.
+    this.aura = scene.add.circle(0, -RADIUS * 0.6, RADIUS * 1.9, 0xffd84d, 0.45).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.sprite.addAt(this.aura, 0);
     this.fist = scene.add.circle(0, 6, 11, this.color).setStrokeStyle(3, COLORS.ink).setVisible(false);
+    this.hammer = drawItem(scene, 'hammer').setVisible(false);
+    this.bomb = drawItem(scene, 'bomb').setScale(0.8).setVisible(false);
     this.tag = scene.add
       .text(0, this.look.top - 14, `J${player.slot + 1}`, textStyle(16, hexToCss(this.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
       .setOrigin(0.5);
-    this.sprite.figure.add([this.fist, this.tag]);
+    this.sprite.figure.add([this.fist, this.hammer, this.bomb, this.tag]);
     this.stars = scene.add.text(0, this.look.top - 6, '✦ ¡Ayuda! ✦', textStyle(18, '#ffc93c', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }));
     this.stars.setOrigin(0.5).setVisible(false);
     this.sprite.add(this.stars);
@@ -66,9 +113,32 @@ export class Fighter {
     return this.attackMs > 0;
   }
 
+  get busy() {
+    return Boolean(this.special) || this.dashMs > 0;
+  }
+
+  // Cuánto vale cada golpe: más con el martillo y en súper.
+  get power() {
+    return (this.item?.type === 'hammer' ? 2 : 1) * (this.superMs > 0 ? 2 : 1);
+  }
+
+  specialData() {
+    return this.blocks ? blockSpecial(this.look.form) : SPECIALS[this.character] ?? SPECIALS.tanque;
+  }
+
   update(dtMs, fighters) {
     this.cooldownMs = Math.max(0, this.cooldownMs - dtMs);
+    this.specialCooldownMs = Math.max(0, this.specialCooldownMs - dtMs * (this.superMs > 0 ? 2 : 1));
     this.invulnerableMs = Math.max(0, this.invulnerableMs - dtMs);
+    this.starMs = Math.max(0, this.starMs - dtMs);
+    this.ghostMs = Math.max(0, this.ghostMs - dtMs);
+    this.celebrateMs = Math.max(0, this.celebrateMs - dtMs);
+    this.sincePunchMs += dtMs;
+    this.updateSuper(dtMs);
+    if (this.item) {
+      this.item.ms -= dtMs;
+      if (this.item.ms <= 0) this.item = null;
+    }
     if (this.down) {
       this.updateDown(dtMs, fighters);
       return;
@@ -77,59 +147,197 @@ export class Fighter {
     const dt = dtMs / 1000;
     const id = this.deviceId;
     const stick = controls.getStick(id);
-    this.walking = Math.hypot(stick.x, stick.y) > 0.2;
-    this.x += stick.x * SPEED_X * dt + this.knockback * dt;
-    this.y += stick.y * SPEED_Y * dt;
+    const speed = this.superMs > 0 || this.starMs > 0 ? SUPER_SPEED : 1;
+    this.walking = Math.hypot(stick.x, stick.y) > 0.2 && !this.busy;
+    if (this.dashMs > 0) {
+      this.dashMs = Math.max(0, this.dashMs - dtMs);
+      this.x += this.facing * this.dashSpeed * dt;
+    } else if (!this.special) {
+      this.x += stick.x * SPEED_X * speed * dt;
+      this.y += stick.y * SPEED_Y * speed * dt;
+      if (stick.x > 0.2) this.facing = 1;
+      else if (stick.x < -0.2) this.facing = -1;
+    }
+    this.x += this.knockback * dt;
     this.knockback = decay(this.knockback, dt);
-    if (stick.x > 0.2) this.facing = 1;
-    else if (stick.x < -0.2) this.facing = -1;
 
-    if (controls.justPressed(id, 'a') && this.z === 0) this.vz = JUMP_SPEED;
+    if (controls.justPressed(id, 'a') && this.z === 0 && !this.busy) this.vz = JUMP_SPEED;
     this.look.changeNumber(numberStep(id), id);
     if (this.z > 0 || this.vz > 0) {
       this.vz -= GRAVITY * dt;
       this.z = Math.max(0, this.z + this.vz * dt);
-      if (this.z === 0) this.vz = 0;
+      if (this.z === 0) {
+        this.vz = 0;
+        this.scene.landed?.(this);
+      }
     }
 
-    if ((controls.justPressed(id, 'x') || controls.justPressed(id, 'b')) && this.cooldownMs === 0) {
-      this.attackMs = ATTACK_MS;
-      this.cooldownMs = ATTACK_COOLDOWN_MS;
-      this.hitThisAttack.clear();
-    }
+    this.handleButtons(id, dtMs);
     this.attackMs = Math.max(0, this.attackMs - dtMs);
+    if (this.special) {
+      this.special.t += dtMs;
+      if (this.special.t >= this.special.ms) this.special = null;
+    }
 
     this.x = clamp(this.x, ARENA.left, ARENA.right);
     this.y = clamp(this.y, ARENA.top, ARENA.bottom);
   }
 
+  handleButtons(id, dtMs) {
+    const lb = controls.justPressed(id, 'lb');
+    const rb = controls.justPressed(id, 'rb');
+    const both = controls.isDown(id, 'lb') && controls.isDown(id, 'rb') && (lb || rb);
+    if (both) {
+      if (this.meter >= METER_MAX && this.superMs === 0) this.startSuper();
+      return;
+    }
+    // Con un monstruo agarrado: X, LB o RB lo avientan.
+    if (this.holding) {
+      this.holdMs -= dtMs;
+      if (lb || rb || controls.justPressed(id, 'x') || controls.justPressed(id, 'b') || this.holdMs <= 0) this.throwHeld();
+      return;
+    }
+    if ((lb || rb) && !this.busy) {
+      this.tryGrab();
+      return;
+    }
+    if (controls.justPressed(id, 'b') && this.specialCooldownMs === 0 && !this.busy && this.attackMs === 0) {
+      this.startSpecial();
+      return;
+    }
+    if (controls.justPressed(id, 'x') && this.cooldownMs === 0 && !this.busy) {
+      // Con la bomba en la mano, X la lanza.
+      if (this.item?.type === 'bomb') {
+        this.item = null;
+        this.scene.throwBomb?.(this);
+        this.attackMs = ATTACK_MS;
+        this.cooldownMs = ATTACK_COOLDOWN_MS;
+        return;
+      }
+      this.chain = this.sincePunchMs < COMBO_WINDOW_MS ? this.chain + 1 : 1;
+      this.sincePunchMs = 0;
+      this.finisher = this.chain >= 3;
+      if (this.finisher) this.chain = 0;
+      this.attackMs = this.finisher ? FINISHER_MS : ATTACK_MS;
+      this.attackId = (this.attackId ?? 0) + 1;
+      this.cooldownMs = this.finisher ? ATTACK_COOLDOWN_MS * 1.6 : ATTACK_COOLDOWN_MS;
+      this.hitThisAttack.clear();
+      sfx.throw();
+    }
+  }
+
+  startSpecial() {
+    const data = this.specialData();
+    this.special = { data, t: 0, ms: data.ms ?? 380, hit: new Set(), fired: false };
+    this.attackId = (this.attackId ?? 0) + 1;
+    this.specialCooldownMs = data.cooldownMs ?? SPECIAL_COOLDOWN_MS;
+    if (data.kind === 'dash') {
+      this.dashMs = data.ms;
+      this.dashSpeed = data.speed;
+    } else if (data.kind === 'slam') {
+      this.vz = JUMP_SPEED * 1.15;
+      this.special.ms = 1200;
+    } else if (data.kind === 'ghost') {
+      this.ghostMs = data.ms;
+      this.special.ms = 300;
+    } else if (data.kind === 'flurry') {
+      this.special.ms = data.hits * data.gapMs + 100;
+    }
+    this.scene.specialStarted?.(this, data);
+  }
+
+  // Un monstruo chiquito enfrente: lo agarra (los jefes no se dejan).
+  tryGrab() {
+    const target = this.scene.monsters?.find((m) => m.canBeGrabbed() && this.canHit(m, GRAB_REACH));
+    if (!target) return;
+    this.holding = target;
+    this.holdMs = HOLD_MS;
+    target.grab(this);
+    this.scene.practiced?.(this, 'grab');
+    sfx.block();
+  }
+
+  throwHeld() {
+    const monster = this.holding;
+    this.holding = null;
+    if (!monster || monster.dead) return;
+    monster.x = this.x + this.facing * (this.radius + monster.radius);
+    monster.y = this.y;
+    monster.throwTo(this.facing);
+    this.attackMs = ATTACK_MS;
+    this.scene.thrown?.(this, monster);
+    sfx.throw();
+  }
+
+  // Barra llena + LB + RB: súper un rato (más fuerte y rápido, con su dibujo de súper si lo tiene).
+  startSuper() {
+    this.meter = 0;
+    this.superMs = SUPER_MS;
+    this.superStartedAt = this.scene.time.now;
+    if (this.blocks) this.look.setSuper(true);
+    else if (this.superArt) this.look.character = this.superArt;
+    sfx.transform();
+    this.scene.superStarted?.(this);
+  }
+
+  updateSuper(dtMs) {
+    if (this.superMs <= 0) return;
+    this.superMs = Math.max(0, this.superMs - dtMs);
+    if (this.superMs > 0) return;
+    if (this.blocks) this.look.setSuper(false);
+    else this.look.character = this.character;
+    sfx.powerDown();
+  }
+
+  addMeter(amount) {
+    if (this.superMs > 0) return;
+    const before = this.meter;
+    this.meter = Math.min(METER_MAX, this.meter + amount);
+    if (before < METER_MAX && this.meter >= METER_MAX) this.scene.meterFull?.(this);
+  }
+
+  // Le pegó a un monstruo: cuenta para los premios y llena la barra.
+  landedHit() {
+    this.stats.hits += 1;
+    this.addMeter(METER_PER_HIT);
+  }
+
   updateDown(dtMs, fighters) {
     // Cada compañero cerca ayuda: entre más, más rápido se levanta.
-    const helpers = fighters.filter(
-      (f) => f !== this && !f.down && Math.hypot(f.x - this.x, (f.y - this.y) * 1.4) < REVIVE_RADIUS + f.radius,
-    ).length;
-    this.reviveMs = helpers > 0 ? this.reviveMs + dtMs * helpers : Math.max(0, this.reviveMs - dtMs * 0.5);
+    const helpers = fighters.filter((f) => f !== this && !f.down && Math.hypot(f.x - this.x, (f.y - this.y) * 1.4) < REVIVE_RADIUS + f.radius);
+    this.reviveMs = helpers.length > 0 ? this.reviveMs + dtMs * helpers.length : Math.max(0, this.reviveMs - dtMs * 0.5);
     if (this.reviveMs >= REVIVE_MS) {
       this.down = false;
       this.hp = REVIVE_HP;
       this.invulnerableMs = INVULNERABLE_MS;
       this.reviveMs = 0;
+      for (const helper of helpers) helper.stats.revives += 1;
+      this.scene.revived?.(this, helpers);
     }
   }
 
-  canHit(target) {
+  canHit(target, reach = ATTACK_REACH) {
     const ahead = (target.x - this.x) * this.facing;
-    return ahead > -10 && ahead < this.radius + target.radius + ATTACK_REACH && Math.abs(target.y - this.y) < DEPTH_TOLERANCE + target.radius * 0.3;
+    return ahead > -10 && ahead < this.radius + target.radius + reach && Math.abs(target.y - this.y) < DEPTH_TOLERANCE + target.radius * 0.3;
+  }
+
+  // Alcance del golpe normal (con martillo llega más lejos).
+  get reach() {
+    return ATTACK_REACH + (this.item?.type === 'hammer' ? 40 : 0) + (this.finisher ? 20 : 0);
   }
 
   // Devuelve true si el golpe sí le quitó un corazón.
   hurt(fromX) {
-    if (this.down || this.invulnerableMs > 0 || this.z > DODGE_HEIGHT) return false;
+    if (this.down || this.invulnerableMs > 0 || this.z > DODGE_HEIGHT || this.starMs > 0 || this.ghostMs > 0) return false;
     this.hp -= 1;
     this.invulnerableMs = INVULNERABLE_MS;
     this.knockback = (Math.sign(this.x - fromX) || 1) * 420;
+    this.addMeter(METER_PER_HURT);
     this.look.flash();
     this.sprite.squish();
+    if (this.holding) this.throwHeld();
+    this.special = null;
+    this.dashMs = 0;
     if (this.hp <= 0) {
       this.down = true;
       this.hp = 0;
@@ -138,22 +346,43 @@ export class Fighter {
       this.z = 0;
       this.vz = 0;
       this.knockback = 0;
+      this.scene.fell?.(this);
     }
     return true;
   }
 
-  heal() {
+  heal(amount = 1) {
     if (this.down || this.hp >= MAX_HP) return false;
-    this.hp += 1;
+    this.hp = Math.min(MAX_HP, this.hp + amount);
     return true;
   }
 
-  // Al reintentar una ronda todos regresan completos.
+  // Al reintentar una ronda (o empezar otro mundo) todos regresan completos.
   reset() {
     this.down = false;
     this.hp = MAX_HP;
     this.reviveMs = 0;
     this.invulnerableMs = INVULNERABLE_MS;
+    this.special = null;
+    this.dashMs = 0;
+    this.holding = null;
+  }
+
+  celebrate() {
+    this.celebrateMs = CELEBRATE_MS;
+  }
+
+  // Qué pose mostrar (si su dibujo no la trae, la más parecida).
+  pose() {
+    const hurting = this.down || (this.invulnerableMs > INVULNERABLE_MS - 350 && this.knockback !== 0);
+    if (hurting) return 'dolor';
+    if (this.holding) return 'agarre';
+    if (this.special) return this.special.data.kind === 'slam' && this.z > 0 ? 'aire' : 'especial';
+    if (this.dashMs > 0) return 'especial';
+    if (this.attackMs > 0) return this.z > 0 ? 'aire' : this.finisher ? 'patada' : 'golpe';
+    if (this.z > 0) return 'salto';
+    if (this.celebrateMs > 0) return 'gana';
+    return null;
   }
 
   render() {
@@ -162,12 +391,15 @@ export class Fighter {
     s.figure.y = -this.z;
     s.figure.angle = this.down ? 90 : 0;
     const blinking = this.invulnerableMs > 0 && !this.down && Math.floor(this.invulnerableMs / 90) % 2 === 1;
-    s.setAlpha(this.down ? 0.75 : blinking ? 0.35 : 1);
+    s.setAlpha(this.down ? 0.75 : this.ghostMs > 0 ? 0.3 : blinking ? 0.35 : 1);
     s.look(this.facing * 0.9, 0);
-    const hurting = this.down || (this.invulnerableMs > INVULNERABLE_MS - 350 && this.knockback !== 0);
     const ground = this.look.groundPose(Boolean(this.walking) && !this.down);
-    const pose = hurting ? 'dolor' : this.attackMs > 0 ? 'golpe' : this.z > 0 ? 'salto' : ground;
+    const wanted = this.pose();
+    let pose = wanted ?? ground;
+    // Las poses de pelea son opcionales (y las súper formas solo traen las básicas).
+    if (wanted && !this.look.body) pose = (POSE_CHAIN[wanted] ?? [wanted]).find((p) => hasPose(this.scene, this.look.character, p)) ?? 'normal';
     this.look.show(pose, this.facing);
+    if (this.look.image) this.look.image.setScale((this.radius * 2.8 * (POSE_HEIGHT[pose] ?? 1)) / this.look.image.height);
     // Bloquecito sube y baja de tamaño con su número: los letreros van arriba de su cabeza.
     if (this.look.body) {
       this.tag.setY(this.look.top - 14);
@@ -176,10 +408,23 @@ export class Fighter {
     this.tag.setVisible(!this.down);
     this.stars.setVisible(this.down);
 
-    // El puño sale y regresa durante el golpe.
+    // Súper: brillo dorado que late; estrella: brillo de colores.
+    const now = this.scene.time.now;
+    this.aura.setVisible(this.superMs > 0 || this.starMs > 0);
+    if (this.starMs > 0) this.aura.setFillStyle(RAINBOW[Math.floor(now / 90) % RAINBOW.length], 0.45);
+    else if (this.superMs > 0) this.aura.setFillStyle(0xffd84d, this.superMs < 2000 && Math.floor(now / 120) % 2 === 0 ? 0.15 : 0.45);
+    this.aura.setScale(1 + 0.08 * Math.sin(now / 90));
+
+    // El puño sale y regresa durante el golpe (si su dibujo no trae la pose de golpe).
     const progress = this.attackMs > 0 ? 1 - this.attackMs / ATTACK_MS : 0;
-    this.fist.setVisible(this.attackMs > 0 && !this.look.punchArt);
+    this.fist.setVisible(this.attackMs > 0 && !this.look.punchArt && !this.item);
     this.fist.setPosition(this.facing * (this.radius * 0.6 + Math.sin(progress * Math.PI) * 34), 6);
+    // El martillo (o la bomba) en la mano.
+    const hammer = this.item?.type === 'hammer';
+    this.hammer.setVisible(hammer && !this.down);
+    if (hammer) this.hammer.setPosition(this.facing * this.radius * 0.9, -10).setScale(this.facing, 1).setAngle(this.facing * (this.attackMs > 0 ? 60 : -25));
+    this.bomb.setVisible(this.item?.type === 'bomb' && !this.down);
+    if (this.item?.type === 'bomb') this.bomb.setPosition(this.facing * this.radius * 0.9, -6);
 
     const ring = this.reviveRing;
     ring.clear();
@@ -195,7 +440,26 @@ export class Fighter {
       ring.strokePath();
     }
   }
+
+  destroy() {
+    this.sprite.destroy();
+    this.reviveRing.destroy();
+  }
 }
+
+const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
+const POSE_CHAIN = {
+  patada: ['patada', 'golpe'],
+  aire: ['aire', 'patada', 'salto'],
+  especial: ['especial', 'golpe'],
+  agarre: ['agarre', 'golpe'],
+  gana: ['gana', 'salto'],
+  golpe: ['golpe'],
+  salto: ['salto'],
+  dolor: ['dolor'],
+};
+// Las imágenes se ajustan a la misma altura; las más bajitas o altas en el dibujo se corrigen aquí.
+const POSE_HEIGHT = { gana: 1.08, patada: 0.95, aire: 0.95 };
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));

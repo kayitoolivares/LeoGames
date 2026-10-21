@@ -37,8 +37,16 @@ const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'jug
 // Arte de los otros juegos: por carpeta, qué nombres valen y si es recorte (cutout) o fondo.
 const GAMES = {
   brawl: {
-    monstruos: { kind: 'cutout', max: 256, names: ['slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava'] },
-    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan'] },
+    monstruos: {
+      kind: 'cutout',
+      max: 256,
+      names: [
+        'slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava',
+        'cangrejo', 'almeja', 'capitan-pulpo', 'muneco-nieve', 'yeti-bebe', 'gran-yeti', 'murcielago', 'calabaza', 'rey-calabaza',
+      ],
+    },
+    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo'] },
+    objetos: { kind: 'cutout', max: 128, names: ['caja', 'barril', 'jarron', 'pizza', 'helado', 'pollo'] },
   },
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos'] },

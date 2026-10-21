@@ -46,11 +46,14 @@ const PAGES = [
     rows: [
       [['stick'], 'Caminar (para todos lados)'],
       [['a'], 'Saltar (esquiva cuando al monstruo le sale "!")'],
-      [['x', 'b'], 'Pegar'],
+      [['x'], 'Pegar (tres seguidos = remate)'],
+      [['b'], 'Especial de tu personaje'],
+      [['lb', 'rb'], 'Agarrar un monstruo y aventarlo (tumba a los demás)'],
+      [['lb+rb'], 'Con la barra llena: ¡súper! (dos juntos = golpe en equipo)'],
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Si alguien cae, párate junto a él para levantarlo.',
+    note: 'Si alguien cae, párate junto a él para levantarlo. Rompe cajas para sacar comida y objetos.',
   },
   {
     title: 'Bolitas Bros',

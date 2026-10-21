@@ -5,6 +5,9 @@ export function loadBrawlArt(scene) {
   for (const name of manifest.monstruos ?? []) {
     if (!scene.textures.exists(`brawl:${name}`)) scene.load.image(`brawl:${name}`, `brawl/monstruos/${name}.png`);
   }
+  for (const name of manifest.objetos ?? []) {
+    if (!scene.textures.exists(`brawl:objeto-${name}`)) scene.load.image(`brawl:objeto-${name}`, `brawl/objetos/${name}.png`);
+  }
   for (const name of manifest.fondos ?? []) {
     if (!scene.textures.exists(`brawl:fondo-${name}`)) scene.load.image(`brawl:fondo-${name}`, `brawl/fondos/${name}.jpg`);
   }

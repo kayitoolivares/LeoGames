@@ -24,6 +24,13 @@ const SONGS = {
     bass: { wave: 'triangle', volume: 0.13, notes: 'A2 A2 . A2 A2 . A2 . | F2 F2 . F2 F2 . F2 . | G2 G2 . G2 G2 . G2 . | E2 E2 . E2 E2 . E2 .' },
     drums: 'k . s . k k s . | k . s . k k s . | k . s . k k s . | k . s . k s s s',
   },
+  // Cuando llega un jefe (Pelea en equipo): más rápida y en menor.
+  jefe: {
+    bpm: 150,
+    lead: { wave: 'sawtooth', volume: 0.035, notes: 'E5 . E5 G5 . E5 D5 . | C5 . C5 E5 . C5 B4 . | A4 . A4 C5 . A4 B4 . | E5 . D#5 E5 F#5 G5 B5 .' },
+    bass: { wave: 'triangle', volume: 0.14, notes: 'E2 E2 E3 E2 E2 E3 E2 E3 | C2 C2 C3 C2 C2 C3 C2 C3 | A1 A1 A2 A1 A1 A2 A1 A2 | B1 B1 B2 B1 B1 B2 B1 B2' },
+    drums: 'k h s h k k s h | k h s h k k s h | k h s h k k s h | k s k s s s s s',
+  },
   smash: {
     bpm: 140,
     lead: { wave: 'square', volume: 0.04, notes: 'D5 F5 A5 D6 C6 A5 F5 A5 | Bb4 D5 F5 Bb5 A5 F5 D5 F5 | C5 E5 G5 C6 Bb5 G5 E5 G5 | A4 C#5 E5 A5 - E5 C#5 E5' },

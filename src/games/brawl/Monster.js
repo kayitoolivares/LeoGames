@@ -6,7 +6,8 @@ import { ARENA } from './arena.js';
 
 // Los monstruos de los mundos. `art` es su imagen (npm run arte); sin ella se dibuja una bolita enojada.
 //   small: los que aumentan con más jugadores.  stagger: los golpes lo aturden (los jefes no).
-//   hop: avanza dando saltitos.  summon: llama ayudantes cada tanto.  fireball: lanza bolas de fuego.
+//   hop: avanza dando saltitos.  summon: llama ayudantes cada tanto.  fireball: lanza bolas de fuego (`look`: cómo se
+//   ven: tinta del pulpo, bolas de nieve del yeti, magia del Rey Calabaza).  fly: va volando (sube y baja).
 export const MONSTER_TYPES = {
   slime: { name: 'Slime', art: 'slime', radius: 28, hp: 3, speed: 95, color: 0x7bd96b, windupMs: 650, stagger: true, small: true },
   slimeGrande: { name: 'Slime grande', art: 'slime-grande', radius: 44, hp: 7, speed: 75, color: 0x5fc2b8, windupMs: 750, stagger: true },
@@ -35,7 +36,53 @@ export const MONSTER_TYPES = {
     boss: true,
     fireball: { firstMs: 2000, everyMs: 3800, aimMs: 700 },
   },
+  // Playa.
+  cangrejo: { name: 'Cangrejo', art: 'cangrejo', radius: 28, hp: 3, speed: 125, color: 0xe53935, windupMs: 560, stagger: true, small: true },
+  almeja: { name: 'Almeja', art: 'almeja', radius: 40, hp: 6, speed: 70, color: 0x8158d8, windupMs: 760, stagger: true },
+  capitanPulpo: {
+    name: 'Capitán Pulpo',
+    art: 'capitan-pulpo',
+    radius: 84,
+    hp: 30,
+    speed: 56,
+    color: 0xff8a1e,
+    windupMs: 880,
+    boss: true,
+    fireball: { firstMs: 2200, everyMs: 3600, aimMs: 700, look: 'ink' },
+  },
+  // Montaña nevada.
+  munecoNieve: { name: 'Muñeco de nieve', art: 'muneco-nieve', radius: 30, hp: 3, speed: 100, color: 0xf4f8ff, windupMs: 600, stagger: true, small: true, hop: true },
+  yetiBebe: { name: 'Yeti bebé', art: 'yeti-bebe', radius: 44, hp: 7, speed: 80, color: 0x9fd8ff, windupMs: 740, stagger: true },
+  granYeti: {
+    name: 'Gran Yeti',
+    art: 'gran-yeti',
+    radius: 90,
+    hp: 34,
+    speed: 52,
+    color: 0x6fb8ff,
+    windupMs: 900,
+    boss: true,
+    fireball: { firstMs: 1800, everyMs: 3400, aimMs: 650, look: 'snow' },
+  },
+  // Castillo embrujado.
+  murcielago: { name: 'Murciélago', art: 'murcielago', radius: 26, hp: 2, speed: 150, color: 0x8158d8, windupMs: 500, stagger: true, small: true, fly: true },
+  calabaza: { name: 'Calabaza', art: 'calabaza', radius: 36, hp: 5, speed: 90, color: 0xff8a1e, windupMs: 680, stagger: true, hop: true },
+  reyCalabaza: {
+    name: 'Rey Calabaza',
+    art: 'rey-calabaza',
+    radius: 88,
+    hp: 34,
+    speed: 54,
+    color: 0xff8a1e,
+    windupMs: 880,
+    boss: true,
+    crown: true,
+    summon: { type: 'murcielago', firstMs: 3000, everyMs: 7000, count: 2 },
+    fireball: { firstMs: 4500, everyMs: 5200, aimMs: 700, look: 'magic' },
+  },
 };
+// Aventado por un jugador: qué tan rápido sale, cuánto avanza y cuánto daño hace a los que tumba (y a sí mismo).
+const THROWN = { speed: 820, ms: 650, damage: 2, height: 40 };
 
 const LUNGE_MS = 220;
 const LUNGE_SPEED = 420;
@@ -100,6 +147,14 @@ export class Monster {
 
   update(dtMs, fighters) {
     const dt = dtMs / 1000;
+    // Agarrado: no hace nada (lo lleva el jugador). Aventado: sale volando en línea recta.
+    if (this.grabbedBy) return;
+    if (this.state === 'thrown') {
+      this.stateMs -= dtMs;
+      this.x += this.thrownDir * THROWN.speed * dt;
+      if (this.stateMs <= 0 || this.x < ARENA.left - 60 || this.x > ARENA.right + 60) this.land();
+      return;
+    }
     this.stateMs -= dtMs;
     this.retargetMs -= dtMs;
     this.hopMs += dtMs;
@@ -116,7 +171,7 @@ export class Monster {
     if (this.state === 'chase') this.chase(dt);
     else if (this.state === 'windup' && this.stateMs <= 0) this.setState('lunge', LUNGE_MS);
     else if (this.state === 'aim' && this.stateMs <= 0) {
-      this.request = { kind: 'fireball', x: this.x + this.facing * this.radius, y: this.y, dir: this.facing };
+      this.request = { kind: 'fireball', x: this.x + this.facing * this.radius, y: this.y, dir: this.facing, look: this.type.fireball.look ?? 'fire' };
       this.setState('rest', REST_MS);
     } else if (this.state === 'lunge') {
       this.x += this.facing * LUNGE_SPEED * dt;
@@ -173,15 +228,41 @@ export class Monster {
     this.y += (dy / dist) * step * 0.8;
   }
 
+  // Lo agarró un jugador (los jefes no se dejan).
+  canBeGrabbed() {
+    return !this.type.boss && !this.dead && !this.grabbedBy && this.state !== 'thrown' && this.entered;
+  }
+
+  grab(fighter) {
+    this.grabbedBy = fighter;
+    this.setState('hurt', 0);
+    this.knockback = 0;
+  }
+
+  // Lo avientan hacia `dir`: tumba como boliche a los que encuentre en su carril (lo revisa la escena).
+  throwTo(dir) {
+    this.grabbedBy = null;
+    this.thrownDir = dir;
+    this.facing = dir;
+    this.setState('thrown', THROWN.ms);
+    this.bowled = new Set();
+  }
+
+  land() {
+    this.setState('hurt', 400);
+    this.hurt(this.x - this.thrownDir, THROWN.damage);
+  }
+
   touches(fighter) {
     return Math.abs(fighter.x - this.x) < this.radius + fighter.radius && Math.abs(fighter.y - this.y) < 28 + this.radius * 0.3;
   }
 
-  hurt(fromX) {
+  // `damage`: cuánto le quita; `power`: el empujón (más grande con los remates y los especiales).
+  hurt(fromX, damage = 1, power = 1) {
     if (this.dead) return;
-    this.hp -= 1;
+    this.hp -= damage;
     const dir = Math.sign(this.x - fromX) || 1;
-    this.knockback = dir * (this.type.stagger ? 320 : 120);
+    this.knockback = dir * (this.type.stagger ? 320 : 120) * power;
     this.sprite.flash();
     if (this.image) {
       this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
@@ -189,7 +270,7 @@ export class Monster {
         if (this.image.active) this.image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
       });
     }
-    if (this.type.stagger) this.setState('hurt', HURT_MS);
+    if (this.type.stagger && this.state !== 'thrown') this.setState('hurt', HURT_MS);
     if (this.hp <= 0) this.dead = true;
   }
 
@@ -200,8 +281,14 @@ export class Monster {
     this.sprite.look(this.facing * 0.9, 0.2);
     this.alert.setVisible(warning);
     this.image?.setFlipX(this.facing < 0);
-    // Los hongos avanzan dando saltitos.
-    this.sprite.figure.y = this.type.hop && this.state === 'chase' ? -Math.abs(Math.sin(this.hopMs / 180)) * HOP_HEIGHT : 0;
+    // Los hongos avanzan dando saltitos; los murciélagos van volando; aventado, gira en el aire.
+    let lift = 0;
+    if (this.type.hop && this.state === 'chase') lift = Math.abs(Math.sin(this.hopMs / 180)) * HOP_HEIGHT;
+    if (this.type.fly) lift = 40 + Math.sin(this.hopMs / 160) * 10;
+    if (this.grabbedBy) lift = this.grabbedBy.z + 46;
+    if (this.state === 'thrown') lift = THROWN.height;
+    this.sprite.figure.y = -lift;
+    this.sprite.figure.angle = this.state === 'thrown' ? (this.sprite.figure.angle + 25 * this.thrownDir) % 360 : this.grabbedBy ? 180 : 0;
   }
 
   destroy() {
