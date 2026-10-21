@@ -517,21 +517,31 @@
     "bate",
     "bola-super",
     "bomba",
+    "bumeran",
+    "capsula",
     "corazon",
     "diana",
     "estrella",
+    "flor-fuego",
     "huevo",
     "martillo",
     "patineta",
-    "pistola"
+    "pistola",
+    "resorte",
+    "saco",
+    "tornado"
   ],
   "backgrounds": [
     "barco",
     "castillo",
+    "ciudad",
+    "embrujada",
     "espacio",
+    "globos",
     "juguetes",
     "mar",
     "nubes",
+    "pastel",
     "selva",
     "volcan"
   ]

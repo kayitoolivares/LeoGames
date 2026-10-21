@@ -9,15 +9,23 @@ import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
 import { comicHit, dustPuff, loadFxArt, shockwave, spark } from '../duelo/fx.js';
 import { SmashFinal } from './final.js';
-import { showLineup, showResults } from './show.js';
+import { awards, showLineup, showResults } from './show.js';
 import { SuperBall } from './superball.js';
 import { loadBossArt } from '../duelo/boss.js';
-import { BOSS, TARGETS, TEAMS, TIME_MS, targetRecords, targetSpots } from './modes.js';
-import { CHARACTERS, CHARACTER_KEYS } from './characters.js';
+import { COSTUMES } from '../duelo/DueloFighter.js';
+import { GIANTS, SANDBAG, TARGETS, TEAMS, TIME_MS, jonronRecord, targetRecords, targetSpots } from './modes.js';
+import { BOSS_CHARACTERS, CHARACTERS, CHARACTER_KEYS, characterInfo } from './characters.js';
 import { METER_MAX, SUPER_MS, SmashFighter, STOCKS, THROW_HIT } from './SmashFighter.js';
-import { backgroundTexture, loadSmashArt } from './art.js';
+import { backgroundTexture, characterTexture, loadSmashArt } from './art.js';
 import { MAX_NUMBER, RAINBOW, numberStep } from './bloquecito.js';
-import { SmashItems, drawItem } from './items.js';
+import { CAPSULE_ITEMS, SmashItems, drawItem } from './items.js';
+import { ADVENTURE, showAdventureMap } from './adventure.js';
+import { Coins } from './coins.js';
+import { HILL_GOAL, Hill } from './hill.js';
+import { JonronContest } from './jonron.js';
+import { SmashReplay } from './replay.js';
+import { SmashTalk } from './talk.js';
+import { Tornadoes } from './tornado.js';
 import { Geysers } from './geysers.js';
 import { StageEvents } from './events.js';
 import { STAGES, buildPlatforms, movePlatforms } from './stages.js';
@@ -30,7 +38,7 @@ const ZOOM_MAX = 1.15;
 const CAMERA_MARGIN = 220;
 const STRONG_HIT_SPEED = 900;
 const HIT_WORDS = ['¡PAM!', '¡ZAS!', '¡POW!', '¡BAM!'];
-const IDLE = { x: 0, y: 0, jump: false, attack: false, special: false, shield: false, transform: false, change: 0 };
+const IDLE = { x: 0, y: 0, jump: false, attack: false, attackHeld: false, special: false, shield: false, transform: false, change: 0 };
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
 // Disparos: la estrella de Estrella (poco daño, pero pega de lejos), el láser de Robot (rápido) y la bala
 // de cañón de Pirata (lenta, cae en arco por la gravedad y avienta fuerte).
@@ -45,7 +53,31 @@ const SHOTS = {
   rainbow: { speed: 900, lifeMs: 700, radius: 22, color: 0xffffff, hit: { damage: 9, base: 260, scale: 7, angle: 25 } },
   // La pistola de rayos (objeto): rayitos azules rápidos.
   zap: { speed: 1300, lifeMs: 600, radius: 14, color: 0x3fe0ff, hit: { damage: 7, base: 210, scale: 6, angle: 20 } },
+  // La flor de fuego (objeto): bolas de fuego que botan por el piso.
+  fireball: { lifeMs: 1700, radius: 15, gravity: 1300, bounce: 520, color: 0xff7a2f, hit: { damage: 6, base: 230, scale: 6, angle: 40 } },
+  // El puño cohete de Robotote.
+  fist: { speed: 950, lifeMs: 900, radius: 26, color: 0x5a7ab0, hit: { damage: 12, base: 400, scale: 9, angle: 28 } },
 };
+// El bumerán: sale rápido, se va frenando y regresa a la mano del que lo aventó (pega de ida y de vuelta).
+const BOOMERANG = { pull: 2100, lifeMs: 2200, radius: 24, hit: { damage: 8, base: 280, scale: 7, angle: 35 } };
+// Escudo perfecto: el que pegó se queda mareado este rato.
+const PERFECT_STUN_MS = 700;
+// La cápsula sorpresa: a veces explota (poquito) en vez de sacar otro objeto.
+const CAPSULE_BOOM = 0.2;
+const CAPSULE_HIT = { damage: 8, base: 300, scale: 6, angle: 70 };
+// Modos con vidas sin fin, y con reloj hacia atrás.
+const ENDLESS_MODES = ['tiempo', 'blancos', 'monedas', 'colina', 'subida', 'jonron'];
+const TIMED_MODES = ['tiempo', 'monedas', 'colina'];
+// Lo que dice el letrero al empezar, en los modos que no son de pelea normal.
+const MODE_INTROS = {
+  jonron: '¡Pégale al saco 10 segundos!',
+  monedas: 'Pega para sacar monedas y agárralas',
+  colina: 'Quédate solo en la zona de la corona',
+  subida: '¡Sube hasta la bandera!',
+  blancos: '¡Rompe todas las dianas!',
+};
+// La repetición sale solo si la pelea se acabó por un KO (o un golpe al jefe) de hace un instante.
+const REPLAY_RECENT_MS = 400;
 // Un KO cuenta para el último que le pegó, si fue hace poco.
 const KO_CREDIT_MS = 8000;
 // El ayudante del huevo sorpresa pelea de tu lado un rato.
@@ -66,6 +98,10 @@ const ITEM_NAMES = {
   raygun: '¡Pistola de rayos!',
   skate: '¡Patineta!',
   egg: '¡Huevo sorpresa!',
+  boomerang: '¡Bumerán!',
+  fireflower: '¡Flor de fuego!',
+  capsule: '¡Cápsula sorpresa!',
+  tornado: '¡Tornado!',
 };
 
 // Qué tan bueno es el CPU. attack/shield/special/jump/transform: probabilidad por cuadro de hacerlo cuando conviene.
@@ -90,23 +126,35 @@ export class SmashScene extends Phaser.Scene {
   init(data) {
     this.returnData = data ?? {};
     this.settings = { ...DEFAULT_SETTINGS, ...(this.returnData.settings ?? {}) };
+    // La Aventura: el nivel que toca decide el modo, el escenario y la compu.
+    this.adventure = null;
+    if (this.settings.mode === 'aventura') {
+      const index = this.returnData.adventure?.index ?? 0;
+      const spec = ADVENTURE[index];
+      this.adventure = { index, spec };
+      this.settings = { ...this.settings, mode: spec.mode, stage: spec.stage, level: spec.level ?? this.settings.level };
+    }
+    // El concurso de jonrón va por turnos (uno por jugador): en qué turno va y los metros de los que ya pegaron.
+    this.jonronTurn = this.returnData.jonron ?? { turn: 0, results: [] };
     // Los personajes de la compu se escogen antes de cargar, para cargar solo las poses de los que van a pelear.
     const humans = players.sorted().length;
     const mode = this.settings.mode;
-    // Contra el jefe la compu ayuda (puede no haber); en Rompe los blancos no hay compu.
+    // Contra el jefe la compu ayuda (puede no haber); en Rompe los blancos, el jonrón y la torre no hay compu.
     let cpus = Math.max(humans < 2 ? 1 : 0, Math.min(this.settings.cpus, 4 - humans));
     if (mode === 'jefe') cpus = Math.max(0, Math.min(this.settings.cpus, 4 - humans));
-    if (mode === 'blancos') cpus = 0;
+    if (mode === 'blancos' || mode === 'jonron' || mode === 'subida') cpus = 0;
     // En equipos tiene que haber al menos uno de cada lado.
     if (mode === 'equipos' && humans + cpus < 2) cpus = 1;
-    this.cpuPicks = Array.from({ length: cpus }, () => CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)]);
+    this.cpuPicks = this.adventure
+      ? [...(this.adventure.spec.cpus ?? [])]
+      : Array.from({ length: cpus }, () => CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)]);
   }
 
   preload() {
-    const picks = Object.values(this.returnData.picks ?? {});
-    loadSmashArt(this, { posesFor: [...picks, ...this.cpuPicks] });
+    const picks = [...Object.values(this.returnData.picks ?? {}), ...this.cpuPicks];
+    loadSmashArt(this, { posesFor: picks });
     loadFxArt(this);
-    if (this.settings.mode === 'jefe') loadBossArt(this);
+    if (this.settings.mode === 'jefe' || picks.some((key) => BOSS_CHARACTERS[key])) loadBossArt(this);
   }
 
   create() {
@@ -122,9 +170,17 @@ export class SmashScene extends Phaser.Scene {
     this.drawBackground();
     this.platforms = buildPlatforms(this, this.world, this.stage);
     this.main = this.platforms.find((p) => p.main);
-    this.geysers = this.stage.geysers ? new Geysers(this, this.world, this.main, this.stage.geysers) : null;
-    // (En Rompe los blancos no hay sorpresas: solo tú y las dianas.)
-    this.events = this.settings.mode === 'blancos' ? null : new StageEvents(this, this.world, this.stage, this.main, this.platforms);
+    this.mode = this.settings.mode;
+    // Jonrón: el concurso (con el pasto larguísimo de abajo, que es una plataforma más).
+    this.jonron = this.mode === 'jonron' ? new JonronContest(this, this.world, this.main, this.stage.sky, this.backdrop) : null;
+    if (this.jonron) this.platforms.push(this.jonron.field);
+    this.hill = this.mode === 'colina' ? new Hill(this, this.world, this.platforms) : null;
+    this.goal = this.mode === 'subida' ? this.drawGoal() : null;
+    this.geysers = this.stage.geysers && this.mode !== 'jonron' ? new Geysers(this, this.world, this.main, this.stage.geysers) : null;
+    // (En Rompe los blancos, el jonrón y la torre no hay sorpresas.)
+    const quiet = ['blancos', 'jonron', 'subida'].includes(this.mode);
+    this.events = quiet ? null : new StageEvents(this, this.world, this.stage, this.main, this.platforms);
+    this.itemsOn = this.settings.items && this.mode !== 'jonron';
     this.stageMs = 0;
     this.items = new SmashItems(this, this.world, this.platforms, {
       minX: this.main.left + 100,
@@ -138,11 +194,20 @@ export class SmashScene extends Phaser.Scene {
     this.bossBar = null;
     this.results = null;
     this.final = null;
-    this.mode = this.settings.mode;
+    this.giant = null;
+    this.bag = null;
+    this.climber = null;
+    this.adventureWon = false;
+    this.pending = null;
+    this.lastKo = null;
+    this.lastBossHitAt = 0;
+    this.replay = new SmashReplay();
     this.fighters = this.createFighters();
     this.players = [...this.fighters];
     this.boss = this.fighters.find((f) => f.isBoss) ?? null;
-    this.timeMs = this.mode === 'tiempo' ? TIME_MS : 0;
+    this.coins = this.mode === 'monedas' ? new Coins(this, this.world, this.platforms, this.stage.blast.bottom) : null;
+    this.tornadoes = new Tornadoes(this, this.world, this.main, (owner, victim, result) => this.noteHit(owner, victim, result.dealt, result.speed));
+    this.timeMs = TIMED_MODES.includes(this.mode) ? TIME_MS : 0;
     this.targets = this.mode === 'blancos' ? this.createTargets() : [];
     this.superBall = new SuperBall(this, this.world, {
       minX: this.main.left + 120,
@@ -151,11 +216,15 @@ export class SmashScene extends Phaser.Scene {
       bottomY: this.main.top - 180,
     });
     this.createHud();
-    // La primera vez, todos en fila en su pose de entrada; en la revancha, directo a la cuenta.
+    this.talk = new SmashTalk(this, this.ui);
+    // En el jonrón con varios, de quién es el turno.
+    this.countdownNote = this.jonron && players.sorted().length > 1 ? `Turno de ${this.fighters[0].label}` : '';
+    // La primera vez, todos en fila en su pose de entrada (en la Aventura, el mapa); en la revancha, directo a la cuenta.
     this.phase = this.returnData.rematch ? 'countdown' : 'lineup';
     this.phaseMs = 0;
     for (const fighter of this.fighters) fighter.posing = true;
-    if (this.phase === 'lineup') showLineup(this, this.fighters, this.ui, () => this.setPhase('countdown'));
+    if (this.phase === 'lineup' && this.adventure) showAdventureMap(this, this.ui, this.adventure.index, () => this.setPhase('countdown'));
+    else if (this.phase === 'lineup') showLineup(this, this.fighters, this.ui, () => this.setPhase('countdown'));
     this.exitMs = 0;
     this.exiting = false;
     this.cam = { x: 1000, y: 600, zoom: 0.8 };
@@ -167,11 +236,14 @@ export class SmashScene extends Phaser.Scene {
   // si no, el fondo dibujado con figuras.
   drawBackground() {
     const key = backgroundTexture(this, this.settings.stage);
+    const zone = this.stage.blast;
+    // Hasta dónde llega el dibujo del fondo (la imagen cubre toda la zona y se sale un poco por los lados).
+    this.backdrop = { left: zone.left, right: zone.right, top: zone.top };
     if (key) {
-      const zone = this.stage.blast;
       const image = this.add.image((zone.left + zone.right) / 2, (zone.top + zone.bottom) / 2, key);
       image.setScale(Math.max((zone.right - zone.left) / image.width, (zone.bottom - zone.top) / image.height));
       this.world.add(image);
+      this.backdrop = { left: image.x - image.displayWidth / 2, right: image.x + image.displayWidth / 2, top: image.y - image.displayHeight / 2 };
     } else {
       this.stage.drawBackground(this, this.world);
     }
@@ -180,9 +252,12 @@ export class SmashScene extends Phaser.Scene {
 
   // Los jugadores con su personaje y, si se pidieron, CPUs con personaje al azar (siempre hay al menos un rival).
   createFighters() {
-    const humans = players.sorted();
+    let humans = players.sorted();
+    // En el jonrón, solo el que tiene el turno.
+    if (this.jonron) humans = [humans[this.jonronTurn.turn] ?? humans[0]];
     const picks = this.returnData.picks ?? {};
     const peque = this.returnData.peque ?? {};
+    const costumes = this.returnData.costumes ?? {};
     const arena = { platforms: this.platforms, respawn: this.stage.respawn, gravity: this.stage.gravity };
     const list = humans.map(
       (player) =>
@@ -192,28 +267,36 @@ export class SmashScene extends Phaser.Scene {
           deviceId: player.deviceId,
           character: picks[player.deviceId] ?? CHARACTER_KEYS[player.slot % CHARACTER_KEYS.length],
           peque: Boolean(peque[player.deviceId]),
+          costume: costumes[player.deviceId] ?? 0,
           arena,
         }),
     );
     const cpus = this.cpuPicks.length;
     const taken = new Set(humans.map((player) => player.colorIndex));
     const colors = PLAYER_COLORS.filter((_, i) => !taken.has(i));
+    const spec = this.adventure?.spec;
     for (let i = 0; i < cpus; i += 1) {
-      list.push(
-        new SmashFighter(this, this.world, {
-          color: colors[i].hex,
-          label: cpus > 1 ? `CPU ${i + 1}` : 'CPU',
-          character: this.cpuPicks[i],
-          cpuLevel: this.settings.level,
-          arena,
-        }),
-      );
+      const character = this.cpuPicks[i];
+      // El gigante de la Aventura: el mismo personaje, pero enorme y pesado.
+      const giant = spec?.giant ? { ...CHARACTERS[character], radius: 64, weight: 2.2, power: 1.35, run: 260, air: 260 } : null;
+      const cpu = new SmashFighter(this, this.world, {
+        color: colors[i].hex,
+        label: giant ? 'Gigante' : cpus > 1 ? `CPU ${i + 1}` : 'CPU',
+        character,
+        cpuLevel: this.settings.level,
+        stats: giant,
+        arena,
+      });
+      if (giant) cpu.bossName = `${CHARACTERS[character].name} gigante`;
+      if (spec?.stocks) cpu.stocks = spec.stocks;
+      list.push(cpu);
     }
-    // Cada quien en su equipo (sin equipos, cada uno solo; contra el jefe y en los blancos, todos juntos).
-    // Los ayudantes del huevo son del equipo de quien lo abrió.
-    const mode = this.settings.mode;
+    // Cada quien en su equipo (sin equipos, cada uno solo; contra el jefe y en los blancos, todos juntos; en la
+    // Aventura, los jugadores contra la compu). Los ayudantes del huevo son del equipo de quien lo abrió.
+    const mode = this.mode;
     list.forEach((fighter, i) => {
-      if (mode === 'jefe' || mode === 'blancos') fighter.team = 0;
+      if (this.adventure) fighter.team = fighter.isCpu ? 1 : 0;
+      else if (mode === 'jefe' || mode === 'blancos') fighter.team = 0;
       else if (mode !== 'equipos') fighter.team = i;
       else if (!fighter.isCpu) fighter.team = humans.indexOf(humans.find((p) => p.deviceId === fighter.deviceId)) % 2;
     });
@@ -229,30 +312,61 @@ export class SmashScene extends Phaser.Scene {
         fighter.tag.setColor(hexToCss(color));
       }
     }
-    // Vidas sin fin en Tiempo y en Rompe los blancos.
-    if (mode === 'tiempo' || mode === 'blancos') for (const fighter of list) fighter.infinite = true;
-    if (mode === 'jefe') list.push(this.createBoss(arena));
-    list.forEach((fighter, i) => fighter.spawn(fighter.isBoss ? 1000 : this.stage.spawns[i], this.main.top - 100, 0));
+    // Si dos traen el mismo personaje con el mismo traje, el segundo sale de otro color.
+    list.forEach((fighter, i) => {
+      while (list.slice(0, i).some((o) => o.characterKey === fighter.characterKey && o.costumeIndex === fighter.costumeIndex)) {
+        fighter.setCostume((fighter.costumeIndex + 1) % COSTUMES.length);
+      }
+    });
+    // Vidas sin fin en los modos de puntos, de reloj, de dianas y en la torre.
+    if (ENDLESS_MODES.includes(mode)) for (const fighter of list) fighter.infinite = true;
+    if (mode === 'jefe') list.push(this.createBoss(arena, GIANTS[spec?.boss ?? 'rey']));
+    if (this.jonron) list.push(this.createSandbag(arena));
+    list.forEach((fighter, i) => fighter.spawn(fighter.isBoss || fighter.isDummy ? 1000 : this.stage.spawns[i], this.main.top - 100, 0));
     return list;
   }
 
-  createBoss(arena) {
+  // El jefe gigante (el Rey Bolón o Dragonzote), con su barra de vida.
+  createBoss(arena, giant) {
+    this.giant = giant;
     const boss = new SmashFighter(this, this.world, {
-      color: BOSS.color,
+      color: giant.color,
       label: '👑',
-      character: BOSS.character,
+      character: giant.character,
       cpuLevel: 'dificil',
-      stats: BOSS.stats,
+      stats: giant.stats,
       arena,
     });
     boss.isBoss = true;
-    boss.bossName = BOSS.stats.name;
+    boss.bossName = giant.stats.name;
     boss.team = 1;
-    boss.bossHp = BOSS.health;
-    boss.slamCooldownMs = BOSS.slamCooldownMs;
+    boss.bossHp = giant.health;
+    boss.slamCooldownMs = giant.slamCooldownMs;
     boss.stocks = 1;
     boss.infinite = true;
     return boss;
+  }
+
+  // El saco del concurso de jonrón: no se mueve solo, no se agarra de la orilla y no llena barra.
+  createSandbag(arena) {
+    const bag = new SmashFighter(this, this.world, { color: 0xa8743f, label: 'Saco', character: 'saco', stats: SANDBAG, arena, art: 'smash:objeto-saco' });
+    bag.isDummy = true;
+    bag.noLedge = true;
+    bag.bossName = 'Saco';
+    bag.team = 1;
+    bag.infinite = true;
+    this.bag = bag;
+    return bag;
+  }
+
+  // La bandera de la meta (la torre de la Aventura).
+  drawGoal() {
+    const { x, y } = this.stage.goal;
+    const cloth = this.add.triangle(4, -134, 0, 0, 70, 20, 0, 40, 0xff5a5f).setOrigin(0, 0).setStrokeStyle(3, 0x1b1530);
+    const flag = this.add.container(x, y, [this.add.rectangle(0, -70, 8, 140, 0xffffff).setStrokeStyle(2, 0x1b1530), cloth, this.add.circle(0, -144, 8, 0xffd84d)]);
+    this.world.add(flag);
+    this.tweens.add({ targets: cloth, scaleX: 0.8, duration: 300, yoyo: true, repeat: -1 });
+    return flag;
   }
 
   // Rompe los blancos: las dianas en su lugar.
@@ -288,14 +402,15 @@ export class SmashScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const panelW = 220;
     const gap = 20;
-    const startX = (width - (this.fighters.length * panelW + (this.fighters.length - 1) * gap)) / 2 + panelW / 2;
-    this.hud = this.fighters.filter((f) => !f.helperOf && !f.isBoss).map((fighter, i) => {
+    const shown = this.fighters.filter((f) => !f.helperOf && !f.isBoss && !f.isDummy);
+    const startX = (width - (shown.length * panelW + (shown.length - 1) * gap)) / 2 + panelW / 2;
+    this.hud = shown.map((fighter, i) => {
       const x = startX + i * (panelW + gap);
       const y = height - 70;
       const left = x - panelW / 2;
       const border = this.settings.mode === 'equipos' ? TEAMS[fighter.team].color : fighter.color;
       const bg = this.add.rectangle(x, y, panelW, 112, 0x1b1530, 0.6).setRounded(18).setStrokeStyle(4, border);
-      const title = `${fighter.label} · ${CHARACTERS[fighter.characterKey].name}${fighter.peque ? ' · peque' : ''}`;
+      const title = `${fighter.label} · ${fighter.bossName ?? characterInfo(fighter.characterKey).name}${fighter.peque ? ' · peque' : ''}`;
       const name = this.add.text(left + 16, y - 48, title, textStyle(17, hexToCss(fighter.color), { fontStyle: 'bold', ...OUTLINE }));
       const damage = this.add.text(x + 30, y - 6, '0%', textStyle(46, TEXT.normal, { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5);
       const stocks = Array.from({ length: STOCKS }, (_, k) =>
@@ -320,8 +435,8 @@ export class SmashScene extends Phaser.Scene {
       const barW = 640;
       this.bossBar = {
         back: this.add.rectangle(width / 2, 84, barW, 26, 0x1b1530, 0.8).setStrokeStyle(4, 0xffffff),
-        fill: this.add.rectangle(width / 2 - barW / 2 + 4, 84, barW - 8, 18, BOSS.color).setOrigin(0, 0.5),
-        name: this.add.text(width / 2, 62, `👑 ${BOSS.stats.name}`, textStyle(22, '#ffd84d', { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5),
+        fill: this.add.rectangle(width / 2 - barW / 2 + 4, 84, barW - 8, 18, this.giant.color).setOrigin(0, 0.5),
+        name: this.add.text(width / 2, 62, `👑 ${this.giant.stats.name}`, textStyle(22, '#ffd84d', { fontStyle: 'bold', ...OUTLINE })).setOrigin(0.5),
       };
       this.ui.add([this.bossBar.back, this.bossBar.fill, this.bossBar.name]);
     }
@@ -338,7 +453,7 @@ export class SmashScene extends Phaser.Scene {
       .text(
         width / 2,
         22,
-        'A = saltar  ·  X = golpe (↑ ↓ cambian)  ·  B = especial (B + ↑ = rescate)  ·  RB / LB = escudo (+ X agarrar, + ◀ ▶ rodar)  ·  Barra llena: LB + RB = ¡súper!',
+        'A = saltar  ·  X = golpe (mantén = cargado)  ·  B = especial (+ ↑ rescate)  ·  RB / LB = escudo (justo a tiempo = ¡perfecto!)  ·  LB + RB = ¡súper!',
         textStyle(16, TEXT.normal, OUTLINE),
       )
       .setOrigin(0.5);
@@ -374,6 +489,17 @@ export class SmashScene extends Phaser.Scene {
       this.updateHud();
       return;
     }
+    // La repetición del K.O. (A la brinca).
+    if (this.phase === 'replay') {
+      const skip = players.sorted().some((p) => controls.justPressed(p.deviceId, 'a'));
+      if (!this.replay.step(dt) || skip) {
+        this.replay.finish();
+        this.closeFight();
+      }
+      for (const fighter of this.fighters) fighter.render();
+      this.updateHud();
+      return;
+    }
     this.stageMs += dt;
     movePlatforms(this.platforms, this.stageMs);
 
@@ -390,27 +516,28 @@ export class SmashScene extends Phaser.Scene {
       this.announceFullMeters();
       this.spawnProjectiles();
       this.updateProjectiles(dt);
-      this.items.update(dt, this.fighters, this.settings.items && this.phase === 'fight', (fighter, item) => {
-        popText(this, item.x, item.y - 40, ITEM_NAMES[item.type], '#ffffff', this.world);
-        if (item.type === 'star') sfx.star();
-        else sfx.pickup();
-        if (item.type === 'egg') this.spawnHelper(fighter);
-      });
-      this.superBall.update(dt, this.settings.items && this.phase === 'fight', this.fighters.some((f) => f.finalReady));
+      this.items.update(dt, this.fighters, this.itemsOn && this.phase === 'fight', (fighter, item) => this.pickedUp(fighter, item));
+      this.superBall.update(dt, this.itemsOn && this.mode !== 'subida' && this.phase === 'fight', this.fighters.some((f) => f.finalReady));
       this.updateHelpers(dt);
+      this.tornadoes.update(dt, this.fighters);
+      this.coins?.update(dt, this.fighters, (fighter) => this.pickCoin(fighter));
+      if (this.hill?.update(dt, this.fighters, this.phase === 'fight')) this.talk.line('¡La corona se cambió de lugar!');
+      if (this.jonron && this.phase === 'fight') this.timerText.setText(this.jonron.update(dt, this.bag, this.players.find((f) => !f.isDummy)));
       this.resolveHits();
       this.geysers?.update(dt, this.fighters, this.phase === 'fight');
       this.events?.update(dt, this.fighters, this.phase === 'fight');
       this.checkBlastZones();
       if (this.phase === 'fight') {
+        this.replay.record(dt, this.fighters);
         this.updateClock(dt);
         this.checkWinner();
-      } else {
+      } else if (this.phase === 'end') {
         this.updateEnd();
       }
     }
 
     for (const fighter of this.fighters) fighter.render();
+    this.talk.update(dt);
     this.updateCamera(dt / 1000);
     this.updateHud();
   }
@@ -419,7 +546,8 @@ export class SmashScene extends Phaser.Scene {
     const step = Math.floor(this.phaseMs / COUNTDOWN_STEP_MS);
     const label = step < 3 ? String(3 - step) : '¡A pelear!';
     if (this.banner.text !== label) {
-      this.showBanner(label, '', step < 3 ? 0 : 700);
+      const note = step < 3 ? this.countdownNote : (MODE_INTROS[this.mode] ?? '');
+      this.showBanner(label, note, step < 3 ? 0 : note ? 1400 : 700);
       sfx.countdown(step >= 3);
     }
     if (step >= 3) {
@@ -429,6 +557,7 @@ export class SmashScene extends Phaser.Scene {
   }
 
   inputFor(fighter) {
+    if (fighter.isDummy) return IDLE;
     if (fighter.isCpu) return { ...this.cpuInput(fighter), change: this.cpuNumber(fighter) };
     const id = fighter.deviceId;
     const stick = controls.getStick(id);
@@ -443,6 +572,8 @@ export class SmashScene extends Phaser.Scene {
       y: stick.y,
       jump: controls.justPressed(id, 'a'),
       attack: controls.justPressed(id, 'x'),
+      // Mantener X carga el golpe.
+      attackHeld: controls.isDown(id, 'x'),
       special: controls.justPressed(id, 'b'),
       // Escudo con cualquier botón de arriba (bumpers o gatillos), para que sea fácil de encontrar.
       shield: !transform && ['rb', 'lb', 'rt', 'lt'].some((button) => controls.isDown(id, button)),
@@ -515,6 +646,11 @@ export class SmashScene extends Phaser.Scene {
   // va por objetos (y lanza bombas), huye del que tiene estrella y regresa al escenario si se cae.
   cpuInput(fighter) {
     if (fighter.hitstunMs > 0 || fighter.stunMs > 0 || this.phase !== 'fight') return IDLE;
+    // Cargando un golpe: lo suelta cuando se le acaba la paciencia.
+    if (fighter.attack?.chargeable && !fighter.attack.released) {
+      fighter.cpuChargeMs = (fighter.cpuChargeMs ?? 0) - frameDelta();
+      return { ...IDLE, attackHeld: fighter.cpuChargeMs > 0 };
+    }
     const level = CPU_LEVELS[fighter.cpuLevel] ?? CPU_LEVELS.normal;
     const main = this.main;
     const center = (main.left + main.right) / 2;
@@ -543,8 +679,15 @@ export class SmashScene extends Phaser.Scene {
     if (target?.starPowerMs > 0 && best < 450) flee = true;
     else if (level.items && !fighter.held) {
       const item = this.items.nearest(fighter, 450);
-      const wanted = item && (item.type !== 'heart' || fighter.damage > 60);
+      const wanted = item && (item.type !== 'heart' || fighter.damage > 60) && item.type !== 'spring';
       if (wanted) goal = item;
+    }
+    // Monedas: va por las que estén cerca. Colina: se va a la zona (y ahí se queda si no hay nadie pegadito).
+    if (!flee && goal === target) {
+      const coin = this.coins?.nearest(fighter, 380);
+      if (coin && (!target || best > 140)) goal = coin;
+      if (this.hill?.contains(fighter) && (!target || best > 220)) return IDLE;
+      if (this.hill && !this.hill.contains(fighter) && (!target || best > 160)) goal = { x: this.hill.x, y: this.hill.platform.top - fighter.radius };
     }
     if (!goal) return IDLE;
 
@@ -577,8 +720,9 @@ export class SmashScene extends Phaser.Scene {
 
     // Con la bola súper rota, el golpe final en cuanto tiene a alguien cerquita.
     if (fighter.finalReady && best < 600) return { ...IDLE, special: true };
-    // Con la pistola de rayos, dispara cuando el rival está a su altura.
-    if (fighter.held?.type === 'raygun') {
+    // Con la pistola de rayos, la flor de fuego o el bumerán, dispara cuando el rival está a su altura.
+    const shooting = ['raygun', 'fireflower'].includes(fighter.held?.type) || (fighter.held?.type === 'boomerang' && !fighter.held.out);
+    if (shooting) {
       const lined = Math.abs(tdy) < 50 && Math.abs(dx) < 700;
       return { ...IDLE, x: lined ? Math.sign(dx) * 0.2 : x, ...climb, attack: lined && Math.random() < 0.08 };
     }
@@ -596,11 +740,16 @@ export class SmashScene extends Phaser.Scene {
     const shooter = key === 'estrella' || key === 'robot' || (fighter.blocks && [3, 5, 7].includes(fighter.look.form));
     const lined = shooter && Math.abs(tdy) < 40 && Math.abs(dx) > 150 && Math.abs(dx) < 600;
     const ambush = key === 'ninja' && best > 200 && best < TELEPORT_RANGE;
+    const attack = close && Math.random() < level.attack;
+    // A veces carga el golpe (si el rival ya trae mucho %).
+    const charge = attack && level.smart && fighter.grounded && target.damage > 70 && Math.random() < 0.35;
+    if (charge) fighter.cpuChargeMs = 250 + Math.random() * 650;
     return {
       x,
       y: aim,
       jump: climb.jump,
-      attack: close && Math.random() < level.attack,
+      attack,
+      attackHeld: charge,
       special:
         ((lined || ambush) && Math.random() < level.special * 3) ||
         (close && key !== 'resorte' && key !== 'fantasma' && Math.random() < level.special) ||
@@ -629,6 +778,19 @@ export class SmashScene extends Phaser.Scene {
       if (request.kind === 'bomb') sprite = drawItem(this, 'bomb');
       else if (request.kind === 'laser') sprite = this.add.rectangle(request.x, request.y, 80, 12, SHOTS.laser.color).setStrokeStyle(3, 0xffffff);
       else if (request.kind === 'zap') sprite = this.add.ellipse(request.x, request.y, 54, 14, SHOTS.zap.color).setStrokeStyle(3, 0xffffff);
+      else if (request.kind === 'boomerang') sprite = drawItem(this, 'boomerang').setPosition(request.x, request.y);
+      else if (request.kind === 'fireball') {
+        sprite = this.add.container(request.x, request.y, [
+          this.add.circle(0, 0, SHOTS.fireball.radius, SHOTS.fireball.color).setStrokeStyle(3, 0xffd02a),
+          this.add.circle(-3, -3, 7, 0xffe08a),
+        ]);
+      } else if (request.kind === 'fist') {
+        sprite = this.add.container(request.x, request.y, [
+          this.add.ellipse(-36 * request.dir, 0, 44, 18, 0xff9a3c),
+          this.add.circle(0, 0, 24, SHOTS.fist.color).setStrokeStyle(4, 0x1b1530),
+          this.add.rectangle(8 * request.dir, -8, 16, 8, 0xc8d4e8).setRounded(3),
+        ]);
+      }
       else if (request.kind === 'dust') {
         sprite = this.add.container(request.x, request.y, [
           this.add.circle(0, 0, 20, SHOTS.dust.color, 0.45),
@@ -652,7 +814,7 @@ export class SmashScene extends Phaser.Scene {
       // En súper modo los disparos salen más grandes (los de Bloquecito, según su número).
       sprite.setScale(fighter.sizeScale);
       this.world.add(sprite);
-      this.projectiles.push({ ...request, sprite, owner: fighter, ageMs: 0 });
+      this.projectiles.push({ ...request, sprite, owner: fighter, ageMs: 0, hits: new Set() });
     }
   }
 
@@ -690,12 +852,20 @@ export class SmashScene extends Phaser.Scene {
     const dt = dtMs / 1000;
     this.projectiles = this.projectiles.filter((p) => {
       p.ageMs += dtMs;
+      if (p.kind === 'boomerang') return this.updateBoomerang(p, dtMs);
       const shot = SHOTS[p.kind];
       if (shot) {
         if (shot.gravity) {
+          const prevY = p.y;
           p.vy += shot.gravity * (this.stage.gravity ?? 1) * dt;
           p.x += p.vx * dt;
           p.y += p.vy * dt;
+          // Las bolas de fuego botan en las plataformas.
+          const floor = shot.bounce && p.vy > 0 && this.platforms.find((pl) => p.x >= pl.left && p.x <= pl.right && prevY + shot.radius <= pl.top + 1 && p.y + shot.radius >= pl.top);
+          if (floor) {
+            p.y = floor.top - shot.radius;
+            p.vy = -shot.bounce;
+          }
         } else {
           p.x += p.dir * shot.speed * dt;
         }
@@ -706,6 +876,15 @@ export class SmashScene extends Phaser.Scene {
         const victim = this.touching(p, shot.radius);
         if (victim) {
           const result = victim.takeHit({ facing: p.dir, power: p.owner.power }, shot.hit);
+          // Escudo perfecto: el disparo se regresa y ahora es del que se cubrió.
+          if (result.perfect) {
+            this.perfectShield(victim, null, p.x, p.y);
+            p.dir = -p.dir;
+            if (typeof p.vx === 'number') p.vx = -p.vx;
+            p.owner = victim;
+            p.ageMs = 0;
+            return true;
+          }
           p.owner.dealtDamage(result.dealt);
           this.noteHit(p.owner, victim, result.dealt, result.speed);
           burst(this, p.x, p.y, result.blocked ? 0x7fdcff : shot.color, 6, this.world);
@@ -740,6 +919,42 @@ export class SmashScene extends Phaser.Scene {
       }
       return true;
     });
+  }
+
+  // El bumerán: sale, se va frenando y regresa a la mano del que lo aventó (siguiéndolo); pega de ida y de vuelta.
+  updateBoomerang(p, dtMs) {
+    const dt = dtMs / 1000;
+    const owner = p.owner;
+    p.vx -= p.dir * BOOMERANG.pull * dt;
+    p.x += p.vx * dt;
+    const back = Math.sign(p.vx) === -p.dir;
+    if (back && !p.turned) {
+      p.turned = true;
+      p.hits.clear();
+    }
+    if (back && owner.isAlive()) p.y += (owner.y - p.y) * Math.min(1, 5 * dt);
+    p.sprite.setPosition(p.x, p.y).setAngle(p.ageMs * 1.4);
+    for (const f of this.fighters) {
+      if (f.team === owner.team || p.hits.has(f) || !f.isAlive() || f.isInvulnerable() || f.distanceTo(p.x, p.y) > f.radius + BOOMERANG.radius) continue;
+      p.hits.add(f);
+      const result = f.takeHit({ facing: Math.sign(p.vx) || p.dir, power: owner.power }, BOOMERANG.hit);
+      owner.dealtDamage(result.dealt);
+      this.noteHit(owner, f, result.dealt, result.speed);
+      burst(this, p.x, p.y, result.blocked ? 0x7fdcff : 0xc98b4f, 6, this.world);
+      if (!result.blocked) sfx.hit(0.3);
+    }
+    if (this.targets.length) this.hitTargets(p.x, p.y, BOOMERANG.radius, owner);
+    const caught = back && owner.isAlive() && owner.distanceTo(p.x, p.y) < owner.radius + 26;
+    if (!caught && p.ageMs < BOOMERANG.lifeMs) return true;
+    // Lo atrapó: lo puede volver a aventar (si le quedan); si no regresó, se perdió.
+    const held = owner.held?.type === 'boomerang' ? owner.held : null;
+    if (held) {
+      held.out = false;
+      if (!caught || held.uses <= 0) owner.held = null;
+    }
+    if (caught) sfx.select();
+    p.sprite.destroy();
+    return false;
   }
 
   // Primer peleador (que no sea del equipo del que lo lanzó) que toca el proyectil.
@@ -787,8 +1002,13 @@ export class SmashScene extends Phaser.Scene {
           sfx.block();
           break;
         }
-        const { blocked, speed, dealt } = victim.takeHit(attacker, box.data);
+        const { blocked, perfect, speed, dealt } = victim.takeHit(attacker, box.data);
         attacker.dealtDamage(dealt);
+        // Escudo perfecto: el que pegó se queda mareado (y ya no sigue pegando).
+        if (perfect) {
+          this.perfectShield(victim, attacker, box.x, box.y);
+          break;
+        }
         if (blocked) {
           spark(this, box.x, box.y, 0x7fdcff, this.world);
           continue;
@@ -797,8 +1017,14 @@ export class SmashScene extends Phaser.Scene {
         spark(this, box.x, box.y, 0xffffff, this.world);
         burst(this, box.x, box.y, 0xffffff, 6, this.world);
         const strong = speed > STRONG_HIT_SPEED;
-        const word = attacker.attack?.type === 'bat' ? '¡JONRÓN!' : HIT_WORDS[Math.floor(Math.random() * HIT_WORDS.length)];
-        comicHit(this, box.x, box.y - 50, word, { big: strong, red: strong, layer: this.world });
+        // Golpe cargado al máximo: letrero especial, calcomanía y el narrador.
+        const charged = (box.data.charged ?? 0) >= 0.95;
+        if (charged) {
+          if (!attacker.isCpu) rewards.earn('smash-cargado');
+          this.talk.charged(attacker);
+        }
+        const word = attacker.attack?.type === 'bat' ? '¡JONRÓN!' : charged ? '¡SÚPER GOLPE!' : HIT_WORDS[Math.floor(Math.random() * HIT_WORDS.length)];
+        comicHit(this, box.x, box.y - 50, word, { big: strong || charged, red: strong, layer: this.world });
         if (strong) {
           this.cameras.main.shake(120, 0.006);
           shockwave(this, box.x, box.y, attacker.color, this.world);
@@ -813,9 +1039,68 @@ export class SmashScene extends Phaser.Scene {
     if (!dealt) return;
     const credit = attacker.helperOf ?? attacker;
     credit.record.dealt += dealt;
+    credit.record.hits += 1;
     credit.record.best = Math.max(credit.record.best, speed);
     victim.lastHitBy = credit;
     victim.lastHitAt = this.time.now;
+    if (victim.isBoss) this.lastBossHitAt = this.time.now;
+    // Monedas: cada golpe saca monedas del que lo recibió.
+    this.coins?.fromHit(victim.x, victim.y - victim.radius, dealt);
+    this.talk?.hit(credit, victim, speed);
+  }
+
+  // Escudo perfecto: destello, letrero y el que pegó (si fue con el cuerpo) se queda mareado.
+  perfectShield(victim, attacker, x, y) {
+    if (attacker) {
+      attacker.attack = null;
+      attacker.dashMs = 0;
+      attacker.slideMs = 0;
+      attacker.rocketMs = 0;
+      attacker.stunMs = PERFECT_STUN_MS;
+      attacker.vx = -attacker.facing * 220;
+    }
+    spark(this, x, y, 0x7fdcff, this.world);
+    burst(this, victim.x, victim.y, 0xffffff, 12, this.world);
+    popText(this, victim.x, victim.y - 90, '¡Perfecto!', '#7fdcff', this.world);
+    sfx.sparkle();
+    this.talk.perfect(victim);
+    if (!victim.isCpu) rewards.earn('smash-parada');
+  }
+
+  // Alguien agarró un objeto.
+  pickedUp(fighter, item) {
+    (fighter.helperOf ?? fighter).record.items += 1;
+    popText(this, item.x, item.y - 40, ITEM_NAMES[item.type] ?? '', '#ffffff', this.world);
+    if (item.type === 'star') sfx.star();
+    else sfx.pickup();
+    this.talk.item(fighter, item.type);
+    if (item.type === 'egg') this.spawnHelper(fighter);
+    else if (item.type === 'tornado') this.tornadoes.spawn(fighter);
+    else if (item.type === 'capsule') this.openCapsule(item);
+  }
+
+  // La cápsula sorpresa: casi siempre sale otro objeto (de un brinco); a veces, ¡explota!
+  openCapsule(item) {
+    burst(this, item.x, item.y, 0xffffff, 10, this.world);
+    if (Math.random() < CAPSULE_BOOM) {
+      popText(this, item.x, item.y - 80, '¡Sorpresa! 💥', '#ff9a3c', this.world);
+      sfx.boom();
+      this.cameras.main.shake(160, 0.007);
+      for (const f of this.fighters) {
+        if (!f.isAlive() || f.isInvulnerable() || f.distanceTo(item.x, item.y) > 110 + f.radius) continue;
+        f.takeHit({ facing: Math.sign(f.x - item.x) || 1, power: 1, x: item.x }, CAPSULE_HIT);
+      }
+      return;
+    }
+    const type = CAPSULE_ITEMS[Math.floor(Math.random() * CAPSULE_ITEMS.length)];
+    const prize = this.items.spawnAt(type, item.x, item.y - 30, -420);
+    prize.waitMs = 300;
+    sfx.poof();
+  }
+
+  pickCoin(fighter) {
+    (fighter.helperOf ?? fighter).record.coins += 1;
+    sfx.coin();
   }
 
   // El que tenía agarrado a alguien lo avienta (escudo + X, y luego hacia donde apunte el stick).
@@ -882,6 +1167,8 @@ export class SmashScene extends Phaser.Scene {
   }
 
   checkBlastZones() {
+    // (En el jonrón nadie sale volando de la pantalla: abajo está el pasto.)
+    if (this.jonron) return;
     const zone = this.stage.blast;
     for (const fighter of this.fighters) {
       if (!fighter.isAlive()) continue;
@@ -895,8 +1182,9 @@ export class SmashScene extends Phaser.Scene {
       sfx.ko();
       // Al jefe no se le acaban las vidas: regresa, pero pierde vida.
       if (fighter.isBoss) {
-        fighter.bossHp = Math.max(0, fighter.bossHp - BOSS.fallDamage);
-        popText(this, ex, ey - 50, `-${BOSS.fallDamage}`, '#ffd84d', this.world);
+        fighter.bossHp = Math.max(0, fighter.bossHp - this.giant.fallDamage);
+        popText(this, ex, ey - 50, `-${this.giant.fallDamage}`, '#ffd84d', this.world);
+        this.lastBossHitAt = this.time.now;
         fighter.spawn(this.stage.respawn.x, this.stage.respawn.y, 1200);
         continue;
       }
@@ -909,35 +1197,50 @@ export class SmashScene extends Phaser.Scene {
         continue;
       }
       fighter.knockOut();
+      this.lastKo = { fighter, at: this.time.now };
+      this.talk.ko(fighter);
+      // Monedas: al caerte pierdes la mitad (salen volando desde arriba del escenario).
+      if (this.coins && fighter.record.coins > 0) {
+        const lost = Math.ceil(fighter.record.coins / 2);
+        fighter.record.coins -= lost;
+        this.coins.burst((this.main.left + this.main.right) / 2, this.main.top - 320, Math.min(lost, 20));
+        popText(this, ex, ey - 50, `-${lost} 💰`, '#ffd84d', this.world);
+      }
       if (fighter.stocks === 0) fighter.outAt = this.time.now;
     }
   }
 
   // El reloj del modo Tiempo (hacia atrás) y de Rompe los blancos (hacia adelante).
   updateClock(dt) {
-    if (this.mode === 'tiempo') this.timeMs = Math.max(0, this.timeMs - dt);
-    else if (this.mode === 'blancos') this.timeMs += dt;
+    if (TIMED_MODES.includes(this.mode)) {
+      const before = this.timeMs;
+      this.timeMs = Math.max(0, this.timeMs - dt);
+      if (before > 10000 && this.timeMs <= 10000) this.talk.line('¡Quedan 10 segundos!', { important: true });
+    } else if (this.mode === 'blancos' || this.mode === 'subida') {
+      this.timeMs += dt;
+    }
   }
 
   checkWinner() {
-    if (this.mode === 'tiempo') {
-      if (this.timeMs > 0) return;
-      this.setPhase('end');
-      const score = (f) => f.record.kos - f.record.falls;
-      const ranking = [...this.players].sort((a, b) => score(b) - score(a) || a.damage - b.damage);
-      const tie = ranking.length > 1 && score(ranking[0]) === score(ranking[1]);
-      this.finish(ranking, tie ? '¡Empate!' : `¡Ganó ${ranking[0].label}!`, (f) => [`⭐ ${score(f) > 0 ? '+' : ''}${score(f)} puntos`, `💥 sacó a ${f.record.kos}  ·  😵 se cayó ${f.record.falls}`]);
-      if (!tie && !ranking[0].isCpu) rewards.earn('smash-gana');
+    if (this.adventure) {
+      this.checkAdventure();
+      return;
+    }
+    if (this.jonron) {
+      if (this.jonron.finished) this.nextJonronTurn();
+      return;
+    }
+    if (TIMED_MODES.includes(this.mode)) {
+      this.checkTimed();
       return;
     }
     if (this.mode === 'blancos') {
       if (this.targets.some((t) => !t.broken)) return;
-      this.setPhase('end');
       const record = targetRecords.save(this.settings.stage, this.timeMs);
       const best = targetRecords.get(this.settings.stage);
       const ranking = [...this.players].sort((a, b) => (b.record.targets ?? 0) - (a.record.targets ?? 0));
       const time = formatTime(this.timeMs);
-      this.finish(ranking, record ? `¡Récord! ${time}` : `¡Las ${TARGETS} en ${time}!`, (f) => [`🎯 rompió ${f.record.targets ?? 0}`, record ? '' : `Récord: ${formatTime(best)}`]);
+      this.endFight(ranking, record ? `¡Récord! ${time}` : `¡Las ${TARGETS} en ${time}!`, (f) => [`🎯 rompió ${f.record.targets ?? 0}`, record ? '' : `Récord: ${formatTime(best)}`]);
       rewards.earn('smash-blancos');
       return;
     }
@@ -945,62 +1248,207 @@ export class SmashScene extends Phaser.Scene {
       const heroes = this.players.filter((f) => !f.isBoss);
       const won = this.boss.bossHp <= 0;
       if (!won && heroes.some((f) => f.stocks > 0)) return;
-      this.setPhase('end');
-      if (won) {
-        this.boss.sprite.setVisible(false);
-        burst(this, this.boss.x, this.boss.y, 0xffd84d, 24, this.world);
-        this.cameras.main.shake(400, 0.015);
-        if (heroes.some((f) => !f.isCpu)) rewards.earn('smash-jefe');
-      }
+      if (won && heroes.some((f) => !f.isCpu)) rewards.earn('smash-jefe');
       const ranking = won ? [...heroes].sort((a, b) => b.record.dealt - a.record.dealt) : [this.boss, ...heroes];
-      this.finish(ranking, won ? '¡Le ganaron al Rey Bolón!' : '¡Ganó el Rey Bolón!');
+      const name = this.boss.bossName;
+      this.endFight(ranking, won ? `¡Le ganaron a ${name}!` : `¡Ganó ${name}!`, undefined, won ? () => this.defeatBoss() : null);
       return;
     }
     if (this.mode === 'equipos') {
       const alive = [0, 1].map((team) => this.players.some((f) => f.team === team && f.stocks > 0));
       if (alive[0] && alive[1]) return;
-      this.setPhase('end');
       const team = alive[0] ? 0 : alive[1] ? 1 : null;
       const ranking = [...this.players].sort((a, b) => (b.team === team) - (a.team === team) || b.record.kos - a.record.kos);
-      this.finish(ranking, team === null ? '¡Empate!' : `¡Ganan los ${TEAMS[team].name}!`);
+      this.endFight(ranking, team === null ? '¡Empate!' : `¡Ganan los ${TEAMS[team].name}!`);
       if (this.players.some((f) => f.team === team && !f.isCpu)) rewards.earn('smash-gana');
       return;
     }
     const standing = this.players.filter((fighter) => fighter.stocks > 0);
     if (standing.length > 1) return;
-    this.setPhase('end');
     const winner = standing[0];
     // Los demás, del último que quedó fuera al primero.
     const rest = this.players.filter((f) => f !== winner).sort((a, b) => (b.outAt ?? 0) - (a.outAt ?? 0));
-    this.finish(winner ? [winner, ...rest] : rest, winner ? `¡Ganó ${winner.label}!` : '¡Empate!');
+    this.endFight(winner ? [winner, ...rest] : rest, winner ? `¡Ganó ${winner.label}!` : '¡Empate!');
     if (winner && !winner.isCpu) rewards.earn('smash-gana');
   }
 
-  // Fin de la pelea: el podio con lo que hizo cada quien, confeti y el ganador festejando.
+  // Tiempo, Monedas y Colina: al acabarse el reloj (o al juntar 30 segundos en la colina) gana el de más puntos.
+  checkTimed() {
+    const score = {
+      tiempo: (f) => f.record.kos - f.record.falls,
+      monedas: (f) => f.record.coins,
+      colina: (f) => f.record.hill,
+    }[this.mode];
+    const crowned = this.mode === 'colina' && this.players.some((f) => f.record.hill >= HILL_GOAL);
+    if (this.timeMs > 0 && !crowned) return;
+    const ranking = [...this.players].sort((a, b) => score(b) - score(a) || a.damage - b.damage);
+    const tie = ranking.length > 1 && score(ranking[0]) === score(ranking[1]);
+    const falls = (f) => `💥 sacó a ${f.record.kos}  ·  😵 se cayó ${f.record.falls}`;
+    const describe = {
+      tiempo: (f) => [`⭐ ${score(f) > 0 ? '+' : ''}${score(f)} puntos`, falls(f)],
+      monedas: (f) => [`💰 ${f.record.coins} monedas`, falls(f)],
+      colina: (f) => [`👑 ${Math.floor(f.record.hill)} segundos en la zona`],
+    }[this.mode];
+    this.endFight(ranking, tie ? '¡Empate!' : `¡Ganó ${ranking[0].label}!`, describe);
+    if (!tie && !ranking[0].isCpu) rewards.earn({ tiempo: 'smash-gana', monedas: 'smash-monedas', colina: 'smash-colina' }[this.mode]);
+  }
+
+  // Aventura: ¿ya se ganó (o se perdió) el nivel?
+  checkAdventure() {
+    const heroes = this.players.filter((f) => !f.isCpu);
+    let won = null;
+    if (this.mode === 'blancos') won = this.targets.every((t) => t.broken) ? true : null;
+    else if (this.mode === 'subida') won = heroes.some((f) => this.reachedGoal(f)) ? true : null;
+    else if (this.boss) won = this.boss.bossHp <= 0 ? true : heroes.every((f) => f.stocks === 0) ? false : null;
+    else if (this.players.filter((f) => f.isCpu).every((f) => f.stocks === 0)) won = true;
+    else if (heroes.every((f) => f.stocks === 0)) won = false;
+    if (won === null) return;
+    const last = this.adventure.index === ADVENTURE.length - 1;
+    this.adventureWon = won;
+    if (won && last) rewards.earn('smash-aventura');
+    const title = !won ? '¡Uy! Otra vez' : last ? '¡Terminaste la Aventura!' : '¡Nivel superado!';
+    const ranking = [...heroes].sort((a, b) => b.record.dealt - a.record.dealt);
+    let describe;
+    if (this.mode === 'blancos') describe = (f) => [`🎯 rompió ${f.record.targets ?? 0}`, `⏱ ${formatTime(this.timeMs)}`];
+    else if (this.mode === 'subida') describe = (f) => [f === this.climber ? '🚩 ¡Llegó a la bandera!' : '', `⏱ ${formatTime(this.timeMs)}`];
+    this.endFight(ranking, title, describe, won && this.boss ? () => this.defeatBoss() : null);
+  }
+
+  // La torre: llegó a la plataforma de la bandera (el primero que llega es el que "subió").
+  reachedGoal(fighter) {
+    const reached = fighter.isAlive() && fighter.grounded && Math.abs(fighter.platform.top - this.stage.goal.y) < 1;
+    if (reached) this.climber ??= fighter;
+    return reached;
+  }
+
+  // Jonrón: guarda los metros del que tenía el turno y pasa al siguiente (o, si ya pegaron todos, el podio).
+  nextJonronTurn() {
+    const player = this.players.find((f) => !f.isDummy);
+    const results = [
+      ...this.jonronTurn.results,
+      { label: player.label, color: player.color, characterKey: player.characterKey, deviceId: player.deviceId, meters: this.jonron.meters },
+    ];
+    const turn = this.jonronTurn.turn + 1;
+    if (turn < players.sorted().length) {
+      this.setPhase('end');
+      this.scene.restart({ ...this.returnData, rematch: true, jonron: { turn, results } });
+      return;
+    }
+    const ranking = results.map((r) => this.pastFighter(r)).sort((a, b) => b.record.meters - a.record.meters);
+    const best = jonronRecord.get();
+    const title = ranking.length > 1 ? `¡Ganó ${ranking[0].label}!` : `¡${ranking[0].record.meters.toFixed(1)} metros!`;
+    this.endFight(ranking, title, (f) => [`📏 ${f.record.meters.toFixed(1)} m`, `Récord: ${best.toFixed(1)} m`]);
+  }
+
+  // Un peleador "de mentiritas" para el podio del jonrón (los de los turnos pasados ya no están en la escena).
+  pastFighter(r) {
+    return { ...r, record: { meters: r.meters }, image: Boolean(characterTexture(this, r.characterKey)), blocks: false, isCpu: false };
+  }
+
+  defeatBoss() {
+    this.boss.sprite.setVisible(false);
+    burst(this, this.boss.x, this.boss.y, 0xffd84d, 24, this.world);
+    this.cameras.main.shake(400, 0.015);
+  }
+
+  // Se acabó la pelea. Si fue por un KO (o un golpe al jefe) de hace un instante, primero la repetición.
+  // `before`: lo que pasa justo antes del podio (que el jefe desaparezca).
+  endFight(ranking, title, describe = undefined, before = null) {
+    const now = this.time.now;
+    const ko = this.lastKo && now - this.lastKo.at < REPLAY_RECENT_MS ? this.lastKo.fighter : null;
+    const bossHit = this.boss && this.boss.bossHp <= 0 && now - this.lastBossHitAt < REPLAY_RECENT_MS ? this.boss : null;
+    const focus = ko ?? bossHit;
+    this.pending = { ranking, title, describe, before };
+    if (focus && this.replay.ready) {
+      this.setPhase('replay');
+      this.replay.start(this, this.ui, focus);
+      this.timerText.setText('');
+      this.talk.hide();
+      return;
+    }
+    this.closeFight();
+  }
+
+  closeFight() {
+    const { ranking, title, describe, before } = this.pending;
+    this.pending = null;
+    this.setPhase('end');
+    before?.();
+    this.finish(ranking, title, describe);
+  }
+
+  // Fin de la pelea: el podio con lo que hizo cada quien, los premios, confeti y el ganador festejando.
   finish(ranking, title, describe = undefined) {
     const winner = ranking[0];
-    for (const fighter of this.fighters) fighter.celebrating = fighter === winner || (this.mode === 'equipos' && fighter.team === winner?.team);
+    for (const fighter of this.fighters) {
+      fighter.celebrating =
+        fighter === winner ||
+        Boolean(winner?.deviceId && fighter.deviceId === winner.deviceId) ||
+        (this.mode === 'equipos' && fighter.team === winner?.team) ||
+        (this.adventureWon && !fighter.isCpu);
+    }
     say(title);
     this.timerText.setText('');
-    this.results = showResults(this, ranking, this.ui, title, 'A = revancha   ·   B = cambiar personaje   ·   Mantén LB + RB + Y = salir', describe);
+    this.talk.hide();
+    const notes = this.jonron ? [] : awards(this.players.filter((f) => !f.isBoss && !f.isDummy));
+    // (Si ganaron la Aventura, todos los del podio salen contentos.)
+    this.results = showResults(this, ranking, this.ui, title, this.endHint(), describe, notes, this.adventureWon);
     if (winner) confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
     sfx.win();
   }
 
+  endHint() {
+    if (this.adventure) {
+      const last = this.adventure.index === ADVENTURE.length - 1;
+      if (!this.adventureWon) return 'A = intentar otra vez   ·   B = salir de la Aventura';
+      return last ? 'A = jugar la Aventura otra vez   ·   B = cambiar personaje' : 'A = ¡siguiente nivel!   ·   B = salir de la Aventura';
+    }
+    if (this.jonron) return 'A = otra ronda   ·   B = cambiar personaje   ·   Mantén LB + RB + Y = salir';
+    return 'A = revancha   ·   B = cambiar personaje   ·   Mantén LB + RB + Y = salir';
+  }
+
   updateEnd() {
     if (this.phaseMs < END_INPUT_DELAY_MS) return;
-    const humans = this.fighters.filter((f) => !f.isCpu);
-    if (humans.some((f) => controls.justPressed(f.deviceId, 'a'))) this.scene.restart({ ...this.returnData, rematch: true });
-    else if (humans.some((f) => controls.justPressed(f.deviceId, 'b'))) this.scene.start('SmashSelect', { selected: this.returnData.selected });
+    const ids = players.sorted().map((p) => p.deviceId);
+    if (ids.some((id) => controls.justPressed(id, 'a'))) this.scene.restart(this.nextRound());
+    else if (ids.some((id) => controls.justPressed(id, 'b'))) this.scene.start('SmashSelect', { selected: this.returnData.selected });
+  }
+
+  // Lo que sigue al apretar A en el podio: la revancha, otra ronda del jonrón (desde el primero) o, en la Aventura,
+  // el siguiente nivel (o el mismo otra vez si se perdió; después del último, desde el principio).
+  nextRound() {
+    const data = { ...this.returnData, rematch: true, jonron: null };
+    if (!this.adventure) return data;
+    const { index } = this.adventure;
+    const next = !this.adventureWon ? index : index === ADVENTURE.length - 1 ? 0 : index + 1;
+    return { ...data, rematch: false, adventure: { index: next } };
   }
 
   // La cámara se aleja o se acerca para que siempre quepan todos (y el escenario principal).
+  // En el jonrón sigue al saco mientras vuela; en la torre sigue a los que suben (con espacio para ver hacia arriba).
   updateCamera(dt, snap = false) {
-    const points = [
-      { x: this.main.left + 120, y: this.main.top - 40 },
-      { x: this.main.right - 120, y: this.main.top - 40 },
-    ];
-    for (const fighter of this.fighters) if (fighter.isAlive()) points.push(fighter);
+    if (this.jonron?.following) {
+      const blend = Math.min(1, 3 * (1 - Math.pow(0.02, dt)));
+      this.cam.zoom += (0.7 - this.cam.zoom) * blend;
+      this.cam.x += (this.bag.x - this.cam.x) * blend;
+      this.cam.y += (this.bag.y - 120 - this.cam.y) * blend;
+      this.cameras.main.setZoom(this.cam.zoom);
+      this.cameras.main.centerOn(this.cam.x, this.cam.y);
+      return;
+    }
+    const climbing = this.mode === 'subida';
+    const points = climbing
+      ? []
+      : [
+          { x: this.main.left + 120, y: this.main.top - 40 },
+          { x: this.main.right - 120, y: this.main.top - 40 },
+        ];
+    for (const fighter of this.fighters) {
+      if (!fighter.isAlive()) continue;
+      points.push(fighter);
+      if (climbing) points.push({ x: fighter.x, y: fighter.y - 260 });
+    }
+    if (points.length === 0) points.push(this.stage.respawn);
     // En Rompe los blancos, que se vean todas las dianas que faltan.
     for (const target of this.targets ?? []) if (!target.broken) points.push(target);
     const xs = points.map((p) => p.x);
@@ -1021,12 +1469,15 @@ export class SmashScene extends Phaser.Scene {
 
   updateHud() {
     const blink = Math.floor(this.time.now / 250) % 2 === 0;
-    if (this.phase === 'fight' && (this.mode === 'tiempo' || this.mode === 'blancos')) {
+    // El reloj (el jonrón pone el suyo).
+    if (this.phase === 'fight' && !this.jonron) {
       const left = this.targets.filter((t) => !t.broken).length;
-      this.timerText.setText(this.mode === 'tiempo' ? formatTime(this.timeMs) : `🎯 ${left}   ${formatTime(this.timeMs)}`);
-      this.timerText.setColor(this.mode === 'tiempo' && this.timeMs < 10000 ? '#ff5a5f' : TEXT.normal);
+      if (TIMED_MODES.includes(this.mode)) this.timerText.setText(formatTime(this.timeMs));
+      else if (this.mode === 'blancos') this.timerText.setText(`🎯 ${left}   ${formatTime(this.timeMs)}`);
+      else if (this.mode === 'subida') this.timerText.setText(`🚩 ${formatTime(this.timeMs)}`);
+      this.timerText.setColor(TIMED_MODES.includes(this.mode) && this.timeMs < 10000 ? '#ff5a5f' : TEXT.normal);
     }
-    if (this.bossBar) this.bossBar.fill.setScale(Math.max(0, this.boss.bossHp) / BOSS.health, 1);
+    if (this.bossBar) this.bossBar.fill.setScale(Math.max(0, this.boss.bossHp) / this.giant.health, 1);
     for (const slot of this.hud) {
       const { fighter } = slot;
       // Barra: se llena dorada; llena, parpadea; en súper modo se va vaciando (lo que le queda).
@@ -1040,11 +1491,14 @@ export class SmashScene extends Phaser.Scene {
       if (slot.meterText.text !== meterLabel) slot.meterText.setText(meterLabel);
 
       const points = fighter.record.kos - fighter.record.falls;
-      const key = `${Math.round(fighter.damage)}|${fighter.stocks}|${points}|${fighter.record.targets ?? 0}`;
+      const hill = Math.floor(fighter.record.hill);
+      const key = `${Math.round(fighter.damage)}|${fighter.stocks}|${points}|${fighter.record.targets ?? 0}|${fighter.record.coins}|${hill}`;
       if (slot.shown === key) continue;
       slot.shown = key;
       if (this.mode === 'tiempo') slot.score.setText(`⭐ ${points > 0 ? '+' : ''}${points}`);
       else if (this.mode === 'blancos') slot.score.setText(`🎯 ${fighter.record.targets ?? 0}`);
+      else if (this.mode === 'monedas') slot.score.setText(`💰 ${fighter.record.coins}`);
+      else if (this.mode === 'colina') slot.score.setText(`👑 ${hill} / ${HILL_GOAL}`);
       const color = fighter.damage >= 100 ? '#ff5a5f' : fighter.damage >= 50 ? TEXT.accent : TEXT.normal;
       slot.damage.setText(fighter.stocks > 0 ? `${Math.round(fighter.damage)}%` : '—').setColor(color);
       slot.stocks.forEach((dot, k) => dot.setVisible(!fighter.infinite && k < fighter.stocks));
@@ -1052,7 +1506,7 @@ export class SmashScene extends Phaser.Scene {
   }
 
   updateExit(dt) {
-    const holding = this.fighters.some((f) => !f.isCpu && controls.holdingExit(f.deviceId));
+    const holding = players.sorted().some((p) => controls.holdingExit(p.deviceId));
     this.exitMs = holding ? this.exitMs + dt : 0;
     this.exitBar.setScale(Math.min(1, this.exitMs / EXIT_HOLD_MS), 1);
     if (this.exitMs >= EXIT_HOLD_MS) this.exit();

@@ -256,6 +256,64 @@ export const CHARACTERS = {
 
 export const CHARACTER_KEYS = Object.keys(CHARACTERS);
 
+// Los jefes del Duelo también se pueden escoger en Bolitas Bros cuando se desbloquean (`unlock`, ver UNLOCKS en
+// rewards.js). Son más grandes y pesados que los demás y cada uno trae su especial. Solo son de Bolitas Bros: no se
+// guardan como el personaje de los otros juegos. Sus dibujos son los del Duelo (duelo/jefe).
+export const BOSS_CHARACTERS = {
+  rey: {
+    name: 'Rey Bolón',
+    superName: 'Súper Rey Bolón',
+    blurb: 'Grandote y aplastador',
+    special: 'Salto aplastante',
+    unlock: 'smash-rey',
+    radius: 46,
+    weight: 1.45,
+    power: 1.25,
+    run: 290,
+    air: 270,
+    jump: 740,
+    airJumps: 1,
+    stats: { Fuerza: 3, Velocidad: 1, Salto: 2 },
+  },
+  dragonzote: {
+    name: 'Dragonzote',
+    superName: 'Dragonzote Furioso',
+    blurb: 'Vuela y echa fuego',
+    special: 'Llamarada',
+    unlock: 'smash-dragonzote',
+    radius: 46,
+    weight: 1.4,
+    power: 1.2,
+    run: 280,
+    air: 300,
+    jump: 760,
+    airJumps: 2,
+    gravity: 0.9,
+    stats: { Fuerza: 3, Velocidad: 1, Salto: 3 },
+  },
+  robotote: {
+    name: 'Robotote',
+    superName: 'Robotote Turbo',
+    blurb: 'Pesadísimo',
+    special: 'Puño cohete',
+    unlock: 'smash-robotote',
+    radius: 46,
+    weight: 1.55,
+    power: 1.3,
+    run: 260,
+    air: 260,
+    jump: 700,
+    airJumps: 1,
+    stats: { Fuerza: 3, Velocidad: 1, Salto: 1 },
+  },
+};
+export const BOSS_CHARACTER_KEYS = Object.keys(BOSS_CHARACTERS);
+
+// Los datos de cualquier personaje de Bolitas Bros (de los de siempre o de los jefes).
+export function characterInfo(key) {
+  return CHARACTERS[key] ?? BOSS_CHARACTERS[key] ?? null;
+}
+
 // Le pone a la bolita el accesorio de su personaje (cuando no hay imagen de Gemini):
 // casco, pelos de rayo, orejas, estrella, cinta ninja, antena, cuernitos, colita de fantasma, picos de dino,
 // orejas de gato, pancita y pico de pingüino, sombrero y parche de pirata, alitas de hada, casco de astronauta,

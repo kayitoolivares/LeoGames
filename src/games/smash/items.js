@@ -1,10 +1,18 @@
+import { sfx } from '../../shared/sound.js';
 import { COLORS } from '../../ui/style.js';
 import { itemTexture } from './art.js';
 
 // Objetos que caen del cielo en Bolitas Bros. Se agarran tocándolos:
-// martillo, bomba, bate y pistola de rayos se cargan (X los usa); corazón, estrella y patineta hacen efecto al instante,
-// y el huevo sorpresa se abre y sale un ayudante que pelea de tu lado un rato.
-export const ITEM_TYPES = ['hammer', 'bomb', 'heart', 'star', 'bat', 'raygun', 'skate', 'egg'];
+// martillo, bomba, bate, pistola de rayos, bumerán y flor de fuego se cargan (X los usa); corazón, estrella y patineta
+// hacen efecto al instante; el huevo sorpresa se abre y sale un ayudante que pelea de tu lado un rato; la cápsula se
+// abre y sale otro objeto (o explota); el tornado sale volando hacia donde miras y levanta a los rivales.
+// El resorte no se agarra: se queda en el piso y el que lo pisa sale disparado para arriba.
+export const ITEM_TYPES = ['hammer', 'bomb', 'heart', 'star', 'bat', 'raygun', 'skate', 'egg', 'boomerang', 'fireflower', 'spring', 'capsule', 'tornado'];
+// Lo que puede salir de la cápsula sorpresa.
+export const CAPSULE_ITEMS = ITEM_TYPES.filter((type) => type !== 'capsule' && type !== 'spring');
+// El resorte: qué tan fuerte avienta para arriba y cada cuánto puede volver a aventar.
+const SPRING_JUMP = 1350;
+const SPRING_COOLDOWN_MS = 250;
 const SPAWN_EVERY_MS = [7000, 11000];
 const FIRST_SPAWN_MS = 5000;
 const MAX_ITEMS = 2;
@@ -68,6 +76,35 @@ export function drawItem(scene, type) {
     box.add([scene.add.circle(0, 0, 22, 0xb07cff).setStrokeStyle(4, 0xffffff), scene.add.star(0, 0, 5, 6, 13, 0xffffff)]);
   } else if (type === 'target') {
     box.add([scene.add.circle(0, 0, 22, 0xe53935).setStrokeStyle(3, COLORS.ink), scene.add.circle(0, 0, 14, 0xffffff), scene.add.circle(0, 0, 7, 0xe53935)]);
+  } else if (type === 'boomerang') {
+    box.add([
+      scene.add.rectangle(-8, -4, 12, 40, 0x9a6a3a).setRounded(5).setStrokeStyle(2, COLORS.ink).setAngle(-35),
+      scene.add.rectangle(8, -4, 12, 40, 0x9a6a3a).setRounded(5).setStrokeStyle(2, COLORS.ink).setAngle(35),
+    ]);
+  } else if (type === 'fireflower') {
+    for (let i = 0; i < 5; i += 1) {
+      const angle = (i / 5) * Math.PI * 2;
+      box.add(scene.add.circle(Math.cos(angle) * 13, Math.sin(angle) * 13, 10, 0xff7a2f).setStrokeStyle(2, COLORS.ink));
+    }
+    box.add(scene.add.circle(0, 0, 10, 0xffd02a).setStrokeStyle(2, COLORS.ink));
+  } else if (type === 'spring') {
+    box.add(scene.add.rectangle(0, 16, 40, 10, 0xe53935).setRounded(4).setStrokeStyle(2, COLORS.ink));
+    for (let i = 0; i < 4; i += 1) box.add(scene.add.ellipse(0, 6 - i * 9, 32, 10, 0x000000, 0).setStrokeStyle(4, 0x9a9aa8));
+  } else if (type === 'capsule') {
+    box.add([
+      scene.add.circle(0, 0, 21, 0x3fa7ff).setStrokeStyle(3, COLORS.ink),
+      scene.add.arc(0, 0, 21, 0, 180, false, 0xffffff),
+      scene.add.rectangle(0, 0, 42, 4, COLORS.ink),
+      scene.add.circle(0, 0, 7, 0xffd02a).setStrokeStyle(2, COLORS.ink),
+    ]);
+  } else if (type === 'tornado') {
+    for (let i = 0; i < 5; i += 1) box.add(scene.add.ellipse(i * 2 - 4, -18 + i * 9, 44 - i * 7, 10, 0x9aa8b8).setStrokeStyle(2, 0x5a6878));
+  } else if (type === 'sandbag') {
+    box.add([
+      scene.add.rectangle(0, 4, 36, 44, 0xa8743f).setRounded(16).setStrokeStyle(3, COLORS.ink),
+      scene.add.circle(-7, 0, 3, COLORS.ink),
+      scene.add.circle(7, 0, 3, COLORS.ink),
+    ]);
   }
   return box;
 }
@@ -85,9 +122,14 @@ export class SmashItems {
 
   spawn(type = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)]) {
     const x = this.area.minX + Math.random() * (this.area.maxX - this.area.minX);
+    return this.spawnAt(type, x, this.area.spawnY);
+  }
+
+  // Un objeto en un lugar (el que sale de la cápsula brinca un poquito al salir).
+  spawnAt(type, x, y, vy = 0) {
     const sprite = drawItem(this.scene, type);
     this.layer.add(sprite);
-    const item = { type, sprite, x, y: this.area.spawnY, vy: 0, platform: null, ageMs: 0 };
+    const item = { type, sprite, x, y, vy, platform: null, ageMs: 0, cooldownMs: 0 };
     this.list.push(item);
     return item;
   }
@@ -106,9 +148,12 @@ export class SmashItems {
     this.list = this.list.filter((item) => {
       item.ageMs += dtMs;
       this.fall(item, dt);
-      const taker = fighters.find(
-        (f) => f.isAlive() && f.distanceTo(item.x, item.y) < f.radius + ITEM_RADIUS && f.grab(item.type),
-      );
+      if (item.type === 'spring') this.bounce(item, dtMs, fighters);
+      // (El que salió de una cápsula espera un instante, para que se vea antes de que alguien lo agarre.)
+      const taker =
+        item.type !== 'spring' &&
+        item.ageMs > (item.waitMs ?? 0) &&
+        fighters.find((f) => f.isAlive() && !f.isDummy && f.distanceTo(item.x, item.y) < f.radius + ITEM_RADIUS && f.grab(item.type));
       if (taker) onPickup(taker, item);
       if (taker || item.ageMs > LIFE_MS || item.y > this.area.bottom) {
         item.sprite.destroy();
@@ -120,6 +165,27 @@ export class SmashItems {
       item.sprite.setPosition(item.x, item.y + bob).setAlpha(ending ? 0.3 : 1);
       return true;
     });
+  }
+
+  // El resorte, ya en el piso: al que lo pisa (o se le para encima) lo avienta para arriba y le devuelve sus saltos.
+  bounce(item, dtMs, fighters) {
+    item.cooldownMs = Math.max(0, item.cooldownMs - dtMs);
+    if (!item.platform || item.cooldownMs > 0) return;
+    for (const f of fighters) {
+      if (!f.isAlive() || f.hanging || f.heldBy || f.vy < 0) continue;
+      const feet = f.y + f.radius;
+      if (Math.abs(f.x - item.x) > f.radius * 0.8 + 16 || feet < item.y - 26 || feet > item.y + ITEM_RADIUS + 6) continue;
+      f.y = item.y - 26 - f.radius;
+      f.vy = -SPRING_JUMP * Math.sqrt(this.area.gravity ?? 1);
+      f.grounded = false;
+      f.platform = null;
+      f.airJumps = f.stats.airJumps;
+      f.rescueUsed = false;
+      item.cooldownMs = SPRING_COOLDOWN_MS;
+      item.bounces = (item.bounces ?? 0) + 1;
+      this.scene.tweens.add({ targets: item.sprite, scaleY: 0.5, duration: 70, yoyo: true });
+      sfx.boing();
+    }
   }
 
   // Caen y se quedan sobre las plataformas (y se mueven con ellas).

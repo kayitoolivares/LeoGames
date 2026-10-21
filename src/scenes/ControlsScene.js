@@ -61,14 +61,14 @@ const PAGES = [
     rows: [
       [['stick'], 'Correr (↓ baja de la plataforma)'],
       [['a'], 'Saltar'],
-      [['x'], 'Golpe (con ↑ o ↓ cambia el golpe)'],
+      [['x'], 'Golpe (con ↑ o ↓ cambia; mantén X: ¡golpe cargado!)'],
       [['b'], 'Especial (B + ↑ = salto de rescate; con la bola súper: ¡golpe final!)'],
-      [['lb', 'rb'], 'Escudo (+ X agarrar, + ◀ ▶ rodar; en el aire, esquivar)'],
+      [['lb', 'rb'], 'Escudo (justo a tiempo: ¡perfecto!; + X agarrar, + ◀ ▶ rodar)'],
       [['lb+rb'], 'Con la barra llena: ¡súper forma!'],
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Con un martillo, bomba, bate o pistola de rayos, X lo usa. Cerca de la orilla te agarras: A o ↑ para subir.',
+    note: 'Con un objeto en la mano, X lo usa. Cerca de la orilla te agarras (A o ↑ para subir). En la selección, X cambia tu traje.',
   },
   {
     title: 'Duelo de bolitas',

@@ -573,26 +573,27 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
     await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
     await p.tap(0, BUTTON.DOWN);
   };
-  const stageChoices = async () => {
+  const stageChoices = async (count) => {
     const choices = [];
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < count; i += 1) {
       choices.push(await p.page.evaluate(() => window.leogames.scene.getScene('SmashSelect').settings.stage));
       await p.tap(0, BUTTON.RB);
     }
     return choices;
   };
 
-  // Sin calcomanías solo están los 6 que no hay que ganar.
+  // Sin calcomanías solo están los 10 que no hay que ganar (y luego da la vuelta).
+  const open = ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos'];
   await openSelect();
-  assert.deepEqual(await stageChoices(), ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'castillo', 'nubes']);
+  assert.deepEqual(await stageChoices(11), [...open, 'castillo']);
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'regresar al menú');
 
   // Con "Campeón" y "¡Súper!" aparecen el Espacio (gravedad baja) y el Volcán.
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['smash-gana', 'smash-super'])));
   await openSelect();
-  assert.deepEqual(await stageChoices(), ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'espacio', 'volcan']);
-  // Después de 8 toques regresa al Castillo: LB una vez es el Volcán y otra el Espacio.
+  assert.deepEqual(await stageChoices(12), [...open, 'espacio', 'volcan']);
+  // Después de 12 toques regresa al Castillo: LB una vez es el Volcán y otra el Espacio.
   await p.tap(0, BUTTON.LB);
   await p.tap(0, BUTTON.LB);
   await p.tap(0, BUTTON.A);
@@ -607,6 +608,309 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
   await fightOn('volcan');
   await p.until(() => window.leogames.scene.getScene('Smash').geysers.eruptions > 0, ms(20000), 'que un géiser haga erupción');
   await p.holdToMenu(0, EXIT, 'salir del Volcán');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Abre Bolitas Bros con un modo y un escenario y espera a que empiece la pelea.
+async function startSmash(p, { mode = 'vidas', stage = 'castillo' } = {}) {
+  await p.openGameCard('Bolitas Bros');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
+  await p.page.evaluate(
+    ([m, st]) => {
+      const s = window.leogames.scene.getScene('SmashSelect');
+      Object.assign(s.settings, { mode: m, stage: st });
+      s.fixCpus();
+      s.refreshOptions();
+      s.layoutCards();
+    },
+    [mode, stage],
+  );
+  await p.tap(0, BUTTON.A);
+  await p.until(() => { const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight'; }, ms(20000), `pelear: ${mode} en ${stage}`);
+}
+
+// La compu se queda quieta (para las pruebas que acomodan a los peleadores).
+const quietSmashCpu = (p) =>
+  p.page.evaluate(() => {
+    window.leogames.scene.getScene('Smash').cpuInput = () => ({ x: 0, y: 0, jump: false, attack: false, attackHeld: false, special: false, shield: false, transform: false });
+  });
+
+// Pone al Jugador 1 en el piso del escenario y a la compu pegadita enfrente (o a `gap` de distancia), sin daño.
+const faceOff = (p, gap = 10) =>
+  p.page.evaluate((g) => {
+    const s = window.leogames.scene.getScene('Smash');
+    const [me, cpu] = s.fighters;
+    const place = (f, x, facing) =>
+      Object.assign(f, { x, y: s.main.top - f.radius, vx: 0, vy: 0, facing, grounded: true, platform: s.main, attack: null, hitstunMs: 0, stunMs: 0, invulnerableMs: 0, held: null, shielding: false, damage: 0 });
+    place(me, 900, 1);
+    place(cpu, 900 + me.radius + cpu.radius + g, -1);
+    s.items.list.forEach((item) => item.sprite.destroy());
+    s.items.list = [];
+  }, gap);
+
+test('bolitas bros: golpe cargado, escudo perfecto y objetos nuevos', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await startSmash(p);
+  await quietSmashCpu(p);
+  const cpuDamage = () => p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[1].damage);
+
+  // Golpe cargado: mantener X junta fuerza hasta el máximo y pega más fuerte.
+  await faceOff(p);
+  await p.page.evaluate(() => window.__button(0, 2, true));
+  await p.wait(ms(1500));
+  await p.page.evaluate(() => window.__button(0, 2, false));
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(3000), 'pegar con el golpe cargado');
+  assert.ok((await cpuDamage()) > 10, 'el golpe cargado pega más que uno normal');
+  assert.ok((await stickers(p.page)).includes('smash-cargado'));
+
+  // Escudo perfecto: subir el escudo justo antes del golpe marea al que pegó.
+  await faceOff(p);
+  await p.page.evaluate(() => {
+    window.__button(0, 5, true);
+    window.leogames.scene.getScene('Smash').fighters[1].startAttack({ x: 0, y: 0 });
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].stunMs > 0, ms(3000), 'marear con el escudo perfecto');
+  await p.page.evaluate(() => window.__button(0, 5, false));
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].record.perfects), 1);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].damage), 0);
+  assert.ok((await stickers(p.page)).includes('smash-parada'));
+
+  // El bumerán: pega de ida y regresa a la mano.
+  await faceOff(p, 200);
+  await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].grab('boomerang'));
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(3000), 'pegar con el bumerán');
+  await p.until(() => { const me = window.leogames.scene.getScene('Smash').fighters[0]; return me.held?.type === 'boomerang' && !me.held.out; }, ms(4000), 'que el bumerán regrese');
+
+  // La flor de fuego echa bolas de fuego.
+  await faceOff(p, 300);
+  await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].grab('fireflower'));
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Smash').projectiles.some((shot) => shot.kind === 'fireball'), ms(3000), 'echar una bola de fuego');
+
+  // El resorte avienta para arriba al que se le para encima.
+  await faceOff(p, 300);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    s.items.spawnAt('spring', s.fighters[0].x, s.main.top - 60);
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').items.list.some((item) => item.type === 'spring' && item.bounces > 0), ms(3000), 'brincar en el resorte');
+
+  // La cápsula sorpresa se abre al tocarla.
+  await faceOff(p, 300);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    s.items.spawnAt('capsule', s.fighters[0].x, s.fighters[0].y);
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[0].record.items >= 1, ms(3000), 'abrir la cápsula');
+
+  // El tornado levanta a la compu.
+  await faceOff(p, 120);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    s.items.spawnAt('tornado', s.fighters[0].x, s.fighters[0].y);
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(5000), 'que el tornado levante a la compu');
+
+  // El narrador habló y, al final, salen los premios (quién pegó más...).
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').talk.caption.text.startsWith('🎙️')), 'el narrador no habló');
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').fighters[1].stocks = 0));
+  await p.until(() => window.leogames.scene.getScene('Smash').phase === 'end', ms(5000), 'terminar la pelea');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').results.list.some((o) => o.text?.includes('Más golpes'))), 'sin premios');
+  await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('bolitas bros: jonrón, monedas, rey de la colina y jefes para escoger', { timeout: ms(240000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+
+  // Concurso de jonrón: sin compu, con el saco. Se salta los 10 segundos y se le da el batazo.
+  await startSmash(p, { mode: 'jonron' });
+  assert.ok(await p.page.evaluate(() => { const s = window.leogames.scene.getScene('Smash'); return s.bag?.isDummy && s.fighters.length === 2; }), 'el saco');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    s.bag.damage = 150;
+    s.jonron.ms = 1;
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').jonron.step === 'swing', ms(3000), 'pasar al batazo');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].held?.type), 'bat');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const result = s.bag.takeHit({ facing: 1, power: 1, x: s.bag.x - 50 }, { damage: 15, base: 540, scale: 14, angle: 38 });
+    s.noteHit(s.fighters[0], s.bag, result.dealt, result.speed);
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').phase === 'end', ms(25000), 'ver hasta dónde llegó el saco');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').jonron.meters > 100), 'más de 100 m');
+  assert.ok((await stickers(p.page)).includes('smash-jonron'));
+  await p.holdToMenu(0, EXIT, 'salir del jonrón');
+
+  // Monedas: los golpes sacan monedas y gana el que junte más.
+  await startSmash(p, { mode: 'monedas' });
+  await quietSmashCpu(p);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const [me, cpu] = s.fighters;
+    const result = cpu.takeHit({ facing: 1, power: 1, x: cpu.x - 10 }, { damage: 20, base: 100, scale: 1, angle: 45 });
+    s.noteHit(me, cpu, result.dealt, result.speed);
+    // (La compu se va lejos para no agarrar sus propias monedas.)
+    Object.assign(cpu, { x: s.main.left + 60, y: s.main.top - cpu.radius, vx: 0, vy: 0, hitstunMs: 0 });
+  });
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').coins.list.length > 0), 'salieron monedas');
+  await p.until(
+    () => {
+      const s = window.leogames.scene.getScene('Smash');
+      const [me] = s.fighters;
+      const coin = s.coins.list[0];
+      if (coin) Object.assign(me, { x: coin.x, y: coin.y, vx: 0, vy: 0 });
+      return me.record.coins > 0;
+    },
+    ms(5000),
+    'agarrar monedas',
+  );
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').timeMs = 1));
+  await p.until(() => window.leogames.scene.getScene('Smash').phase === 'end', ms(5000), 'terminar Monedas');
+  assert.ok((await stickers(p.page)).includes('smash-monedas'));
+  await p.holdToMenu(0, EXIT, 'salir de Monedas');
+
+  // Rey de la colina: quedarse en la zona junta segundos.
+  await startSmash(p, { mode: 'colina' });
+  await quietSmashCpu(p);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const [me, cpu] = s.fighters;
+    Object.assign(me, { x: s.hill.x, y: s.hill.platform.top - me.radius, vx: 0, vy: 0, grounded: true, platform: s.hill.platform });
+    Object.assign(cpu, { x: s.main.left + 60, y: s.main.top - cpu.radius, vx: 0, vy: 0, grounded: true, platform: s.main });
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[0].record.hill > 1, ms(6000), 'juntar segundos en la colina');
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').fighters[0].record.hill = 30));
+  await p.until(() => window.leogames.scene.getScene('Smash').phase === 'end', ms(5000), 'ganar la colina');
+  assert.ok((await stickers(p.page)).includes('smash-colina'));
+  await p.holdToMenu(0, EXIT, 'salir de la colina');
+
+  // Jefes para escoger: con sus calcomanías salen al final de la lista (◀ desde Tanque: Robotote, Dragonzote, Rey Bolón).
+  await p.page.evaluate(() =>
+    Promise.all([import('/src/shared/settings.js'), import('/src/shared/picks.js')]).then(([m, picks]) => {
+      m.settings.set('stickers', [...new Set([...m.settings.get('stickers', []), 'smash-jefe', 'smash-aventura'])]);
+      picks.characterPicks.set('pad0', 'tanque');
+    }),
+  );
+  await p.openGameCard('Bolitas Bros');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('SmashSelect'), null, { timeout: ms(8000) });
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('SmashSelect');
+    Object.assign(s.settings, { mode: 'vidas', stage: 'castillo' });
+    s.fixCpus();
+    s.refreshOptions();
+    s.layoutCards();
+  });
+  const pick = () => p.page.evaluate(() => window.leogames.scene.getScene('SmashSelect').humanSlots[0].pick);
+  const seen = [];
+  for (let i = 0; i < 3; i += 1) {
+    await p.tap(0, BUTTON.LEFT);
+    seen.push(await pick());
+  }
+  assert.deepEqual(seen, ['robotote', 'dragonzote', 'rey']);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  // X cambia el traje (dos veces: azul).
+  await p.tap(0, BUTTON.X);
+  await p.tap(0, BUTTON.X);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => { const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight'; }, ms(20000), 'pelear con Robotote');
+  const me = await p.page.evaluate(() => {
+    const f = window.leogames.scene.getScene('Smash').fighters[0];
+    return { key: f.characterKey, art: f.image?.texture.key ?? '', costume: f.costumeIndex };
+  });
+  assert.equal(me.key, 'robotote');
+  assert.ok(me.art.startsWith('smash:robotote-'), `sin dibujo de Robotote: ${me.art}`);
+  assert.equal(me.costume, 2);
+  // Su especial: el puño cohete.
+  await quietSmashCpu(p);
+  await faceOff(p, 150);
+  await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[0].startSpecial({ x: 0, y: 0 }));
+  await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(4000), 'pegar con el puño cohete');
+  await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
+  // (Los jefes no se guardan como personaje de los otros juegos.)
+  assert.equal(await p.page.evaluate(() => import('/src/shared/picks.js').then((m) => m.characterPicks.get('pad0', 'x'))), 'tanque');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('bolitas bros: aventura, escenarios nuevos y repetición del K.O.', { timeout: ms(300000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  const level = () => p.page.evaluate(() => window.leogames.scene.getScene('Smash').adventure?.index);
+  const waitEnd = (label) => p.until(() => { const s = window.leogames.scene.getScene('Smash'); return s.phase === 'end' && s.phaseMs > 1600; }, ms(10000), label);
+  const nextLevel = async (index) => {
+    await p.tap(0, BUTTON.A);
+    await p.until(new Function(`const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight' && s.adventure?.index === ${index};`), ms(20000), `nivel ${index + 1}`);
+  };
+
+  // Nivel 1: contra Ninja (2 vidas) en el castillo.
+  await startSmash(p, { mode: 'aventura' });
+  assert.equal(await level(), 0);
+  assert.deepEqual(
+    await p.page.evaluate(() => { const s = window.leogames.scene.getScene('Smash'); return [s.settings.stage, s.fighters[1].characterKey, s.fighters[1].stocks]; }),
+    ['castillo', 'ninja', 2],
+  );
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').fighters[1].stocks = 0));
+  await waitEnd('ganar el nivel 1');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').adventureWon));
+  // Nivel 2: las dianas de la selva.
+  await nextLevel(1);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    for (const t of s.targets) s.breakTarget(t, s.players[0]);
+  });
+  await waitEnd('ganar el nivel 2');
+  // Nivel 3: la torre: llegar a la plataforma de la bandera.
+  await nextLevel(2);
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const me = s.fighters[0];
+    Object.assign(me, { x: s.stage.goal.x, y: s.stage.goal.y - me.radius - 6, vx: 0, vy: 0, grounded: false, platform: null });
+  });
+  await waitEnd('llegar a la bandera');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').adventureWon));
+  // Hasta el último: Dragonzote gigante.
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    s.scene.restart({ ...s.returnData, rematch: false, adventure: { index: 5 } });
+  });
+  await p.until(() => { const s = window.leogames.scene.getScene('Smash'); return s.sys.isActive() && s.phase === 'fight' && s.adventure?.index === 5; }, ms(20000), 'pelear contra Dragonzote');
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').boss?.characterKey), 'dragonzote');
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').boss.bossHp = 0));
+  await waitEnd('ganarle a Dragonzote');
+  assert.ok((await stickers(p.page)).includes('smash-aventura'));
+  await p.holdToMenu(0, EXIT, 'salir de la Aventura');
+
+  // Escenarios nuevos: cada uno con su sorpresa.
+  for (const stage of ['embrujada', 'pastel', 'ciudad', 'globos']) {
+    await startSmash(p, { mode: 'vidas', stage });
+    await quietSmashCpu(p);
+    await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').events.waitMs = 0));
+    await p.until(() => Boolean(window.leogames.scene.getScene('Smash').events.active), ms(3000), `sorpresa en ${stage}`);
+    await p.until(() => !window.leogames.scene.getScene('Smash').events.active, ms(12000), `terminar la sorpresa en ${stage}`);
+    await p.holdToMenu(0, EXIT, `salir de ${stage}`);
+  }
+
+  // Repetición del K.O.: el golpe que gana la pelea se ve otra vez en cámara lenta.
+  await startSmash(p, { mode: 'vidas', stage: 'castillo' });
+  await quietSmashCpu(p);
+  await p.wait(ms(1200));
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const cpu = s.fighters[1];
+    cpu.stocks = 1;
+    cpu.x = s.stage.blast.right + 50;
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').phase === 'replay', ms(3000), 'ver la repetición');
+  await p.until(() => window.leogames.scene.getScene('Smash').phase === 'end', ms(15000), 'terminar la repetición');
+  await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

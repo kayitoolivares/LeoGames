@@ -8,9 +8,11 @@ import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
+import { loadBossArt } from '../duelo/boss.js';
+import { COSTUMES, COSTUME_NAMES } from '../duelo/DueloFighter.js';
 import { characterTexture, loadSmashArt } from './art.js';
 import { isBlockCharacter } from './bloquecito.js';
-import { CHARACTERS, CHARACTER_KEYS, addAccessory } from './characters.js';
+import { BOSS_CHARACTERS, BOSS_CHARACTER_KEYS, CHARACTER_KEYS, addAccessory, characterInfo } from './characters.js';
 import { MODES, MODE_KEYS } from './modes.js';
 import { STAGES, STAGE_KEYS } from './stages.js';
 
@@ -37,10 +39,16 @@ function openStages() {
   return STAGE_KEYS.filter((key) => rewards.unlocked(STAGES[key].unlock));
 }
 
+// Los personajes que se pueden escoger: todos los de siempre y los jefes que ya se desbloquearon.
+function openCharacters() {
+  return [...CHARACTER_KEYS, ...BOSS_CHARACTER_KEYS.filter((key) => rewards.unlocked(BOSS_CHARACTERS[key].unlock))];
+}
+
 // Siempre hay al menos un rival, y entre todos no pasan de 4. Contra el jefe la compu es de tu equipo (puede no haber),
 // y en Rompe los blancos no hay compu.
 function cpuChoices(humans, mode = 'vidas') {
-  if (mode === 'blancos') return [0];
+  // (En la Aventura la compu la pone cada nivel.)
+  if (mode === 'blancos' || mode === 'jonron' || mode === 'aventura') return [0];
   const list = [];
   for (let n = humans < 2 && mode !== 'jefe' ? 1 : 0; n <= 4 - humans; n += 1) list.push(n);
   return list;
@@ -48,6 +56,9 @@ function cpuChoices(humans, mode = 'vidas') {
 
 // Lo último que se escogió, para no tener que escogerlo otra vez (el personaje se comparte con los demás juegos).
 const lastPeque = new Map();
+const lastCostume = new Map();
+// Los jefes solo son de Bolitas Bros: no se guardan como el personaje de los otros juegos.
+const lastBoss = new Map();
 const lastSettings = { mode: 'vidas', stage: 'castillo', items: true, cpus: null, level: 'normal' };
 
 // Antes de Bolitas Bros: cada jugador escoge su bolita con ◀ ▶, Y activa su modo peque y A = listo.
@@ -64,6 +75,7 @@ export class SmashSelectScene extends Phaser.Scene {
 
   preload() {
     loadSmashArt(this);
+    loadBossArt(this);
   }
 
   create() {
@@ -84,21 +96,30 @@ export class SmashSelectScene extends Phaser.Scene {
     this.add
       .text(width / 2, 140, 'Jugador 1:  ↑ ↓ elegir opción  ·  LB / RB cambiarla', textStyle(17, TEXT.muted))
       .setOrigin(0.5);
-    this.modeInfo = this.add.text(width / 2, 192, '', textStyle(17, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.modeInfo = this.add.text(width / 2, 198, '', textStyle(17, TEXT.accent, { fontStyle: 'bold' })).setOrigin(0.5);
+    // Lo que falta desbloquear: escenarios en una línea y jefes en otra.
     const locked = STAGE_KEYS.filter((key) => !rewards.unlocked(STAGES[key].unlock));
     const lockText = locked.map((key) => `🔒 ${STAGES[key].name}: ${UNLOCKS[STAGES[key].unlock].label}`).join('   ·   ');
-    this.add.text(width / 2, 166, lockText, textStyle(15, TEXT.muted)).setOrigin(0.5);
+    this.add.text(width / 2, 160, lockText, textStyle(14, TEXT.muted)).setOrigin(0.5);
+    const lockedBosses = BOSS_CHARACTER_KEYS.filter((key) => !rewards.unlocked(BOSS_CHARACTERS[key].unlock));
+    const bossText = lockedBosses.map((key) => `🔒 ${BOSS_CHARACTERS[key].name}: ${UNLOCKS[BOSS_CHARACTERS[key].unlock].label}`).join('   ·   ');
+    this.add.text(width / 2, 178, bossText, textStyle(14, TEXT.muted)).setOrigin(0.5);
     this.add
-      .text(width / 2, height - 22, '◀ ▶ personaje   ·   Y = modo peque 🐣   ·   A = ¡listo!   ·   B = regresar', textStyle(19, TEXT.accent))
+      .text(width / 2, height - 22, '◀ ▶ personaje   ·   X = traje   ·   Y = modo peque 🐣   ·   A = ¡listo!   ·   B = regresar', textStyle(19, TEXT.accent))
       .setOrigin(0.5);
 
-    this.humanSlots = this.humans.map((player) => ({
-      player,
-      color: players.color(player).hex,
-      pick: characterPicks.get(player.deviceId, defaultCharacter(player)),
-      peque: lastPeque.get(player.deviceId) ?? false,
-      ready: false,
-    }));
+    const open = openCharacters();
+    this.humanSlots = this.humans.map((player) => {
+      const pick = lastBoss.get(player.deviceId) ?? characterPicks.get(player.deviceId, defaultCharacter(player));
+      return {
+        player,
+        color: players.color(player).hex,
+        pick: open.includes(pick) ? pick : defaultCharacter(player),
+        peque: lastPeque.get(player.deviceId) ?? false,
+        costume: lastCostume.get(player.deviceId) ?? 0,
+        ready: false,
+      };
+    });
     this.cards = [];
     this.refreshOptions();
     this.layoutCards();
@@ -171,7 +192,7 @@ export class SmashSelectScene extends Phaser.Scene {
   // Redibuja la vista previa del personaje escogido: su imagen si existe, o la bolita con su accesorio.
   showCharacter(card) {
     const { slot } = card;
-    const c = CHARACTERS[slot.pick];
+    const c = characterInfo(slot.pick);
     card.blob?.destroy();
     card.look = null;
     const key = characterTexture(this, slot.pick);
@@ -185,6 +206,8 @@ export class SmashSelectScene extends Phaser.Scene {
     } else if (key) {
       const image = this.add.image(0, -CARD_H / 2 + 180, key).setOrigin(0.5, 1);
       image.setScale(140 / image.height);
+      // El color del traje.
+      if (COSTUMES[slot.costume]) image.setTintMode(Phaser.TintModes.MULTIPLY).setTint(COSTUMES[slot.costume]);
       card.blob = image;
       card.hop = () => this.tweens.add({ targets: image, y: image.y - 20, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
     } else {
@@ -205,7 +228,8 @@ export class SmashSelectScene extends Phaser.Scene {
   showStatus(card) {
     const { slot } = card;
     card.status.setText(slot.ready ? '¡Listo!' : 'A = listo').setColor(slot.ready ? '#4cd97b' : TEXT.muted);
-    card.peque.setText(slot.peque ? 'Modo peque 🐣' : '');
+    const costume = slot.costume ? `Traje ${COSTUME_NAMES[slot.costume]}` : '';
+    card.peque.setText([costume, slot.peque ? 'Modo peque 🐣' : ''].filter(Boolean).join('  ·  '));
     card.bg.setFillStyle(slot.ready ? 0x2b3d4a : COLORS.panel);
   }
 
@@ -226,8 +250,15 @@ export class SmashSelectScene extends Phaser.Scene {
       if (!slot.ready) {
         const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
         if (step !== 0) {
-          const index = CHARACTER_KEYS.indexOf(slot.pick);
-          slot.pick = CHARACTER_KEYS[(index + step + CHARACTER_KEYS.length) % CHARACTER_KEYS.length];
+          const open = openCharacters();
+          const index = open.indexOf(slot.pick);
+          slot.pick = open[(index + step + open.length) % open.length];
+          sfx.select();
+          this.showCharacter(card);
+        }
+        // X: el color del traje (Bloquecito ya es de colores).
+        if (controls.justPressed(id, 'x') && !isBlockCharacter(slot.pick)) {
+          slot.costume = (slot.costume + 1) % COSTUMES.length;
           sfx.select();
           this.showCharacter(card);
         }
@@ -291,13 +322,21 @@ export class SmashSelectScene extends Phaser.Scene {
   start() {
     const picks = {};
     const peque = {};
+    const costumes = {};
     for (const slot of this.humanSlots) {
-      characterPicks.set(slot.player.deviceId, slot.pick);
-      lastPeque.set(slot.player.deviceId, slot.peque);
-      picks[slot.player.deviceId] = slot.pick;
-      peque[slot.player.deviceId] = slot.peque;
+      const id = slot.player.deviceId;
+      if (BOSS_CHARACTERS[slot.pick]) lastBoss.set(id, slot.pick);
+      else {
+        lastBoss.delete(id);
+        characterPicks.set(id, slot.pick);
+      }
+      lastPeque.set(id, slot.peque);
+      lastCostume.set(id, slot.costume);
+      picks[id] = slot.pick;
+      peque[id] = slot.peque;
+      costumes[id] = slot.costume;
     }
     Object.assign(lastSettings, this.settings);
-    this.scene.start('Smash', { selected: this.returnData.selected, picks, peque, settings: { ...this.settings } });
+    this.scene.start('Smash', { selected: this.returnData.selected, picks, peque, costumes, settings: { ...this.settings } });
   }
 }

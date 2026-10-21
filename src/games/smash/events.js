@@ -10,7 +10,49 @@ import { burst, popText } from '../brawl/effects.js';
 //   coconuts (Selva):     caen cocos de los árboles; su sombra avisa dónde.
 //   blocks (Juguetes):    caen bloques de juguete; aplastan al caer y se quedan un rato como plataformas.
 //   bubbles (Mar):        de unas bocas del piso salen burbujas que te suben.
+//   ghosts (Casa embrujada): un fantasma cruza flotando en ondas y avienta al que toca.
+//   cherries (Pastel):    caen cerezas gigantes; su sombra avisa dónde.
+//   plane (Ciudad):       una flecha avisa y cruza un avión de papel gigante.
 const EVERY_MS = { first: 9000, min: 11000, extra: 7000 };
+// Lo que cruza la pantalla: cómo se ve, qué tan rápido va, qué dice el letrero y cómo pega.
+const CROSSERS = {
+  rocket: {
+    label: '¡Cohete!',
+    color: '#ff9a3c',
+    speed: 1500,
+    hit: { damage: 14, base: 520, scale: 8, angle: 30 },
+    draw: (scene) => [
+      scene.add.rectangle(0, 0, 140, 46, 0xe8e8f0).setRounded(20).setStrokeStyle(4, 0x1b1530),
+      scene.add.triangle(80, 0, 0, -23, 0, 23, 40, 0, 0xff5a5f).setStrokeStyle(4, 0x1b1530),
+      scene.add.circle(20, 0, 12, 0x3fa7ff).setStrokeStyle(3, 0x1b1530),
+      scene.add.ellipse(-90, 0, 50, 26, 0xff9a3c),
+    ],
+  },
+  ghost: {
+    label: '¡Fantasma! 👻',
+    color: '#e8e0ff',
+    speed: 650,
+    wave: 70,
+    hit: { damage: 9, base: 400, scale: 6, angle: 60 },
+    draw: (scene) => [
+      ...[-36, -12, 12, 36].map((x) => scene.add.circle(x, 40, 16, 0xf4f0ff, 0.9)),
+      scene.add.ellipse(0, 0, 110, 100, 0xf4f0ff, 0.9),
+      scene.add.ellipse(16, -8, 14, 22, 0x1b1530),
+      scene.add.ellipse(40, -8, 14, 22, 0x1b1530),
+      scene.add.ellipse(28, 18, 20, 12, 0x1b1530),
+    ],
+  },
+  plane: {
+    label: '¡Avión! ✈️',
+    color: '#9fd8ff',
+    speed: 1300,
+    hit: { damage: 12, base: 480, scale: 8, angle: 35 },
+    draw: (scene) => [
+      scene.add.triangle(0, 0, -80, -30, 80, 0, -80, 30, 0xffffff).setStrokeStyle(4, 0x1b1530),
+      scene.add.triangle(0, 8, -80, 0, 70, 0, -50, 26, 0xc8dcf0).setStrokeStyle(3, 0x1b1530),
+    ],
+  },
+};
 
 export class StageEvents {
   constructor(scene, layer, stage, main, platforms) {
@@ -125,30 +167,41 @@ export class StageEvents {
     return true;
   }
 
-  // --- Espacio: cohete ---
+  // --- Espacio: cohete, Casa embrujada: fantasma y Ciudad: avión de papel ---
+  // Algo cruza la pantalla de lado a lado a cierta altura; una flecha avisa antes por dónde va a salir.
   rocket(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.rocket);
+  }
+
+  ghosts(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.ghost);
+  }
+
+  plane(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.plane);
+  }
+
+  crosser(event, dtMs, fighters, kind) {
     const WARN = 1500;
     if (!event.dir) {
       event.dir = Math.random() < 0.5 ? -1 : 1;
       event.y = this.main.top - 60 - Math.random() * 320;
       const edgeX = event.dir > 0 ? this.main.left - 120 : this.main.right + 120;
       event.arrow = this.add(this.scene.add.text(edgeX, event.y, event.dir > 0 ? '➡️' : '⬅️', { fontSize: '64px' }).setOrigin(0.5));
-      event.rocket = this.add(this.scene.add.container(event.dir > 0 ? this.blast.left : this.blast.right, event.y));
-      event.rocket.add([
-        this.scene.add.rectangle(0, 0, 140, 46, 0xe8e8f0).setRounded(20).setStrokeStyle(4, 0x1b1530),
-        this.scene.add.triangle(80, 0, 0, -23, 0, 23, 40, 0, 0xff5a5f).setStrokeStyle(4, 0x1b1530),
-        this.scene.add.circle(20, 0, 12, 0x3fa7ff).setStrokeStyle(3, 0x1b1530),
-        this.scene.add.ellipse(-90, 0, 50, 26, 0xff9a3c),
-      ]);
-      event.rocket.setScale(event.dir, 1);
-      popText(this.scene, edgeX, event.y - 60, '¡Cohete!', '#ff9a3c', this.layer);
+      event.thing = this.add(this.scene.add.container(event.dir > 0 ? this.blast.left : this.blast.right, event.y));
+      event.thing.add(kind.draw(this.scene));
+      event.thing.setScale(event.dir, 1);
+      popText(this.scene, edgeX, event.y - 60, kind.label, kind.color, this.layer);
     }
     event.arrow.setAlpha(Math.floor(event.t / 150) % 2 ? 1 : 0.3);
     if (event.t < WARN) return true;
     event.arrow.setVisible(false);
-    event.rocket.x += event.dir * 1500 * (dtMs / 1000);
-    for (const f of fighters) if (Math.abs(f.x - event.rocket.x) < 80 && Math.abs(f.y - event.y) < 60) this.strike(event, f, { damage: 14, base: 520, scale: 8, angle: 30 }, event.rocket.x - event.dir * 100);
-    return event.dir > 0 ? event.rocket.x < this.blast.right : event.rocket.x > this.blast.left;
+    event.thing.x += event.dir * kind.speed * (dtMs / 1000);
+    // (El fantasma va flotando en ondas.)
+    const y = event.y + (kind.wave ? Math.sin(event.t / 260) * kind.wave : 0);
+    event.thing.y = y;
+    for (const f of fighters) if (Math.abs(f.x - event.thing.x) < 80 && Math.abs(f.y - y) < 60) this.strike(event, f, kind.hit, event.thing.x - event.dir * 100);
+    return event.dir > 0 ? event.thing.x < this.blast.right : event.thing.x > this.blast.left;
   }
 
   // --- Selva: cocos y Juguetes: bloques ---
@@ -157,11 +210,16 @@ export class StageEvents {
     return this.drops(event, dtMs, fighters, false);
   }
 
+  // --- Pastel: cerezas (como los cocos) ---
+  cherries(event, dtMs, fighters) {
+    return this.drops(event, dtMs, fighters, false, true);
+  }
+
   blocks(event, dtMs, fighters) {
     return this.drops(event, dtMs, fighters, true);
   }
 
-  drops(event, dtMs, fighters, blocks) {
+  drops(event, dtMs, fighters, blocks, cherries = false) {
     const WARN = 1300;
     const FALL = 450;
     const STAY = 5000;
@@ -172,13 +230,20 @@ export class StageEvents {
         const size = blocks ? 110 : 54;
         const shadow = this.add(this.scene.add.ellipse(x, this.main.top + 4, size * 1.2, 20, 0x000000, 0.3));
         const colors = [0xe53935, 0xffd02a, 0x3a5bd6];
-        const thing = blocks
-          ? this.scene.add.rectangle(x, -400, size, size, colors[i]).setStrokeStyle(5, 0x1b1530)
-          : this.scene.add.container(x, -400, [this.scene.add.circle(0, 0, size / 2, 0x7a4a2a).setStrokeStyle(4, 0x3a2414), this.scene.add.circle(-8, -10, 6, 0x3a2414)]);
+        let thing;
+        if (blocks) thing = this.scene.add.rectangle(x, -400, size, size, colors[i]).setStrokeStyle(5, 0x1b1530);
+        else if (cherries) {
+          thing = this.scene.add.container(x, -400, [
+            this.scene.add.rectangle(4, -size * 0.55, 5, size * 0.6, 0x3f7a2a).setAngle(20),
+            this.scene.add.circle(0, 0, size / 2, 0xe0203a).setStrokeStyle(4, 0x7a0a1a),
+            this.scene.add.circle(-8, -8, 7, 0xffffff, 0.6),
+          ]);
+        } else thing = this.scene.add.container(x, -400, [this.scene.add.circle(0, 0, size / 2, 0x7a4a2a).setStrokeStyle(4, 0x3a2414), this.scene.add.circle(-8, -10, 6, 0x3a2414)]);
         this.add(thing);
         return { x, size, shadow, thing, delay: i * 350, landed: false };
       });
-      popText(this.scene, (this.main.left + this.main.right) / 2, this.main.top - 380, blocks ? '¡Bloques! 🧱' : '¡Cocos! 🥥', '#ffd84d', this.layer);
+      const label = blocks ? '¡Bloques! 🧱' : cherries ? '¡Cerezas! 🍒' : '¡Cocos! 🥥';
+      popText(this.scene, (this.main.left + this.main.right) / 2, this.main.top - 380, label, '#ffd84d', this.layer);
     }
     let busy = false;
     for (const d of event.drops) {
@@ -189,7 +254,7 @@ export class StageEvents {
       d.thing.y = -400 + (bottom + 400) * k * k;
       if (k >= 1 && !d.landed) {
         d.landed = true;
-        burst(this.scene, d.x, this.main.top, blocks ? 0xffd02a : 0x7a4a2a, 10, this.layer);
+        burst(this.scene, d.x, this.main.top, blocks ? 0xffd02a : cherries ? 0xe0203a : 0x7a4a2a, 10, this.layer);
         sfx.hit(0.7);
         for (const f of fighters) if (Math.abs(f.x - d.x) < d.size / 2 + f.radius && f.y > this.main.top - 200) this.strike(event, f, { damage: 10, base: 360, scale: 6, angle: 60 }, d.x);
         // El bloque se queda como plataforma (se puede subir a él).

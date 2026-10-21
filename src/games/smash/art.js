@@ -14,6 +14,12 @@ export const ITEM_ART = {
   egg: 'huevo',
   superball: 'bola-super',
   target: 'diana',
+  boomerang: 'bumeran',
+  fireflower: 'flor-fuego',
+  spring: 'resorte',
+  capsule: 'capsula',
+  tornado: 'tornado',
+  sandbag: 'saco',
 };
 // La caminata son 4 cuadros (caminar1 a caminar4) que se repiten mientras el personaje camina.
 export const WALK_FRAMES = 4;

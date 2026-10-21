@@ -87,6 +87,33 @@ Abre http://localhost:5173 en Edge o Chrome.
   (bloques de colores; caen bloques que aplastan y se quedan un rato de plataforma) y **Fondo del mar** (flotas un
   poquito; de unas bocas salen burbujas que te suben). Y los de siempre traen su **sorpresa**, siempre con aviso:
   rayo en el Castillo, viento en las Nubes, la ola que ladea el Barco y un cohete que cruza el Espacio.
+  **Ronda 3** (con dibujos de Gemini donde hace falta):
+  - **Golpe cargado**: mantén **X** en el piso (golpe normal, hacia arriba o barrida): brilla y tiembla mientras junta
+    fuerza y al soltar pega más fuerte, más grande y avienta más lejos.
+  - **Escudo perfecto**: si te cubres (RB / LB) justo antes del golpe, no gastas escudo, el que pegó se queda mareado
+    y los disparos se regresan.
+  - **Objetos nuevos**: **bumerán** (va y regresa a tu mano, 3 veces), **flor de fuego** (bolas de fuego que botan),
+    **resorte** (se queda en el piso y te avienta para arriba), **cápsula sorpresa** (sale otro objeto... o explota) y
+    **tornado** (avanza y levanta a los rivales dando vueltas).
+  - **Jefes para escoger**: el **Rey Bolón** (salto aplastante; al ganar el modo Jefe), **Dragonzote** (vuela y echa
+    una llamarada; al terminar la Aventura) y **Robotote** (puño cohete; con un jonrón de más de 100 m). Son más
+    grandes y pesados; salen al final de la lista de personajes.
+  - **Modos nuevos**: **Jonrón** (10 segundos para pegarle al saco y luego un batazo; la cámara lo sigue y se mide
+    cuántos metros llegó, por turnos y con récord), **Monedas** (los golpes sacan monedas; gana el que junte más y si
+    te caes pierdes la mitad), **Rey de la colina** (quédate solo en la zona de la corona; gana el primero en juntar
+    30 segundos; la zona se cambia de lugar) y **Aventura** (6 niveles seguidos: pelea en el castillo, dianas de la
+    selva, una torre de nubes para subir hasta la bandera, la pandilla de la ciudad, Tanque gigante y Dragonzote
+    gigante; si pierdes, lo vuelves a intentar).
+  - **Escenarios nuevos**: **Casa embrujada** (escoba que flota; cruza un fantasma), **Pastel gigante** (galletas que
+    suben y bajan; caen cerezas), **Ciudad de noche** (azotea y la canastilla de los limpiaventanas; cruza un avión de
+    papel) y **Globos** (canastas que dan vueltas sobre un dirigible; sopla el viento).
+  - **Repetición del K.O.**: el golpe que gana la pelea otra vez en cámara lenta, con zoom y un «¡K.O.!» gigante
+    (A la brinca).
+  - **Trajes**: en la selección, **X** cambia el color de tu traje (si dos traen el mismo personaje, el segundo sale de
+    otro color).
+  - **Narrador y premios**: comenta el primer golpe, los golpazos, quién sale volando, las paradas perfectas, los
+    golpes cargados, los objetos y los últimos 10 segundos; al final salen los premios: más golpes, golpe más fuerte,
+    más caídas, paradas perfectas y más objetos.
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
   Antes de correr, en el **taller** cada quien escoge piloto (los personajes de Bolitas Bros, con su imagen
   manejando; Bloquecito cambia de número con Y), kart (**Clásico**, **Bólido** rápido, **Mini** que arranca y gira
@@ -323,7 +350,9 @@ antes de cada publicación, y si alguna falla no se publica.
 - `tools/prepare-art.mjs`: prepara el arte de Gemini de todos los juegos (`npm run arte`).
 - `tools/split-sheet.mjs`: parte una hoja de Gemini con varias poses en imágenes sueltas.
 - `src/games/brawl/`: Pelea en equipo (Phaser).
-- `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador.
+- `src/games/smash/`: Bolitas Bros (Phaser), con cámara que hace zoom y otra fija para el marcador; monedas
+  (`coins.js`), rey de la colina (`hill.js`), tornado (`tornado.js`), concurso de jonrón (`jonron.js`), Aventura
+  (`adventure.js`), repetición del K.O. (`replay.js`) y narrador (`talk.js`).
 - `src/games/kart/`: Karts locos: además de lo de siempre, atajos (`shortcut.js`), clima (`weather.js`), contrarreloj y
   fantasma (`ghost.js`), repetición de la llegada (`replay.js`) y pilotos con personalidad y narrador (`rivals.js`).
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha y uniformes (`field.js`), balón (`Ball.js`), jugadores

@@ -7,7 +7,8 @@ import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { characterTexture, hasPose, superArtKey, walkPose } from './art.js';
 import { OCTO, isBlockCharacter, lerp, numberSize } from './bloquecito.js';
 import { addCrown } from '../duelo/boss.js';
-import { CHARACTERS, addAccessory } from './characters.js';
+import { COSTUMES } from '../duelo/DueloFighter.js';
+import { CHARACTERS, addAccessory, characterInfo } from './characters.js';
 import { drawItem } from './items.js';
 
 export const STOCKS = 3;
@@ -47,6 +48,9 @@ const SPECIAL_COOLDOWN_MS = {
   astronauta: 1500,
   abeja: 700,
   bombero: 900,
+  rey: 1300,
+  dragonzote: 900,
+  robotote: 1100,
 };
 const GHOST_MS = 1500;
 export const SHIELD_MAX = 100;
@@ -66,6 +70,14 @@ const BAT_SWINGS = 4;
 const RAYGUN_SHOTS = 8;
 const SKATE_MS = 9000;
 const SKATE_SPEED = 1.5;
+// El bumerán: lo avientas, regresa a tu mano y lo puedes volver a aventar (3 veces). La flor de fuego echa bolas de
+// fuego que botan por el piso.
+const BOOMERANG_THROWS = 3;
+const BOOMERANG_SPEED = 1150;
+const FLOWER_SHOTS = 6;
+const FIREBALL_THROW = { vx: 620, vy: -160 };
+// Cuántas veces se puede usar lo que traes en la mano (lo que no está aquí, sin límite).
+const HELD_USES = { bat: BAT_SWINGS, raygun: RAYGUN_SHOTS, boomerang: BOOMERANG_THROWS, fireflower: FLOWER_SHOTS };
 // Agarrar (escudo + X pegadito): lo detiene un momento y lo avienta hacia donde apunte el stick (o hacia adelante).
 const HOLD_MS = 380;
 export const THROW_HIT = { damage: 9, base: 430, scale: 10, angle: 40 };
@@ -79,6 +91,17 @@ const LEDGE = { reach: 1.7, below: 1.6, hangMs: 2600, invulnerableMs: 900, dropM
 const PEQUE_DAMAGE = 0.7;
 const PEQUE_KNOCKBACK = 0.6;
 const PEQUE_METER_BONUS = 1.5;
+// Golpe cargado: X sostenido en el piso (golpe normal, hacia arriba o barrida) se queda justo antes de pegar,
+// juntando fuerza; al soltar (o al llegar al máximo) pega más fuerte, más grande y avienta más lejos.
+export const CHARGE_MAX_MS = 1100;
+const CHARGE_SHOW_MS = 120;
+const CHARGE_BOOST = { damage: 0.7, base: 0.9, radius: 0.3 };
+const CHARGEABLE = ['jab', 'up', 'sweep'];
+// Escudo perfecto: si el escudo se levantó hace menos de esto cuando llega el golpe, no gasta escudo y el que pegó se
+// queda mareado (eso, y regresar los disparos, lo hace la escena). La compu lo logra a veces, según su nivel.
+export const PERFECT_SHIELD_MS = 220;
+const PERFECT_METER = 8;
+const CPU_PERFECT = { facil: 0, normal: 0.3, dificil: 0.6 };
 const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
 
 // Barra de poder: se llena pegando y recibiendo golpes (por cada % de daño). Llena + LB + RB = súper modo:
@@ -139,6 +162,14 @@ export const ATTACKS = {
   sting: { startup: 60, active: 200, recovery: 220, damage: 10, base: 340, scale: 9, angle: 40, hx: 40, hy: 6, radius: 30 },
   // Bombero: chorro de agua que casi no hace daño pero empuja mucho.
   water: { startup: 100, active: 600, recovery: 240, damage: 1, base: 270, scale: 2, angle: 12, hx: 90, hy: -4, radius: 46, multi: 120 },
+  // X con la flor de fuego: echa una bola de fuego que bota (la crea la escena).
+  flame: { startup: 60, active: 0, recovery: 170 },
+  // X con el bumerán: lo avienta y regresa (lo crea la escena).
+  boomerang: { startup: 90, active: 0, recovery: 200 },
+  // Dragonzote: una llamarada grandota enfrente que pega varias veces.
+  blaze: { startup: 140, active: 560, recovery: 260, damage: 4, base: 170, scale: 4, angle: 25, hx: 104, hy: 0, radius: 58, multi: 150 },
+  // Robotote: puño cohete (lo crea la escena).
+  rocketfist: { startup: 160, active: 0, recovery: 260 },
   // Bloquecito (los trucos que no comparte con otros personajes, ver BLOCK_TRICKS).
   // El 2: dos golpes rápidos.
   pair: { startup: 40, active: 200, recovery: 160, damage: 5, base: 220, scale: 6, angle: 35, hx: 46, hy: 0, radius: 32, multi: 100 },
@@ -194,14 +225,16 @@ const SHOT_LIFT_MAX = 24;
 // se cubre con el escudo, agarra objetos y sale volando más lejos mientras más % de daño lleva.
 // `arena` = { platforms, respawn, gravity } del escenario de la pelea.
 export class SmashFighter {
-  // `stats`: para el jefe, que no es de Bolitas Bros (si no, los de su personaje).
-  constructor(scene, layer, { color, label, deviceId = null, character = 'resorte', arena, peque = false, cpuLevel = 'normal', stats: custom = null }) {
+  // `stats`: para el jefe gigante, el gigante de la Aventura o el saco (si no, los de su personaje).
+  // `costume`: el traje (ver COSTUMES); `art`: una imagen fija sin poses (el saco del concurso de jonrón).
+  constructor(scene, layer, { color, label, deviceId = null, character = 'resorte', arena, peque = false, cpuLevel = 'normal', stats: custom = null, costume = 0, art = null }) {
     this.scene = scene;
     this.color = color;
     this.label = label;
     this.deviceId = deviceId;
     this.isCpu = deviceId === null;
     this.cpuLevel = cpuLevel;
+    this.perfectChance = CPU_PERFECT[cpuLevel] ?? CPU_PERFECT.normal;
     this.peque = peque;
     this.arena = arena;
     this.characterKey = character;
@@ -211,7 +244,7 @@ export class SmashFighter {
     // y hasta qué altura arriba del centro llegan sus golpes (sus hombros).
     this.tall = 0;
     this.attackLift = 0;
-    const stats = custom ?? CHARACTERS[character];
+    const stats = custom ?? characterInfo(character);
     this.stats = stats;
     this.baseStats = stats;
     // `radius` crece en súper modo; `baseRadius` es el tamaño normal (con el que se dibuja).
@@ -223,19 +256,25 @@ export class SmashFighter {
     this.damage = 0;
     this.meter = 0;
     this.superMs = 0;
-    // Para los resultados: a cuántos sacó, cuántas veces se cayó, cuánto pegó y su golpe más fuerte.
-    this.record = { kos: 0, falls: 0, dealt: 0, best: 0 };
+    // Para los resultados: a cuántos sacó, cuántas veces se cayó, cuánto pegó, su golpe más fuerte, cuántos golpes
+    // dio, sus paradas perfectas, cuántos objetos agarró y, en sus modos, sus monedas y sus segundos en la colina.
+    this.record = { kos: 0, falls: 0, dealt: 0, best: 0, hits: 0, perfects: 0, items: 0, coins: 0, hill: 0 };
 
     this.sprite = new Blob(scene, 0, 0, color, this.radius);
     addAccessory(scene, this.sprite, character);
+    this.fixedArt = art;
+    this.costumeIndex = costume;
+    this.costume = COSTUMES[costume] ?? null;
     this.setupArt(scene);
-    if (custom && !this.image) addCrown(scene, this.sprite);
+    if (character === 'rey' && !this.image) addCrown(scene, this.sprite);
     this.fist = scene.add.circle(0, 0, 12, color).setStrokeStyle(3, COLORS.ink).setVisible(false);
     this.hammerSprite = drawItem(scene, 'hammer').setVisible(false);
     this.bombSprite = drawItem(scene, 'bomb').setScale(0.8).setVisible(false);
     this.batSprite = drawItem(scene, 'bat').setVisible(false);
     this.gunSprite = drawItem(scene, 'raygun').setScale(0.8).setVisible(false);
     this.skateSprite = drawItem(scene, 'skate').setScale(1.3).setVisible(false);
+    this.boomerangSprite = drawItem(scene, 'boomerang').setScale(0.8).setVisible(false);
+    this.flowerSprite = drawItem(scene, 'fireflower').setScale(0.7).setVisible(false);
     // La bola súper: brilla de colores alrededor mientras tiene listo su golpe final.
     this.finalGlow = scene.add.circle(0, 0, this.radius * 1.7, 0xffffff, 0.35).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.flames = scene.add
@@ -252,12 +291,15 @@ export class SmashFighter {
         scene.add.ellipse(-16, 0, 36, 10, 0xffffff, 0.9),
       ])
       .setVisible(false);
-    this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.batSprite, this.gunSprite, this.flames, this.water]);
+    this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.batSprite, this.gunSprite, this.boomerangSprite, this.flowerSprite, this.flames, this.water]);
     this.sprite.add([this.skateSprite]);
     this.sprite.addAt(this.finalGlow, 0);
     // Brillo detrás del personaje en súper modo.
     this.aura = scene.add.circle(0, 0, this.radius * 1.5, 0xffd84d, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.sprite.addAt(this.aura, 0);
+    // Brillo del golpe cargado: crece mientras se carga.
+    this.chargeGlow = scene.add.circle(0, 0, this.radius * 1.2, 0xffffff, 0.4).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.sprite.addAt(this.chargeGlow, 0);
     // El escudo, el letrero y el mareo no giran con el cuerpo cuando sale volando.
     this.shieldBubble = scene.add.circle(0, 0, this.radius * 1.4, color, 0.5).setStrokeStyle(6, 0xffffff, 0.9).setVisible(false);
     this.tag = scene.add
@@ -288,7 +330,8 @@ export class SmashFighter {
       this.sprite.addAt(this.ring, 1);
       return;
     }
-    const key = characterTexture(scene, this.characterKey);
+    const fixed = this.fixedArt && scene.textures.exists(this.fixedArt) ? this.fixedArt : null;
+    const key = fixed ?? characterTexture(scene, this.characterKey);
     this.superArt = superArtKey(scene, this.characterKey);
     if (!key) return;
     for (const part of this.sprite.figure.list) part.setVisible(false);
@@ -321,6 +364,7 @@ export class SmashFighter {
     this.projectileRequest = null;
     this.shielding = false;
     this.shieldHp = SHIELD_MAX;
+    this.shieldHeldMs = 0;
     this.held = null;
     this.starPowerMs = 0;
     this.skateMs = 0;
@@ -340,7 +384,7 @@ export class SmashFighter {
     this.out = false;
     this.sprite.setVisible(true);
     this.sprite.ball.setFillStyle(this.color);
-    this.image?.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
+    this.baseTint();
     this.tinted = false;
   }
 
@@ -384,10 +428,10 @@ export class SmashFighter {
       this.skateMs = SKATE_MS;
       return true;
     }
-    // El huevo se abre y sale un ayudante (lo pone la escena).
-    if (type === 'egg') return true;
+    // El huevo, la cápsula y el tornado los pone la escena (el ayudante, lo que sale de la cápsula y el tornado).
+    if (type === 'egg' || type === 'capsule' || type === 'tornado') return true;
     if (this.held) return false;
-    this.held = { type, ms: type === 'hammer' ? HAMMER_MS : Infinity, uses: type === 'bat' ? BAT_SWINGS : type === 'raygun' ? RAYGUN_SHOTS : Infinity };
+    this.held = { type, ms: type === 'hammer' ? HAMMER_MS : Infinity, uses: HELD_USES[type] ?? Infinity };
     return true;
   }
 
@@ -402,7 +446,7 @@ export class SmashFighter {
   // --- Barra de poder y súper modo ---
 
   addMeter(amount) {
-    if (this.superMs > 0 || this.out) return;
+    if (this.superMs > 0 || this.out || this.isDummy) return;
     this.meter = Math.min(METER_MAX, this.meter + amount * (this.peque ? PEQUE_METER_BONUS : 1));
   }
 
@@ -566,7 +610,7 @@ export class SmashFighter {
     }
     // Parado en una plataforma que se mueve: se va con ella.
     if (this.grounded && this.platform) this.x += this.platform.dx;
-    this.advanceAttack(dtMs);
+    this.advanceAttack(dtMs, input);
     this.advanceHold(dtMs, input);
 
     const canAct = this.hitstunMs === 0 && this.stunMs === 0 && !this.holding;
@@ -611,6 +655,8 @@ export class SmashFighter {
       if (this.grounded) this.vx = approach(this.vx, 0, GROUND_FRICTION * dt);
     }
     if (!this.shielding) this.shieldHp = Math.min(SHIELD_MAX, this.shieldHp + SHIELD_REGEN * dt);
+    // Cuánto lleva con el escudo arriba (recién levantado = escudo perfecto).
+    this.shieldHeldMs = this.shielding ? this.shieldHeldMs + dtMs : 0;
 
     // Durante la embestida de Rayo no hay gravedad: va en línea recta.
     // Dragoncito y Fantasma caen más despacio (gravity < 1), y en el Espacio todos.
@@ -628,7 +674,7 @@ export class SmashFighter {
 
   // Si va cayendo junto a una esquina del escenario principal, se agarra de la orilla.
   tryLedge() {
-    if (this.vy <= 0 || this.hitstunMs > 0 || this.ledgeCooldownMs > 0 || this.held?.type === 'bomb') return;
+    if (this.noLedge || this.vy <= 0 || this.hitstunMs > 0 || this.ledgeCooldownMs > 0 || this.held?.type === 'bomb') return;
     const main = this.arena.platforms.find((p) => p.main);
     if (!main) return;
     for (const side of [-1, 1]) {
@@ -713,10 +759,25 @@ export class SmashFighter {
     this.attack = null;
   }
 
-  advanceAttack(dtMs) {
+  advanceAttack(dtMs, input = {}) {
     if (!this.attack) return;
     const attack = this.attack;
     const a = ATTACKS[attack.type];
+    // Golpe cargado: con X sostenido se queda justo antes de pegar, juntando fuerza (hasta el máximo).
+    if (attack.chargeable && !attack.released) {
+      if (!input.attackHeld || !this.grounded) attack.released = true;
+      else if (attack.elapsed + dtMs >= a.startup) {
+        const before = attack.charge;
+        attack.elapsed = a.startup - 1;
+        attack.charge = Math.min(CHARGE_MAX_MS, attack.charge + dtMs);
+        if (before < CHARGE_SHOW_MS && attack.charge >= CHARGE_SHOW_MS) sfx.special();
+        if (attack.charge >= CHARGE_MAX_MS) {
+          attack.released = true;
+          sfx.meterFull();
+        }
+        return;
+      }
+    }
     const wasStarting = attack.elapsed < a.startup;
     attack.elapsed += dtMs;
     const justActive = wasStarting && attack.elapsed >= a.startup;
@@ -767,6 +828,28 @@ export class SmashFighter {
       if (--this.held.uses <= 0) this.held = null;
       sfx.laser();
     }
+    if (justActive && attack.type === 'flame' && this.held) {
+      this.projectileRequest = {
+        kind: 'fireball',
+        x: this.x + this.facing * (this.radius + 14),
+        y: this.y - 6,
+        vx: this.facing * FIREBALL_THROW.vx,
+        vy: FIREBALL_THROW.vy,
+        dir: this.facing,
+      };
+      if (--this.held.uses <= 0) this.held = null;
+      sfx.fire();
+    }
+    if (justActive && attack.type === 'boomerang' && this.held) {
+      this.projectileRequest = { kind: 'boomerang', x: this.x + this.facing * (this.radius + 18), y: this.y - 8, vx: this.facing * BOOMERANG_SPEED, dir: this.facing };
+      this.held.out = true;
+      this.held.uses -= 1;
+      sfx.throw();
+    }
+    if (justActive && attack.type === 'rocketfist') {
+      this.projectileRequest = { kind: 'fist', x: this.x + this.facing * (this.radius + 30), y: this.y - 6, dir: this.facing };
+      sfx.laser();
+    }
     if (justActive && attack.type === 'bat' && this.held && --this.held.uses <= 0) {
       // El último batazo: el bate se rompe después de pegar.
       this.held.ms = a.active + a.recovery;
@@ -807,7 +890,8 @@ export class SmashFighter {
     } else if (this.rocketMs > 0) {
       this.vx = this.facing * ROCKET.vx;
     } else if (this.grounded) {
-      const slow = this.attack ? 0.3 : 1;
+      // Atacando camina despacito; cargando un golpe, nada.
+      const slow = this.attack?.charge > 0 ? 0 : this.attack ? 0.3 : 1;
       this.vx = approach(this.vx, input.x * stats.run * slow * speedBonus, GROUND_FRICTION * dt);
     } else {
       this.vx = approach(this.vx, input.x * stats.air * speedBonus, AIR_ACCEL * dt);
@@ -840,9 +924,12 @@ export class SmashFighter {
     else if (this.held?.type === 'bomb') type = 'throw';
     else if (this.held?.type === 'bat') type = 'bat';
     else if (this.held?.type === 'raygun') type = 'zap';
+    else if (this.held?.type === 'fireflower') type = 'flame';
+    else if (this.held?.type === 'boomerang' && !this.held.out) type = 'boomerang';
     else if (input.y < -0.5) type = 'up';
     else if (input.y > 0.5) type = this.grounded ? 'sweep' : 'stomp';
-    this.attack = { type, elapsed: 0, hit: new Set() };
+    // Los golpes normales en el piso se pueden cargar (manteniendo X).
+    this.attack = { type, elapsed: 0, hit: new Set(), chargeable: this.grounded && CHARGEABLE.includes(type), charge: 0, released: false };
   }
 
   // B: el especial del personaje. B + ↑ es el salto de rescate (una vez antes de tocar piso);
@@ -925,7 +1012,13 @@ export class SmashFighter {
     } else if (key === 'bombero') {
       attack('water');
       sound = sfx.fire;
-    } else if (this.isBoss) {
+    } else if (key === 'dragonzote') {
+      attack('blaze');
+      sound = sfx.fire;
+    } else if (key === 'robotote') {
+      attack('rocketfist');
+      sound = null;
+    } else if (key === 'rey' || this.isBoss) {
       // El Rey Bolón: cae aplastando (en el piso, primero da un brinco).
       if (this.grounded) {
         this.vy = -this.stats.jump * 0.8;
@@ -933,11 +1026,12 @@ export class SmashFighter {
         this.platform = null;
       }
       attack('square');
-      cooldown = this.slamCooldownMs;
       sound = sfx.jump;
     } else {
       return;
     }
+    // Los jefes gigantes esperan más entre especial y especial.
+    if (this.isBoss && this.slamCooldownMs) cooldown = this.slamCooldownMs;
     this.cooldownMs = cooldown * (this.superMs > 0 ? SUPER.cooldown : 1);
     sound?.();
   }
@@ -990,7 +1084,17 @@ export class SmashFighter {
     const t = this.attack.elapsed;
     if (!a.active || t < a.startup || t >= a.startup + a.active) return null;
     const size = this.sizeScale;
-    return { x: this.x + a.hx * size * this.facing, y: this.y + a.hy * size, tall: this.attackLift, radius: a.radius * size, data: a };
+    // Cargado: pega más fuerte, más lejos y con un golpe más grande.
+    const boost = this.chargeBoost();
+    const data = boost ? { ...a, damage: a.damage * (1 + CHARGE_BOOST.damage * boost), base: a.base * (1 + CHARGE_BOOST.base * boost), charged: boost } : a;
+    const radius = a.radius * size * (1 + CHARGE_BOOST.radius * boost);
+    return { x: this.x + a.hx * size * this.facing, y: this.y + a.hy * size, tall: this.attackLift, radius, data };
+  }
+
+  // Qué tanto se cargó el golpe que trae (0 a 1; 0 si no se cargó).
+  chargeBoost() {
+    const charge = this.attack?.charge ?? 0;
+    return charge > CHARGE_SHOW_MS ? Math.min(1, charge / CHARGE_MAX_MS) : 0;
   }
 
   // Recibe un golpe de `source` ({ facing, power }). Con el escudo arriba solo gasta escudo;
@@ -998,6 +1102,13 @@ export class SmashFighter {
   // Devuelve cuánto daño le hicieron (`dealt`) para llenar la barra del que pegó.
   takeHit(source, data) {
     if (this.shielding) {
+      // Escudo perfecto: recién levantado no gasta nada (la escena marea al que pegó o le regresa el disparo).
+      if (this.shieldHeldMs < PERFECT_SHIELD_MS && (!this.isCpu || Math.random() < this.perfectChance)) {
+        this.record.perfects += 1;
+        this.addMeter(PERFECT_METER);
+        sfx.block();
+        return { blocked: true, perfect: true, speed: 0, dealt: 0 };
+      }
       this.shieldHp -= data.damage * source.power * SHIELD_HIT_FACTOR;
       this.vx = source.facing * SHIELD_PUSHBACK;
       if (this.shieldHp <= 0) this.breakShield();
@@ -1038,9 +1149,23 @@ export class SmashFighter {
     if (!this.image) return;
     this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(70, () => {
-      if (this.image.active) this.image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
+      if (this.image.active) this.baseTint();
       this.tinted = false;
     });
+  }
+
+  // El color de su traje (o ninguno): la imagen se pinta con ese color encima.
+  baseTint() {
+    if (!this.image) return;
+    this.image.setTintMode(Phaser.TintModes.MULTIPLY);
+    if (this.costume) this.image.setTint(this.costume);
+    else this.image.clearTint();
+  }
+
+  setCostume(index) {
+    this.costumeIndex = index;
+    this.costume = COSTUMES[index] ?? null;
+    this.baseTint();
   }
 
   // Pose de la imagen según lo que esté haciendo. La imagen mira a la derecha: se voltea si va a la izquierda.
@@ -1052,6 +1177,11 @@ export class SmashFighter {
       return;
     }
     if (!this.image) return;
+    // Una imagen fija (el saco): solo se voltea.
+    if (this.fixedArt) {
+      this.image.setFlipX(this.facing < 0);
+      return;
+    }
     const art = this.superMs > 0 && this.superArt ? this.superArt : this.characterKey;
     // Corriendo por el piso: los cuadros de caminata (si los tiene).
     const walking = this.grounded && Math.abs(this.vx) > 40;
@@ -1061,6 +1191,7 @@ export class SmashFighter {
     if (this.hitstunMs > 0 || this.stunMs > 0 || this.heldBy) pose = 'dolor';
     else if (this.holding || type === 'grabbing') pose = 'agarre';
     else if (this.hanging) pose = 'salto';
+    else if (this.chargeBoost() > 0 && !this.attack.released) pose = 'carga';
     else if (type) pose = !this.grounded && AIR_POSE_ATTACKS.includes(type) ? 'aire' : (ATTACK_POSES[type] ?? 'golpe');
     else if (this.shielding) pose = 'cubrirse';
     else if (this.celebrating) pose = 'gana';
@@ -1122,12 +1253,22 @@ export class SmashFighter {
       this.image?.setTintMode(Phaser.TintModes.SCREEN).setTint(tint);
     } else if (this.tinted) {
       s.ball.setFillStyle(this.color);
-      this.image?.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
+      this.baseTint();
     }
     this.look?.body?.setTint(this.starPowerMs > 0 ? rainbow : null);
     this.tinted = tint !== null;
     this.renderArt();
     this.renderAura();
+    // Cargando el golpe: brilla cada vez más y tiembla (ya lleno, parpadea rápido).
+    const charging = this.chargeBoost() > 0 && !this.attack.released;
+    this.chargeGlow.setVisible(charging);
+    s.figure.x = 0;
+    if (charging) {
+      const k = this.chargeBoost();
+      const blink = Math.floor(this.scene.time.now / (k >= 1 ? 50 : 110)) % 2 === 0;
+      this.chargeGlow.setScale(0.8 + 0.8 * k).setFillStyle(blink ? 0xffffff : 0xffd84d, 0.25 + 0.35 * k);
+      s.figure.x = Math.sin(this.scene.time.now / 18) * 3 * k;
+    }
 
     this.shieldBubble.setVisible(this.shielding);
     if (this.shielding) this.shieldBubble.setScale(0.55 + (0.45 * this.shieldHp) / SHIELD_MAX);
@@ -1137,7 +1278,7 @@ export class SmashFighter {
     const a = this.attack && ATTACKS[this.attack.type];
     const type = this.attack?.type;
     // El puño sale en los golpes normales y en el puñetazo cargado (si la imagen no trae su pose de golpe).
-    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water', 'bat', 'zap', 'grabbing'];
+    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water', 'bat', 'zap', 'grabbing', 'flame', 'boomerang', 'blaze', 'rocketfist'];
     const showFist = Boolean(a) && !noFist.includes(type) && !this.punchArt;
     this.fist.setVisible(showFist);
     if (showFist) {
@@ -1147,12 +1288,14 @@ export class SmashFighter {
     }
 
     // El fuego de Dragoncito tiembla mientras está activo; con la mochila cohete sale chiquito por abajo.
-    const fire = type === 'fire' && Boolean(box);
+    const fire = (type === 'fire' || type === 'blaze') && Boolean(box);
     // (Bloquecito dibuja su propio fuego de cohete.)
     const rocket = this.rocketMs > 0 && !this.blocks;
     this.flames.setVisible(fire || rocket);
     const flicker = 0.85 + Math.random() * 0.3;
-    if (fire) this.flames.setPosition(a.hx * this.facing, -4).setScale(this.facing * flicker, flicker).setAngle(0);
+    // (La llamarada de Dragonzote es mucho más grande.)
+    const big = type === 'blaze' ? 1.8 : 1;
+    if (fire) this.flames.setPosition(a.hx * this.facing, -4).setScale(this.facing * flicker * big, flicker * big).setAngle(0);
     else if (rocket) this.flames.setPosition(-this.facing * this.baseRadius * 0.5, this.baseRadius * 0.9).setScale(0.45 * flicker).setAngle(90);
     // El chorro de agua de Bombero.
     const water = type === 'water' && Boolean(box);
@@ -1179,6 +1322,13 @@ export class SmashFighter {
     }
     this.gunSprite.setVisible(this.held?.type === 'raygun');
     if (this.held?.type === 'raygun') this.gunSprite.setPosition(this.facing * this.handReach(0.95), -2 - this.attackLift).setScale(0.8 * this.facing, 0.8);
+    // El bumerán (si no anda volando) y la flor de fuego, en la mano.
+    const hasBoomerang = this.held?.type === 'boomerang' && !this.held.out;
+    this.boomerangSprite.setVisible(hasBoomerang);
+    if (hasBoomerang) this.boomerangSprite.setPosition(this.facing * this.handReach(0.9), -8 - this.attackLift).setScale(0.8 * this.facing, 0.8);
+    const hasFlower = this.held?.type === 'fireflower';
+    this.flowerSprite.setVisible(hasFlower);
+    if (hasFlower) this.flowerSprite.setPosition(this.facing * this.handReach(0.95), -10 - this.attackLift).setScale(0.7 * this.facing, 0.7);
   }
 
   // Qué tan adelante lleva lo que trae en la mano (Bloquecito, según su ancho).
@@ -1219,6 +1369,9 @@ const ATTACK_POSES = {
   water: 'especial',
   sting: 'especial',
   zap: 'especial',
+  flame: 'especial',
+  blaze: 'especial',
+  rocketfist: 'especial',
 };
 const AIR_POSE_ATTACKS = ['jab', 'up', 'stomp', 'sweep'];
 // Si no tiene esa pose, la más parecida (las súper formas solo traen las básicas).
@@ -1231,6 +1384,8 @@ const POSE_CHAIN = {
   cubrirse: ['cubrirse', 'normal'],
   gana: ['gana', 'salto'],
   entrada: ['entrada', 'gana', 'normal'],
+  // Juntando fuerza para el golpe cargado.
+  carga: ['agachado', 'especial', 'normal'],
 };
 // Las imágenes se ajustan a la misma altura; las más bajitas o más altas en el dibujo se corrigen aquí.
 const POSE_HEIGHT = { cubrirse: 0.85, gana: 1.08, patada: 0.95, agachado: 0.75, aire: 0.95 };
