@@ -1008,8 +1008,9 @@ test('duelo de bolitas: barrida, arrancón, agarre y golpe final', { timeout: ms
     const s = window.leogames.scene.getScene('Duelo');
     const [me, cpu] = s.fighters;
     cpu.dummy = true;
-    Object.assign(cpu, { x: 800, health: 100, downMs: 0, launched: false, hurtMs: 0, invulnerableMs: 0 });
-    Object.assign(me, { x: 800 - (me.radius + cpu.radius) * 0.7 - g, facing: 1 });
+    // Los dos desde cero (que la compu no venga a medio salto o rodando).
+    cpu.reset(800, -1);
+    me.reset(800 - (me.radius + cpu.radius) * 0.7 - g, 1);
   }, gap);
   const cpuHealth = () => p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[1].health);
 
