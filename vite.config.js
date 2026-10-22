@@ -10,7 +10,7 @@ function voiceLog() {
     apply: 'serve',
     configureServer(server) {
       const file = path.join(server.config.root, 'tools/voz/oidas.txt');
-      const heard = new Set(existsSync(file) ? readFileSync(file, 'utf8').split('\n') : []);
+      const heard = new Set(existsSync(file) ? readFileSync(file, 'utf8').split(/\r?\n/) : []);
       server.middlewares.use('/__voz', (req, res) => {
         let body = '';
         req.on('data', (chunk) => (body += chunk));

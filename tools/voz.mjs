@@ -130,7 +130,7 @@ function list() {
     if (!/\p{L}{2}/u.test(spoken) || / = |[#{}]/.test(spoken)) return;
     if (!all.has(spoken)) all.set(spoken, from);
   };
-  if (existsSync(HEARD)) for (const line of read(HEARD).split('\n')) add(line, 'oida');
+  if (existsSync(HEARD)) for (const line of read(HEARD).split(/\r?\n/)) add(line, 'oida');
   for (const file of jsFiles(SRC)) for (const call of spokenCalls(read(file))) for (const text of literals(call)) add(text, 'código');
   for (const text of census()) add(text, 'lista');
   const have = recorded();

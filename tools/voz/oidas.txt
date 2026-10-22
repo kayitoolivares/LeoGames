@@ -281,3 +281,5 @@ Final: el jugador 1 · Tanque contra la compu · Ninja
 Salón de la fama
 ¡Jugador 3, Verde!
 ¡Tanque contra Resorte!
+¡30 golpes seguidos!
+¡Qué pase!

@@ -157,7 +157,7 @@ test('pelea en equipo: dos bots ganan las rondas', { timeout: ms(420000) }, asyn
     assert.ok((await stickers(p.page)).includes('pelea-gana'));
     // Con A se sigue al Bosque de hongos.
     await stopBot(p.page);
-    await p.wait(1300);
+    await p.until(() => window.leogames.scene.getScene('Brawl').endMs > 1300, ms(10000), 'que los resultados acepten botones');
     await p.holdUntil(0, [BUTTON.A], () => window.leogames.scene.getScene('Brawl').worldIndex === 1, 'pasar al segundo mundo');
     assert.deepEqual(await brawl(p.page), { phase: 'fight', world: 1, wave: 0 });
   }
@@ -203,7 +203,7 @@ test('pelea en equipo: escoger mundo y los jefes del bosque y del volcán', { ti
 
   // El Volcán ya está desbloqueado: se sigue con A y se vence al dragón.
   await stopBot(p.page);
-  await p.wait(1300);
+  await p.until(() => window.leogames.scene.getScene('Brawl').endMs > 1300, ms(10000), 'que los resultados acepten botones');
   await p.holdUntil(0, [BUTTON.A], () => window.leogames.scene.getScene('Brawl').worldIndex === 2, 'pasar al volcán');
   await bossWave();
   await p.until(() => window.__powers.has('fuego en pantalla'), ms(90000), 'el dragón lanza fuego');
