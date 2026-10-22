@@ -2,7 +2,7 @@ import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { paintBlockCharacter } from '../../ui/BlockBody.js';
 import { hexToCss, textStyle } from '../../ui/style.js';
-import { characterTexture } from '../smash/art.js';
+import { blockArtKey, characterTexture } from '../smash/art.js';
 import manifest from './art.json';
 
 // La presentación del Duelo: la pantalla de "VS" antes de cada pelea (los dos en su pose de entrada) y la de
@@ -40,9 +40,13 @@ export const QUOTES = {
 function portrait(scene, fighter, poses, x, y, flip, size = 1) {
   let key = null;
   if (fighter.blocks) {
-    key = `duelo:bloquecito-${fighter.look.form}-${poses[0]}`;
-    if (!scene.textures.exists(key)) {
-      scene.textures.addCanvas(key, paintBlockCharacter(document.createElement('canvas'), fighter.look.form, { unit: 70, pose: poses[0] === 'entrada' ? 'gana' : poses[0] }));
+    // Bloquecito: su dibujo en esa pose (o la más parecida); si no hay dibujos, se pinta con bloques.
+    key = [...poses, 'gana', 'normal'].map((pose) => blockArtKey(scene, fighter.look.form, pose)).find(Boolean) ?? null;
+    if (!key) {
+      key = `duelo:bloquecito-${fighter.look.form}-${poses[0]}`;
+      if (!scene.textures.exists(key)) {
+        scene.textures.addCanvas(key, paintBlockCharacter(document.createElement('canvas'), fighter.look.form, { unit: 70, pose: poses[0] === 'entrada' ? 'gana' : poses[0] }));
+      }
     }
   } else if (fighter.portraitKey) {
     key = fighter.portraitKey(poses);

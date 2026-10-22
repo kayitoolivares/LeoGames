@@ -267,8 +267,11 @@ Abre http://localhost:5173 en Edge o Chrome.
     (si dos traen el mismo personaje, el segundo sale de otro color).
   - **Narrador**: comenta el primer golpe, los combos, las paradas, los secretos, el ayudante, los objetos y quién
     tiene poquita vida (con voz y letrero).
-- **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, dibujado con
-  figuras (sin imágenes de Gemini). **Y** sube de número y **↓ + Y** baja (del 10 regresa al 1), cuando quieras y sin
+- **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, con dibujos de
+  Gemini para cada número y su súper forma (`bloque1` a `bloque10` y `octobloque`, con sus poses y su caminata). Para
+  que Gemini no se equivoque contando cubos, cada hoja se pide con una referencia que dibuja el juego (la cantidad
+  exacta de cubos y las poses). Si falta un dibujo, se ve con bloques dibujados con figuras (en los karts, siempre).
+  **Y** sube de número y **↓ + Y** baja (del 10 regresa al 1), cuando quieras y sin
   límite; la voz dice el número. Cada número tiene su color y su forma, y entre más grande es más fuerte y pesado pero
   más lento. Su especial cambia con el número: 1 embestida, 2 doble golpe, 3 malabares, 4 se vuelve cuadrado y
   aplasta, 5 estrella, 6 rueda como dado, 7 arcoíris, 8 ocho brazos, 9 golpazo y 10 despega como cohete.
@@ -365,5 +368,5 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.
-- `src/ui/`: estilos y el personaje (la bolita); `BlockBody.js` dibuja a Bloquecito (sus números están en
-  `src/games/smash/bloquecito.js`).
+- `src/ui/`: estilos y el personaje (la bolita); `BlockBody.js` pone a Bloquecito (sus dibujos o, si faltan, sus
+  bloques; sus números están en `src/games/smash/bloquecito.js`).

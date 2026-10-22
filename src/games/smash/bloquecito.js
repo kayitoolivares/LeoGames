@@ -7,7 +7,8 @@ import { say } from '../../shared/voice.js';
 // (Y sube uno, ↓ + Y baja uno; del 10 regresa al 1). Cada número tiene su color, su forma y su truco
 // (el especial). Entre más grande, más fuerte y pesado, pero más lento.
 // Su súper forma es Octobloque: el 8 superhéroe, con antifaz, capa y ocho brazos.
-// No usa imágenes: lo dibuja ui/BlockBody.js con figuras.
+// Lo pone ui/BlockBody.js: con los dibujos de Gemini de cada número (bloque1 a bloque10 y octobloque) o, si faltan,
+// con bloques dibujados con figuras.
 export const BLOCK_CHARACTER = 'bloquecito';
 export const OCTO = 'octo';
 export const MAX_NUMBER = 10;

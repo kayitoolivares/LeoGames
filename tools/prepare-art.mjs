@@ -2,7 +2,8 @@
 //
 // Bolitas Bros:
 //   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella | ninja | robot | dragon | fantasma |
-//                                                  dino | gatito | pinguino | pirata | hada | astronauta | abeja | bombero
+//                                                  dino | gatito | pinguino | pirata | hada | astronauta | abeja | bombero |
+//                                                  bloque1 a bloque10 | octobloque (Bloquecito, un dibujo por número)
 //                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
 //                                                  caminar1 a caminar4 (los cuadros de la caminata, en todos los juegos)
@@ -29,6 +30,8 @@ const MANIFEST = path.join(ROOT, 'src', 'games', 'smash', 'art.json');
 const CHARACTERS = [
   'tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma',
   'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero',
+  // Bloquecito: un dibujo por número (bloque1 a bloque10) y su súper forma, Octobloque.
+  ...Array.from({ length: 10 }, (_, i) => `bloque${i + 1}`), 'octobloque',
 ];
 const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella', 'bate', 'pistola', 'patineta', 'huevo', 'bola-super', 'diana', 'bumeran', 'flor-fuego', 'resorte', 'capsula', 'tornado', 'saco'];

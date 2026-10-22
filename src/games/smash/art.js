@@ -30,19 +30,48 @@ const WALK_POSES = Array.from({ length: WALK_FRAMES }, (_, i) => `caminar${i + 1
 const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor', ...WALK_POSES];
 const DUEL_POSES = ['patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada'];
 
+// Bloquecito tiene un dibujo por número (bloque1 a bloque10) y otro para Octobloque.
+const BLOCK_ART = /^(bloque\d+|octobloque)$/;
+
 // Se llama en preload(): pone en la fila de carga lo que todavía no esté cargado.
+// De Bloquecito, todas sus poses solo si va a jugar (`posesFor`); si no, solo la normal de cada número (para escogerlo).
 export function loadSmashArt(scene, { allPoses = false, posesFor = [] } = {}) {
   const queue = (key, url) => {
     if (!scene.textures.exists(key)) scene.load.image(key, url);
   };
+  const blocks = posesFor.includes('bloquecito');
   for (const [character, poses] of Object.entries(manifest.characters)) {
+    const block = BLOCK_ART.test(character);
     const extra = allPoses || posesFor.includes(character.replace(/_super$/, ''));
     for (const pose of poses) {
-      if (BASIC_POSES.includes(pose) || (extra && DUEL_POSES.includes(pose))) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
+      const wanted = block ? pose === 'normal' || blocks : BASIC_POSES.includes(pose) || (extra && DUEL_POSES.includes(pose));
+      if (wanted) queue(`smash:${character}-${pose}`, `${BASE}personajes/${character}-${pose}.png`);
     }
   }
   for (const item of manifest.items) queue(`smash:objeto-${item}`, `${BASE}objetos/${item}.png`);
   for (const stage of manifest.backgrounds) queue(`smash:fondo-${stage}`, `${BASE}fondos/${stage}.jpg`);
+}
+
+// Bloquecito empezó a jugar sin todos sus dibujos (la compu lo escogió al azar, o en el Duelo): se cargan ahorita y
+// BlockBody los usa en cuanto llegan (mientras, se ve con bloques).
+export function loadBlockArt(scene) {
+  let added = false;
+  for (const [character, poses] of Object.entries(manifest.characters)) {
+    if (!BLOCK_ART.test(character)) continue;
+    for (const pose of poses) {
+      const key = `smash:${character}-${pose}`;
+      if (scene.textures.exists(key)) continue;
+      scene.load.image(key, `${BASE}personajes/${character}-${pose}.png`);
+      added = true;
+    }
+  }
+  if (added && !scene.load.isLoading()) scene.load.start();
+}
+
+// La textura de Bloquecito en un número (u Octobloque, 'octo') y una pose, o null si no hay.
+export function blockArtKey(scene, form, pose) {
+  const key = `smash:${form === 'octo' ? 'octobloque' : `bloque${form}`}-${pose}`;
+  return scene.textures.exists(key) ? key : null;
 }
 
 // Textura de un personaje en una pose; si esa pose no existe usa la normal; si no hay ninguna, null.

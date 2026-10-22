@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { frameDelta } from '../shared/clock.js';
+import { blockArtKey } from '../games/smash/art.js';
 import { NUMBERS, OCTO, RAINBOW } from '../games/smash/bloquecito.js';
 import { CanvasGraphics } from './CanvasGraphics.js';
 import { COLORS, textStyle } from './style.js';
@@ -21,9 +22,15 @@ const CAPE = 0xe53935;
 const MASK = 0x26305e;
 // Otra forma para un número: el 4 se vuelve cuadrado en su truco.
 const SHAPES = { square: [2, 2] };
+// Con dibujos de Gemini: qué tan grande va el dibujo comparado con los bloques (trae brazos, piernas y su borde blanco),
+// el brinquito al cambiar de número y qué pose usar si falta alguna.
+const ART_FIT = 1.2;
+const ART_POP_MS = 260;
+const ART_POSES = { patada: ['patada', 'golpe'], cubrirse: ['cubrirse', 'normal'], especial: ['especial', 'golpe'], gana: ['gana', 'salto'] };
 
-// El cuerpo de Bloquecito: bloques de colores con cara, brazos y piernas, dibujados con figuras.
-// Al cambiar de número los bloques se acomodan solos: los que faltan aparecen uno por uno y los que
+// El cuerpo de Bloquecito. Si hay dibujos de Gemini de su número (npm run arte), se usa el dibujo de la pose
+// (y sus trucos se hacen moviéndolo); si no, bloques de colores con cara, brazos y piernas, dibujados con figuras.
+// Con bloques, al cambiar de número se acomodan solos: los que faltan aparecen uno por uno y los que
 // sobran se van. Los pies quedan en (0, 0) y el cuerpo crece hacia arriba. Hay que llamar render()
 // en cada cuadro con la pose (normal | caminar | salto | golpe | patada | cubrirse | especial | dolor | gana).
 export class BlockBody extends Phaser.GameObjects.Container {
@@ -42,7 +49,10 @@ export class BlockBody extends Phaser.GameObjects.Container {
       scene.add.circle(0, 0, discR, 0xffffff, 0.9).setStrokeStyle(Math.max(2, unit * 0.07), COLORS.ink),
       this.discText,
     ]);
-    this.add([this.g, this.disc]);
+    // El dibujo de Gemini (si hay), centrado: así puede girar (el dado que rueda).
+    this.image = scene.add.image(0, 0, '__DEFAULT').setVisible(false);
+    this.artPopMs = 0;
+    this.add([this.g, this.image, this.disc]);
     this.blocks = [];
     this.form = null;
     this.shape = null;
@@ -61,9 +71,12 @@ export class BlockBody extends Phaser.GameObjects.Container {
   // Cambia de número (o a Octobloque). `shape` = otra forma del mismo número ('square').
   setForm(form, { animate = true, shape = null } = {}) {
     if (form === this.form && shape === this.shape) return;
+    if (animate && form !== this.form) this.artPopMs = ART_POP_MS;
     this.form = form;
     this.shape = shape;
     this.target = layout(form, shape, this.unit);
+    // El alto de su forma de siempre (con el dibujo, el truco del cuadrado no lo cambia de tamaño).
+    if (!shape) this.formHeight = this.target.height;
     const kept = this.blocks.filter((b) => !b.leaving);
     kept.forEach((b, i) => {
       const t = this.target.list[i];
@@ -129,7 +142,64 @@ export class BlockBody extends Phaser.GameObjects.Container {
     if (shape !== this.shape) this.setForm(this.form, { shape });
     this.rollAngle = action === 'roll' ? this.rollAngle + ROLL_SPEED * dt * this.facing : 0;
     this.animate(dt);
+    this.artPopMs = Math.max(0, this.artPopMs - dt);
+    if (this.drawArt()) return;
+    this.image.setVisible(false);
     this.draw();
+  }
+
+  // La pose del dibujo que toca (con la caminata, el cuadro que va), o la más parecida si esa falta.
+  artPose() {
+    const pose = this.pose;
+    if (pose === 'caminar') {
+      const frame = `caminar${(Math.floor(this.walkStep) % 4) + 1}`;
+      return blockArtKey(this.scene, this.form, frame) ? frame : 'normal';
+    }
+    return (ART_POSES[pose] ?? [pose]).find((p) => blockArtKey(this.scene, this.form, p)) ?? 'normal';
+  }
+
+  // Con dibujo de Gemini: la imagen de la pose, del tamaño de sus bloques, con los pies en (0, 0). Los trucos se hacen
+  // moviéndola: el dado rueda, el cuadrado del 4 se aplasta, el pulpo se menea y el cohete echa fuego.
+  // Devuelve false si no hay dibujo de este número (o se ve de espaldas o de lado, en los karts).
+  drawArt() {
+    const base = this.view === 'front' && blockArtKey(this.scene, this.form, 'normal');
+    if (!base) return false;
+    const key = blockArtKey(this.scene, this.form, this.artPose());
+    const image = this.image;
+    if (image.texture.key !== key) image.setTexture(key);
+    const u = this.unit;
+    const normalHeight = this.scene.textures.get(base).getSourceImage().height;
+    let scale = ((this.formHeight + LEG * u) * ART_FIT) / normalHeight;
+    let sx = 1;
+    let sy = 1;
+    let angle = this.rollAngle;
+    if (this.action === 'square') {
+      sx = 1.35;
+      sy = 0.72;
+    } else if (this.action === 'octo') {
+      angle = Math.sin(this.clock / 50) * 14;
+    } else if (this.action === 'charge') {
+      scale *= 1.08;
+    }
+    // Al cambiar de número: un brinquito.
+    if (this.artPopMs > 0) scale *= 1 + 0.3 * Math.sin(Math.PI * (1 - this.artPopMs / ART_POP_MS));
+    const w = image.width * scale * sx;
+    const h = image.height * scale * sy;
+    image.setVisible(true).setScale(scale * sx * this.facing, scale * sy).setPosition(0, -h / 2).setAngle(angle);
+    if (this.flashMs > 0) image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
+    else if (this.tint) image.setTint(this.tint).setTintMode(Phaser.TintModes.SCREEN);
+    else image.clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    this.bounds = { left: -w / 2, right: w / 2, top: -h, bottom: 0 };
+    this.disc.setVisible(true).setPosition(0, -h - this.discR - u * 0.15);
+    const g = this.g;
+    g.clear();
+    if (this.action === 'rocket') this.drawFlames(0, Math.min(w, this.target.width) * 0.8);
+    return true;
+  }
+
+  // Qué tan alto se ve ahorita (el dibujo o los bloques), sin el número de arriba.
+  get visualHeight() {
+    return this.image.visible ? this.image.displayHeight : this.target.height;
   }
 
   animate(dt) {
@@ -520,7 +590,8 @@ export class BlockBody extends Phaser.GameObjects.Container {
 // Dibuja a Bloquecito en un <canvas> (para los juegos 3D, que no usan Phaser): el mismo dibujo de BlockBody,
 // con un pincel de canvas que entiende las órdenes de Phaser.Graphics. Ajusta el tamaño del canvas a la figura
 // (con los pies abajo al centro) y lo devuelve.
-export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', facing = 1, view = 'front' } = {}) {
+// `walkStep`: el cuadro de la caminata; `badge`: con el número arriba (sin él, para las hojas de referencia de Gemini).
+export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', facing = 1, view = 'front', walkStep = 0, badge = true } = {}) {
   const body = Object.create(BlockBody.prototype);
   Object.assign(body, {
     unit,
@@ -532,7 +603,7 @@ export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', 
     view,
     action: null,
     facing,
-    walkStep: 0,
+    walkStep,
     // (con el reloj en 0 saldría parpadeando)
     clock: BLINK_MS * 2,
     flashMs: 0,
@@ -553,19 +624,21 @@ export function paintBlockCharacter(canvas, form, { unit = 40, pose = 'normal', 
   body.g = new CanvasGraphics(ctx);
   body.draw();
   // El número de arriba.
-  const { x, y } = body.disc;
-  ctx.beginPath();
-  ctx.arc(x, y, body.discR, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.fill();
-  ctx.lineWidth = Math.max(2, unit * 0.07);
-  ctx.strokeStyle = '#1b1530';
-  ctx.stroke();
-  ctx.fillStyle = '#1b1530';
-  ctx.font = `bold ${Math.round(body.discR * 1.3)}px "Segoe UI", Arial, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(form === OCTO ? '8' : String(form), x, y + 1);
+  if (badge) {
+    const { x, y } = body.disc;
+    ctx.beginPath();
+    ctx.arc(x, y, body.discR, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, unit * 0.07);
+    ctx.strokeStyle = '#1b1530';
+    ctx.stroke();
+    ctx.fillStyle = '#1b1530';
+    ctx.font = `bold ${Math.round(body.discR * 1.3)}px "Segoe UI", Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(form === OCTO ? '8' : String(form), x, y + 1);
+  }
   ctx.restore();
   return canvas;
 }

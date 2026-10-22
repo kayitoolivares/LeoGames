@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { frameDelta } from '../shared/clock.js';
-import { characterTexture, hasPose, walkPose } from '../games/smash/art.js';
+import { characterTexture, hasPose, loadBlockArt, walkPose } from '../games/smash/art.js';
 import { OCTO, announceNumber, isBlockCharacter, nextNumber } from '../games/smash/bloquecito.js';
 import { addAccessory } from '../games/smash/characters.js';
 import { BlockBody } from './BlockBody.js';
@@ -8,7 +8,7 @@ import { BlockBody } from './BlockBody.js';
 // Cuadros de caminata por segundo.
 export const WALK_FPS = 9;
 // Lado de un bloque de Bloquecito: esta fracción del alto que tendría una imagen (`height` radios).
-const BLOCK_UNIT = 0.28;
+const BLOCK_UNIT = 0.33;
 // En las pantallas de escoger, cada cuánto Bloquecito cambia de número solito.
 const SHOWCASE_MS = 900;
 
@@ -16,7 +16,8 @@ const SHOWCASE_MS = 900;
 // o con su accesorio dibujado si no. Hay que crearlo antes de agregarle otras cosas a `blob.figure`,
 // porque con imagen se esconde todo lo que ya tenía (la bolita, los ojos y la boca).
 // La imagen mira a la derecha y se apoya en el piso de la bolita; `height` es su alto en radios.
-// Bloquecito no tiene imagen: se arma con bloques (ui/BlockBody.js) y cambia de número con changeNumber().
+// Bloquecito usa ui/BlockBody.js (con los dibujos de cada número, o con bloques si faltan) y cambia de número con
+// changeNumber().
 export class CharacterLook {
   constructor(scene, blob, character, { height = 2.8 } = {}) {
     this.scene = scene;
@@ -34,6 +35,8 @@ export class CharacterLook {
       this.body.setY(blob.radius);
       blob.figure.addAt(this.body, 0);
       this.punchArt = true;
+      // (Si sus dibujos no se cargaron antes, se cargan ahorita.)
+      loadBlockArt(scene);
       return;
     }
     const key = characterTexture(scene, character);
@@ -140,7 +143,7 @@ export class CharacterLook {
       this.showcaseMs = 0;
       this.setNumber(nextNumber(this.number, 1));
     }
-    const tall = this.body.height + this.body.discR * 2 + this.body.unit * 0.25;
+    const tall = this.body.visualHeight + this.body.discR * 2 + this.body.unit * 0.25;
     this.body.setScale(Math.min(1, maxHeight / tall));
     this.body.render('normal', 1);
   }

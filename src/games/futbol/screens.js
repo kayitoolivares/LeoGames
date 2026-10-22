@@ -1,7 +1,7 @@
 import { say } from '../../shared/voice.js';
 import { paintBlockCharacter } from '../../ui/BlockBody.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
-import { characterTexture } from '../smash/art.js';
+import { blockArtKey, characterTexture } from '../smash/art.js';
 import { CHARACTERS } from '../smash/characters.js';
 import manifest from './art.json';
 import { UNIFORMS } from './field.js';
@@ -69,8 +69,12 @@ const nameOf = (player) => `${player.label} · ${CHARACTERS[player.character]?.n
 function portrait(scene, player, x, y) {
   let key = null;
   if (player.look.body) {
-    key = `futbol:bloquecito-${player.look.form}-gana`;
-    if (!scene.textures.exists(key)) scene.textures.addCanvas(key, paintBlockCharacter(document.createElement('canvas'), player.look.form, { unit: 70, pose: 'gana' }));
+    // Bloquecito: su dibujo festejando (o el más parecido); si no hay dibujos, se pinta con bloques.
+    key = ['gana', 'salto', 'normal'].map((pose) => blockArtKey(scene, player.look.form, pose)).find(Boolean) ?? null;
+    if (!key) {
+      key = `futbol:bloquecito-${player.look.form}-gana`;
+      if (!scene.textures.exists(key)) scene.textures.addCanvas(key, paintBlockCharacter(document.createElement('canvas'), player.look.form, { unit: 70, pose: 'gana' }));
+    }
   } else if (player.look.hasArt) {
     key = characterTexture(scene, player.character, 'gana');
   }

@@ -2,7 +2,7 @@ import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { paintBlockCharacter } from '../../ui/BlockBody.js';
 import { hexToCss, textStyle } from '../../ui/style.js';
-import { characterTexture } from './art.js';
+import { blockArtKey, characterTexture } from './art.js';
 import { characterInfo } from './characters.js';
 
 // Presentación y resultados de Bolitas Bros: antes de pelear, todos en fila en su pose de entrada; al final, un podio
@@ -13,8 +13,12 @@ const PORTRAIT_H = 230;
 function portrait(scene, fighter, poses, x, y, height = PORTRAIT_H) {
   let key = null;
   if (fighter.blocks) {
-    key = `smash:bloquecito-${fighter.look.form}-gana`;
-    if (!scene.textures.exists(key)) scene.textures.addCanvas(key, paintBlockCharacter(document.createElement('canvas'), fighter.look.form, { unit: 60, pose: 'gana' }));
+    // Bloquecito: su dibujo en esa pose (o la más parecida); si no hay dibujos, se pinta con bloques.
+    key = [...poses, 'normal'].map((pose) => blockArtKey(scene, fighter.look.form, pose)).find(Boolean) ?? null;
+    if (!key) {
+      key = `smash:bloquecito-${fighter.look.form}-gana`;
+      if (!scene.textures.exists(key)) scene.textures.addCanvas(key, paintBlockCharacter(document.createElement('canvas'), fighter.look.form, { unit: 60, pose: 'gana' }));
+    }
   } else if (fighter.image) {
     for (const pose of poses) {
       key = characterTexture(scene, fighter.characterKey, pose);
