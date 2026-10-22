@@ -1,8 +1,8 @@
 // Pruebas de punta a punta: bots que juegan con controles simulados. Corren con `npm test`
 // y en GitHub Actions antes de publicar, para que un cambio no rompa otro juego sin darnos cuenta.
-import { after, before, test } from 'node:test';
+import { after, afterEach, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUTTON, openPage, startGame } from './helpers.mjs';
+import { BUTTON, closeOpenPages, openPage, startGame } from './helpers.mjs';
 
 // En GitHub no hay tarjeta de video y el juego va más lento: se le da más tiempo a todo.
 const SLOW = process.env.CI ? 4 : 1;
@@ -13,6 +13,10 @@ const EXIT = [BUTTON.LB, BUTTON.RB, BUTTON.Y];
 let game;
 before(async () => {
   game = await startGame();
+});
+// (Si una prueba falla a la mitad, su página se cierra igual.)
+afterEach(async () => {
+  await closeOpenPages();
 });
 after(async () => {
   await game?.stop();

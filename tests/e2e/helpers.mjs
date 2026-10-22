@@ -29,11 +29,22 @@ export async function startGame() {
   };
 }
 
+// Las páginas abiertas: si una prueba falla antes de cerrar la suya, se cierra al terminar la prueba (si no, el juego
+// se queda corriendo en el fondo y hace lentísimas todas las pruebas que siguen).
+const openContexts = new Set();
+
+export async function closeOpenPages() {
+  for (const context of openContexts) await context.close().catch(() => {});
+  openContexts.clear();
+}
+
 // Una página con controles falsos. Devuelve atajos para apretar botones y leer el estado del juego.
 export async function openPage(game, { touch = false } = {}) {
   const context = await game.browser.newContext(
     touch ? { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true } : { viewport: { width: 1280, height: 720 } },
   );
+  openContexts.add(context);
+  context.on('close', () => openContexts.delete(context));
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
