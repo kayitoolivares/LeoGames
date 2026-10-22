@@ -3,6 +3,8 @@
 // `count` es para 1 jugador: los monstruos chicos aumentan uno por cada jugador extra.
 // `unlock`: qué hay que ganar antes (ver UNLOCKS en rewards.js). `sticker`: la calcomanía al ganarlo.
 // `colors`: el fondo dibujado cuando no hay imagen.
+// `trap`: las trampas del mundo (ver traps.js), `mount`: el animal que se puede montar en el segundo tramo, `mini`: el
+// monstruo que sale de mini jefe en el segundo tramo y `cage`: en qué tramo hay un amigo enjaulado para rescatar.
 export const WORLDS = [
   {
     name: 'Pradera',
@@ -11,6 +13,10 @@ export const WORLDS = [
     unlock: null,
     sticker: 'pelea-gana',
     colors: { sky: 0x2a2357, hill: 0x3a2f6e, floor: 0x4b3d86, stripe: 0x5a4b9a },
+    trap: 'spring',
+    mount: 'dinosaurio',
+    mini: 'slimeGrande',
+    cage: 2,
     waves: [
       { title: 'Ronda 1', spawns: [{ type: 'slime', count: 3 }] },
       { title: 'Ronda 2', spawns: [{ type: 'slime', count: 5 }] },
@@ -25,6 +31,10 @@ export const WORLDS = [
     unlock: 'pelea-mundo-2',
     sticker: 'pelea-hongos',
     colors: { sky: 0x123a2e, hill: 0x1f5a40, floor: 0x2f6e44, stripe: 0x3d8352 },
+    trap: 'boulder',
+    mount: 'pollo-gigante',
+    mini: 'slimeGrande',
+    cage: 2,
     waves: [
       { title: 'Ronda 1', spawns: [{ type: 'hongo', count: 4 }] },
       { title: 'Ronda 2', spawns: [{ type: 'hongo', count: 4 }, { type: 'slimeGrande', count: 1 }] },
@@ -39,6 +49,10 @@ export const WORLDS = [
     unlock: 'pelea-mundo-3',
     sticker: 'pelea-volcan',
     colors: { sky: 0x3a1420, hill: 0x5a1f22, floor: 0x6e3326, stripe: 0x8a4430 },
+    trap: 'lava',
+    mount: 'dinosaurio',
+    mini: 'slimeGrande',
+    cage: 2,
     waves: [
       { title: 'Ronda 1', spawns: [{ type: 'slimeLava', count: 4 }] },
       { title: 'Ronda 2', spawns: [{ type: 'slimeLava', count: 5 }, { type: 'hongo', count: 2 }] },
@@ -53,6 +67,10 @@ export const WORLDS = [
     unlock: 'pelea-mundo-4',
     sticker: 'pelea-playa',
     colors: { sky: 0x7fd6ff, hill: 0x2fa8e0, floor: 0xf2d48a, stripe: 0xe0bd6a },
+    trap: 'cannon',
+    mount: 'pollo-gigante',
+    mini: 'almeja',
+    cage: 2,
     waves: [
       { title: 'Ronda 1', spawns: [{ type: 'cangrejo', count: 4 }] },
       { title: 'Ronda 2', spawns: [{ type: 'cangrejo', count: 4 }, { type: 'almeja', count: 1 }] },
@@ -67,6 +85,10 @@ export const WORLDS = [
     unlock: 'pelea-mundo-5',
     sticker: 'pelea-nieve',
     colors: { sky: 0x9fd8ff, hill: 0xe6ecf8, floor: 0xf4f8ff, stripe: 0xd6e2f2 },
+    trap: 'snowball',
+    mount: 'dinosaurio',
+    mini: 'yetiBebe',
+    cage: 2,
     waves: [
       { title: 'Ronda 1', spawns: [{ type: 'munecoNieve', count: 4 }] },
       { title: 'Ronda 2', spawns: [{ type: 'munecoNieve', count: 4 }, { type: 'yetiBebe', count: 1 }] },
@@ -81,6 +103,10 @@ export const WORLDS = [
     unlock: 'pelea-mundo-6',
     sticker: 'pelea-castillo',
     colors: { sky: 0x1b1840, hill: 0x2a2450, floor: 0x5e5a6e, stripe: 0x6e6a80 },
+    trap: 'ghostfire',
+    mount: 'pollo-gigante',
+    mini: 'calabaza',
+    cage: 2,
     waves: [
       { title: 'Ronda 1', spawns: [{ type: 'murcielago', count: 4 }] },
       { title: 'Ronda 2', spawns: [{ type: 'murcielago', count: 3 }, { type: 'calabaza', count: 2 }] },
@@ -88,14 +114,62 @@ export const WORLDS = [
       { title: '¡El Rey Calabaza!', spawns: [{ type: 'murcielago', count: 2 }, { type: 'reyCalabaza', count: 1 }] },
     ],
   },
+  {
+    name: 'Dulcelandia',
+    emoji: '🍭',
+    background: 'dulces',
+    unlock: 'pelea-mundo-7',
+    sticker: 'pelea-dulces',
+    colors: { sky: 0xffc4e6, hill: 0xff9ec7, floor: 0xf2c79a, stripe: 0xe8a878 },
+    trap: 'gum',
+    mount: 'pollo-gigante',
+    mini: 'cupcake',
+    cage: 2,
+    waves: [
+      { title: 'Ronda 1', spawns: [{ type: 'gomita', count: 4 }] },
+      { title: 'Ronda 2', spawns: [{ type: 'gomita', count: 3 }, { type: 'caramelo', count: 2 }] },
+      { title: 'Ronda 3', spawns: [{ type: 'gomita', count: 4 }, { type: 'cupcake', count: 2 }] },
+      { title: '¡El Rey Pastel!', spawns: [{ type: 'gomita', count: 2 }, { type: 'reyPastel', count: 1 }] },
+    ],
+  },
+  {
+    name: 'Espacio',
+    emoji: '🚀',
+    background: 'espacio',
+    unlock: 'pelea-mundo-8',
+    sticker: 'pelea-espacio',
+    colors: { sky: 0x14112b, hill: 0x2a2450, floor: 0x5a3f7a, stripe: 0x6e5090 },
+    trap: 'meteor',
+    mount: 'dinosaurio',
+    mini: 'robotito',
+    cage: 2,
+    waves: [
+      { title: 'Ronda 1', spawns: [{ type: 'marcianito', count: 4 }] },
+      { title: 'Ronda 2', spawns: [{ type: 'marcianito', count: 3 }, { type: 'ovni', count: 2 }] },
+      { title: 'Ronda 3', spawns: [{ type: 'marcianito', count: 4 }, { type: 'robotito', count: 2 }] },
+      { title: '¡El Mega Robot!', spawns: [{ type: 'marcianito', count: 2 }, { type: 'megaRobot', count: 1 }] },
+    ],
+  },
 ];
+// En el segundo tramo de cada mundo sale el mini jefe (al final de la ronda).
+export const MINI_WAVE = 1;
 
-export function buildSpawnQueue(wave, playerCount, types) {
+// Jefes en serie: todos los jefes de los mundos ya abiertos, uno tras otro (cada uno con un par de ayudantes).
+export function bossRushWaves(worlds, types) {
+  return worlds.map((world, i) => {
+    const boss = world.waves.at(-1).spawns.find((s) => types[s.type].boss);
+    return { title: `Jefe ${i + 1} de ${worlds.length}: ${types[boss.type].name}`, world, spawns: [{ type: boss.type, count: 1 }] };
+  });
+}
+
+// La fila de monstruos de una ronda (`mini`: el que sale al final de mini jefe, se marca "mini:<tipo>").
+export function buildSpawnQueue(wave, playerCount, types, mini = null) {
   const queue = [];
   for (const { type, count } of wave.spawns) {
     const total = types[type].small ? count + (playerCount - 1) : count;
     for (let i = 0; i < total; i += 1) queue.push(type);
   }
+  if (mini) queue.push(`mini:${mini}`);
   return queue;
 }
 

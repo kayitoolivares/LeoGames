@@ -95,6 +95,15 @@ export class CharacterLook {
     this.image.setFlipX(facing < 0);
   }
 
+  // El color del traje (la tienda de Pelea en equipo): la imagen se pinta con ese color encima (null = sin traje).
+  setCostume(color) {
+    this.costume = color ?? null;
+    if (!this.image) return;
+    this.image.setTintMode(Phaser.TintModes.MULTIPLY);
+    if (this.costume) this.image.setTint(this.costume);
+    else this.image.clearTint();
+  }
+
   // Destello blanco al recibir un golpe.
   flash() {
     if (this.body) {
@@ -107,7 +116,10 @@ export class CharacterLook {
     }
     this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(70, () => {
-      if (this.image.active) this.image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
+      if (!this.image.active) return;
+      this.image.setTintMode(Phaser.TintModes.MULTIPLY);
+      if (this.costume) this.image.setTint(this.costume);
+      else this.image.clearTint();
     });
   }
 

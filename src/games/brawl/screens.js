@@ -3,9 +3,11 @@ import { UNLOCKS, rewards } from '../../shared/rewards.js';
 import { say } from '../../shared/voice.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { monsterTexture } from './art.js';
+import { coinBank } from './coins.js';
+import { brawlRecords, formatTime, medals, rescues } from './records.js';
 import { WORLDS } from './worlds.js';
 
-// Las pantallas de Pelea en equipo: el mapa de mundos, la presentación de cada jefe y los resultados con premios.
+// Las pantallas de Pelea en equipo: el mapa de mundos, la presentación de cada jefe y los resultados con medallas.
 // Todo va pegado a la pantalla (no se mueve con el nivel).
 const DEPTH = 10002;
 const STARS_KEY = 'brawlStars';
@@ -36,55 +38,80 @@ export const endlessRecord = {
   },
 };
 
-// Los lugares del mapa: los 6 mundos en un caminito de zigzag y, al final, el modo sin fin.
-export const MAP_SPOTS = [...WORLDS.map((world, i) => ({ world: i })), { endless: true }];
-const POSITIONS = [
-  [130, 470],
-  [300, 320],
-  [470, 470],
-  [640, 320],
-  [810, 470],
-  [980, 320],
-  [1150, 470],
-];
+// Los lugares del mapa: los mundos en un caminito de zigzag y, al final, los jefes en serie y el modo sin fin.
+export const MAP_SPOTS = [...WORLDS.map((world, i) => ({ world: i })), { bossRush: true }, { endless: true }];
+const POSITIONS = MAP_SPOTS.map((spot, i) => [95 + i * ((1280 - 190) / (MAP_SPOTS.length - 1)), i % 2 === 0 ? 470 : 330]);
+const NODE_R = 46;
 
-function spotOpen(spot) {
-  return spot.endless || rewards.unlocked(WORLDS[spot.world].unlock);
+// Los mundos ya ganados: sus jefes son los de los jefes en serie (que se abren al ganar el primero).
+export function beatenWorlds() {
+  return WORLDS.filter((world, i) => worldStars.get(i) > 0);
 }
 
-// El mapa: un camino con un lugar por mundo (con sus estrellas o su candado) y el modo sin fin.
-export function showMap(scene, selected) {
+function spotOpen(spot) {
+  if (spot.endless) return true;
+  if (spot.bossRush) return beatenWorlds().length > 0;
+  return rewards.unlocked(WORLDS[spot.world].unlock);
+}
+
+// Cómo se ve y qué se dice de cada lugar del mapa.
+function spotInfo(spot, open) {
+  if (spot.endless) return { emoji: '♾️', name: 'Sin fin', text: 'Rondas sin fin, cada vez más difíciles. ¿Cuántas aguantan?' };
+  if (spot.bossRush) {
+    const best = brawlRecords.get().bossRush;
+    const record = best ? `. Récord: ${formatTime(best)}` : '';
+    return { emoji: '👑', name: 'Jefes', text: open ? `Todos los jefes que ya vencieron, uno tras otro${record}` : 'Todavía no: gana el primer mundo' };
+  }
+  const world = WORLDS[spot.world];
+  if (!open) return { emoji: world.emoji, name: world.name, text: `Todavía no: ${UNLOCKS[world.unlock].label}` };
+  const friend = rescues.has(spot.world) ? '🔓 ya rescataron a su amigo' : 'hay un amigo enjaulado';
+  return { emoji: world.emoji, name: world.name, text: `${world.name}: 4 rondas y el jefe  ·  ${friend}` };
+}
+
+// El mapa: un camino con un lugar por mundo (con sus estrellas o su candado), los jefes en serie y el modo sin fin.
+// Arriba, los récords; abajo, los amigos de la compu (Y), las monedas y la tienda (X).
+export function showMap(scene, selected, buddies = 0) {
   const { width, height } = scene.scale;
   const root = scene.add.container(0, 0).setDepth(DEPTH).setScrollFactor(0);
   root.add(scene.add.rectangle(width / 2, height / 2, width, height, 0x2a7a4a));
   root.add(scene.add.ellipse(width / 2, height + 120, width * 1.6, 520, 0x3fa34d));
   // El camino de tierra que une los lugares.
   const path = scene.add.graphics();
-  path.lineStyle(26, 0xd9b26a, 1);
+  path.lineStyle(22, 0xd9b26a, 1);
   path.beginPath();
   POSITIONS.forEach(([x, y], i) => (i === 0 ? path.moveTo(x, y) : path.lineTo(x, y)));
   path.strokePath();
   root.add(path);
-  root.add(scene.add.text(width / 2, 70, 'Mapa de mundos', textStyle(48, TEXT.normal, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 8 })).setOrigin(0.5));
+  const outline = { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 };
+  root.add(scene.add.text(width / 2, 56, 'Mapa de mundos', textStyle(44, TEXT.normal, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 8 })).setOrigin(0.5));
+  const r = brawlRecords.get();
+  const records = [`🔥 Mejor combo: ${r.combo}`, `👑 Jefes vencidos: ${r.bosses}`, `🔓 Rescatados: ${r.rescues}`];
+  if (r.bossRush) records.push(`🏆 Jefes en serie: ${formatTime(r.bossRush)}`);
+  root.add(scene.add.text(width / 2, 108, records.join('     '), textStyle(18, '#ffd84d', outline)).setOrigin(0.5));
   const nodes = MAP_SPOTS.map((spot, i) => {
     const [x, y] = POSITIONS[i];
     const open = spotOpen(spot);
-    const world = spot.endless ? null : WORLDS[spot.world];
+    const { emoji, name } = spotInfo(spot, open);
     const node = scene.add.container(x, y);
-    const ring = scene.add.circle(0, 0, 58, open ? 0xffffff : 0x8a86b8).setStrokeStyle(6, COLORS.ink);
+    const ring = scene.add.circle(0, 0, NODE_R, open ? 0xffffff : 0x8a86b8).setStrokeStyle(6, COLORS.ink);
     node.add(ring);
-    node.add(scene.add.text(0, -4, spot.endless ? '♾️' : world.emoji, textStyle(54)).setOrigin(0.5).setAlpha(open ? 1 : 0.5));
-    if (!open) node.add(scene.add.text(26, 24, '🔒', textStyle(30)).setOrigin(0.5));
-    const name = spot.endless ? 'Sin fin' : world.name;
-    node.add(scene.add.text(0, 84, name, textStyle(19, '#ffffff', { fontStyle: 'bold', align: 'center', stroke: '#1b1530', strokeThickness: 5, wordWrap: { width: 160 } })).setOrigin(0.5));
-    const stars = spot.endless ? `Récord: ${endlessRecord.get()}` : '★'.repeat(worldStars.get(spot.world)) + '☆'.repeat(3 - worldStars.get(spot.world));
-    node.add(scene.add.text(0, 124, stars, textStyle(spot.endless ? 17 : 22, '#ffd84d', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 })).setOrigin(0.5));
+    node.add(scene.add.text(0, -3, emoji, textStyle(42)).setOrigin(0.5).setAlpha(open ? 1 : 0.5));
+    if (!open) node.add(scene.add.text(22, 20, '🔒', textStyle(24)).setOrigin(0.5));
+    else if (spot.world !== undefined && rescues.has(spot.world)) node.add(scene.add.text(-30, -30, '🔓', textStyle(22)).setOrigin(0.5));
+    node.add(scene.add.text(0, NODE_R + 14, name, textStyle(16, '#ffffff', { ...outline, align: 'center', wordWrap: { width: 120 } })).setOrigin(0.5, 0));
+    let stars = '';
+    if (spot.endless) stars = `Récord: ${endlessRecord.get()}`;
+    else if (spot.bossRush) stars = r.bossRush ? formatTime(r.bossRush) : '';
+    else stars = '★'.repeat(worldStars.get(spot.world)) + '☆'.repeat(3 - worldStars.get(spot.world));
+    node.add(scene.add.text(0, -NODE_R - 20, stars, textStyle(spot.world === undefined ? 15 : 19, '#ffd84d', { ...outline, strokeThickness: 4 })).setOrigin(0.5));
     root.add(node);
     return { node, ring, open, spot };
   });
-  const info = scene.add.text(width / 2, height - 70, '', textStyle(20, '#ffffff', { fontStyle: 'bold', align: 'center', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5);
-  root.add(info);
-  root.add(scene.add.text(width / 2, height - 28, '◀ ▶ escoger   ·   A = ¡a pelear!   ·   B = regresar', textStyle(20, TEXT.accent, { stroke: '#1b1530', strokeThickness: 4 })).setOrigin(0.5));
+  const info = scene.add.text(width / 2, height - 112, '', textStyle(20, '#ffffff', { ...outline, align: 'center' })).setOrigin(0.5);
+  const status = scene.add.text(width / 2, height - 72, '', textStyle(20, '#ffffff', outline)).setOrigin(0.5);
+  root.add([info, status]);
+  const help = '◀ ▶ escoger   ·   A = ¡a pelear!   ·   X = tienda   ·   Y = amigos de la compu   ·   B = regresar';
+  root.add(scene.add.text(width / 2, height - 30, help, textStyle(19, TEXT.accent, { stroke: '#1b1530', strokeThickness: 4 })).setOrigin(0.5));
   const map = {
     root,
     nodes,
@@ -93,17 +120,21 @@ export function showMap(scene, selected) {
       map.selected = (index + nodes.length) % nodes.length;
       nodes.forEach(({ ring, node }, i) => {
         ring.setStrokeStyle(i === map.selected ? 10 : 6, i === map.selected ? 0xffd84d : COLORS.ink);
-        node.setScale(i === map.selected ? 1.12 : 1);
+        node.setScale(i === map.selected ? 1.15 : 1);
       });
       const { open, spot } = nodes[map.selected];
-      const world = spot.endless ? null : WORLDS[spot.world];
-      let text = spot.endless ? 'Rondas sin fin, cada vez más difíciles. ¿Cuántas aguantan?' : `${world.name}: 4 rondas y el jefe`;
-      if (!open) text = `Todavía no: ${UNLOCKS[world.unlock].label}`;
+      const { name, text } = spotInfo(spot, open);
       info.setText(text);
-      say(spot.endless ? 'Sin fin' : open ? world.name : `${world.name}. ${text}`);
+      say(open ? name : `${name}. ${text}`);
+    },
+    // Cuántos amigos de la compu van a pelear (y las monedas de la familia).
+    setBuddies(count) {
+      const who = count === 0 ? 'ninguno' : count === 1 ? '1 amigo' : `${count} amigos`;
+      status.setText(`🤖 Amigos de la compu: ${who}   ·   💰 ${coinBank.get()} monedas`);
     },
   };
   map.select(selected);
+  map.setBuddies(buddies);
   return map;
 }
 
@@ -135,38 +166,32 @@ export function showBossIntro(scene, type, onDone) {
   });
 }
 
-// Resultados del mundo: cada jugador con lo que hizo y los premios (más golpes, más monstruos, mejor compañero y
-// el que tumbó al jefe), y las estrellas que ganaron.
-export function showResults(scene, fighters, { title, stars = null, hint }) {
+// Resultados del mundo: cada peleador con lo que hizo y sus medallas (ver records.js), las estrellas que ganaron y
+// los récords nuevos (`extra`).
+export function showResults(scene, fighters, { title, stars = null, hint, extra = '' }) {
   const { width, height } = scene.scale;
   const root = scene.add.container(0, 0).setDepth(DEPTH).setScrollFactor(0);
   root.add(scene.add.rectangle(width / 2, height / 2, width, height, 0x14112b, 0.88));
   root.add(scene.add.text(width / 2, 70, title, textStyle(52, TEXT.accent, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 10 })).setOrigin(0.5));
   if (stars !== null) root.add(scene.add.text(width / 2, 140, '★'.repeat(stars) + '☆'.repeat(3 - stars), textStyle(56, '#ffd84d', { stroke: '#1b1530', strokeThickness: 8 })).setOrigin(0.5));
-  const awards = [
-    ['👊', 'Más golpes', (f) => f.stats.hits],
-    ['💥', 'Más monstruos', (f) => f.stats.kills],
-    ['🤝', 'Mejor compañero', (f) => f.stats.revives],
-    ['👑', 'Tumbó al jefe', (f) => f.stats.boss],
-  ];
-  const winners = new Map(fighters.map((f) => [f, []]));
-  for (const [emoji, name, value] of awards) {
-    const best = Math.max(...fighters.map(value));
-    if (best <= 0) continue;
-    for (const f of fighters) if (value(f) === best) winners.get(f).push(`${emoji} ${name}`);
-  }
-  const slot = Math.min(300, (width - 80) / fighters.length);
+  const winners = medals(fighters);
+  const slot = Math.min(300, (width - 40) / fighters.length);
+  // Con muchos (amigos de la compu y rescatados) las tarjetas son más angostas y la letra más chica.
+  const many = fighters.length > 4;
+  const font = many ? 15 : 19;
   fighters.forEach((f, i) => {
     const x = width / 2 + (i - (fighters.length - 1) / 2) * slot;
-    const card = scene.add.container(x, 400);
-    card.add(scene.add.rectangle(0, 0, slot - 24, 330, COLORS.panel).setRounded(22).setStrokeStyle(5, f.color));
-    card.add(scene.add.text(0, -140, `J${f.player.slot + 1}`, textStyle(30, hexToCss(f.color), { fontStyle: 'bold' })).setOrigin(0.5));
-    const lines = [`👊 ${f.stats.hits} golpes`, `💥 ${f.stats.kills} monstruos`, `🤝 levantó a ${f.stats.revives}`];
-    card.add(scene.add.text(0, -60, lines.join('\n'), textStyle(20, '#ffffff', { align: 'center', lineSpacing: 6 })).setOrigin(0.5));
-    card.add(scene.add.text(0, 70, winners.get(f).join('\n') || ' ', textStyle(20, '#ffd84d', { fontStyle: 'bold', align: 'center', lineSpacing: 6 })).setOrigin(0.5));
+    const card = scene.add.container(x, 410);
+    card.add(scene.add.rectangle(0, 0, slot - 14, 340, COLORS.panel).setRounded(22).setStrokeStyle(5, f.color));
+    card.add(scene.add.text(0, -146, f.label, textStyle(many ? 22 : 30, hexToCss(f.color), { fontStyle: 'bold' })).setOrigin(0.5));
+    const lines = [`👊 ${f.stats.hits} golpes`, `💥 ${f.stats.kills} monstruos`, `🤝 levantó a ${f.stats.revives}`, `💰 ${f.stats.coins} monedas`];
+    card.add(scene.add.text(0, -66, lines.join('\n'), textStyle(font, '#ffffff', { align: 'center', lineSpacing: 5 })).setOrigin(0.5));
+    const won = winners.get(f).join('\n') || ' ';
+    card.add(scene.add.text(0, 76, won, textStyle(font, '#ffd84d', { fontStyle: 'bold', align: 'center', lineSpacing: 5, wordWrap: { width: slot - 30 } })).setOrigin(0.5));
     root.add(card);
-    scene.tweens.add({ targets: card, y: { from: 760, to: 400 }, duration: 420, delay: i * 120, ease: 'Back.easeOut' });
+    scene.tweens.add({ targets: card, y: { from: 760, to: 410 }, duration: 420, delay: i * 100, ease: 'Back.easeOut' });
   });
+  if (extra) root.add(scene.add.text(width / 2, height - 84, extra, textStyle(22, '#4cd97b', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5));
   root.add(scene.add.text(width / 2, height - 40, hint, textStyle(22, TEXT.accent, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5));
   say(title);
   return root;

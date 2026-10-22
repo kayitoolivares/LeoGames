@@ -96,6 +96,8 @@ function startBrawlBot(page, { invincible = false } = {}) {
       tick += 1;
       for (const f of s.fighters) {
         if (invincibleBots) f.invulnerableMs = 1000;
+        // (Los amigos de la compu juegan solos.)
+        if (!f.deviceId) continue;
         const pad = window.__pads[Number(f.deviceId.replace('pad', ''))];
         const set = (b, v) => ((pad.buttons[b].pressed = v), (pad.buttons[b].value = v ? 1 : 0));
         set(0, false);
@@ -265,6 +267,160 @@ test('pelea en equipo: agarre, especial, súper, cajas y modo sin fin', { timeou
     f.hurt(f.x + 10);
   });
   await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'results', ms(5000), 'ver cuántas rondas aguantaron');
+  await p.holdToMenu(0, EXIT, 'salir de la pelea');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Pelea en equipo, ronda 3: amigos de la compu, tienda, montar, mini jefe, monedas con imán, objetos nuevos, jaula,
+// combo doble y los jefes en serie (el jefe se enoja y se ve la repetición del K.O.).
+test('pelea en equipo: amigos de la compu, tienda, montar, objetos, jaula y jefes en serie', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.page.evaluate(() =>
+    import('/src/shared/settings.js').then((m) => {
+      m.settings.set('brawlCoins', 50);
+      m.settings.set('brawlStars', { 0: 1 });
+    }),
+  );
+  await p.joinPlayers(1);
+  await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'map', ms(8000), 'ver el mapa');
+  const scene = (fn, arg) => p.page.evaluate(fn, arg);
+
+  // Y dos veces = 2 amigos de la compu.
+  await p.tap(0, BUTTON.Y);
+  await p.tap(0, BUTTON.Y);
+  assert.equal(await scene(() => JSON.parse(localStorage.getItem('leogames:brawlBuddies'))), 2);
+  // X = tienda: A compra el sombrero vaquero (20 monedas) y se lo pone; B regresa al mapa.
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'shop', ms(3000), 'abrir la tienda');
+  await p.tap(0, BUTTON.A);
+  const wardrobe = await scene(() => JSON.parse(localStorage.getItem('leogames:brawlWardrobe')));
+  assert.deepEqual(wardrobe.owned, ['sombrero-vaquero']);
+  assert.equal(Object.values(wardrobe.worn)[0].hat, 'sombrero-vaquero');
+  assert.equal(await scene(() => JSON.parse(localStorage.getItem('leogames:brawlCoins'))), 30);
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'map', ms(3000), 'regresar al mapa');
+
+  // A la Pradera: pelean el jugador y sus 2 amigos de la compu (que pegan solos).
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'fight', ms(8000), 'empezar en la Pradera');
+  assert.deepEqual(await scene(() => window.leogames.scene.getScene('Brawl').fighters.map((f) => [f.isCpu, f.label])), [[false, 'J1'], [true, 'C1'], [true, 'C2']]);
+  assert.ok(await scene(() => Boolean(window.leogames.scene.getScene('Brawl').fighters[0].hat)), 'no trae el sombrero');
+  await scene(() => (window.leogames.scene.getScene('Brawl').fighters[0].invulnerableMs = 1e9));
+  await p.until(() => window.leogames.scene.getScene('Brawl').fighters.some((f) => f.isCpu && f.stats.hits > 0), ms(30000), 'que la compu pegue');
+
+  // Segundo tramo: el dinosaurio para montar, las trampas y el mini jefe al final.
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    s.clearEnemies();
+    s.startWave(1);
+  });
+  assert.ok(await scene(() => window.leogames.scene.getScene('Brawl').spawnQueue.at(-1) === 'mini:slimeGrande'), 'no viene el mini jefe');
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    const m = s.mounts.list[0];
+    Object.assign(s.fighters[0], { x: m.x, y: m.y, z: 0 });
+  });
+  await p.until(() => Boolean(window.leogames.scene.getScene('Brawl').fighters[0].mount), ms(3000), 'subirse al dinosaurio');
+  assert.ok((await stickers(p.page)).includes('pelea-montar'));
+  // El mini jefe sale, tiene su barra, y al caer suelta monedas que el imán jala.
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    for (const m of s.monsters) m.destroy();
+    s.monsters = [];
+    s.spawnQueue = ['mini:slimeGrande'];
+    s.spawnMs = 0;
+  });
+  await p.until(() => window.leogames.scene.getScene('Brawl').monsters.some((m) => m.mini), ms(3000), 'que salga el mini jefe');
+  assert.ok(await scene(() => window.leogames.scene.getScene('Brawl').boss?.mini), 'el mini jefe no tiene barra');
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    const f = s.fighters[0];
+    const m = s.monsters.find((mm) => mm.mini);
+    Object.assign(m, { x: f.x + 150, y: f.y });
+    f.magnetMs = 15000;
+    s.hitMonster(f, m, 999);
+  });
+  await p.until(() => window.leogames.scene.getScene('Brawl').fighters[0].stats.coins >= 5, ms(8000), 'juntar las monedas del mini jefe con el imán');
+
+  // Objetos nuevos: espada (pega doble y más lejos), escudo (aguanta golpes) y mascota.
+  const items = await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    const f = s.fighters[0];
+    s.mounts.runAway(f.mount);
+    f.item = null;
+    const reach = f.reach;
+    s.props.take(f, { kind: 'sword', x: f.x, y: f.y });
+    s.props.take(f, { kind: 'shield', x: f.x, y: f.y });
+    s.props.take(f, { kind: 'pet', x: f.x, y: f.y });
+    f.invulnerableMs = 0;
+    const hp = f.hp;
+    f.hurt(f.x + 10);
+    return { sword: f.item?.type, longer: f.reach > reach, power: f.power, shield: f.shieldHits, hp: f.hp === hp, pets: s.pets.list.length };
+  });
+  assert.deepEqual(items, { sword: 'sword', longer: true, power: 2, shield: 2, hp: true, pets: 1 });
+
+  // La jaula: tres golpes y el amigo de adentro se une al equipo.
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    const f = s.fighters[0];
+    s.props.placeCage(f.x + 100, f.y, 'ninja');
+    const cage = s.props.breakables.find((b) => b.cage);
+    for (let i = 0; i < 3; i += 1) s.props.hitAt(cage.x, cage.y, 10, { attackId: `t${i}`, stats: f.stats });
+  });
+  assert.deepEqual(await scene(() => window.leogames.scene.getScene('Brawl').fighters.filter((f) => f.rescued).map((f) => f.label)), ['Ninja']);
+  assert.ok((await stickers(p.page)).includes('pelea-rescate'));
+
+  // Combo doble: un amigo avienta un monstruo y el jugador le pega en el aire (cuenta doble en el combo).
+  const combo = await scene(async () => {
+    const { Monster } = await import('/src/games/brawl/Monster.js');
+    const s = window.leogames.scene.getScene('Brawl');
+    for (const m of s.monsters) m.destroy();
+    s.monsters = [];
+    s.spawnQueue = [];
+    const f = s.fighters[0];
+    for (const other of s.fighters) other.attackMs = 0;
+    const m = new Monster(s, 'slime', f.x + 60, f.y);
+    m.entered = true;
+    m.throwTo(-1);
+    m.thrownBy = s.fighters[1];
+    s.monsters.push(m);
+    f.facing = 1;
+    f.attackMs = 160;
+    f.hitThisAttack.clear();
+    const before = s.combo.count;
+    s.resolveHits();
+    return s.combo.count - before;
+  });
+  assert.equal(combo, 2);
+
+  // Jefes en serie (ya se ganó la Pradera): el Rey Slime se enoja a la mitad y su K.O. se repite en cámara lenta.
+  await p.holdToMenu(0, EXIT, 'salir de la pelea');
+  await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'map', ms(8000), 'ver el mapa otra vez');
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Brawl').bossRush && window.leogames.scene.getScene('Brawl').boss?.type.boss, ms(15000), 'que llegue el primer jefe');
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    for (const f of s.fighters) f.invulnerableMs = 1e9;
+    s.boss.hp = Math.floor(s.boss.maxHp * 0.4);
+  });
+  await p.until(() => window.leogames.scene.getScene('Brawl').boss?.angry, ms(3000), 'que el jefe se enoje');
+  await p.wait(900);
+  await scene(() => {
+    const s = window.leogames.scene.getScene('Brawl');
+    s.hitMonster(s.fighters[0], s.boss, 999);
+  });
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'replay', ms(3000), 'ver la repetición');
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'results', ms(15000), 'terminar los jefes en serie');
+  assert.ok((await stickers(p.page)).includes('pelea-jefes'));
+  assert.ok(await scene(() => JSON.parse(localStorage.getItem('leogames:brawlRecords')).bossRush > 0), 'no se guardó el tiempo');
+  assert.equal(await scene(() => window.leogames.scene.getScene('Brawl').cameras.main.zoom), 1);
   await p.holdToMenu(0, EXIT, 'salir de la pelea');
   assert.deepEqual(p.errors, []);
   await p.context.close();

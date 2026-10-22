@@ -17,6 +17,12 @@ export const STICKERS = [
   { id: 'pelea-castillo', emoji: '🎃', name: 'Adiós Rey Calabaza', hint: 'Gana el castillo embrujado en Pelea en equipo' },
   { id: 'pelea-equipo', emoji: '🤜', name: 'Golpe en equipo', hint: 'Usen la súper de dos o más al mismo tiempo en Pelea en equipo' },
   { id: 'pelea-sinfin', emoji: '♾️', name: 'Aguantadores', hint: 'Pasen 10 rondas en el modo sin fin de Pelea en equipo' },
+  { id: 'pelea-dulces', emoji: '🍭', name: 'Adiós Rey Pastel', hint: 'Gana Dulcelandia en Pelea en equipo' },
+  { id: 'pelea-espacio', emoji: '🚀', name: 'Adiós Mega Robot', hint: 'Gana el mundo del espacio en Pelea en equipo' },
+  { id: 'pelea-jefes', emoji: '🏆', name: 'Jefes en serie', hint: 'Venzan a todos los jefes seguidos en Pelea en equipo' },
+  { id: 'pelea-rescate', emoji: '🔓', name: 'Al rescate', hint: 'Rompe una jaula y rescata a un amigo en Pelea en equipo' },
+  { id: 'pelea-combo', emoji: '🔥', name: 'Combo de 20', hint: 'Hagan un combo de 20 golpes en equipo en Pelea en equipo' },
+  { id: 'pelea-montar', emoji: '🦖', name: 'Jinete', hint: 'Súbete a un dinosaurio o a un pollo gigante en Pelea en equipo' },
   { id: 'smash-gana', emoji: '🥊', name: 'Campeón Bolitas', hint: 'Gana una pelea en Bolitas Bros' },
   { id: 'smash-super', emoji: '⚡', name: '¡Súper!', hint: 'Transfórmate en Bolitas Bros' },
   { id: 'smash-bomba', emoji: '💣', name: 'Bombazo', hint: 'Lanza una bomba en Bolitas Bros' },
@@ -76,6 +82,8 @@ export const UNLOCKS = {
   'pelea-mundo-4': { sticker: 'pelea-volcan', label: 'Gana el mundo del volcán' },
   'pelea-mundo-5': { sticker: 'pelea-playa', label: 'Gana el mundo de la playa' },
   'pelea-mundo-6': { sticker: 'pelea-nieve', label: 'Gana el mundo de la nieve' },
+  'pelea-mundo-7': { sticker: 'pelea-castillo', label: 'Gana el castillo embrujado' },
+  'pelea-mundo-8': { sticker: 'pelea-dulces', label: 'Gana Dulcelandia' },
 };
 
 const COLLECTOR_AT = 10;

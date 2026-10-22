@@ -1,14 +1,15 @@
 import Phaser from 'phaser';
-import { controls } from '../../shared/controls.js';
 import { players } from '../../shared/players.js';
 import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { hasPose, superArtKey } from '../smash/art.js';
-import { isBlockCharacter, numberStep } from '../smash/bloquecito.js';
+import { isBlockCharacter } from '../smash/bloquecito.js';
 import { drawItem } from '../smash/items.js';
 import { ARENA } from './arena.js';
+import { humanInput } from './buddies.js';
+import { MOUNTS, MOUNT_REACH } from './mounts.js';
 import { SPECIALS, SPECIAL_COOLDOWN_MS, blockSpecial } from './specials.js';
 
 export const MAX_HP = 5;
@@ -42,19 +43,30 @@ const HOLD_MS = 2500;
 // Objetos: el martillo dura un rato; la estrella te hace invencible y lastima a los que toques.
 export const HAMMER_MS = 10000;
 export const STAR_MS = 6000;
+// Objetos nuevos: la espada pega doble y llega más lejos; el escudo aguanta unos golpes; el imán jala las monedas y
+// la comida.
+export const SWORD_MS = 12000;
+const SWORD_REACH = 55;
+export const SHIELD_HITS = 3;
+export const MAGNET_MS = 15000;
+const SLOW = 0.5;
 const CELEBRATE_MS = 1500;
 
 // Un jugador en la pelea: se mueve con el stick, salta con A, pega con X (tres seguidos = remate), B = su especial,
 // LB o RB = agarrar y aventar, barra llena + LB + RB = súper (Bloquecito cambia de número con Y).
 // Si se queda sin corazones cae, y otro jugador lo levanta parándose junto a él.
 // Se ve como el personaje que escogió (`character`, de Bolitas Bros). Lo que pega y a quién lo resuelve la escena.
+// Los amigos de la compu traen `input` (ver buddies.js), su `label` y su `color`; los jugadores usan su control.
 export class Fighter {
-  constructor(scene, player, x, y, character) {
+  constructor(scene, player, x, y, character, { input = null, label = null, color = null } = {}) {
     this.scene = scene;
     this.player = player;
-    this.deviceId = player.deviceId;
+    this.deviceId = player.deviceId ?? null;
+    this.isCpu = Boolean(input);
+    this.input = input ?? humanInput(player.deviceId);
+    this.label = label ?? `J${player.slot + 1}`;
     this.character = character;
-    this.color = players.color(player).hex;
+    this.color = color ?? players.color(player).hex;
     this.radius = RADIUS;
     this.x = x;
     this.y = y;
@@ -83,9 +95,14 @@ export class Fighter {
     this.celebrateMs = 0;
     this.dashMs = 0;
     this.dashSpeed = 0;
+    this.mount = null;
+    this.shieldHits = 0;
+    this.magnetMs = 0;
+    this.slowMs = 0;
+    this.hat = null;
     this.hitThisAttack = new Set();
     // Para los premios del final del mundo.
-    this.stats = { hits: 0, kills: 0, revives: 0, boss: 0 };
+    this.stats = newStats();
 
     this.sprite = new Blob(scene, x, y, this.color, RADIUS);
     this.look = new CharacterLook(scene, this.sprite, character);
@@ -100,9 +117,14 @@ export class Fighter {
     this.hammer = drawItem(scene, 'hammer').setVisible(false);
     this.bomb = drawItem(scene, 'bomb').setScale(0.8).setVisible(false);
     this.tag = scene.add
-      .text(0, this.look.top - 14, `J${player.slot + 1}`, textStyle(16, hexToCss(this.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
+      .text(0, this.look.top - 14, this.label, textStyle(16, hexToCss(this.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
       .setOrigin(0.5);
-    this.sprite.figure.add([this.fist, this.hammer, this.bomb, this.tag]);
+    this.sword = propImage(scene, 'espada', 70) ?? scene.add.rectangle(0, 0, 10, 60, 0x9a6a3a).setStrokeStyle(2, COLORS.ink);
+    this.sword.setVisible(false);
+    // El escudo: una burbuja azul que aguanta golpes.
+    this.shieldBubble = scene.add.circle(0, -RADIUS * 0.4, RADIUS * 1.7, 0x7fdcff, 0.25).setStrokeStyle(4, 0xffffff, 0.8).setVisible(false);
+    this.sprite.figure.add([this.fist, this.hammer, this.bomb, this.sword, this.tag]);
+    this.sprite.add(this.shieldBubble);
     this.stars = scene.add.text(0, this.look.top - 6, '✦ ¡Ayuda! ✦', textStyle(18, '#ffc93c', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }));
     this.stars.setOrigin(0.5).setVisible(false);
     this.sprite.add(this.stars);
@@ -117,9 +139,10 @@ export class Fighter {
     return Boolean(this.special) || this.dashMs > 0;
   }
 
-  // Cuánto vale cada golpe: más con el martillo y en súper.
+  // Cuánto vale cada golpe: más con el martillo (o la espada), montado y en súper.
   get power() {
-    return (this.item?.type === 'hammer' ? 2 : 1) * (this.superMs > 0 ? 2 : 1);
+    const weapon = this.item?.type === 'hammer' || this.item?.type === 'sword' ? 2 : 1;
+    return weapon * (this.mount ? 2 : 1) * (this.superMs > 0 ? 2 : 1);
   }
 
   specialData() {
@@ -133,6 +156,8 @@ export class Fighter {
     this.starMs = Math.max(0, this.starMs - dtMs);
     this.ghostMs = Math.max(0, this.ghostMs - dtMs);
     this.celebrateMs = Math.max(0, this.celebrateMs - dtMs);
+    this.magnetMs = Math.max(0, this.magnetMs - dtMs);
+    this.slowMs = Math.max(0, this.slowMs - dtMs);
     this.sincePunchMs += dtMs;
     this.updateSuper(dtMs);
     if (this.item) {
@@ -146,8 +171,9 @@ export class Fighter {
 
     const dt = dtMs / 1000;
     const id = this.deviceId;
-    const stick = controls.getStick(id);
-    const speed = this.superMs > 0 || this.starMs > 0 ? SUPER_SPEED : 1;
+    const stick = this.input.stick();
+    // Más rápido en súper, con la estrella o montado; más lento en el chicle.
+    const speed = (this.superMs > 0 || this.starMs > 0 ? SUPER_SPEED : 1) * (this.mount ? MOUNTS[this.mount.kind].speed : 1) * (this.slowMs > 0 ? SLOW : 1);
     this.walking = Math.hypot(stick.x, stick.y) > 0.2 && !this.busy;
     if (this.dashMs > 0) {
       this.dashMs = Math.max(0, this.dashMs - dtMs);
@@ -161,8 +187,8 @@ export class Fighter {
     this.x += this.knockback * dt;
     this.knockback = decay(this.knockback, dt);
 
-    if (controls.justPressed(id, 'a') && this.z === 0 && !this.busy) this.vz = JUMP_SPEED;
-    this.look.changeNumber(numberStep(id), id);
+    if (this.input.pressed('a') && this.z === 0 && !this.busy) this.vz = JUMP_SPEED;
+    this.look.changeNumber(this.input.numberStep(), this.isCpu ? null : id);
     if (this.z > 0 || this.vz > 0) {
       this.vz -= GRAVITY * dt;
       this.z = Math.max(0, this.z + this.vz * dt);
@@ -172,7 +198,7 @@ export class Fighter {
       }
     }
 
-    this.handleButtons(id, dtMs);
+    this.handleButtons(dtMs);
     this.attackMs = Math.max(0, this.attackMs - dtMs);
     if (this.special) {
       this.special.t += dtMs;
@@ -183,10 +209,11 @@ export class Fighter {
     this.y = clamp(this.y, ARENA.top, ARENA.bottom);
   }
 
-  handleButtons(id, dtMs) {
-    const lb = controls.justPressed(id, 'lb');
-    const rb = controls.justPressed(id, 'rb');
-    const both = controls.isDown(id, 'lb') && controls.isDown(id, 'rb') && (lb || rb);
+  handleButtons(dtMs) {
+    const input = this.input;
+    const lb = input.pressed('lb');
+    const rb = input.pressed('rb');
+    const both = input.held('lb') && input.held('rb') && (lb || rb);
     if (both) {
       if (this.meter >= METER_MAX && this.superMs === 0) this.startSuper();
       return;
@@ -194,18 +221,18 @@ export class Fighter {
     // Con un monstruo agarrado: X, LB o RB lo avientan.
     if (this.holding) {
       this.holdMs -= dtMs;
-      if (lb || rb || controls.justPressed(id, 'x') || controls.justPressed(id, 'b') || this.holdMs <= 0) this.throwHeld();
+      if (lb || rb || input.pressed('x') || input.pressed('b') || this.holdMs <= 0) this.throwHeld();
       return;
     }
     if ((lb || rb) && !this.busy) {
       this.tryGrab();
       return;
     }
-    if (controls.justPressed(id, 'b') && this.specialCooldownMs === 0 && !this.busy && this.attackMs === 0) {
+    if (input.pressed('b') && this.specialCooldownMs === 0 && !this.busy && this.attackMs === 0) {
       this.startSpecial();
       return;
     }
-    if (controls.justPressed(id, 'x') && this.cooldownMs === 0 && !this.busy) {
+    if (input.pressed('x') && this.cooldownMs === 0 && !this.busy) {
       // Con la bomba en la mano, X la lanza.
       if (this.item?.type === 'bomb') {
         this.item = null;
@@ -321,14 +348,26 @@ export class Fighter {
     return ahead > -10 && ahead < this.radius + target.radius + reach && Math.abs(target.y - this.y) < DEPTH_TOLERANCE + target.radius * 0.3;
   }
 
-  // Alcance del golpe normal (con martillo llega más lejos).
+  // Alcance del golpe normal (con martillo o espada, o montado, llega más lejos).
   get reach() {
-    return ATTACK_REACH + (this.item?.type === 'hammer' ? 40 : 0) + (this.finisher ? 20 : 0);
+    const weapon = this.item?.type === 'hammer' ? 40 : this.item?.type === 'sword' ? SWORD_REACH : 0;
+    return ATTACK_REACH + weapon + (this.mount ? MOUNT_REACH : 0) + (this.finisher ? 20 : 0);
   }
 
-  // Devuelve true si el golpe sí le quitó un corazón.
+  // Devuelve true si el golpe sí le quitó un corazón. El escudo y el animal que montas aguantan el golpe por ti.
   hurt(fromX) {
     if (this.down || this.invulnerableMs > 0 || this.z > DODGE_HEIGHT || this.starMs > 0 || this.ghostMs > 0) return false;
+    if (this.shieldHits > 0 || this.mount) {
+      this.invulnerableMs = INVULNERABLE_MS;
+      this.knockback = (Math.sign(this.x - fromX) || 1) * 260;
+      if (this.shieldHits > 0) {
+        this.shieldHits -= 1;
+        this.scene.shieldBlocked?.(this);
+      } else {
+        this.scene.mountHit?.(this);
+      }
+      return false;
+    }
     this.hp -= 1;
     this.invulnerableMs = INVULNERABLE_MS;
     this.knockback = (Math.sign(this.x - fromX) || 1) * 420;
@@ -366,6 +405,9 @@ export class Fighter {
     this.special = null;
     this.dashMs = 0;
     this.holding = null;
+    this.mount = null;
+    this.shieldHits = 0;
+    this.magnetMs = 0;
   }
 
   celebrate() {
@@ -388,12 +430,13 @@ export class Fighter {
   render() {
     const s = this.sprite;
     s.setPosition(this.x, this.y).setDepth(this.y);
-    s.figure.y = -this.z;
+    // Montado va sentado arriba del animal.
+    s.figure.y = -this.z - (this.mount ? this.mount.data.seat : 0);
     s.figure.angle = this.down ? 90 : 0;
     const blinking = this.invulnerableMs > 0 && !this.down && Math.floor(this.invulnerableMs / 90) % 2 === 1;
     s.setAlpha(this.down ? 0.75 : this.ghostMs > 0 ? 0.3 : blinking ? 0.35 : 1);
     s.look(this.facing * 0.9, 0);
-    const ground = this.look.groundPose(Boolean(this.walking) && !this.down);
+    const ground = this.look.groundPose(Boolean(this.walking) && !this.down && !this.mount);
     const wanted = this.pose();
     let pose = wanted ?? ground;
     // Las poses de pelea son opcionales (y las súper formas solo traen las básicas).
@@ -407,6 +450,10 @@ export class Fighter {
     }
     this.tag.setVisible(!this.down);
     this.stars.setVisible(this.down);
+    // El sombrero de la tienda va arriba de la cabeza (que sube y baja con la pose).
+    this.hat?.setPosition(this.facing * 2, this.look.top + 12).setFlipX(this.facing < 0);
+    if (this.hat) this.tag.setY(this.look.top - 50);
+    this.shieldBubble.setVisible(this.shieldHits > 0 && !this.down).setAlpha(0.6 + 0.3 * Math.sin(this.scene.time.now / 150));
 
     // Súper: brillo dorado que late; estrella: brillo de colores.
     const now = this.scene.time.now;
@@ -423,6 +470,9 @@ export class Fighter {
     const hammer = this.item?.type === 'hammer';
     this.hammer.setVisible(hammer && !this.down);
     if (hammer) this.hammer.setPosition(this.facing * this.radius * 0.9, -10).setScale(this.facing, 1).setAngle(this.facing * (this.attackMs > 0 ? 60 : -25));
+    const sword = this.item?.type === 'sword';
+    this.sword.setVisible(sword && !this.down);
+    if (sword) this.sword.setPosition(this.facing * this.radius * 0.9, -12).setScale(this.facing * Math.abs(this.sword.scaleY), this.sword.scaleY).setAngle(this.facing * (this.attackMs > 0 ? 70 : -30));
     this.bomb.setVisible(this.item?.type === 'bomb' && !this.down);
     if (this.item?.type === 'bomb') this.bomb.setPosition(this.facing * this.radius * 0.9, -6);
 
@@ -448,6 +498,19 @@ export class Fighter {
 }
 
 const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
+
+// Lo que se cuenta de cada quien para las medallas del final del mundo.
+export function newStats() {
+  return { hits: 0, kills: 0, revives: 0, boss: 0, coins: 0, rescues: 0, rides: 0 };
+}
+
+// La imagen de un objeto de Pelea en equipo (npm run arte), de `size` px; o null si no hay.
+function propImage(scene, name, size) {
+  const key = `brawl:objeto-${name}`;
+  if (!scene.textures.exists(key)) return null;
+  const image = scene.add.image(0, 0, key);
+  return image.setScale(size / Math.max(image.width, image.height));
+}
 const POSE_CHAIN = {
   patada: ['patada', 'golpe'],
   aire: ['aire', 'patada', 'salto'],

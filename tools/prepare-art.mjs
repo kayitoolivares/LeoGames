@@ -46,10 +46,20 @@ const GAMES = {
       names: [
         'slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava',
         'cangrejo', 'almeja', 'capitan-pulpo', 'muneco-nieve', 'yeti-bebe', 'gran-yeti', 'murcielago', 'calabaza', 'rey-calabaza',
+        'gomita', 'cupcake', 'caramelo', 'rey-pastel', 'marcianito', 'ovni', 'robotito', 'mega-robot',
       ],
     },
-    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo'] },
-    objetos: { kind: 'cutout', max: 128, names: ['caja', 'barril', 'jarron', 'pizza', 'helado', 'pollo'] },
+    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo', 'dulces', 'espacio'] },
+    objetos: {
+      kind: 'cutout',
+      max: 192,
+      names: [
+        'caja', 'barril', 'jarron', 'pizza', 'helado', 'pollo',
+        'espada', 'escudo', 'iman', 'mascota', 'moneda', 'jaula',
+        'sombrero-vaquero', 'gorra', 'sombrero-pirata', 'gorro-chef', 'casco-vikingo', 'sombrero-mago',
+        'dinosaurio', 'pollo-gigante', 'canon', 'roca',
+      ],
+    },
   },
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja'] },

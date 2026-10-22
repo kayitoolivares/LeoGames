@@ -36,23 +36,40 @@ Abre http://localhost:5173 en Edge o Chrome.
 - Antes de **Pelea en equipo**, **Fútbol de bolitas** y **Duelo de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
   lo que escojas se recuerda en los demás juegos mientras la página siga abierta.
 - **Pelea en equipo**: todos contra los monstruos, estilo arcade. Se escoge en el **mapa de mundos** (con candados y
-  hasta 3 estrellas por mundo: ganarlo, que nadie se caiga y hacerlo en menos de 4 minutos). 6 mundos de 4 rondas
+  hasta 3 estrellas por mundo: ganarlo, que nadie se caiga y hacerlo en menos de 4 minutos). 8 mundos de 4 rondas
   con su jefe: Pradera (Rey Slime), Bosque de hongos (Gran Hongo, llama ayudantes), Volcán (Dragón de lava, lanza
   fuego), **Playa** (cangrejos, almejas y el Capitán Pulpo que lanza tinta), **Montaña nevada** (muñecos de nieve,
   yetis bebé y el Gran Yeti con bolas de nieve) y **Castillo embrujado** (murciélagos, calabazas y el Rey Calabaza,
-  que llama murciélagos y lanza magia). Ganar un mundo desbloquea el siguiente. Cada ronda es un tramo del nivel: al
+  que llama murciélagos y lanza magia), **Dulcelandia** (gomitas, caramelos voladores, cupcakes y el Rey Pastel que
+  lanza betún) y **Espacio** (marcianitos, ovnis, robotitos y el Mega Robot con su láser). Ganar un mundo desbloquea el
+  siguiente. Cada ronda es un tramo del nivel: al
   limpiarla sale "¡Adelante!" y se camina a la derecha (la pantalla avanza) hasta el siguiente. Cuando llega el jefe,
   todo se detiene para presentarlo, con música de jefe. Al final del mundo, **resultados con premios** (más golpes,
   más monstruos, mejor compañero —el que levantó a más— y el que tumbó al jefe). **Modo sin fin**: rondas que no se
   acaban, cada vez más difíciles y con jefe cada 5; se guarda el récord.
+  En cada mundo: en el segundo tramo un **animal para montar** (dinosaurio o pollo gigante: corre más, muerde doble y
+  aguanta los golpes por ti) y un **mini jefe**; desde ahí, las **trampas** del mundo (resortes que te avientan y
+  aplastan al caer, rocas y bolas de nieve que ruedan, cañonazos, lava, fuego fantasma, chicle que hace ir lento y
+  meteoritos; avisan antes y también les pegan a los monstruos), y en el tercero una **jaula con un amigo**: rómpela y
+  pelea con ustedes el resto del mundo. Los jefes **se enojan** a la mitad de su vida (rojos, más rápidos y con más
+  poderes) y su K.O. se ve otra vez en **repetición** en cámara lenta (A la brinca). Un **narrador** comenta los combos,
+  los que caen, los rescates y los récords.
+  **Amigos de la compu** (Y en el mapa): hasta 3 que pelean solos, levantan a los caídos y se suben al combo. **Combo en
+  equipo**: cada golpe de cualquiera suma (con 20, calcomanía); si avientas un monstruo y otro le pega en el aire,
+  **¡combo doble!** **Monedas**: los monstruos las sueltan (los jefes, muchas) y van a la alcancía de la familia; en la
+  **tienda** (X en el mapa) se compran sombreros y colores de traje para cada jugador. **Jefes en serie** (se abre al
+  ganar el primer mundo): los jefes de los mundos ganados uno tras otro, contra el reloj. Al final, **medallas** (más
+  golpes, más monstruos, mejor compañero, el que tumbó al jefe, más monedas, el que rescató y el jinete) y
+  **récords** (mejor combo, más monedas, mejor tiempo de cada mundo y de los jefes en serie), que se ven en el mapa.
   **X** = pegar (tres seguidos = **remate** que avienta lejos), **B** = el **especial** de cada personaje (puñetazo
   cargado, embestida, súper salto que aplasta, estrellas, aparecer por detrás, láser, fuego, invisible, coletazo,
   arañazos, deslizón, bala de cañón, polvo mágico que **cura** a los compañeros, mochila cohete, aguijonazo, chorro de
   agua), **LB o RB** = **agarrar** un monstruo chico y aventarlo (tumba a los demás como boliche), barra llena +
   **LB + RB** = **súper** (si dos o más se vuelven súper casi juntos: **¡golpe en equipo!** a toda la pantalla),
   **A** = saltar (esquiva cuando al monstruo le sale "!"), **mantén LB + RB + Y** = salir. En cada tramo hay **cajas,
-  barriles y jarrones**: rotos sueltan comida (cura), martillo (pega doble), bomba (X la lanza) o estrella
-  (invencible). Si alguien cae, un compañero se para junto a él para levantarlo.
+  barriles y jarrones**: rotos sueltan comida (cura), martillo (pega doble), bomba (X la lanza), estrella
+  (invencible), espada (pega doble y llega más lejos), escudo (aguanta 3 golpes), imán (jala monedas y comida) o
+  mascota (un perrito que muerde monstruos). Si alguien cae, un compañero se para junto a él para levantarlo.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),

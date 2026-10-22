@@ -7,7 +7,9 @@ import { ARENA } from './arena.js';
 // Los monstruos de los mundos. `art` es su imagen (npm run arte); sin ella se dibuja una bolita enojada.
 //   small: los que aumentan con más jugadores.  stagger: los golpes lo aturden (los jefes no).
 //   hop: avanza dando saltitos.  summon: llama ayudantes cada tanto.  fireball: lanza bolas de fuego (`look`: cómo se
-//   ven: tinta del pulpo, bolas de nieve del yeti, magia del Rey Calabaza).  fly: va volando (sube y baja).
+//   ven: tinta del pulpo, bolas de nieve del yeti, magia del Rey Calabaza, betún del Rey Pastel, láser del Mega
+//   Robot).  fly: va volando (sube y baja).  coins: cuántas monedas suelta (si no, 1 los chicos y 2 los demás).
+// Los jefes se enojan a la mitad de su vida: van más rápido y usan sus poderes más seguido.
 export const MONSTER_TYPES = {
   slime: { name: 'Slime', art: 'slime', radius: 28, hp: 3, speed: 95, color: 0x7bd96b, windupMs: 650, stagger: true, small: true },
   slimeGrande: { name: 'Slime grande', art: 'slime-grande', radius: 44, hp: 7, speed: 75, color: 0x5fc2b8, windupMs: 750, stagger: true },
@@ -80,7 +82,44 @@ export const MONSTER_TYPES = {
     summon: { type: 'murcielago', firstMs: 3000, everyMs: 7000, count: 2 },
     fireball: { firstMs: 4500, everyMs: 5200, aimMs: 700, look: 'magic' },
   },
+  // Dulcelandia.
+  gomita: { name: 'Gomita', art: 'gomita', radius: 28, hp: 3, speed: 110, color: 0xe53935, windupMs: 580, stagger: true, small: true, hop: true },
+  cupcake: { name: 'Cupcake', art: 'cupcake', radius: 42, hp: 7, speed: 75, color: 0xff9ec7, windupMs: 740, stagger: true },
+  caramelo: { name: 'Caramelo', art: 'caramelo', radius: 26, hp: 2, speed: 140, color: 0xb07cff, windupMs: 520, stagger: true, small: true, fly: true },
+  reyPastel: {
+    name: 'Rey Pastel',
+    art: 'rey-pastel',
+    radius: 90,
+    hp: 36,
+    speed: 52,
+    color: 0xff7ad9,
+    windupMs: 880,
+    boss: true,
+    crown: true,
+    summon: { type: 'gomita', firstMs: 3000, everyMs: 7000, count: 2 },
+    fireball: { firstMs: 2000, everyMs: 3800, aimMs: 700, look: 'frosting' },
+  },
+  // Espacio.
+  marcianito: { name: 'Marcianito', art: 'marcianito', radius: 28, hp: 3, speed: 115, color: 0x3fe0d0, windupMs: 560, stagger: true, small: true },
+  ovni: { name: 'Ovni', art: 'ovni', radius: 30, hp: 3, speed: 130, color: 0x9aa8b8, windupMs: 540, stagger: true, small: true, fly: true },
+  robotito: { name: 'Robotito', art: 'robotito', radius: 42, hp: 8, speed: 70, color: 0xc0c4d0, windupMs: 760, stagger: true },
+  megaRobot: {
+    name: 'Mega Robot',
+    art: 'mega-robot',
+    radius: 92,
+    hp: 40,
+    speed: 50,
+    color: 0xe53935,
+    windupMs: 880,
+    boss: true,
+    summon: { type: 'robotito', firstMs: 4000, everyMs: 8000, count: 1 },
+    fireball: { firstMs: 1800, everyMs: 3400, aimMs: 650, look: 'laser' },
+  },
 };
+// Mini jefe (a la mitad de cada mundo): un monstruo de ese mundo más grande y con mucha más vida, con su barra.
+export const MINI_BOSS = { hp: 3, size: 1.4 };
+// Enojado: qué tanto más rápido va y qué tanto más seguido usa sus poderes.
+const ANGRY = { speed: 1.3, powers: 0.6 };
 // Aventado por un jugador: qué tan rápido sale, cuánto avanza y cuánto daño hace a los que tumba (y a sí mismo).
 const THROWN = { speed: 820, ms: 650, damage: 2, height: 40 };
 
@@ -96,15 +135,20 @@ const HOP_HEIGHT = 18;
 // Los jefes con fuego tienen además "aim" (apunta con "!" y lanza la bola). Para llamar ayudantes o lanzar
 // fuego deja una petición en `request` que atiende la escena.
 export class Monster {
-  constructor(scene, typeKey, x, y) {
+  // `mini`: es el mini jefe del mundo (más grande, con más vida, no se deja agarrar).
+  constructor(scene, typeKey, x, y, { mini = false } = {}) {
     this.scene = scene;
     this.typeKey = typeKey;
     this.type = MONSTER_TYPES[typeKey];
-    this.radius = this.type.radius;
+    this.mini = mini;
+    this.name = mini ? `Mini jefe: ${this.type.name}` : this.type.name;
+    this.radius = Math.round(this.type.radius * (mini ? MINI_BOSS.size : 1));
     this.x = x;
     this.y = y;
-    this.hp = this.type.hp;
-    this.maxHp = this.type.hp;
+    this.hp = this.type.hp * (mini ? MINI_BOSS.hp : 1);
+    this.maxHp = this.hp;
+    this.angry = false;
+    this.slowMs = 0;
     this.facing = x < ARENA.left ? 1 : -1;
     this.state = 'chase';
     this.stateMs = 0;
@@ -158,6 +202,12 @@ export class Monster {
     this.stateMs -= dtMs;
     this.retargetMs -= dtMs;
     this.hopMs += dtMs;
+    this.slowMs = Math.max(0, this.slowMs - dtMs);
+    // El jefe se enoja a la mitad de su vida (la escena pone el letrero).
+    if (this.type.boss && !this.angry && this.hp <= this.maxHp / 2 && !this.dead) {
+      this.angry = true;
+      this.request = { kind: 'angry' };
+    }
     this.x += this.knockback * dt;
     const next = this.knockback * Math.pow(0.002, dt);
     this.knockback = Math.abs(next) < 5 ? 0 : next;
@@ -194,14 +244,14 @@ export class Monster {
     if (this.type.summon) {
       this.summonMs -= dtMs;
       if (this.summonMs <= 0 && ready) {
-        this.summonMs = this.type.summon.everyMs;
+        this.summonMs = this.type.summon.everyMs * (this.angry ? ANGRY.powers : 1);
         this.request = { kind: 'summon', type: this.type.summon.type, count: this.type.summon.count };
       }
     }
     if (this.type.fireball && this.target) {
       this.fireMs -= dtMs;
       if (this.fireMs <= 0 && ready) {
-        this.fireMs = this.type.fireball.everyMs;
+        this.fireMs = this.type.fireball.everyMs * (this.angry ? ANGRY.powers : 1);
         this.facing = this.target.x > this.x ? 1 : -1;
         // Se pone a la altura del jugador antes de lanzar, para que la bola vaya por su carril.
         this.y = this.target.y;
@@ -223,14 +273,21 @@ export class Monster {
       this.setState('windup', this.type.windupMs);
       return;
     }
-    const step = Math.min(dist, this.type.speed * dt);
+    // Enojado va más rápido; en el chicle, más lento.
+    const speed = this.type.speed * (this.angry ? ANGRY.speed : 1) * (this.slowMs > 0 ? 0.5 : 1);
+    const step = Math.min(dist, speed * dt);
     this.x += (dx / dist) * step;
     this.y += (dy / dist) * step * 0.8;
   }
 
   // Lo agarró un jugador (los jefes no se dejan).
   canBeGrabbed() {
-    return !this.type.boss && !this.dead && !this.grabbedBy && this.state !== 'thrown' && this.entered;
+    return !this.type.boss && !this.mini && !this.dead && !this.grabbedBy && this.state !== 'thrown' && this.entered;
+  }
+
+  // El jefe o el mini jefe (con su barra de vida, no se deja agarrar).
+  get isBig() {
+    return Boolean(this.type.boss || this.mini);
   }
 
   grab(fighter) {
@@ -262,7 +319,7 @@ export class Monster {
     if (this.dead) return;
     this.hp -= damage;
     const dir = Math.sign(this.x - fromX) || 1;
-    this.knockback = dir * (this.type.stagger ? 320 : 120) * power;
+    this.knockback = dir * (this.type.stagger && !this.mini ? 320 : 120) * power;
     this.sprite.flash();
     if (this.image) {
       this.image.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
@@ -270,7 +327,7 @@ export class Monster {
         if (this.image.active) this.image.setTintMode(Phaser.TintModes.MULTIPLY).clearTint();
       });
     }
-    if (this.type.stagger && this.state !== 'thrown') this.setState('hurt', HURT_MS);
+    if (this.type.stagger && !this.mini && this.state !== 'thrown') this.setState('hurt', HURT_MS);
     if (this.hp <= 0) this.dead = true;
   }
 
@@ -281,6 +338,9 @@ export class Monster {
     this.sprite.look(this.facing * 0.9, 0.2);
     this.alert.setVisible(warning);
     this.image?.setFlipX(this.facing < 0);
+    // Enojado: parpadea rojo.
+    if (this.angry && this.image && Math.floor(this.hopMs / 220) % 2 === 0) this.image.setTint(0xff8a8a);
+    else if (this.angry && this.image) this.image.clearTint();
     // Los hongos avanzan dando saltitos; los murciélagos van volando; aventado, gira en el aire.
     let lift = 0;
     if (this.type.hop && this.state === 'chase') lift = Math.abs(Math.sin(this.hopMs / 180)) * HOP_HEIGHT;
