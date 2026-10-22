@@ -318,6 +318,21 @@ Los sonidos se generan con el navegador (no hay archivos de audio). El navegador
 hasta que alguien hace **clic o aprieta una tecla** en la página; los botones del control no cuentan.
 En el Xbox: presiona **A en modo cursor** sobre la página antes de pasar a "controles de juego".
 
+## La voz (el locutor)
+
+Lo que dice el juego en voz alta (instrucciones, el narrador, los resultados) suena con una voz de **locutor de
+lucha libre** grabada con Gemini (AI Studio, voz "Mako"): cada frase es un MP3 en `public/voz/` y
+`src/shared/voz.json` es la lista de las que ya están grabadas. Si una frase todavía no tiene grabación (o antes del
+primer clic), la lee la voz del navegador.
+
+- Jugando en la compu (`npm run dev`) y con `npm test`, cada frase que se dice se anota sola en
+  `tools/voz/oidas.txt`.
+- `node tools/voz.mjs lista` junta todas las frases (las oídas, las que están escritas en el código y las que salen de
+  listas: personajes, calcomanías, jugadores...) en `tools/voz/frases.json` y dice cuántas faltan.
+- Las que faltan se graban en AI Studio de 10 en 10 (separadas por pausas largas, y se cortan por los silencios);
+  `node tools/voz.mjs importar <carpeta>` les quita el silencio de las orillas, empareja el volumen, las pasa a MP3 y
+  las agrega a la lista. La cuenta gratis de AI Studio deja grabar un rato al día.
+
 ## Arte de Bolitas Bros (imágenes de Gemini)
 
 Pon las imágenes en `arte/smash/` (esa carpeta no se sube a GitHub) y corre `npm run arte`:

@@ -1,0 +1,4604 @@
+[
+ {
+  "text": "¡1 victoria!",
+  "name": "f5746257",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡10 golpes seguidos!",
+  "name": "23f792a3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡136.7 metros!",
+  "name": "7ec89cf8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡20 golpes seguidos!",
+  "name": "273ac676",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡A Abeja le queda una vida!",
+  "name": "e6889daa",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Astronauta le queda una vida!",
+  "name": "f2ad60ab",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Bloquecito le queda una vida!",
+  "name": "74c1c7a2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Bombero le queda una vida!",
+  "name": "343e30f3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Dino le queda una vida!",
+  "name": "9ee46b75",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Dragoncito le queda una vida!",
+  "name": "85e31143",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Dragonzote le queda una vida!",
+  "name": "d02fa968",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Estrella le queda una vida!",
+  "name": "4f43b375",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Fantasma le queda una vida!",
+  "name": "435541d6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Gatito le queda una vida!",
+  "name": "638a5937",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Hada le queda una vida!",
+  "name": "30859c61",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A jugar!",
+  "name": "170aa589",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡A la escuela!",
+  "name": "602a53b5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡A Ninja le queda una vida!",
+  "name": "658132bf",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A pelear!",
+  "name": "2d30377d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡A Pingüino le queda una vida!",
+  "name": "552c6319",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Pirata le queda una vida!",
+  "name": "bd6fb1ba",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A practicar!",
+  "name": "2c441641",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡A Rayo le queda una vida!",
+  "name": "6cac03fe",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Resorte le queda una vida!",
+  "name": "a318fd7f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Rey Bolón le queda una vida!",
+  "name": "730be293",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Robot le queda una vida!",
+  "name": "3aff6053",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Robotote le queda una vida!",
+  "name": "eaf4b8ff",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡A Tanque le queda una vida!",
+  "name": "7a2e0c65",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Abeja pega primero!",
+  "name": "5657fce9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Abeja sale disparado!",
+  "name": "c2564d00",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Abeja salió volando!",
+  "name": "4307c0db",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adelante!",
+  "name": "acce41b7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Adentro!",
+  "name": "bf7814b0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Abeja!",
+  "name": "e2fa8188",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Astronauta!",
+  "name": "f4d658f7",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Bloquecito!",
+  "name": "fb53607a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Bombero!",
+  "name": "7fccbb41",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Dino!",
+  "name": "e9135a25",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Dragoncito!",
+  "name": "e5c41823",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Dragonzote!",
+  "name": "1c5f0e68",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Estrella!",
+  "name": "d6dd4ac1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Fantasma!",
+  "name": "f532465e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Gatito!",
+  "name": "f446649b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Hada!",
+  "name": "a84e35fd",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Ninja!",
+  "name": "63b04c35",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Pingüino!",
+  "name": "5d06dea5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Pirata!",
+  "name": "1d155796",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Rayo!",
+  "name": "71f4afe6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Resorte!",
+  "name": "cc52dd15",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Rey Bolón!",
+  "name": "6c6ed64d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Robot!",
+  "name": "ebdfee55",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Robotote!",
+  "name": "46911bab",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Tanque!",
+  "name": "c805da31",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ahí va!",
+  "name": "a9f7c9c8",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Ahora el jefe: Dragonzote!",
+  "name": "1422d334",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ahora el jefe: Rey Bolón!",
+  "name": "94e03299",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ahora el jefe: Robotote!",
+  "name": "c711c8af",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Al agua!",
+  "name": "0cb921a8",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Amarillo!",
+  "name": "7c2215e0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Aplastado!",
+  "name": "070e0670",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Arranque turbo!",
+  "name": "8d40ffb8",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Arre!",
+  "name": "6af68315",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Arriba, compañero!",
+  "name": "f20b6f1d",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Astronauta pega primero!",
+  "name": "a3ca25a0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Astronauta sale disparado!",
+  "name": "9fd07065",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Astronauta salió volando!",
+  "name": "7068fb30",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Atajadón!",
+  "name": "aab93cd1",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Atajo secreto!",
+  "name": "d82ae5bd",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Barrida!",
+  "name": "f149b8ba",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Batalla de globos! Revienta los globos de los demás",
+  "name": "f8939098",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Batazo!",
+  "name": "da259714",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Bien hecho!",
+  "name": "aa65d1b2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Bloquecito contra Tanque!",
+  "name": "b4e8480d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Bloquecito pega primero!",
+  "name": "942a2beb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Bloquecito sale disparado!",
+  "name": "f379d21a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Bloquecito salió volando!",
+  "name": "5549b029",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Bombero pega primero!",
+  "name": "96e298d6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Bombero sale disparado!",
+  "name": "45358f2b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Bombero salió volando!",
+  "name": "20312642",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Campeón del torneo!",
+  "name": "e16a5fe0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Campeones de la Copa!",
+  "name": "7817f527",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Casi!",
+  "name": "bc7129df",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Charco!",
+  "name": "c028ec81",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Combo de 10!",
+  "name": "fbaaa911",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Combo de 20!",
+  "name": "7b133fc0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Combo de 30!",
+  "name": "3d3f0cfb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Combo doble!",
+  "name": "4b61d853",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Compraste Cohete!",
+  "name": "b52bdf49",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Compraste Vaquero!",
+  "name": "95667bbc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 1 cayó! ¡Ayúdenlo!",
+  "name": "1f2cc91a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 1 está de vuelta!",
+  "name": "b1427781",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 1 va montado en el dinosaurio!",
+  "name": "dd5f5a88",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 1 va montado en el pollo gigante!",
+  "name": "d06366c8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 2 cayó! ¡Ayúdenlo!",
+  "name": "8c2546d1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 2 está de vuelta!",
+  "name": "48cc268c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 2 va montado en el dinosaurio!",
+  "name": "c7915c7b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 2 va montado en el pollo gigante!",
+  "name": "e01716e1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 3 cayó! ¡Ayúdenlo!",
+  "name": "761d311c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 3 está de vuelta!",
+  "name": "3c96589b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 3 va montado en el dinosaurio!",
+  "name": "baba96ae",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Compu 3 va montado en el pollo gigante!",
+  "name": "be0c6262",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Cuidado! ¡Slime grande!",
+  "name": "be407b6d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡De volea!",
+  "name": "e498b4df",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Diez segundos!",
+  "name": "06638f6b",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Dino cruza la meta en primer lugar!",
+  "name": "eb971567",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Dino pega primero!",
+  "name": "0cc2ca3a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Dino sale disparado!",
+  "name": "f677bc0f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dino salió volando!",
+  "name": "2532f43e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragón de lava se enojó!",
+  "name": "7de90566",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragoncito pega primero!",
+  "name": "525a584c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragoncito sale disparado!",
+  "name": "623aa011",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragoncito salió volando!",
+  "name": "59e52984",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragonzote pega primero!",
+  "name": "e4948f1d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragonzote sale disparado!",
+  "name": "fa8bf8c4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Dragonzote salió volando!",
+  "name": "fb086d47",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El Capitán Pulpo!",
+  "name": "601c858a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El Dragón de lava!",
+  "name": "7a7042a6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡El Gran Hongo!",
+  "name": "fb1a4dd9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡El Gran Yeti!",
+  "name": "1db8e4b1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El jefe!",
+  "name": "4848f582",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 · Tanque ganó el torneo familiar!",
+  "name": "680c67c2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 cayó! ¡Ayúdenlo!",
+  "name": "65fae16d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 encontró el atajo secreto!",
+  "name": "702f3ee6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 está de vuelta!",
+  "name": "85d7d6c0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 va montado en el dinosaurio!",
+  "name": "71b3dd4f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 va montado en el pollo gigante!",
+  "name": "ef49f8fd",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1, Tanque, ganó la Copa Hoja!",
+  "name": "0865cd90",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 2 cayó! ¡Ayúdenlo!",
+  "name": "c9da3346",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 2 está de vuelta!",
+  "name": "dc5f4ee5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 2 va en primer lugar!",
+  "name": "7873cd92",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 2 va montado en el dinosaurio!",
+  "name": "d48f828c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 2 va montado en el pollo gigante!",
+  "name": "0a97c2d4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 3 cayó! ¡Ayúdenlo!",
+  "name": "18d5b7cb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 3 está de vuelta!",
+  "name": "ec2f8e06",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 3 va montado en el dinosaurio!",
+  "name": "ce761e39",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 3 va montado en el pollo gigante!",
+  "name": "d4c051fb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 4 cayó! ¡Ayúdenlo!",
+  "name": "448e3d04",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 4 está de vuelta!",
+  "name": "0ebeab83",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 4 va montado en el dinosaurio!",
+  "name": "fff14686",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 4 va montado en el pollo gigante!",
+  "name": "967d1d5a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El Mega Robot!",
+  "name": "ef5812d8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El Rey Calabaza!",
+  "name": "fee4b4df",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El Rey Pastel!",
+  "name": "453fa949",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡El Rey Slime!",
+  "name": "fa6314ec",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Empate!",
+  "name": "c8248109",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Escudo perfecto!",
+  "name": "9b2a373c",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Eso es trabajo en equipo!",
+  "name": "41158e5b",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Espada!",
+  "name": "7c08a52f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Estrella pega primero!",
+  "name": "946db066",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Estrella sale disparado!",
+  "name": "077ed9fb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Estrella salió volando!",
+  "name": "398de1d2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Fantasma pega primero!",
+  "name": "6f70c3a3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Fantasma sale disparado!",
+  "name": "938b01f2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Fantasma salió volando!",
+  "name": "6a8992c1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Foto del podio!",
+  "name": "15a12cff",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Fuera!",
+  "name": "c2b522f0",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Gánale a tu fantasma!",
+  "name": "10af1cc4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganan los Rojos!",
+  "name": "6bfeffe9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganaron los Rojos!",
+  "name": "4d34ff1e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganaron los Tiburones!",
+  "name": "642376d2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó el jugador 1!",
+  "name": "cba848e0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó el jugador 2!",
+  "name": "5ba0dccb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó el jugador 3!",
+  "name": "7fa3540e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó el jugador 4!",
+  "name": "ffaf5681",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la batalla el jugador 1, Tanque!",
+  "name": "4a52fefc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Bloquecito!",
+  "name": "46388088",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Estrella!",
+  "name": "554b4877",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Fantasma!",
+  "name": "cf8fb7c0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Hada!",
+  "name": "8fd3496b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Resorte!",
+  "name": "351fc10f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu!",
+  "name": "c60a2d23",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Gatito pega primero!",
+  "name": "005c8fdc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Gatito sale disparado!",
+  "name": "fe928de1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Gatito salió volando!",
+  "name": "aed8b094",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Gol de oro!",
+  "name": "f5601eda",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Gol, gol, gol de el jugador 1!",
+  "name": "45afb296",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡GOL!",
+  "name": "a52dd4b9",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Gol!. Mete un gol en Fútbol de bolitas",
+  "name": "54a4dece",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Golazo de los Tiburones!",
+  "name": "af6fec65",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Golpe cargado al máximo!",
+  "name": "52c7623f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡GOLPE EN EQUIPO!",
+  "name": "e5bd2564",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡GOOOL!",
+  "name": "3709241f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Gran Hongo se enojó!",
+  "name": "9288425f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Hada pega primero!",
+  "name": "27f77faa",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Hada sale disparado!",
+  "name": "3c701fff",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hada salió volando!",
+  "name": "f8d4b32e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Abeja!",
+  "name": "0e3e7a5d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Astronauta!",
+  "name": "0b39edfc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Bloquecito!",
+  "name": "ee7df151",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Bombero!",
+  "name": "b05ecc64",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Dino!",
+  "name": "4c47213e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Dragoncito!",
+  "name": "cd945724",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Dragonzote!",
+  "name": "c616c6d7",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Estrella!",
+  "name": "89b2c366",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Fantasma!",
+  "name": "b4766df9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Gatito!",
+  "name": "e785ca50",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Hada!",
+  "name": "92453daa",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Ninja!",
+  "name": "2ed54fe0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Pingüino!",
+  "name": "2523877a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Pirata!",
+  "name": "1513a06d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Rayo!",
+  "name": "31291e6d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Resorte!",
+  "name": "7dbf1224",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Rey Bolón!",
+  "name": "3704726c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Robot!",
+  "name": "310b3470",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Robotote!",
+  "name": "8eb14054",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Tanque!",
+  "name": "131de862",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Haz el primer récord de esta pista!",
+  "name": "de62d99c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Hola!. Únete con tu control",
+  "name": "3e562189",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jonrón!. Manda el saco a más de 100 m en el Concurso de jonrón de Bolitas Bros",
+  "name": "448e2c2a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Amarillo!",
+  "name": "d1f21a77",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Azul!",
+  "name": "597e1272",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Morado!",
+  "name": "ba6d9e80",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Naranja!",
+  "name": "ab38f2bf",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Rojo!",
+  "name": "eb28aa3c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Rosa!",
+  "name": "2207c685",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Turquesa!",
+  "name": "472dfe2c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 1, Verde!",
+  "name": "3e570078",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Amarillo!",
+  "name": "2587b07c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Azul!",
+  "name": "ebd9b319",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Morado!",
+  "name": "76b71f07",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Naranja!",
+  "name": "38f4947e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Rojo!",
+  "name": "664ba2ff",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Rosa!",
+  "name": "bf584eae",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Turquesa!",
+  "name": "7f75fa8f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 2, Verde!",
+  "name": "6a961069",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Amarillo!",
+  "name": "0a6eac9d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Azul!",
+  "name": "157324bc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Morado!",
+  "name": "9c834f3a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Naranja!",
+  "name": "fb4a9e61",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Rojo!",
+  "name": "0f79a1c2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Rosa!",
+  "name": "11ab9b2f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Turquesa!",
+  "name": "2c5ab602",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 3, Verde!",
+  "name": "65e56582",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Amarillo!",
+  "name": "3eee941a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Azul!",
+  "name": "0ef0afa3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Morado!",
+  "name": "7f196881",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Naranja!",
+  "name": "5ccf44d8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Rojo!",
+  "name": "92150f65",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Rosa!",
+  "name": "730c47d8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Turquesa!",
+  "name": "c2090ee5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Jugador 4, Verde!",
+  "name": "285f90e3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡La burbuja te salvó!",
+  "name": "bef3b63d",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡la compu se quedó sin globos!",
+  "name": "55699f8a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡La corona se cambió de lugar!",
+  "name": "532244d1",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡La paró!",
+  "name": "5ca6808c",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡La sacó!",
+  "name": "7c1a727e",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Le diste!",
+  "name": "726f2dd7",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Le diste!. Pégale a alguien con un poder en Karts locos",
+  "name": "b6ea818c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Le ganaron a Rey Bolón!",
+  "name": "644adb83",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Le quitó el balón!",
+  "name": "2e69a535",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Le reventaste un globo!",
+  "name": "256307c3",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a Compu 1!",
+  "name": "ef698a7c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a Compu 2!",
+  "name": "7f621e67",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a Compu 3!",
+  "name": "e364fa6a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a el jugador 1!",
+  "name": "6952718b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a el jugador 2!",
+  "name": "d959dda0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a el jugador 3!",
+  "name": "7557019d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Levanten a el jugador 4!",
+  "name": "e55e6db2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Llegaste!",
+  "name": "f63b53f2",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Llegó el jefe! ¡Dragón de lava!",
+  "name": "dc616e79",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Llegó el jefe! ¡Gran Hongo!",
+  "name": "b7c1ae6a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Llegó el jefe! ¡Rey Slime!",
+  "name": "d0fdb719",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Mándalo lejos con el bate (X)!",
+  "name": "00f22380",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Meteoro de puños!",
+  "name": "3cf11e3f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Mini jefe!",
+  "name": "38c55520",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Mundo superado!",
+  "name": "d5a606b3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Muy bien!",
+  "name": "b0450504",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Muy pronto!",
+  "name": "f886012c",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Ninja pega primero!",
+  "name": "e904de5a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ninja sale disparado!",
+  "name": "5b45082f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ninja salió volando!",
+  "name": "a957aa5e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nivel superado!",
+  "name": "802731b6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡No falla!",
+  "name": "7ae2df0a",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡No veo!",
+  "name": "c69babb4",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Gol!",
+  "name": "7d891028",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Hola!",
+  "name": "dfd49e8e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Jonrón!",
+  "name": "d20702b2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Le diste!",
+  "name": "d6348b70",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Perfecto!",
+  "name": "9aace8ba",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Súper!",
+  "name": "41a7bc66",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Capitán Pulpo",
+  "name": "10fa6eae",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Gran Yeti",
+  "name": "d99cb49b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Mega Robot",
+  "name": "89c64fee",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Rey Bolón",
+  "name": "f40bcacc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Rey Calabaza",
+  "name": "fd319c4b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Rey Pastel",
+  "name": "c393dabd",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Adiós Rey Slime",
+  "name": "114ab470",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Aguantadores",
+  "name": "7700868a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Aguante",
+  "name": "f4561a11",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Al rescate",
+  "name": "15388a92",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Atajo secreto",
+  "name": "59e29218",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Aventurero",
+  "name": "fa787dcb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Ayudante",
+  "name": "2adabb9d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Bola súper",
+  "name": "6fdad43a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Bombazo",
+  "name": "b61e1296",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Bosque limpio",
+  "name": "b89ca5d7",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeón Bolitas",
+  "name": "43547847",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeón de globos",
+  "name": "8b67933e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeón de la familia",
+  "name": "e3319d5a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeón del duelo",
+  "name": "0c8d577d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeón del torneo",
+  "name": "bea7d2fb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeones",
+  "name": "331e547b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Cazajefes",
+  "name": "ddd4adec",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Coleccionista",
+  "name": "36b931a6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Combo de 20",
+  "name": "db0d8837",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Copa de fútbol",
+  "name": "aca3e197",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Copa de karts",
+  "name": "c1b0a71d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Escudo perfecto",
+  "name": "bd3426e3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Estrella",
+  "name": "7fe3336a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Golpe cargado",
+  "name": "9e851ad4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Golpe en equipo",
+  "name": "83f99a37",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Golpe final",
+  "name": "7881e143",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Graduado",
+  "name": "f86e0c75",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Hasta el 10",
+  "name": "22d39907",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Héroes del volcán",
+  "name": "c99ed07c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Hora del bebé",
+  "name": "03b6c1c1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Jefes en serie",
+  "name": "d35b99b2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Jinete",
+  "name": "bd33e2d9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Juegan todos",
+  "name": "0472a4f9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Monedero lleno",
+  "name": "63321d4f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Parada perfecta",
+  "name": "d3ce46f9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Piloto veloz",
+  "name": "3c45aa8f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Primer golpe",
+  "name": "94fdcb48",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Primer lugar",
+  "name": "451b09f2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Primer reto",
+  "name": "3ff26e97",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Puntería",
+  "name": "b3aa1b32",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Récord",
+  "name": "3c07c7a3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Rey de la colina",
+  "name": "7a9cdc18",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Rey de los penales",
+  "name": "593bf5a1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Súper peleador",
+  "name": "bf2e892e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Tiro especial",
+  "name": "de5e12bc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Todos los retos",
+  "name": "e1fc12f4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nuevo récord!",
+  "name": "94203507",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Abeja!",
+  "name": "6f9e22d4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Astronauta!",
+  "name": "7840a7cb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Bloquecito!",
+  "name": "2fff0096",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Bombero!",
+  "name": "334bffb5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Dino!",
+  "name": "1d5330d9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Dragoncito!",
+  "name": "035e7f5f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Dragonzote!",
+  "name": "2a84312c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Estrella!",
+  "name": "ffebc9a5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Fantasma!",
+  "name": "4eab965a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Gatito!",
+  "name": "49dc1347",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Hada!",
+  "name": "f8911561",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Ninja!",
+  "name": "f338fc19",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Pingüino!",
+  "name": "51d98119",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Pirata!",
+  "name": "6347a1ba",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Rayo!",
+  "name": "b5ffcf7a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Resorte!",
+  "name": "990bccd9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Rey Bolón!",
+  "name": "b2aa7021",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Robot!",
+  "name": "38a54301",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Robotote!",
+  "name": "29445817",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta de Tanque!",
+  "name": "9436856d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Parada perfecta!",
+  "name": "bc822d22",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Pegó en el palo!",
+  "name": "bfc51d38",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Peleen!",
+  "name": "76961f6e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Perfecto!. Gana un round del duelo sin que te peguen",
+  "name": "0ed2c17d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Pingüino pega primero!",
+  "name": "ca58872a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Pingüino sale disparado!",
+  "name": "22cf337f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Pingüino salió volando!",
+  "name": "9f520aae",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Pirata pega primero!",
+  "name": "5411c053",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Pirata sale disparado!",
+  "name": "cdb420a2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Pirata salió volando!",
+  "name": "32830af1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Por acá!",
+  "name": "8af358c9",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Por poquito!",
+  "name": "ce2897f1",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Abeja!",
+  "name": "9b4b0645",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Astronauta!",
+  "name": "55e47324",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Bloquecito!",
+  "name": "57612879",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Bombero!",
+  "name": "e90405ac",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Dino!",
+  "name": "907bc6b6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Dragoncito!",
+  "name": "3e755dcc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Dragonzote!",
+  "name": "a9efd75f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de el jugador 1!",
+  "name": "407f913e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de el jugador 2!",
+  "name": "68820ecd",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de el jugador 3!",
+  "name": "cc84ead0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de el jugador 4!",
+  "name": "b487039f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Estrella!",
+  "name": "5e20a7ee",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Fantasma!",
+  "name": "50c022a1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Gatito!",
+  "name": "0fe858d8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Hada!",
+  "name": "46059f22",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de la compu!",
+  "name": "4c60a4f9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Ninja!",
+  "name": "ad2cf0b8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Pingüino!",
+  "name": "0a81f482",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Pirata!",
+  "name": "d3c3c965",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Rayo!",
+  "name": "525af195",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Resorte!",
+  "name": "9a12f58c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Rey Bolón!",
+  "name": "0c6eadc4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Robot!",
+  "name": "5b0cc5e8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Robotote!",
+  "name": "4b6d118c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe de Tanque!",
+  "name": "2e9edc9a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué equipo!",
+  "name": "249553a1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué golpazo!",
+  "name": "8b6dcf6e",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada de el jugador 1!",
+  "name": "64cf799e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada de el jugador 2!",
+  "name": "8cd1f72d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada de el jugador 3!",
+  "name": "70d409b0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada de el jugador 4!",
+  "name": "d8d6ebff",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada de la compu!",
+  "name": "b90d79d9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué pase!",
+  "name": "b9e92f3b",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué volea!",
+  "name": "723a9df9",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Quedan 10 segundos!",
+  "name": "34bc167e",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Rayo pega primero!",
+  "name": "c6b5c3ff",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Rayo sale disparado!",
+  "name": "39823ace",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rayo salió volando!",
+  "name": "483b0bb5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! 0:01",
+  "name": "19d65915",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! combo de 30",
+  "name": "339de7f0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Repetición!",
+  "name": "739b8123",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescatado!",
+  "name": "05f7a007",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Abeja! Ahora pelea con ustedes",
+  "name": "4c5a3f6e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Astronauta! Ahora pelea con ustedes",
+  "name": "58fc124f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Bloquecito! Ahora pelea con ustedes",
+  "name": "d26a2976",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Bombero! Ahora pelea con ustedes",
+  "name": "aad88567",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Dino! Ahora pelea con ustedes",
+  "name": "af45fd75",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Dragoncito! Ahora pelea con ustedes",
+  "name": "a2a33c2f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Dragonzote! Ahora pelea con ustedes",
+  "name": "c2718b10",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Estrella! Ahora pelea con ustedes",
+  "name": "ab945325",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Fantasma! Ahora pelea con ustedes",
+  "name": "9ca1ec5a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Gatito! Ahora pelea con ustedes",
+  "name": "635ff1b3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Hada! Ahora pelea con ustedes",
+  "name": "5e7556e1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Ninja! Ahora pelea con ustedes",
+  "name": "c8148733",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Pingüino! Ahora pelea con ustedes",
+  "name": "2d712879",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Pirata! Ahora pelea con ustedes",
+  "name": "181b2366",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Rayo! Ahora pelea con ustedes",
+  "name": "4053d86a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Resorte! Ahora pelea con ustedes",
+  "name": "a5208ec3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Rey Bolón! Ahora pelea con ustedes",
+  "name": "2e562ca7",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Robot! Ahora pelea con ustedes",
+  "name": "125d4d1f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Robotote! Ahora pelea con ustedes",
+  "name": "90172e0b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Tanque! Ahora pelea con ustedes",
+  "name": "b68ded2d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Resorte pega primero!",
+  "name": "844ff6be",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Resorte sale disparado!",
+  "name": "90abbd13",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Resorte salió volando!",
+  "name": "70d868aa",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Reto cumplido!",
+  "name": "0d7c423e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Rey Bolón pega primero!",
+  "name": "71dfe51a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rey Bolón sale disparado!",
+  "name": "674385ef",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rey Bolón salió volando!",
+  "name": "a4ec881e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rey Slime se enojó!",
+  "name": "ce52e1ee",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Robot pega primero!",
+  "name": "df456d6e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Robot sale disparado!",
+  "name": "79bd8143",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Robot salió volando!",
+  "name": "bfc5e35a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Robotote pega primero!",
+  "name": "d4cf43e8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Robotote sale disparado!",
+  "name": "ee73c1ad",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Robotote salió volando!",
+  "name": "01391c98",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Rojos contra Azules!",
+  "name": "45ee27eb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Se acabó el tiempo y van empatados! ¡Gol de oro: el que anote gana!",
+  "name": "ad94637d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Sigue otro jefe!",
+  "name": "90b8cd62",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Sigue un jefe!",
+  "name": "680b9609",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Sin globos! Ya no juegas",
+  "name": "8ab22b35",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Sonrían!",
+  "name": "b1fcf2b9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Soy una muralla!",
+  "name": "b026575c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Súper!. Transfórmate en Bolitas Bros",
+  "name": "ffa5d8f2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Abeja!",
+  "name": "236663b1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Astronauta!",
+  "name": "44679848",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Dragoncito!",
+  "name": "c4125cf8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Dragonzote!",
+  "name": "b66c1ba3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Gatito!",
+  "name": "9a8c37b4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Hada!",
+  "name": "748feed6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Ninja!",
+  "name": "99dafd2c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Pingüino!",
+  "name": "01306a06",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Pirata!",
+  "name": "f4167679",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Rayo!",
+  "name": "f7e746b9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Resorte!",
+  "name": "3cac0a40",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Rey Bolón!",
+  "name": "f5b45ba8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Robotote!",
+  "name": "8f2eab88",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque pega primero!",
+  "name": "6a1ef34a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque sale disparado!",
+  "name": "1c30fc1f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque salió volando!",
+  "name": "75d7644e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Te aplastaron!",
+  "name": "67805249",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Te atropelló la bala!",
+  "name": "ecedcbbd",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Te dieron!",
+  "name": "9554396f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Te encogieron!",
+  "name": "f6e93a11",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Te robaron el poder!",
+  "name": "87a42ef6",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Te tumbó la estrella!",
+  "name": "7996ebaa",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Terminaste la Aventura!",
+  "name": "243fd604",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Terminaste la escuela!",
+  "name": "eee98e94",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tiburones contra Dragones! ¡Empieza el partido!",
+  "name": "11a241fb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tiro de fuego!",
+  "name": "91e07968",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tremendo trancazo!",
+  "name": "2882530f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Última vuelta!",
+  "name": "6cef73dd",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Último minuto!",
+  "name": "c080dda0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Uuuy, casi!",
+  "name": "d430e10b",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Uy, al travesaño!",
+  "name": "0b098f1a",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Uy, autogol!",
+  "name": "862f67bc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Uy, eso dolió!",
+  "name": "2b2c405b",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Uy, se fue!",
+  "name": "1c8e0c85",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Uy! ¡Rey Slime está furioso!",
+  "name": "e28ec861",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Uy! Todos cayeron",
+  "name": "ce5286a5",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Vas en primer lugar!",
+  "name": "566d4162",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Vas en primero!",
+  "name": "151bcc2c",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron a los jefes en 0:03!",
+  "name": "fc1fbdbc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Venciste a los jefes!",
+  "name": "a2e0793c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ya sabes todos los golpes!",
+  "name": "09253dbe",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Ya!",
+  "name": "21515cb1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¿A qué jugamos?",
+  "name": "5943b487",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "2 amigos de la compu",
+  "name": "c6c9403f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Abeja",
+  "name": "9c454cdc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Abeja Reina",
+  "name": "0a14ca1d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Abeja, Tanque",
+  "name": "60883e5c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Capitán Pulpo. Gana el mundo de la playa en Pelea en equipo",
+  "name": "73c90c21",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Gran Yeti. Gana el mundo de la nieve en Pelea en equipo",
+  "name": "7d4f88ec",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Mega Robot. Gana el mundo del espacio en Pelea en equipo",
+  "name": "81f76e25",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Rey Bolón. Gánale al jefe gigante en Bolitas Bros",
+  "name": "b244f27c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Rey Calabaza. Gana el castillo embrujado en Pelea en equipo",
+  "name": "6e159486",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Rey Pastel. Gana Dulcelandia en Pelea en equipo",
+  "name": "75f03af9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Adiós Rey Slime. Gana el primer mundo de Pelea en equipo",
+  "name": "41a057e5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Aguantadores. Pasen 10 rondas en el modo sin fin de Pelea en equipo",
+  "name": "12e787ce",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Aguantaron 0 rondas",
+  "name": "be3970b8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Aguante. Gana 5 peleas seguidas en Supervivencia del Duelo",
+  "name": "84d62580",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Al rescate. Rompe una jaula y rescata a un amigo en Pelea en equipo",
+  "name": "eee93a88",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta",
+  "name": "d7bd3c37",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta Galáctico",
+  "name": "f3508892",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta, Tanque",
+  "name": "dcc0795f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Atajo secreto. Encuentra un atajo secreto en Karts locos (busca el letrero)",
+  "name": "fb8f1d6a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Aventurero. Termina la Aventura de Bolitas Bros",
+  "name": "d92afcd2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Ayudante. Pégale al rival con tu ayudante (Y) en el Duelo",
+  "name": "4ca74b3a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Batalla de globos",
+  "name": "975275e3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bloquecito",
+  "name": "42455294",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Bloquecito dice: ¡Te gané, el jugador 1!",
+  "name": "6961315b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bloquecito, Tanque",
+  "name": "de64a2b4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bola súper. Rompe la bola súper y usa el golpe final en Bolitas Bros",
+  "name": "e79b0958",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Bólido",
+  "name": "a5e9d598",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bolitas Bros",
+  "name": "54bf9dc7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bombazo. Lanza una bomba en Bolitas Bros",
+  "name": "1baed1df",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Bombero",
+  "name": "04d73f3f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Bombero, Tanque",
+  "name": "da6d56e7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bosque de hongos",
+  "name": "67349795",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bosque limpio. Gana el mundo del bosque en Pelea en equipo",
+  "name": "3c0f6ad1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Caminar. Mueve el stick para caminar hacia el muñeco",
+  "name": "882dd03b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Campeón Bolitas. Gana una pelea en Bolitas Bros",
+  "name": "4814472f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Campeón de globos. Gana una batalla de globos en Karts locos",
+  "name": "bc59c946",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Campeón de la familia. Gana el Torneo familiar del Duelo",
+  "name": "bf45d75f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Campeón del duelo. Gana un Duelo de bolitas",
+  "name": "a565212c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Campeón del torneo. Gánale al Rey Bolón en el Torneo del Duelo",
+  "name": "83e459dc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Campeones. Gana un partido de Fútbol de bolitas",
+  "name": "e6c940b4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Capitán Pirata",
+  "name": "9fea4ff6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Carrera",
+  "name": "0f4f7519",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Carreras",
+  "name": "8415d5de",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Castillo embrujado",
+  "name": "96eb687b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Cazajefes. Vence a Dragonzote, Robotote y el Rey Bolón seguidos",
+  "name": "c75290e3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Ciudad de juguete",
+  "name": "c3a4603f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Cohete",
+  "name": "f5d744a3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Coleccionista. Consigue 10 calcomanías",
+  "name": "5345f58e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Combo de 20. Hagan un combo de 20 golpes en equipo en Pelea en equipo",
+  "name": "78f3fd3d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Cómo jugar",
+  "name": "eef919fa",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Compu Difícil",
+  "name": "1299fb8f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Contrarreloj",
+  "name": "7837ab78",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa de fútbol. Gana los 3 partidos de la Copa en Fútbol de bolitas",
+  "name": "845a4738",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Copa de karts. Gana una copa del Gran Premio en Karts locos",
+  "name": "24e4dd53",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Copa Hoja",
+  "name": "55bbf3d0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Hoja. Carrera 1 de 3: Pradera",
+  "name": "4c24caf0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Hoja. Carrera 2 de 3: Playa",
+  "name": "918616b3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Hoja. Carrera 3 de 3: Dulcelandia",
+  "name": "b687ed7f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Cuartos de final: contra los Dragones",
+  "name": "c09e59dd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Cuartos de final. ¡Tiburones contra Dragones! ¡Empieza el partido!",
+  "name": "a936b75f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dianas de la selva. Rompe las 10 dianas",
+  "name": "2f3c4402",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Diez",
+  "name": "b78d2f51",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino",
+  "name": "aa72d75d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡La próxima te gano, el jugador 1!",
+  "name": "06b6f331",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "90cdc243",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino Rex",
+  "name": "aff638d2",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Dino, Tanque",
+  "name": "2b623591",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dos",
+  "name": "3f6daac5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dragoncito",
+  "name": "1cca6f6f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Dragonzote",
+  "name": "c58708b6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Dragonzote Furioso",
+  "name": "1fd8f985",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Dragonzote. El jefe final, en su volcán",
+  "name": "b9460ccd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Duelo de bolitas",
+  "name": "147a88df",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dulcelandia",
+  "name": "202c302d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "El que meta el siguiente gol gana",
+  "name": "8ada8b5f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Escoge tu kart",
+  "name": "31c384d8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Escoge tu personaje",
+  "name": "cd78eab7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Escudo perfecto. En Bolitas Bros, cúbrete justo cuando te van a pegar",
+  "name": "a81c4475",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Espacio",
+  "name": "1cebfdcf",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Estrella",
+  "name": "d4b66d3d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Estrella dice: ¡La próxima te gano, el jugador 1!",
+  "name": "a81ae651",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Estrella dice: ¡Te gané, el jugador 1!",
+  "name": "b833f8c2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Estrella. Tumba a alguien con la estrella en Karts locos",
+  "name": "f5c906e5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma",
+  "name": "57fd4128",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Soy el más rápido!",
+  "name": "f5437f2b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Ninja",
+  "name": "e9a38b0f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fondo del mar",
+  "name": "5b00c1e8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fútbol de bolitas",
+  "name": "024044c7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito",
+  "name": "bc18eb03",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Gatito, Tanque",
+  "name": "8f4fdca3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Golpe cargado. Pega con un golpe cargado al máximo en Bolitas Bros (mantén X)",
+  "name": "3ec2f1da",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Golpe en equipo. Usen la súper de dos o más al mismo tiempo en Pelea en equipo",
+  "name": "48e898f9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Golpe final. Usa el golpe final en el Duelo (súper forma + X)",
+  "name": "70bcd971",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Golpe final. Ya en súper forma, aprieta X",
+  "name": "0ba787b8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Graduado. Termina la Escuela de peleas del Duelo",
+  "name": "afa00894",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Gran Dragón",
+  "name": "75f7290e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Gran Premio",
+  "name": "21502689",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Hada",
+  "name": "65d7a4a9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Hada dice: ¡Te gané, el jugador 1!",
+  "name": "a7e72176",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Hada Reina",
+  "name": "7ab2d32c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Hada, Tanque",
+  "name": "d0cb4305",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Halcón de Acero",
+  "name": "f2566189",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Hasta el 10. Cuenta del 1 al 10 con Bloquecito (Y sube de número)",
+  "name": "8717a824",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Héroes del volcán. Gana el mundo del volcán en Pelea en equipo",
+  "name": "e9b1f0e4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Hora del bebé. Jueguen el Modo Bebé",
+  "name": "59141251",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Jefe 1 de 1: Rey Slime",
+  "name": "3a363ba4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jefes",
+  "name": "9d6175ca",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jefes en serie. Venzan a todos los jefes seguidos en Pelea en equipo",
+  "name": "4618e74d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Jinete. Súbete a un dinosaurio o a un pollo gigante en Pelea en equipo",
+  "name": "4620edb0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Juegan todos. Jueguen 4 al mismo tiempo",
+  "name": "b4783231",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Karts locos",
+  "name": "bfc65fcc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "La torre de nubes. Sube hasta la bandera",
+  "name": "732b38d4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Lluvia",
+  "name": "5980b740",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mega Robot",
+  "name": "646305b3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Mejor jugador: el jugador 1 · Tanque",
+  "name": "bfd0f829",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mini",
+  "name": "f16997ba",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mis premios",
+  "name": "60ba73f9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Modo Bebé",
+  "name": "042df86c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Modo peque: el kart acelera solo",
+  "name": "210897cd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Monedero lleno. Gana el modo Monedas de Bolitas Bros",
+  "name": "8275b139",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Montaña nevada",
+  "name": "50328667",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Música apagada",
+  "name": "9e86cddd",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Música encendida",
+  "name": "33fc54bd",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Ninja",
+  "name": "a0402c4b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "No alcanzan las monedas",
+  "name": "171cf6ff",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Octobloque",
+  "name": "49970b0e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Consigue 10 calcomanías",
+  "name": "a7b22438",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Cuenta del 1 al 10 con Bloquecito (Y sube de número)",
+  "name": "80e2974f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Cumple los 10 retos del Duelo",
+  "name": "854a0ebb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Cumple un reto del Duelo",
+  "name": "548f67c6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: En Bolitas Bros, cúbrete justo cuando te van a pegar",
+  "name": "116cbaca",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: En el Duelo, cúbrete justo cuando te van a pegar",
+  "name": "9e20149e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Encuentra un atajo secreto en Karts locos (busca el letrero)",
+  "name": "d65e92ca",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana 5 peleas seguidas en Supervivencia del Duelo",
+  "name": "a01cc72b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana Dulcelandia en Pelea en equipo",
+  "name": "b830672c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el castillo embrujado en Pelea en equipo",
+  "name": "aa1eda45",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el modo Monedas de Bolitas Bros",
+  "name": "3e8391f8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el modo Rey de la colina de Bolitas Bros",
+  "name": "edf69775",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el mundo de la nieve en Pelea en equipo",
+  "name": "fd027963",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el mundo de la playa en Pelea en equipo",
+  "name": "b673652b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el mundo del bosque en Pelea en equipo",
+  "name": "2f5e94fc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el mundo del espacio en Pelea en equipo",
+  "name": "c133d2ed",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el mundo del volcán en Pelea en equipo",
+  "name": "64903efc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el primer mundo de Pelea en equipo",
+  "name": "d3bfdf51",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana el Torneo familiar del Duelo",
+  "name": "840261b1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana los 3 partidos de la Copa en Fútbol de bolitas",
+  "name": "874606bf",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana un Duelo de bolitas",
+  "name": "557ae925",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana un partido de Fútbol de bolitas",
+  "name": "05867467",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana un round del duelo sin que te peguen",
+  "name": "73af3241",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una batalla de globos en Karts locos",
+  "name": "281c5a70",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una carrera de Karts locos",
+  "name": "93067586",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una carrera vista desde arriba",
+  "name": "89f565b3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una copa del Gran Premio en Karts locos",
+  "name": "c2fb98ee",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una pelea en Bolitas Bros",
+  "name": "da56def0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una tanda de penales en Fútbol de bolitas",
+  "name": "f979ee2c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gánale al jefe gigante en Bolitas Bros",
+  "name": "684a3f14",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gánale al Rey Bolón en el Torneo del Duelo",
+  "name": "2963ed61",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Hagan un combo de 20 golpes en equipo en Pelea en equipo",
+  "name": "a4d24ea6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Haz un récord en el Contrarreloj de Karts locos",
+  "name": "0fc3577d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Jueguen 4 al mismo tiempo",
+  "name": "fb95aec0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Jueguen el Modo Bebé",
+  "name": "e26c1d60",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Lanza una bomba en Bolitas Bros",
+  "name": "d58d73b1",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Manda el saco a más de 100 m en el Concurso de jonrón de Bolitas Bros",
+  "name": "21261ce6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Mete gol con tu tiro especial en Fútbol (barra llena + LB + RB)",
+  "name": "e4e2d8b8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Mete un gol en Fútbol de bolitas",
+  "name": "7e6e3f2a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Pasa la primera ronda de Pelea en equipo",
+  "name": "1e53912b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Pasen 10 rondas en el modo sin fin de Pelea en equipo",
+  "name": "7ce6e86a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Pega con un golpe cargado al máximo en Bolitas Bros (mantén X)",
+  "name": "b2435bc6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Pégale a alguien con un poder en Karts locos",
+  "name": "5b0d0d92",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Pégale al rival con tu ayudante (Y) en el Duelo",
+  "name": "c932c78f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Rompe la bola súper y usa el golpe final en Bolitas Bros",
+  "name": "f404cf1c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Rompe las 10 dianas en Bolitas Bros",
+  "name": "f10251d8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Rompe una jaula y rescata a un amigo en Pelea en equipo",
+  "name": "b3114890",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Súbete a un dinosaurio o a un pollo gigante en Pelea en equipo",
+  "name": "8a377c9b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Termina la Aventura de Bolitas Bros",
+  "name": "f73e99b9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Termina la Escuela de peleas del Duelo",
+  "name": "d45dd12b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Transfórmate en Bolitas Bros",
+  "name": "9917946c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Transfórmate en el Duelo de bolitas",
+  "name": "f651b3eb",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Tumba a alguien con la estrella en Karts locos",
+  "name": "a524e885",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Únete con tu control",
+  "name": "4e801aa5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Usa el golpe final en el Duelo (súper forma + X)",
+  "name": "6acf7ea6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Usen la súper de dos o más al mismo tiempo en Pelea en equipo",
+  "name": "ef76a620",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Vence a Dragonzote, Robotote y el Rey Bolón seguidos",
+  "name": "b3ae568f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Venzan a todos los jefes seguidos en Pelea en equipo",
+  "name": "0dcbee69",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Parada perfecta. En el Duelo, cúbrete justo cuando te van a pegar",
+  "name": "1c5941b7",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Patada",
+  "name": "d0c4293a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pelea 1",
+  "name": "6839ed9b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pelea 2",
+  "name": "6939ef2e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pelea 3",
+  "name": "6a39f0c1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pelea 4",
+  "name": "6b39f254",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pelea en el castillo. Gánale a Ninja",
+  "name": "8a368d28",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pelea en equipo",
+  "name": "55af0af8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Penal 1 de 5",
+  "name": "c60f358a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Piloto veloz. Gana una carrera vista desde arriba",
+  "name": "667d5f40",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino",
+  "name": "edce1881",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino Emperador",
+  "name": "54788d00",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino, Tanque",
+  "name": "e33b85fd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pirata",
+  "name": "d1fd1d4c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Pirata, Tanque",
+  "name": "0b8c812c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Playa",
+  "name": "7ae120c6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Por equipos",
+  "name": "f978a54c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pradera",
+  "name": "df32807c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Primer golpe. Pasa la primera ronda de Pelea en equipo",
+  "name": "4ad6d57d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Primer lugar. Gana una carrera de Karts locos",
+  "name": "a06d3816",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Primer reto. Cumple un reto del Duelo",
+  "name": "bd9797b9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Puntería. Rompe las 10 dianas en Bolitas Bros",
+  "name": "4fe29b54",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Rayo",
+  "name": "28a92350",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Récord. Haz un récord en el Contrarreloj de Karts locos",
+  "name": "e5dd6fe6",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Resorte",
+  "name": "aafb39cb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Bye bye, el jugador 1!",
+  "name": "07077194",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "538e9cae",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Te gané, el jugador 1!",
+  "name": "c1e3d8c0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Reto: Sin cubrirse",
+  "name": "c3b57792",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Rey Bolón",
+  "name": "1f95345f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Rey de la colina. Gana el modo Rey de la colina de Bolitas Bros",
+  "name": "d2a641af",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Rey de los penales. Gana una tanda de penales en Fútbol de bolitas",
+  "name": "1246d58b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Rey Fantasma",
+  "name": "b2299af4",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Rival 1",
+  "name": "0b267060",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Rival 2",
+  "name": "0e267519",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robot",
+  "name": "73d1357f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Robot dice: ¡Bye bye, el jugador 1!",
+  "name": "cba5bff0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robot dice: ¡Jajá, te di, el jugador 1!",
+  "name": "5428490a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robotote",
+  "name": "17f6de4b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Robotote Turbo",
+  "name": "d8d6ab27",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Robotote, Resorte",
+  "name": "67e3e009",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ronda 1",
+  "name": "b49a464c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ronda 2",
+  "name": "b79a4b05",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ronda 3",
+  "name": "b69a4972",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Round 1",
+  "name": "3cbcf530",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Round 2",
+  "name": "3fbcf9e9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Salón de la fama",
+  "name": "17b0cd27",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Saltar. Empuja el stick hacia arriba para saltar",
+  "name": "d37c5143",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Selva",
+  "name": "9a9e7352",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Semifinal: el jugador 1 · Tanque contra la compu · Pingüino",
+  "name": "21e3b82f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Sin amigos de la compu",
+  "name": "6f5e18a7",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Sin cubrirse",
+  "name": "9db74058",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Sin fin",
+  "name": "eb094210",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Sin modo peque",
+  "name": "0008d7de",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Soleado",
+  "name": "4874b132",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Súper Bombero",
+  "name": "19a6c407",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Estrella",
+  "name": "55435e65",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Gatito",
+  "name": "ad9dae2b",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Ninja",
+  "name": "e1572323",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper peleador. Transfórmate en el Duelo de bolitas",
+  "name": "6dc1d98f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Rayo",
+  "name": "ad83ff98",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Resorte",
+  "name": "273c14b3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Rey Bolón",
+  "name": "cdde4c57",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Súper Tanque",
+  "name": "60f6b505",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque",
+  "name": "b6f45e0d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Bloquecito",
+  "name": "9b3ca6e8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Dino",
+  "name": "6fc1e449",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Estrella",
+  "name": "32f01169",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Pingüino",
+  "name": "8941b73d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Pirata",
+  "name": "1bbac048",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Rayo",
+  "name": "fd9824bc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Rayo, Rey Bolón",
+  "name": "eccf1d04",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Resorte",
+  "name": "76fb8f07",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Robot",
+  "name": "a16a1ad3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Saco",
+  "name": "5748790f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Tanque",
+  "name": "6690f121",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tienda. Compra sombreros y trajes con tus monedas",
+  "name": "f6baf351",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tienda. Tienes 70 monedas",
+  "name": "9da1bf1c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tiro especial. Mete gol con tu tiro especial en Fútbol (barra llena + LB + RB)",
+  "name": "13312a8c",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Todos los retos. Cumple los 10 retos del Duelo",
+  "name": "b877a4ff",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Torneo · Pelea 1 de 5",
+  "name": "d2861b43",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Torneo · Pelea 2 de 5",
+  "name": "b7f97d08",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Torneo · Pelea 3 de 5",
+  "name": "63920831",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Torneo · Pelea 4 de 5",
+  "name": "81ed26be",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Un amigo de la compu",
+  "name": "9e9130d5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Una vuelta",
+  "name": "1411a5c8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Uno",
+  "name": "b45f390f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando el jugador 1, Tanque",
+  "name": "91ec99d4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Valle de los dinos",
+  "name": "dd1890cd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Volcán",
+  "name": "a1907fa0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Voz encendida",
+  "name": "15ae449b",
+  "from": "código",
+  "recorded": false
+ }
+]

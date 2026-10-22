@@ -2252,6 +2252,16 @@ test('música, voz y premios', { timeout: ms(60000) }, async () => {
   });
   await p.page.mouse.click(640, 360); // el clic deja sonar al navegador
   await p.joinPlayers(1);
+  // La voz dice el menú: con su grabación (si ya la hay) o con la voz del navegador (si hay voz en español; en
+  // GitHub Actions no hay).
+  const voice = await p.page.evaluate(async () => {
+    const { clipName } = await import('/src/shared/voice-text.js');
+    const list = (await import('/src/shared/voz.json')).default;
+    const spanish = speechSynthesis.getVoices().some((v) => v.lang.startsWith('es'));
+    return { recorded: list.includes(clipName('¿A qué jugamos?')), spanish };
+  });
+  if (voice.recorded) await p.until(() => window.__voiceLog.some((e) => e.text === '¿A qué jugamos?' && e.how === 'grabación'), ms(5000), 'decir el menú con su grabación');
+  else if (voice.spanish) await p.until(() => window.__voiceLog.some((e) => e.text === '¿A qué jugamos?' && e.how === 'navegador'), ms(5000), 'decir el menú');
   const music = () => p.page.evaluate(() => import('/src/shared/music.js').then((m) => m.music.name));
   assert.equal(await music(), 'menu');
   await p.openGameCard('Pelea en equipo');
@@ -2259,9 +2269,6 @@ test('música, voz y premios', { timeout: ms(60000) }, async () => {
   await p.page.waitForFunction(() => window.leogames.scene.isActive('Brawl'), null, { timeout: ms(8000) });
   assert.equal(await music(), 'brawl');
   assert.ok((await stickers(p.page)).includes('unirse'));
-  // Sin voces instaladas (como en GitHub Actions) la voz no habla; si hay, debió decir el menú.
-  const voices = await p.page.evaluate(() => speechSynthesis.getVoices().filter((v) => v.lang.startsWith('es')).length);
-  if (voices > 0) assert.ok((await p.page.evaluate(() => window.__spoken)).includes('¿A qué jugamos?'));
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });
