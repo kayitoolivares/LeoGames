@@ -1,4 +1,4 @@
-import { BLOCKS, ROWS, T } from './tiles.js';
+import { BLOCKS, ROWS, T, isSemi, isSolid } from './tiles.js';
 
 // Los niveles de Súper Bolitas: 4 mundos de 3 niveles (el tercero, con su jefe). Cada nivel se escribe por pedazos
 // (seg) de texto, de abajo hacia arriba (lo que falta arriba es aire); las letras de los cuadritos están en tiles.js
@@ -57,6 +57,55 @@ export class Level {
     this.warps = [['1', '2'], ['3', '4']]
       .filter(([a, b]) => mark(a) && mark(b))
       .map(([a, b]) => ({ enter: { col: mark(a).col, row: mark(a).row + 1 }, exit: mark(b) }));
+    if (!this.water) this.moveBlocksOverFloor();
+  }
+
+  // Los bloques (sorpresa y ladrillos) que quedaron encima de un hoyo, de lava o de agua se recorren de lado hasta
+  // quedar encima de piso: al brincar para pegarles, uno se caería al hoyo.
+  moveBlocksOverFloor() {
+    const floorBelow = (c, r) => {
+      for (let k = r + 1; k <= Math.min(ROWS - 1, r + 5); k += 1) {
+        const ch = this.at(c, k);
+        if (ch === 'L' || ch === 'w' || BLOCKS.has(ch)) return false;
+        if (isSolid(ch) || isSemi(ch)) return true;
+      }
+      return false;
+    };
+    // Abajo del bloque tiene que haber aire hasta el piso (para pararse debajo y pegarle).
+    const roomBelow = (c, r) => {
+      for (let k = r + 1; k < ROWS; k += 1) {
+        const ch = this.at(c, k);
+        if (isSolid(ch) || isSemi(ch)) return k > r + 2;
+        if (ch !== ' ') return false;
+      }
+      return false;
+    };
+    // (De abajo hacia arriba: primero se acomodan los de abajo.)
+    for (let r = ROWS - 1; r >= 0; r -= 1) {
+      for (let a = 0; a < this.cols; a += 1) {
+        if (!BLOCKS.has(this.at(a, r))) continue;
+        let b = a;
+        while (BLOCKS.has(this.at(b + 1, r))) b += 1;
+        const fits = (s) => {
+          for (let c = a + s; c <= b + s; c += 1) {
+            if ((c < a || c > b) && this.at(c, r) !== ' ') return false;
+            if (!roomBelow(c, r)) return false;
+          }
+          for (let c = a + s - 1; c <= b + s + 1; c += 1) if (!floorBelow(c, r)) return false;
+          return true;
+        };
+        if (!fits(0)) {
+          const shift = [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8].find(fits);
+          if (shift !== undefined) {
+            const run = this.grid[r].slice(a, b + 1);
+            for (let c = a; c <= b; c += 1) this.grid[r][c] = ' ';
+            run.forEach((ch, i) => (this.grid[r][a + shift + i] = ch));
+            b += shift;
+          }
+        }
+        a = b;
+      }
+    }
   }
 
   at(col, row) {
@@ -199,7 +248,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXX         XXXXXXXXXXXXXXXX
                    O
 
-      ===      ?B?B?
+      ===      ?B?
    g        g          []
 ############# ######   ()        F
 ############# #####    ()  ##########
@@ -282,9 +331,10 @@ const W21 = {
 #######  ####   m      g      #########
 #######  ####                 #########`),
     seg(`
-                    ?Y?
+                 ?Y?
+
           ==                      F
-   O    =====   ====     ===   #######
+   O    =====  ======    ===   #######
  ====                          #######
 ###                       g    #######
 ###                            #######`),
@@ -307,8 +357,8 @@ const W22 = {
     seg(`
           O           n
    q            ===         q
-         ===         ===
-    ===               ?M?      ===
+         ===         === M?
+    ===                        ===
                   m
 #####                   ####         ##
 #####                   ####         ##`),
@@ -384,16 +434,16 @@ const W31 = {
 ########################`),
     seg(`
                  O
-           ===
-   ?Y?           c    []
+ ?Y?     ===
+                 c    []
        c              ()
 ######wwwwwwwww########()######
 ######wwwwwwwww########()######`),
     seg(`
                          H
-     C          ooo
-            BBBBBBBBB
-    c          c          c
+  BBBBBBB       ooo
+               ===
+    c C        c          c
 #############wwwwwww############
 #############wwwwwww############`),
     seg(`
