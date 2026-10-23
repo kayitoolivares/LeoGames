@@ -1,0 +1,40 @@
+{
+  "enemigos": [
+    "aplastador",
+    "bola-fuego",
+    "caparazon",
+    "erizo",
+    "hongo-malo",
+    "medusa",
+    "murcielago",
+    "nube-mala",
+    "pajaro",
+    "pez",
+    "planta",
+    "tortuga"
+  ],
+  "jefes": [
+    "rey-cangrejo",
+    "rey-dragon",
+    "rey-hongo",
+    "rey-nube"
+  ],
+  "objetos": [
+    "bandera",
+    "estrella",
+    "flor",
+    "hongo",
+    "huevo",
+    "moneda-grande",
+    "moneda",
+    "resorte"
+  ],
+  "fondos": [
+    "castillo",
+    "cielo",
+    "cueva",
+    "mar",
+    "playa",
+    "pradera"
+  ]
+}

@@ -71,6 +71,19 @@ const PAGES = [
     note: 'Con un objeto en la mano, X lo usa. Cerca de la orilla te agarras (A o ↑ para subir). En la selección, X cambia tu traje.',
   },
   {
+    title: 'Súper Bolitas',
+    emoji: '🍄',
+    rows: [
+      [['stick'], 'Caminar (↓ en la boca de un tubo = meterse; ↓ + A = bajar de una plataforma)'],
+      [['a'], 'Saltar (entre más lo sostienes, más alto; en el agua, nadar)'],
+      [['b'], 'Correr más rápido (mantener)'],
+      [['x'], 'Bola de fuego (con la flor) o lengüetazo (en el dinosaurio)'],
+      [['y'], 'En el mapa: modo peque (cada quien). Bloquecito: cambia de número'],
+      [['lb+rb+y'], 'Salir (mantener)'],
+    ],
+    note: 'Brínquenles encima a los enemigos (¡los que tienen picos no!). Si te caes, regresas en burbuja: un compañero la revienta tocándola.',
+  },
+  {
     title: 'Duelo de bolitas',
     emoji: '🥋',
     rows: [

@@ -55,6 +55,13 @@ const SONGS = {
     bass: { wave: 'triangle', volume: 0.13, notes: 'E2 E2 . E2 E3 . E2 . | D2 D2 . D2 D3 . D2 . | C2 C2 . C2 C3 . C2 . | B1 B1 . B1 B2 . B1 .' },
     drums: 'k . s k k . s . | k . s k k . s . | k . s k k . s . | k s k s s s s s',
   },
+  // Súper Bolitas: brincadora y alegre (en el castillo suena 'jefe' con el jefe).
+  plat: {
+    bpm: 138,
+    lead: { wave: 'square', volume: 0.045, notes: 'C5 . E5 G5 . E5 C5 . | D5 . F5 A5 . G5 F5 . | E5 . G5 C6 . B5 A5 . | G5 . E5 F5 D5 - . . | C5 . E5 G5 . A5 G5 . | F5 . A5 C6 . A5 F5 . | E5 G5 E5 D5 C5 . D5 . | C5 - . . G4 . . .' },
+    bass: { wave: 'triangle', volume: 0.12, notes: 'C3 . G2 . C3 . G2 . | D3 . A2 . D3 . A2 . | E3 . B2 . A2 . E2 . | G2 . D3 . G2 . B2 . | C3 . G2 . C3 . G2 . | F2 . C3 . F2 . C3 . | G2 . D3 . G2 . B2 . | C3 . G2 . C3 . . .' },
+    drums: 'k . h k s . h . | k . h k s . h . | k . h k s . h . | k . h k s . s s | k . h k s . h . | k . h k s . h . | k . h k s . h . | k . s k s s s s',
+  },
   // Canción de cuna para el Modo Bebé: lenta, suave y sin batería.
   baby: {
     bpm: 84,

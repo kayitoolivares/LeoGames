@@ -12,6 +12,7 @@ import { BabyScene } from './games/baby/BabyScene.js';
 import { BrawlScene } from './games/brawl/BrawlScene.js';
 import { DueloScene } from './games/duelo/DueloScene.js';
 import { FutbolScene } from './games/futbol/FutbolScene.js';
+import { PlatScene } from './games/plat/PlatScene.js';
 import { SmashScene } from './games/smash/SmashScene.js';
 import { SmashSelectScene } from './games/smash/SmashSelectScene.js';
 import { ThreeGameScene } from './games/ThreeGameScene.js';
@@ -38,6 +39,7 @@ const game = new Phaser.Game({
     BrawlScene,
     SmashSelectScene,
     SmashScene,
+    PlatScene,
     FutbolScene,
     DueloScene,
     BabyScene,
@@ -63,6 +65,7 @@ const SCENE_MUSIC = {
   Personajes: 'menu',
   Brawl: 'brawl',
   Smash: 'smash',
+  Plat: 'plat',
   Race: 'race',
   Kart: 'race',
   Futbol: 'futbol',

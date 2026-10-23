@@ -2244,6 +2244,204 @@ test('celular: con la pantalla táctil se une y se mueve por el menú', { timeou
   await p.context.close();
 });
 
+// Súper Bolitas: un nivel jugado "a mano" (con la escena) para revisar cada cosa.
+const plat = (page, fn, arg) => page.evaluate(fn, arg);
+async function openPlat(p, count, progress) {
+  await p.page.evaluate((data) => import('/src/shared/settings.js').then((m) => m.settings.set('platProgress', data)), progress);
+  await p.joinPlayers(count);
+  await p.openGameCard('Súper Bolitas');
+  await p.pickCharacters(count);
+  await p.until(() => window.leogames.scene.getScene('Plat')?.phase === 'map', ms(10000), 'ver el mapa de Súper Bolitas');
+}
+
+test('súper bolitas: correr, saltar, bloques, hongo, pisar enemigos, burbuja, modo peque y bandera', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 2, { unlocked: 0, levels: {}, peque: {} });
+  // Y del Jugador 2: él juega en modo peque.
+  await p.tap(1, BUTTON.Y);
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').players[1].peque), true);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'empezar el 1-1');
+  await p.wait(400);
+
+  // Correr a la derecha y saltar.
+  const x0 = await plat(p.page, () => window.leogames.scene.getScene('Plat').players[0].x);
+  await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
+  await p.wait(500);
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  assert.ok((await plat(p.page, () => window.leogames.scene.getScene('Plat').players[0].x)) > x0 + 60, 'no corrió');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].vy < 0 || !window.leogames.scene.getScene('Plat').players[0].onGround, ms(2000), 'saltar');
+
+  // Le pega desde abajo al bloque del hongo: sale el hongo y al agarrarlo crece.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    for (const e of s.enemies) e.remove();
+    const level = s.level;
+    let at = null;
+    level.grid.forEach((row, r) => row.forEach((ch, c) => (ch === 'M' && !at ? (at = { c, r }) : null)));
+    window.__block = at;
+    const pl = s.players[0];
+    Object.assign(pl, { x: at.c * 48 + 24, y: (at.r + 1) * 48 + 60, vx: 0, vy: -700, onGround: false, invulnMs: 1e9 });
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').items.powers.length > 0, ms(3000), 'que salga el hongo');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').level.at(window.__block.c, window.__block.r)), 'U');
+  await p.until(() => window.leogames.scene.getScene('Plat').items.powers[0]?.emerge >= 1, ms(3000), 'que el hongo termine de salir');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pw = s.items.powers[0];
+    Object.assign(s.players[0], { x: pw.x, y: pw.y, vy: 0 });
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].size === 'big', ms(3000), 'crecer con el hongo');
+
+  // Brincarle encima a un hongo malo lo aplasta.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    const e = s.spawnEnemy('g', pl.x, pl.y);
+    e.vx = 0;
+    Object.assign(pl, { y: e.y - e.h - 30, vy: 500, onGround: false });
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].stats.stomps === 1, ms(3000), 'aplastar al hongo malo');
+
+  // Si el Jugador 1 cae (y el 2 sigue), regresa en burbuja; el 2 la revienta tocándola.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.players[0].invulnMs = 0;
+    s.players[0].die();
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].state === 'bubble', ms(4000), 'regresar en burbuja');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const [a, b] = s.players;
+    Object.assign(b, { x: a.x, y: a.y + 30, vy: 0 });
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].state === 'play', ms(3000), 'reventar la burbuja');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').lives), 10, 'no debió perder vida (con modo peque son 10)');
+
+  // El 2 (modo peque) se cae a un hoyo: regresa rebotando a donde estaba.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    Object.assign(s.players[1], { y: s.level.height + 120, vy: 0 });
+  });
+  await p.wait(300);
+  assert.deepEqual(await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    return [s.players[1].state, s.players[1].y < s.level.height];
+  }), ['play', true]);
+
+  // A la bandera: nivel superado, se abre el 1-2 y la calcomanía.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    for (const pl of s.players) Object.assign(pl, { x: s.goal.x - 60, y: s.goal.y - 4, vy: 0 });
+    s.cameras.main.setScroll(s.goal.x - 900, 0);
+    s.players[0].x = s.goal.x + 2;
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(8000), 'pasar el nivel');
+  assert.equal(await plat(p.page, () => JSON.parse(localStorage.getItem('leogames:platProgress')).unlocked), 1);
+  assert.ok((await stickers(p.page)).includes('plat-bandera'));
+  await p.until(() => window.leogames.scene.getScene('Plat').endMs > 1000, ms(5000), 'que los resultados acepten botones');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').levelIndex === 1 && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'pasar a la cueva');
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('súper bolitas: tubo secreto, dinosaurio, fuego, estrella y el Rey Hongo', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 1, { unlocked: 2, levels: {}, peque: {} });
+  // El mapa empieza en el último abierto (el 1-3): dos a la izquierda es el 1-1.
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'play' && window.leogames.scene.getScene('Plat').levelIndex === 0, ms(5000), 'empezar el 1-1');
+
+  // Parado en el tubo secreto, abajo: al cuarto secreto.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    for (const e of s.enemies) e.remove();
+    const w = s.level.warps[0];
+    const pl = s.players[0];
+    Object.assign(pl, { x: w.enter.col * 48 + 48, y: w.enter.row * 48 - 2, vy: 0, invulnMs: 1e9 });
+    s.cameras.main.setScroll(pl.x - 600, 0);
+    window.__pads[0].axes = [0, 1, 0, 0];
+  });
+  await p.until(() => {
+    const s = window.leogames.scene.getScene('Plat');
+    return s.level.inBonus(s.players[0].x);
+  }, ms(4000), 'entrar al cuarto secreto');
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  assert.ok((await stickers(p.page)).includes('plat-secreto'));
+
+  // El dinosaurio: tocarlo para subirse; X = lengüetazo que se come al enemigo de enfrente.
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].onGround, ms(3000), 'caer al piso del cuarto secreto');
+  await plat(p.page, async () => {
+    const { Dino } = await import('/src/games/plat/dino.js');
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    s.dinos.push(new Dino(s, pl.x, pl.y));
+  });
+  await p.until(() => Boolean(window.leogames.scene.getScene('Plat').players[0].dino), ms(3000), 'subirse al dinosaurio');
+  assert.ok((await stickers(p.page)).includes('plat-dino'));
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    pl.facing = 1;
+    window.__lunch = s.spawnEnemy('g', pl.x + 90, pl.y);
+    window.__lunch.vx = 0;
+  });
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.__lunch.dead, ms(2000), 'comerse al hongo malo');
+
+  // Flor: X lanza bolas de fuego que tumban enemigos. Estrella: invencible.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    s.dinoRunsAway(pl, { silent: true });
+    s.powerTaken(pl, 'flor');
+    pl.facing = 1;
+    window.__target = s.spawnEnemy('g', pl.x + 220, pl.y);
+    window.__target.vx = 0;
+  });
+  await p.wait(300);
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.__target.dead, ms(3000), 'tumbar al hongo malo con fuego');
+  await plat(p.page, () => window.leogames.scene.getScene('Plat').powerTaken(window.leogames.scene.getScene('Plat').players[0], 'estrella'));
+  assert.ok((await stickers(p.page)).includes('plat-estrella'));
+
+  // El 1-3: al entrar a la arena se cierra la puerta y sale el Rey Hongo; tres brincos encima y ganan el mundo.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.startLevel(2);
+    const a = s.level.arena;
+    const pl = s.players[0];
+    Object.assign(pl, { x: (a.left + 4) * 48, y: (a.boss.row + 1) * 48, vy: 0, invulnMs: 1e9 });
+    s.cameras.main.setScroll(a.left * 48, 0);
+  });
+  await p.until(() => Boolean(window.leogames.scene.getScene('Plat').boss), ms(4000), 'que llegue el Rey Hongo');
+  assert.equal(await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    return s.level.at(s.level.arena.left, s.level.arena.door[0]);
+  }), 'X', 'la puerta no se cerró');
+  // Cada que se puede pisar, el jugador le cae encima (como si brincara).
+  await plat(p.page, () => {
+    window.__stomper = setInterval(() => {
+      const s = window.leogames.scene.getScene('Plat');
+      const b = s.boss;
+      if (!b || b.dead || !b.stompable) return;
+      Object.assign(s.players[0], { x: b.x, y: b.y - b.h - 10, vy: 600, onGround: false, invulnMs: 1e9 });
+    }, 150);
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').boss?.dead, ms(20000), 'brincarle encima 3 veces al Rey Hongo');
+  await plat(p.page, () => clearInterval(window.__stomper));
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(10000), 'ganar el mundo');
+  assert.ok((await stickers(p.page)).includes('plat-mundo-1'));
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('música, voz y premios', { timeout: ms(60000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => {

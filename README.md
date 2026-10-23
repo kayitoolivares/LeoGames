@@ -70,6 +70,21 @@ Abre http://localhost:5173 en Edge o Chrome.
   barriles y jarrones**: rotos sueltan comida (cura), martillo (pega doble), bomba (X la lanza), estrella
   (invencible), espada (pega doble y llega más lejos), escudo (aguanta 3 golpes), imán (jala monedas y comida) o
   mascota (un perrito que muerde monstruos). Si alguien cae, un compañero se para junto a él para levantarlo.
+- **Súper Bolitas** (plataformas estilo Mario Bros): hasta 4 a la vez en la misma pantalla, con los personajes de
+  Bolitas Bros. Mapa con caminito y **4 mundos** de 3 niveles (el tercero, con **jefe**): Pradera y cuevas (Rey
+  Hongo), Nubes y cielo (Rey Nube, con viento), Agua y playa (nadar; Rey Cangrejo) y Castillo de lava (Rey Dragón).
+  A = saltar (más alto si lo sostienes), B = correr, X = bola de fuego / lengüetazo, ↓ en un tubo = meterse.
+  Bloques sorpresa con **hongo** (crecer), **flor de fuego**, **estrella** (invencible) y **huevo de dinosaurio**
+  (montado saltas más y con X te comes a los enemigos; si te pegan, se asusta y se va); bloques escondidos con vidas;
+  **3 monedas grandes** escondidas por nivel y **tubos secretos** a cuartos con monedas. Enemigos para pisar (hongos,
+  tortugas que dejan caparazón para patear, murciélagos, pájaros, cangrejos), otros que no (erizos con picos, peces,
+  medusas, bolas de fuego de la lava, el bloque aplastador, la nube que tira erizos), resortes, plataformas que se
+  mueven y que se caen, lava y picos. Los jefes se pisan 3 veces (cada uno con su truco: el Rey Hongo hace temblar
+  el piso, el Rey Nube lanza rayos, el Rey Cangrejo se lanza corriendo y el Rey Dragón escupe fuego). Si alguien
+  cae y quedan compañeros, regresa en una **burbuja** que se revienta tocándola; vidas para todo el equipo (cada 50
+  monedas, una más) y **banderín** a la mitad. **Modo peque** (Y en el mapa, cada quien): si se cae a un hoyo o a la
+  lava, regresa rebotando a donde estaba, y el equipo tiene más vidas. Narrador, calcomanías y mejor tiempo por
+  nivel. Los dibujos (enemigos, jefes, objetos y fondos) son de Gemini; los bloques y el piso se dibujan con código.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),

@@ -61,6 +61,16 @@ const GAMES = {
       ],
     },
   },
+  plat: {
+    enemigos: {
+      kind: 'cutout',
+      max: 160,
+      names: ['hongo-malo', 'tortuga', 'caparazon', 'murcielago', 'pajaro', 'nube-mala', 'pez', 'medusa', 'bola-fuego', 'aplastador', 'erizo', 'planta'],
+    },
+    jefes: { kind: 'cutout', max: 320, names: ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon'] },
+    objetos: { kind: 'cutout', max: 128, names: ['hongo', 'flor', 'estrella', 'huevo', 'moneda', 'moneda-grande', 'bandera', 'resorte'] },
+    fondos: { kind: 'background', names: ['pradera', 'cueva', 'cielo', 'playa', 'mar', 'castillo'] },
+  },
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura', 'copa-sorpresa'] },
