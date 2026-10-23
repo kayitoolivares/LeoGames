@@ -923,9 +923,15 @@ test('bolitas bros: jonrón, monedas, rey de la colina y jefes para escoger', { 
   await p.until(
     () => {
       const s = window.leogames.scene.getScene('Smash');
-      const [me] = s.fighters;
+      const [me, cpu] = s.fighters;
       const coin = s.coins.list[0];
       if (coin) Object.assign(me, { x: coin.x, y: coin.y, vx: 0, vy: 0 });
+      else if (me.record.coins === 0) {
+        // (Si se cayeron o se acabaron antes de agarrarlas, otro golpe saca más.)
+        const result = cpu.takeHit({ facing: 1, power: 1, x: cpu.x - 10 }, { damage: 20, base: 100, scale: 1, angle: 45 });
+        s.noteHit(me, cpu, result.dealt, result.speed);
+        Object.assign(cpu, { x: s.main.left + 60, y: s.main.top - cpu.radius, vx: 0, vy: 0, hitstunMs: 0 });
+      }
       return me.record.coins > 0;
     },
     ms(5000),
