@@ -4,16 +4,41 @@ import { moveBody } from './physics.js';
 
 // El dinosaurio (como Yoshi): sale de un huevo o está esperando en el nivel. Tócalo para subirte; montado saltas
 // más alto y con X le sacas la lengua para comerte al enemigo de enfrente. Si te pegan, se asusta y se va corriendo
-// un ratito (luego lo puedes volver a montar).
+// un ratito (luego lo puedes volver a montar). De colores: el rojo escupe fuego (X), el azul aletea en el aire (A
+// sostenido) y el amarillo hace temblar el piso al caer de un salto.
+export const DINO_COLORS = { verde: null, rojo: 0xff7a7a, azul: 0x7fb8ff, amarillo: 0xffe14d };
+// Los otros colores salen de girar el color del dibujo verde (si el navegador no sabe, se pinta encima).
+const DINO_HUE = { rojo: -120, azul: 95, amarillo: -62 };
 const SIZE = 74;
 const TONGUE = { reach: 120, ms: 220 };
 const RUN = { speed: 320, ms: 1400, cooldownMs: 1200 };
 
+// La textura del dinosaurio de `color` (o null si no se pudo hacer).
+function dinoTexture(scene, color) {
+  const base = 'plat:dinosaurio';
+  if (!DINO_HUE[color]) return base;
+  if (!scene.textures.exists(base)) return null;
+  const key = `${base}-${color}`;
+  if (scene.textures.exists(key)) return key;
+  const source = scene.textures.get(base).getSourceImage();
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext('2d');
+  if (!('filter' in ctx)) return null;
+  ctx.filter = `hue-rotate(${DINO_HUE[color]}deg) saturate(1.25)`;
+  ctx.drawImage(source, 0, 0);
+  scene.textures.addCanvas(key, canvas);
+  return key;
+}
+
 export class Dino {
-  constructor(scene, x, y) {
+  constructor(scene, x, y, color = 'verde') {
     this.scene = scene;
-    Object.assign(this, { x, y, vx: 0, vy: 0, w: 50, h: 50, facing: 1, rider: null, runMs: 0, cooldownMs: 0, tongueMs: 0 });
-    this.look = artImage(scene, 'plat:dinosaurio', SIZE, { color: 0x4cd97b });
+    Object.assign(this, { x, y, vx: 0, vy: 0, w: 50, h: 50, facing: 1, rider: null, runMs: 0, cooldownMs: 0, tongueMs: 0, color });
+    const key = dinoTexture(scene, color);
+    this.look = artImage(scene, key ?? 'plat:dinosaurio', SIZE, { color: DINO_COLORS[color] ?? 0x4cd97b });
+    if (!key && DINO_COLORS[color]) this.look.setTint?.(DINO_COLORS[color]);
     this.tongue = scene.add.rectangle(0, 0, 10, 10, 0xff5a7a).setOrigin(0, 0.5).setStrokeStyle(2, 0x1b1530).setVisible(false);
     this.sprite = scene.add.container(x, y, [this.tongue, this.look]).setDepth(48);
   }

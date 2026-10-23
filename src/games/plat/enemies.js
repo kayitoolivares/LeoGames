@@ -5,7 +5,9 @@ import { T } from './tiles.js';
 
 // Los enemigos de Súper Bolitas (la letra es la de levels.js). `size`: alto del dibujo; `w`, `h`: su caja.
 //   stomp: qué pasa si le brincas encima ('squash' se aplasta, 'fall' se cae, 'shell' se vuelve caparazón,
-//          'kick' (caparazón) lo pateas; null = no se puede: ¡pica!).  immune: ni el fuego le hace nada.
+//          'kick' (caparazón) lo pateas, 'collapse' se desarma un rato; null = no se puede: ¡pica!).
+//   immune: ni el fuego ni el hielo le hacen nada.  fireproof: el fuego no (el hielo sí).
+//   shellAs: en qué se convierte al pisarlo (si stomp es 'shell').  facesLeft: el dibujo mira a la izquierda.
 export const ENEMIES = {
   g: { art: 'plat:hongo-malo', size: 46, w: 38, h: 40, kind: 'walker', speed: 70, stomp: 'squash', color: 0x9c6b3c },
   t: { art: 'plat:tortuga', size: 58, w: 36, h: 50, kind: 'walker', speed: 55, stomp: 'shell', color: 0x4cd97b },
@@ -20,7 +22,27 @@ export const ENEMIES = {
   a: { art: 'plat:aplastador', size: 86, w: 74, h: 80, kind: 'thwomp', stomp: null, immune: true, safeTop: true, color: 0x9a9aae },
   k: { art: 'plat:planta', size: 72, w: 34, h: 62, kind: 'plant', stomp: null, color: 0x4cd97b },
   shell: { art: 'plat:caparazon', size: 34, w: 38, h: 30, kind: 'shell', stomp: 'kick', color: 0x4cd97b },
+  // Nieve
+  p: { art: 'plat:pinguino', size: 52, w: 36, h: 46, kind: 'walker', speed: 85, stomp: 'shell', shellAs: 'panza', color: 0x2a3a7a },
+  panza: { art: 'plat:pinguino-panza', size: 38, w: 46, h: 30, kind: 'shell', stomp: 'kick', color: 0x2a3a7a },
+  l: { art: 'plat:carambano', size: 62, w: 24, h: 56, kind: 'icicle', stomp: null, color: 0x9fdcff },
+  N: { art: 'plat:bola-nieve', size: 44, w: 40, h: 40, kind: 'walker', speed: 150, stomp: 'squash', color: 0xffffff },
+  // Dulces
+  J: { art: 'plat:galleta', size: 52, w: 36, h: 48, kind: 'walker', speed: 75, stomp: 'squash', color: 0xc98a5a },
+  Q: { art: 'plat:dona', size: 44, w: 46, h: 34, kind: 'flyer', stomp: 'fall', color: 0xff9ec7 },
+  A: { art: 'plat:paleta', size: 60, w: 32, h: 54, kind: 'hopper', stomp: 'squash', color: 0xffd84d },
+  W: { art: 'plat:chicle', size: 44, w: 40, h: 38, kind: 'hopper', chase: true, stomp: 'squash', color: 0xff8fc8 },
+  // Casa embrujada
+  h: { art: 'plat:fantasma', chaseArt: 'plat:fantasma-boca', size: 54, w: 44, h: 46, kind: 'boo', stomp: null, immune: true, color: 0xffffff },
+  E: { art: 'plat:esqueleto', size: 60, w: 34, h: 56, kind: 'walker', speed: 55, stomp: 'collapse', color: 0xffffff },
+  V: { art: 'plat:vela', size: 48, w: 26, h: 44, kind: 'floater', stomp: null, fireproof: true, color: 0xffb02e },
+  // La bala de los cañones.
+  bala: { art: 'plat:objeto-bala', size: 34, w: 52, h: 30, kind: 'bullet', stomp: 'fall', facesLeft: true, color: 0x2a2a36 },
 };
+const BULLET_SPEED = 260;
+const PILE_MS = 2600;
+export const FREEZE_MS = 7000;
+const ICE_SLIDE = 500;
 const GRAVITY = 2200;
 const MAX_FALL = 900;
 const SHELL_SPEED = 560;
@@ -49,11 +71,16 @@ export class Enemy {
   }
 
   get stompable() {
-    return Boolean(this.type.stomp) && !this.dead;
+    return Boolean(this.type.stomp) && !this.dead && !this.frozen && this.state !== 'pile';
+  }
+
+  get frozen() {
+    return (this.frozenMs ?? 0) > 0;
   }
 
   get harmful() {
-    if (this.dead) return false;
+    if (this.dead || this.frozen || this.state === 'pile') return false;
+    if (this.type.kind === 'icicle') return this.state === 'fall';
     if (this.type.kind === 'shell') return this.state === 'slide';
     if (this.type.kind === 'podoboo') return this.state === 'jump';
     if (this.type.kind === 'plant') return this.state !== 'hidden';
@@ -72,6 +99,19 @@ export class Enemy {
         this.y += this.vy * dt;
         if (this.y > scene.level.height + 200) this.remove();
       } else if (this.stateMs > 450) this.remove();
+      return;
+    }
+    if (this.frozen) {
+      this.updateFrozen(dtMs, scene);
+      return;
+    }
+    if (this.state === 'pile') {
+      // El esqueleto desarmado se vuelve a armar.
+      if (this.stateMs > PILE_MS) {
+        this.setState('start');
+        this.vx = 0;
+        this.scene.tweens.add({ targets: this.sprite, scaleY: 1, duration: 200 });
+      }
       return;
     }
     // Se despiertan cuando están por entrar a la pantalla.
@@ -118,7 +158,131 @@ export class Enemy {
       this.updateThwomp(dt, scene);
     } else if (kind === 'plant') {
       this.updatePlant(dt, scene);
+    } else if (kind === 'icicle') {
+      this.updateIcicle(dt, scene);
+    } else if (kind === 'hopper') {
+      this.updateHopper(dt, scene);
+    } else if (kind === 'boo') {
+      this.updateBoo(dt, scene);
+    } else if (kind === 'floater') {
+      this.y = this.y0 + Math.sin(this.t * 1.5) * 60;
+    } else if (kind === 'bullet') {
+      this.x += this.vx * dt;
+      if (this.x < scene.cameras.main.scrollX - 300 || this.x > scene.cameras.main.scrollX + scene.cameras.main.width + 300) this.remove();
     }
+  }
+
+  // Carámbano: colgado; si alguien pasa abajo, tiembla y se cae (y se rompe en el piso).
+  updateIcicle(dt, scene) {
+    if (this.state === 'start') {
+      const below = scene.players.some((p) => p.active && Math.abs(p.x - this.x) < T * 1.3 && p.y > this.y);
+      if (below) this.setState('shake');
+    } else if (this.state === 'shake') {
+      this.look.setAngle?.(Math.sin(this.stateMs / 30) * 6);
+      if (this.stateMs > 450) this.setState('fall');
+    } else if (this.state === 'fall') {
+      this.look.setAngle?.(0);
+      this.vy = Math.min(1100, this.vy + 2600 * dt);
+      this.vx = 0;
+      moveBody(scene.level, this, dt);
+      if (this.onGround || this.y > scene.level.height) {
+        scene.puff?.(this.x, this.y - 20, 0x9fdcff);
+        sfx.block();
+        this.remove();
+      }
+    }
+  }
+
+  // Paleta: brinca en su lugar. Chicle: brinca hacia el jugador más cercano.
+  updateHopper(dt, scene) {
+    this.vy = Math.min(MAX_FALL, this.vy + GRAVITY * dt);
+    const wasAir = !this.onGround;
+    moveBody(scene.level, this, dt);
+    if (this.onGround) {
+      if (wasAir) this.vx = 0;
+      if (this.stateMs > 1500) {
+        this.stateMs = 0;
+        this.vy = this.type.chase ? -560 : -760;
+        const target = scene.nearestPlayer(this.x, this.y);
+        if (this.type.chase && target) this.vx = Math.sign(target.x - this.x) * 140;
+      }
+    }
+    if (this.vx) this.facing = Math.sign(this.vx);
+    if (this.y > scene.level.height + 100) this.remove();
+  }
+
+  // Fantasma: si lo estás viendo se tapa la cara y no se mueve; si le das la espalda, se acerca (atraviesa paredes).
+  updateBoo(dt, scene) {
+    const target = scene.nearestPlayer(this.x, this.y);
+    if (!target) return;
+    const watched = Math.sign(this.x - target.x) === target.facing;
+    const key = watched ? this.type.art : this.type.chaseArt;
+    if (this.look.texture?.key !== key && scene.textures.exists(key)) {
+      const h = this.type.size;
+      this.look.setTexture(key);
+      this.look.setScale(h / this.look.height);
+    }
+    if (watched) return;
+    const dx = target.x - this.x;
+    const dy = target.y - target.h / 2 - (this.y - this.h / 2);
+    const d = Math.hypot(dx, dy) || 1;
+    const speed = 75;
+    this.x += (dx / d) * speed * dt;
+    this.y += (dy / d) * speed * dt;
+    this.facing = Math.sign(dx) || this.facing;
+  }
+
+  // Congelado (flor de hielo): es un bloque de hielo; se puede pisar o patear. Al rato se descongela.
+  freeze(ms = FREEZE_MS) {
+    if (this.type.immune || this.dead || this.type.kind === 'bullet') return false;
+    this.frozenMs = ms;
+    this.iceState = 'still';
+    this.vx = 0;
+    this.awake = true;
+    if (!this.ice) {
+      this.ice = this.scene.add.rectangle(0, -this.h / 2, this.w + 14, this.h + 10, 0x9fdcff, 0.45).setStrokeStyle(4, 0xffffff, 0.9);
+      this.sprite.add(this.ice);
+    }
+    this.ice.setVisible(true);
+    this.look.setTint?.(0x9fdcff);
+    sfx.block();
+    return true;
+  }
+
+  // Lo patearon congelado: se va patinando y tumba a los que encuentre; al chocar con una pared se rompe.
+  kickIce(dir) {
+    this.iceState = 'slide';
+    this.vx = dir * ICE_SLIDE;
+    sfx.throw();
+  }
+
+  updateFrozen(dtMs, scene) {
+    const dt = dtMs / 1000;
+    this.vy = Math.min(MAX_FALL, this.vy + GRAVITY * dt);
+    moveBody(scene.level, this, dt);
+    if (this.iceState === 'slide' && this.hitWall) {
+      scene.puff?.(this.x, this.y - this.h / 2, 0x9fdcff);
+      this.kill('fire', -this.hitWall);
+      return;
+    }
+    if (this.y > scene.level.height + 100) {
+      this.remove();
+      return;
+    }
+    if (this.iceState === 'slide') return;
+    this.frozenMs -= dtMs;
+    if (this.frozenMs <= 0) {
+      this.ice?.setVisible(false);
+      this.look.clearTint?.();
+    }
+  }
+
+  // El esqueleto: al pisarlo se desarma un rato.
+  collapse() {
+    this.setState('pile');
+    this.vx = 0;
+    this.scene.tweens.add({ targets: this.sprite, scaleY: 0.35, duration: 120 });
+    sfx.block();
   }
 
   updateBat(dt, scene) {
@@ -270,14 +434,21 @@ export class Enemy {
     this.sprite.destroy();
   }
 
+  // Una bala de cañón hacia `dir`.
+  launch(dir) {
+    this.vx = dir * BULLET_SPEED;
+    this.facing = dir;
+    this.awake = true;
+  }
+
   render() {
     if (this.gone) return;
-    const flip = this.facing > 0 ? 1 : -1;
+    const flip = (this.facing > 0 ? 1 : -1) * (this.type.facesLeft ? -1 : 1);
     this.sprite.setPosition(this.x, this.y);
     if (this.deathKind === 'fall') this.sprite.setScale(1, -1);
-    else if (!this.dead) this.sprite.setScale(flip * Math.abs(this.sprite.scaleX || 1), this.sprite.scaleY);
+    else if (!this.dead && this.state !== 'pile') this.sprite.setScale(flip * Math.abs(this.sprite.scaleX || 1), this.sprite.scaleY);
     if (this.type.kind === 'shell' && this.state === 'slide') this.look.setAngle?.(this.look.angle + this.vx * 0.05);
-    if (this.type.kind === 'walker' && !this.dead) this.look.setAngle?.(Math.sin(this.t * 12) * 5);
+    if (this.type.kind === 'walker' && !this.dead && !this.frozen) this.look.setAngle?.(Math.sin(this.t * 12) * 5);
     if (this.type.kind === 'thwomp' && this.state === 'land') this.look.setAngle?.(Math.sin(this.stateMs / 30) * 2);
   }
 }

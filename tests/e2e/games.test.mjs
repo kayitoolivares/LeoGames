@@ -2253,7 +2253,7 @@ test('celular: con la pantalla táctil se une y se mueve por el menú', { timeou
 // Súper Bolitas: un nivel jugado "a mano" (con la escena) para revisar cada cosa.
 const plat = (page, fn, arg) => page.evaluate(fn, arg);
 async function openPlat(p, count, progress) {
-  await p.page.evaluate((data) => import('/src/shared/settings.js').then((m) => m.settings.set('platProgress', data)), progress);
+  await p.page.evaluate((data) => import('/src/shared/settings.js').then((m) => m.settings.set('platProgress2', data)), progress);
   await p.joinPlayers(count);
   await p.openGameCard('Súper Bolitas');
   await p.pickCharacters(count);
@@ -2348,11 +2348,11 @@ test('súper bolitas: correr, saltar, bloques, hongo, pisar enemigos, burbuja, m
     s.players[0].x = s.goal.x + 2;
   });
   await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(8000), 'pasar el nivel');
-  assert.equal(await plat(p.page, () => JSON.parse(localStorage.getItem('leogames:platProgress')).unlocked), 1);
+  assert.equal(await plat(p.page, () => JSON.parse(localStorage.getItem('leogames:platProgress2')).unlocked), 1);
   assert.ok((await stickers(p.page)).includes('plat-bandera'));
   await p.until(() => window.leogames.scene.getScene('Plat').endMs > 1000, ms(5000), 'que los resultados acepten botones');
   await p.tap(0, BUTTON.A);
-  await p.until(() => window.leogames.scene.getScene('Plat').levelIndex === 1 && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'pasar a la cueva');
+  await p.until(() => window.leogames.scene.getScene('Plat').info.id === '1-2' && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'pasar al fuerte');
   await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
   assert.deepEqual(p.errors, []);
   await p.context.close();
@@ -2361,11 +2361,13 @@ test('súper bolitas: correr, saltar, bloques, hongo, pisar enemigos, burbuja, m
 test('súper bolitas: tubo secreto, dinosaurio, fuego, estrella y el Rey Hongo', { timeout: ms(120000) }, async () => {
   const p = await openPage(game);
   await openPlat(p, 1, { unlocked: 2, levels: {}, peque: {} });
-  // El mapa empieza en el último abierto (el 1-3): dos a la izquierda es el 1-1.
+  // El mapa empieza en el último abierto (el 1-3): tres a la izquierda (fuerte y casita) es el 1-1.
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').mapState.node), 3);
+  await p.tap(0, BUTTON.LEFT);
   await p.tap(0, BUTTON.LEFT);
   await p.tap(0, BUTTON.LEFT);
   await p.tap(0, BUTTON.A);
-  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'play' && window.leogames.scene.getScene('Plat').levelIndex === 0, ms(5000), 'empezar el 1-1');
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'play' && window.leogames.scene.getScene('Plat').info.id === '1-1', ms(5000), 'empezar el 1-1');
 
   // Parado en el tubo secreto, abajo: al cuarto secreto.
   await plat(p.page, () => {
@@ -2420,10 +2422,10 @@ test('súper bolitas: tubo secreto, dinosaurio, fuego, estrella y el Rey Hongo',
   await plat(p.page, () => window.leogames.scene.getScene('Plat').powerTaken(window.leogames.scene.getScene('Plat').players[0], 'estrella'));
   assert.ok((await stickers(p.page)).includes('plat-estrella'));
 
-  // El 1-3: al entrar a la arena se cierra la puerta y sale el Rey Hongo; tres brincos encima y ganan el mundo.
+  // El 1-4: al entrar a la arena se cierra la puerta y sale el Rey Hongo; tres brincos encima y ganan el mundo.
   await plat(p.page, () => {
     const s = window.leogames.scene.getScene('Plat');
-    s.startLevel(2);
+    s.startLevel(3);
     const a = s.level.arena;
     const pl = s.players[0];
     Object.assign(pl, { x: (a.left + 4) * 48, y: (a.boss.row + 1) * 48, vy: 0, invulnMs: 1e9 });
@@ -2447,6 +2449,291 @@ test('súper bolitas: tubo secreto, dinosaurio, fuego, estrella y el Rey Hongo',
   await plat(p.page, () => clearInterval(window.__stomper));
   await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(10000), 'ganar el mundo');
   assert.ok((await stickers(p.page)).includes('plat-mundo-1'));
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+const platLevel = (page, id) => page.evaluate((x) => import('/src/games/plat/levels.js').then((m) => m.LEVELS.findIndex((l) => l.id === x)), id);
+async function startPlatLevel(p, id) {
+  const index = await platLevel(p.page, id);
+  await plat(p.page, (i) => window.leogames.scene.getScene('Plat').startLevel(i), index);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), `empezar el ${id}`);
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    for (const e of s.enemies) e.remove();
+    for (const pl of s.players) pl.invulnMs = 1e9;
+  });
+}
+
+test('súper bolitas: capa, hielo, gigante, mini, dinosaurios de colores, botón P, bloques de colores, cañón, puertas y bandera secreta', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 1, { unlocked: 27, levels: {}, peque: {} });
+  await startPlatLevel(p, '1-1');
+
+  // Pluma: capa. X = giro que tumba al de junto; con A sostenido, cae despacito (planea).
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    s.powerTaken(pl, 'pluma');
+    pl.facing = 1;
+    window.__e = s.spawnEnemy('g', pl.x + 60, pl.y);
+  });
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').players[0].power), 'cape');
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.__e.dead, ms(3000), 'tumbar con el giro de la capa');
+  assert.ok((await stickers(p.page)).includes('plat-capa'));
+  await plat(p.page, () => Object.assign(window.leogames.scene.getScene('Plat').players[0], { y: 120, vy: 400, onGround: false, coyoteMs: 0 }));
+  await p.holdUntil(0, [BUTTON.A], () => {
+    const pl = window.leogames.scene.getScene('Plat').players[0];
+    return !pl.onGround && pl.vy > 0 && pl.vy <= 110;
+  }, 'planear con la capa', ms(3000));
+
+  // Flor de hielo: X congela; el bloque de hielo se pisa y de lado se patea.
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].onGround, ms(8000), 'bajar al piso');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    s.powerTaken(pl, 'flor-hielo');
+    pl.facing = 1;
+    window.__e = s.spawnEnemy('g', pl.x + 220, pl.y);
+  });
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.__e.frozen, ms(3000), 'congelar al hongo malo');
+  assert.ok((await stickers(p.page)).includes('plat-hielo'));
+  await plat(p.page, () => Object.assign(window.leogames.scene.getScene('Plat').players[0], { x: window.__e.x, y: window.__e.y - window.__e.h - 40, vy: 0 }));
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].onIce, ms(3000), 'pararse en el bloque de hielo');
+  await plat(p.page, () => Object.assign(window.leogames.scene.getScene('Plat').players[0], { x: window.__e.x - 24, y: window.__e.y, vy: 0 }));
+  await p.until(() => window.__e.iceState === 'slide' || window.__e.dead, ms(3000), 'patear el bloque de hielo');
+
+  // Hongo gigante: enorme un rato y rompe los bloques que toca. Hongo mini: chiquito.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    s.powerTaken(pl, 'hongo-gigante');
+    let at = null;
+    s.level.grid.forEach((row, r) => row.forEach((ch, c) => (ch === 'B' && !at ? (at = { c, r }) : null)));
+    window.__brick = at;
+    Object.assign(pl, { x: at.c * 48 + 24, y: (at.r + 2) * 48, vy: 0 });
+    s.cameras.main.setScroll(at.c * 48 - 600, 0);
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').level.at(window.__brick.c, window.__brick.r) === ' ', ms(3000), 'romper un ladrillo de gigante');
+  assert.ok((await stickers(p.page)).includes('plat-gigante'));
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.players[0].giantMs = 1;
+    s.powerTaken(s.players[0], 'hongo-mini');
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].size === 'mini', ms(2000), 'hacerse mini');
+
+  // Dinosaurio rojo: X escupe fuego. Amarillo: al caer de un salto tumba a los de junto. (Al principio del nivel,
+  // donde no hay nada arriba.)
+  await plat(p.page, async () => {
+    const { Dino } = await import('/src/games/plat/dino.js');
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    Object.assign(pl, { x: s.level.start.x, y: s.level.start.y, vy: 0 });
+    s.cameras.main.setScroll(0, 0);
+    s.dinos.push(new Dino(s, pl.x, pl.y, 'rojo'));
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].dino?.color === 'rojo', ms(3000), 'subirse al dinosaurio rojo');
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].onGround, ms(3000), 'pararse con el dinosaurio');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    pl.facing = 1;
+    window.__e = s.spawnEnemy('g', pl.x + 200, pl.y);
+  });
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.__e.dead, ms(3000), 'tumbar al hongo malo con el fuego del dinosaurio');
+  await plat(p.page, async () => {
+    const { Dino } = await import('/src/games/plat/dino.js');
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    s.dinoRunsAway(pl, { silent: true });
+    for (const d of s.dinos) d.destroy();
+    s.dinos = [new Dino(s, pl.x, pl.y, 'amarillo')];
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].dino?.color === 'amarillo', ms(3000), 'subirse al dinosaurio amarillo');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const pl = s.players[0];
+    window.__e = s.spawnEnemy('g', pl.x + 100, pl.y);
+    window.__e.vx = 0;
+    Object.assign(pl, { y: pl.y - 200, vy: 700, onGround: false });
+  });
+  await p.until(() => window.__e.dead, ms(3000), 'tumbar con el temblor del dinosaurio amarillo');
+
+  // El fuerte 1-2: botón P (los ladrillos se vuelven monedas) y cañón.
+  await startPlatLevel(p, '1-2');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    let at = null;
+    s.level.grid.forEach((row, r) => row.forEach((ch, c) => (ch === 'B' && !at ? (at = { c, r }) : null)));
+    window.__brick = at;
+    const b = s.pButtons[0];
+    Object.assign(s.players[0], { x: b.x, y: b.y - 30, vy: 300, onGround: false });
+    s.cameras.main.setScroll(b.x - 600, 0);
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').pSwitchMs > 0, ms(3000), 'apretar el botón P');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').level.at(window.__brick.c, window.__brick.r)), ' ');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const c = s.cannons[0];
+    const x = (c.col - 5) * 48;
+    Object.assign(s.players[0], { x, y: (c.row + 1) * 48, vy: 0 });
+    s.cameras.main.setScroll(Math.max(0, c.col * 48 - 900), 0);
+    c.ms = 3000;
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').enemies.some((e) => e.type.kind === 'bullet'), ms(4000), 'que el cañón dispare');
+  await plat(p.page, () => (window.leogames.scene.getScene('Plat').pSwitchMs = 1));
+  await p.until(() => window.leogames.scene.getScene('Plat').pSwitchMs <= 0, ms(3000), 'que se acabe el botón P');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').level.at(window.__brick.c, window.__brick.r)), 'B');
+
+  // El fuerte 2-2: el bloque ON/OFF cambia los bloques de colores.
+  await startPlatLevel(p, '2-2');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    let at = null;
+    s.level.grid.forEach((row, r) => row.forEach((ch, c) => (ch === '!' && !at ? (at = { c, r }) : null)));
+    // Parado en lo primero que hay abajo del bloque, y saltando.
+    let floor = at.r + 1;
+    while (floor < 15 && s.level.at(at.c, floor) === ' ') floor += 1;
+    Object.assign(s.players[0], { x: at.c * 48 + 24, y: floor * 48, vx: 0, vy: -900, onGround: false });
+    s.cameras.main.setScroll(Math.max(0, at.c * 48 - 600), 0);
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').level && import('/src/games/plat/tiles.js').then((m) => !m.switches.red), ms(3000), 'pegarle al bloque ON/OFF');
+  assert.equal(await plat(p.page, () => import('/src/games/plat/tiles.js').then((m) => [m.isSolid('r'), m.isSolid('i')].join())), 'false,true');
+
+  // La casa embrujada 7-1: ↑ en una puerta = pasar a la otra.
+  await startPlatLevel(p, '7-1');
+  const door = await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const d = s.level.doors[0];
+    Object.assign(s.players[0], { x: d.x, y: d.y, vy: 0 });
+    s.cameras.main.setScroll(Math.max(0, d.x - 600), 0);
+    return d.to.x;
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].onGround, ms(3000), 'pararse frente a la puerta');
+  await plat(p.page, () => (window.__pads[0].axes = [0, -1, 0, 0]));
+  await p.until(`Math.abs(window.leogames.scene.getScene('Plat').players[0].x - ${door}) < 40`, ms(3000), 'pasar por la puerta');
+  await plat(p.page, () => (window.__pads[0].axes = [0, 0, 0, 0]));
+
+  // 6-3: la bandera secreta (azul) abre el nivel secreto de Dulcelandia en el mapa.
+  await startPlatLevel(p, '6-3');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const g = s.secretGoal;
+    Object.assign(s.players[0], { x: g.x, y: g.y - 4, vy: 0 });
+    s.cameras.main.setScroll(Math.max(0, g.x - 600), 0);
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(10000), 'llegar a la bandera secreta');
+  assert.equal(await plat(p.page, () => JSON.parse(localStorage.getItem('leogames:platProgress2')).secrets[5]), true);
+  assert.ok((await stickers(p.page)).includes('plat-secreta'));
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('súper bolitas: mapa por mundos, casita de hongo, enemigo del mapa, batalla de monedas, jefes en serie, vida extra y contrarreloj', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  const done = { done: true, big: [false, false, false], bestMs: 90000 };
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('brawlCoins', 25)));
+  await openPlat(p, 1, { unlocked: 4, levels: { '1-1': done, '1-4': done }, peque: {} });
+  // Empieza en el mundo 2 (el último abierto); LB = mundo 1, con el enemigo del mapa en el 1-3.
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').mapState.world), 1);
+  await p.tap(0, BUTTON.LB);
+  await p.until(() => window.leogames.scene.getScene('Plat').mapState.world === 0, ms(3000), 'cambiar al mundo 1');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').mapState.enemy), 3);
+
+  // La casita de hongo: se revuelven los regalos y se escoge uno.
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').house?.phase === 'pick', ms(12000), 'que se revuelvan los regalos');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'map', ms(6000), 'regresar al mapa con el regalo');
+  assert.ok((await stickers(p.page)).includes('plat-casita'));
+
+  // Caminar hasta el enemigo del mapa: ¡batalla! Al ganarla se va del mapa.
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.until(() => window.leogames.scene.getScene('Plat').run?.mode === 'fight' && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'empezar la batalla del mapa');
+  await plat(p.page, () => {
+    for (const e of window.leogames.scene.getScene('Plat').enemies) e.kill('star');
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(10000), 'ganar la batalla del mapa');
+  assert.ok((await stickers(p.page)).includes('plat-mapa'));
+  await p.until(() => window.leogames.scene.getScene('Plat').endMs > 1000, ms(5000), 'que los resultados acepten botones');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'map', ms(5000), 'regresar al mapa');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').mapState.enemy), null);
+
+  // X = modos. Batalla de monedas (se acaba el tiempo).
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'modes', ms(3000), 'abrir los modos');
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').run?.mode === 'battle' && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'empezar la batalla de monedas');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.players[0].battleCoins = 3;
+    s.run.left = 50;
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(5000), 'terminar la batalla');
+  assert.ok((await stickers(p.page)).includes('plat-batalla'));
+  await p.until(() => window.leogames.scene.getScene('Plat').endMs > 1000, ms(5000), 'que los resultados acepten botones');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'map', ms(5000), 'regresar al mapa');
+
+  // Jefes en serie (solo el Rey Hongo está abierto): directo a la arena.
+  await p.tap(0, BUTTON.X);
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => Boolean(window.leogames.scene.getScene('Plat').boss) && window.leogames.scene.getScene('Plat').run?.mode === 'rush', ms(5000), 'empezar los jefes en serie');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.boss.hp = 0.1;
+    if (s.boss.fireHit()) s.bossDefeated();
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(8000), 'ganarle a todos los jefes');
+  assert.ok((await stickers(p.page)).includes('plat-jefes'));
+  assert.ok(await plat(p.page, () => JSON.parse(localStorage.getItem('leogames:platProgress2')).rushBest > 0));
+  await p.until(() => window.leogames.scene.getScene('Plat').endMs > 1000, ms(5000), 'que los resultados acepten botones');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'map', ms(5000), 'regresar al mapa');
+
+  // Comprar una vida extra (20 monedas): sale en el siguiente nivel.
+  await p.tap(0, BUTTON.X);
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => JSON.parse(localStorage.getItem('leogames:platProgress2')).extraLives === 1, ms(3000), 'comprar una vida');
+  await p.tap(0, BUTTON.B);
+
+  // Contrarreloj del 1-1: la primera vuelta se guarda como fantasma y la siguiente vez corre junto a ti.
+  for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.LEFT);
+  await p.until(() => window.leogames.scene.getScene('Plat').mapState.node === 0, ms(3000), 'caminar al 1-1');
+  await p.tap(0, BUTTON.X);
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Plat').run?.mode === 'trial' && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'empezar la contrarreloj');
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    for (const e of s.enemies) e.remove();
+    s.players[0].invulnMs = 1e9;
+  });
+  await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
+  await p.until(() => window.leogames.scene.getScene('Plat').levelMs > 1000, ms(5000), 'correr un poquito');
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.cameras.main.setScroll(s.goal.x - 900, 0);
+    s.players[0].x = s.goal.x + 2;
+  });
+  await p.until(() => window.leogames.scene.getScene('Plat').phase === 'results', ms(8000), 'llegar a la meta');
+  assert.ok(await plat(p.page, () => Boolean(JSON.parse(localStorage.getItem('leogames:platGhosts'))['1-1'])), 'no se guardó el fantasma');
+  await plat(p.page, () => window.leogames.scene.getScene('Plat').startRun('trial', { index: 0 }));
+  await p.until(() => Boolean(window.leogames.scene.getScene('Plat').ghost), ms(3000), 'que salga el fantasma');
   await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
   assert.deepEqual(p.errors, []);
   await p.context.close();

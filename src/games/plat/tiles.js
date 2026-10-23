@@ -4,14 +4,21 @@
 //   B  ladrillo (grande lo rompe)   b  ladrillo con monedas   ?  bloque sorpresa con moneda
 //   M  bloque sorpresa con poder (hongo o flor)   S  ...con estrella   Y  ...con huevo de dinosaurio
 //   H  bloque escondido (no se ve hasta que le pegas desde abajo: trae una vida)   U  bloque ya usado
-//   =  plataforma que se atraviesa desde abajo   [ ]  boca de tubo   ( )  tubo   ^  picos   L  lava
+//   =  plataforma que se atraviesa desde abajo   [ ]  boca de tubo   ( )  tubo   ^  picos   L  lava (o chocolate)
+//   $  bloque sorpresa con hongo mini   %  ...con hongo gigante
+//   s  piso de chicle (pegajoso: vas despacito y saltas poquito)   Z  cañón (dispara balas)
+//   !  bloque de colores: al pegarle cambia cuáles bloques están: r  rojos (con el bloque en rojo)  i  azules
 export const T = 48;
 export const ROWS = 15;
 
-const SOLID = new Set('#XBb?MSYU[]()');
-export const BLOCKS = new Set('Bb?MSYH');
+const SOLID = new Set('#XBb?MSYU[]()s!Z$%');
+export const BLOCKS = new Set('Bb?MSYH$%');
+// El bloque de colores: en rojo están los bloques rojos (r); en azul, los azules (i).
+export const switches = { red: true };
 
 export function isSolid(ch) {
+  if (ch === 'r') return switches.red;
+  if (ch === 'i') return !switches.red;
   return SOLID.has(ch);
 }
 
@@ -27,6 +34,9 @@ export const THEMES = {
   playa: { top: '#ffe08a', topDark: '#e8b85a', fill: '#f2c46d', fillDark: '#d39d45', stone: '#d9b48a', semi: 'wood', sky: 0x7fd8ff },
   mar: { top: '#ffb38a', topDark: '#e07f5a', fill: '#d9a06a', fillDark: '#b07a48', stone: '#8ad0c8', semi: 'coral', sky: 0x1d6fb0 },
   castillo: { top: '#8c8ca0', topDark: '#5c5c70', fill: '#55556a', fillDark: '#3a3a4c', stone: '#9a9aae', semi: 'stone', sky: 0x2a1418 },
+  nieve: { top: '#ffffff', topDark: '#bfe0ff', fill: '#9fd0f0', fillDark: '#74aedb', stone: '#cfe9ff', semi: 'ice', sky: 0xcfeaff },
+  dulces: { top: '#ff9ec7', topDark: '#e06a9f', fill: '#c98a5a', fillDark: '#9c6438', stone: '#ffd0e6', semi: 'candy', sky: 0xffd6ec, lava: 'chocolate' },
+  embrujada: { top: '#8a6fb8', topDark: '#5e4890', fill: '#5a4a6e', fillDark: '#3e3250', stone: '#7d6a96', semi: 'wood', sky: 0x241a36 },
 };
 const INK = '#1b1530';
 
@@ -143,10 +153,12 @@ export function themeTextures(scene, theme) {
       ctx.stroke();
     }
   });
+  // La lava (en Dulcelandia, chocolate).
+  const lava = c.lava === 'chocolate' ? ['#7a4320', '#a8683a'] : ['#ff5a1f', '#ffb02e'];
   keys.lava = canvasTile(scene, k('lava'), (ctx) => {
-    ctx.fillStyle = '#ff5a1f';
+    ctx.fillStyle = lava[0];
     ctx.fillRect(0, 0, T, T);
-    ctx.fillStyle = '#ffb02e';
+    ctx.fillStyle = lava[1];
     for (const [x, y, r] of [[10, 18, 5], [30, 32, 7], [40, 12, 4]]) {
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
@@ -154,7 +166,7 @@ export function themeTextures(scene, theme) {
     }
   });
   keys.lavaTop = canvasTile(scene, k('lavaTop'), (ctx) => {
-    ctx.fillStyle = '#ff5a1f';
+    ctx.fillStyle = lava[0];
     ctx.beginPath();
     ctx.moveTo(0, 12);
     for (let x = 0; x <= T; x += 12) ctx.quadraticCurveTo(x + 6, 4, x + 12, 12);
@@ -162,10 +174,58 @@ export function themeTextures(scene, theme) {
     ctx.lineTo(0, T);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#ffd84d';
+    ctx.fillStyle = c.lava === 'chocolate' ? '#c98a5a' : '#ffd84d';
     ctx.fillRect(0, 12, T, 4);
   });
+  // Chicle: rosa, con burbujitas.
+  keys.sticky = canvasTile(scene, k('sticky'), (ctx) => {
+    ctx.fillStyle = '#ff8fc8';
+    ctx.fillRect(0, 0, T, T);
+    ctx.fillStyle = '#ffc4e2';
+    for (const [x, y, r] of [[12, 14, 6], [32, 26, 8], [20, 38, 4], [40, 10, 3]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(1.5, 1.5, T - 3, T - 3);
+  });
+  keys.cannon = canvasTile(scene, k('cannon'), (ctx) => {
+    bevel(ctx, '#3a3a48', '#1b1b26', 'rgba(255,255,255,0.18)');
+    ctx.fillStyle = '#1b1530';
+    ctx.beginPath();
+    ctx.arc(T / 2, T / 2, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd84d';
+    ctx.beginPath();
+    ctx.arc(T / 2, T / 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  keys.switchRed = canvasTile(scene, k('switchRed'), (ctx) => switchBlock(ctx, '#e53935', 'ON'));
+  keys.switchBlue = canvasTile(scene, k('switchBlue'), (ctx) => switchBlock(ctx, '#3f7fe0', 'OFF'));
+  for (const [name, color] of [['red', '#e53935'], ['blue', '#3f7fe0']]) {
+    keys[`${name}On`] = canvasTile(scene, k(`${name}On`), (ctx) => bevel(ctx, color, 'rgba(0,0,0,0.3)'));
+    keys[`${name}Off`] = canvasTile(scene, k(`${name}Off`), (ctx) => {
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, T - 8, T - 8);
+    });
+  }
   return keys;
+}
+
+function switchBlock(ctx, color, label) {
+  bevel(ctx, color, 'rgba(0,0,0,0.3)', 'rgba(255,255,255,0.4)');
+  ctx.font = `bold ${label.length > 2 ? 15 : 18}px "Segoe UI", Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = INK;
+  ctx.strokeText(label, T / 2, T / 2 + 1);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(label, T / 2, T / 2 + 1);
 }
 
 function dirt(ctx, c) {
@@ -239,7 +299,14 @@ function semi(ctx, look) {
     ctx.fillRect(4, 12, T - 8, 14);
     return;
   }
-  const colors = { wood: ['#c98a4a', '#7a4a1e'], rock: ['#7c7fa6', '#3d3f66'], coral: ['#ff8fb0', '#c24f78'], stone: ['#9a9aae', '#4a4a5e'] }[look];
+  const colors = {
+    wood: ['#c98a4a', '#7a4a1e'],
+    rock: ['#7c7fa6', '#3d3f66'],
+    coral: ['#ff8fb0', '#c24f78'],
+    stone: ['#9a9aae', '#4a4a5e'],
+    ice: ['#cfeeff', '#7fb8e0'],
+    candy: ['#ffd84d', '#ff7ad9'],
+  }[look];
   rounded(ctx, 1.5, 1.5, T - 3, 18, 6);
   ctx.fillStyle = colors[0];
   ctx.fill();
@@ -269,6 +336,8 @@ export function tileTexture(keys, level, col, row) {
     case 'M':
     case 'S':
     case 'Y':
+    case '$':
+    case '%':
       return keys.question;
     case 'U':
       return keys.used;
@@ -286,6 +355,16 @@ export function tileTexture(keys, level, col, row) {
       return keys.spikes;
     case 'L':
       return level.at(col, row - 1) === 'L' ? keys.lava : keys.lavaTop;
+    case 's':
+      return keys.sticky;
+    case 'Z':
+      return keys.cannon;
+    case '!':
+      return switches.red ? keys.switchRed : keys.switchBlue;
+    case 'r':
+      return switches.red ? keys.redOn : keys.redOff;
+    case 'i':
+      return switches.red ? keys.blueOff : keys.blueOn;
     default:
       return null;
   }

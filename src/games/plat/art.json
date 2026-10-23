@@ -2,16 +2,28 @@
   "enemigos": [
     "aplastador",
     "bola-fuego",
+    "bola-nieve",
     "caparazon",
+    "carambano",
+    "chicle",
+    "dona",
     "erizo",
+    "esqueleto",
+    "fantasma-boca",
+    "fantasma",
+    "galleta",
     "hongo-malo",
     "medusa",
     "murcielago",
     "nube-mala",
     "pajaro",
+    "paleta",
     "pez",
+    "pinguino-panza",
+    "pinguino",
     "planta",
-    "tortuga"
+    "tortuga",
+    "vela"
   ],
   "jefes": [
     "rey-cangrejo",
@@ -20,20 +32,31 @@
     "rey-nube"
   ],
   "objetos": [
+    "bala",
     "bandera",
+    "canon",
+    "casita",
     "estrella",
+    "flor-hielo",
     "flor",
+    "hongo-gigante",
+    "hongo-mini",
     "hongo",
     "huevo",
     "moneda-grande",
     "moneda",
+    "pluma",
+    "regalo",
     "resorte"
   ],
   "fondos": [
     "castillo",
     "cielo",
     "cueva",
+    "dulces",
+    "embrujada",
     "mar",
+    "nieve",
     "playa",
     "pradera"
   ]

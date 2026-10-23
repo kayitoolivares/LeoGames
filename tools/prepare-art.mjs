@@ -65,11 +65,18 @@ const GAMES = {
     enemigos: {
       kind: 'cutout',
       max: 160,
-      names: ['hongo-malo', 'tortuga', 'caparazon', 'murcielago', 'pajaro', 'nube-mala', 'pez', 'medusa', 'bola-fuego', 'aplastador', 'erizo', 'planta'],
+      names: [
+        'hongo-malo', 'tortuga', 'caparazon', 'murcielago', 'pajaro', 'nube-mala', 'pez', 'medusa', 'bola-fuego', 'aplastador', 'erizo', 'planta',
+        'pinguino', 'pinguino-panza', 'carambano', 'bola-nieve', 'galleta', 'dona', 'paleta', 'chicle', 'fantasma', 'fantasma-boca', 'esqueleto', 'vela',
+      ],
     },
     jefes: { kind: 'cutout', max: 320, names: ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon'] },
-    objetos: { kind: 'cutout', max: 128, names: ['hongo', 'flor', 'estrella', 'huevo', 'moneda', 'moneda-grande', 'bandera', 'resorte'] },
-    fondos: { kind: 'background', names: ['pradera', 'cueva', 'cielo', 'playa', 'mar', 'castillo'] },
+    objetos: {
+      kind: 'cutout',
+      max: 128,
+      names: ['hongo', 'flor', 'estrella', 'huevo', 'moneda', 'moneda-grande', 'bandera', 'resorte', 'pluma', 'flor-hielo', 'hongo-mini', 'hongo-gigante', 'bala', 'casita', 'regalo', 'canon'],
+    },
+    fondos: { kind: 'background', names: ['pradera', 'cueva', 'cielo', 'playa', 'mar', 'castillo', 'nieve', 'dulces', 'embrujada'] },
   },
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja'] },

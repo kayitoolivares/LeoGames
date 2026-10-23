@@ -2,13 +2,15 @@ import { sfx } from '../../shared/sound.js';
 import { textStyle } from '../../ui/style.js';
 import { artImage } from './art.js';
 import { moveBody, overlaps } from './physics.js';
-import { T, themeTextures } from './tiles.js';
+import { T, isSolid, themeTextures } from './tiles.js';
 
 // Las cosas del nivel que no son enemigos: monedas, monedas grandes, poderes que salen de los bloques (hongo,
-// flor, estrella, corazón = vida), bolas de fuego, pedacitos de ladrillo, resortes y plataformas que se mueven.
+// flor, flor de hielo, pluma, hongo mini, hongo gigante, estrella, corazón = vida), bolas de fuego y de hielo,
+// pedacitos de ladrillo, resortes y plataformas que se mueven.
 const GRAVITY = 2000;
-const POWER_SPEED = { hongo: 130, vida: 130, estrella: 180, flor: 0 };
+const POWER_SPEED = { hongo: 130, vida: 130, estrella: 180, flor: 0, 'flor-hielo': 0, pluma: 0, 'hongo-mini': 150, 'hongo-gigante': 110 };
 const FIREBALL = { speed: 560, bounce: 400, lifeMs: 2600, max: 2 };
+const BALL_LOOK = { fire: [0xff7a1f, 0xffd84d, 400], ice: [0xbfe9ff, 0x3fa7ff, 280] };
 const SPRING = { launch: 1350, held: 1600 };
 
 export class Items {
@@ -59,11 +61,13 @@ export class Items {
     this.scene.tweens.add({ targets: sprite, y: row * T - 90, duration: 280, yoyo: true, onComplete: () => sprite.destroy() });
   }
 
-  fireball(player) {
+  // Bola de fuego (o de hielo: `look` = 'ice') de `player`.
+  fireball(player, look = 'fire') {
     if (this.fireballs.filter((f) => f.owner === player).length >= FIREBALL.max) return false;
-    const sprite = this.scene.add.circle(0, 0, 11, 0xff7a1f).setStrokeStyle(4, 0xffd84d).setDepth(45);
-    this.fireballs.push({ owner: player, x: player.x + player.facing * 20, y: player.y - player.h * 0.55, vx: player.facing * FIREBALL.speed, vy: 160, w: 18, h: 18, ms: 0, sprite });
-    sfx.fire();
+    const [core, edge, bounce] = BALL_LOOK[look];
+    const sprite = this.scene.add.circle(0, 0, 11, core).setStrokeStyle(4, edge).setDepth(45);
+    this.fireballs.push({ owner: player, look, bounce, x: player.x + player.facing * 20, y: player.y - player.h * 0.55, vx: player.facing * FIREBALL.speed, vy: 160, w: 18, h: 18, ms: 0, sprite });
+    look === 'ice' ? sfx.block() : sfx.fire();
     return true;
   }
 
@@ -100,14 +104,22 @@ export class Items {
     }
     // Poderes.
     this.powers = this.powers.filter((pw) => {
-      if (pw.emerge < 1) {
+      if (pw.kind === 'pluma' && pw.emerge >= 1) {
+        // La pluma baja despacito de lado a lado.
+        pw.t = (pw.t ?? 0) + dt;
+        if (!pw.landed) {
+          pw.y += 60 * dt;
+          pw.x += Math.sin(pw.t * 3) * 90 * dt;
+          if (isSolid(level.at(Math.floor(pw.x / T), Math.floor(pw.y / T)))) pw.landed = true;
+        }
+      } else if (pw.emerge < 1) {
         pw.emerge = Math.min(1, pw.emerge + dt * 2.2);
         pw.y = pw.startY - pw.emerge * T;
         if (pw.emerge >= 1) {
           pw.vx = POWER_SPEED[pw.kind] ?? 0;
           pw.sprite.setDepth(30);
         }
-      } else if (pw.kind !== 'flor') {
+      } else if (pw.kind !== 'flor' && pw.kind !== 'flor-hielo') {
         pw.vy = Math.min(900, pw.vy + GRAVITY * dt);
         moveBody(level, pw, dt);
         if (pw.hitWall) pw.vx = -pw.hitWall * Math.abs(pw.vx);
@@ -129,7 +141,7 @@ export class Items {
       f.ms += dtMs;
       f.vy = Math.min(800, f.vy + GRAVITY * dt);
       moveBody(level, f, dt);
-      if (f.onGround) f.vy = -FIREBALL.bounce;
+      if (f.onGround) f.vy = -f.bounce;
       f.sprite.setPosition(f.x, f.y - 9).setAngle(f.ms);
       const hit = f.hitWall || f.ms > FIREBALL.lifeMs || f.y > level.height + 40 || scene.fireballHits(f);
       if (hit) {
@@ -166,7 +178,7 @@ export class Items {
   }
 }
 
-// Plataformas que se mueven ('m' de lado, 'u' arriba y abajo) y las que se caen al pisarlas ('z').
+// Plataformas que se mueven ('m' de lado, 'u' arriba y abajo, 'y' dando vueltas) y las que se caen al pisarlas ('z').
 export class Platforms {
   constructor(scene, theme) {
     this.scene = scene;
@@ -181,7 +193,7 @@ export class Platforms {
     const sprite = this.scene.add.container(x, y).setDepth(20);
     for (let i = 0; i < tiles; i += 1) sprite.add(this.scene.add.image(i * T, 0, this.keys.semi).setOrigin(0, 0));
     if (kind === 'z') sprite.list[0].setTint(0xffc0a0);
-    this.list.push({ kind, x, y, x0: x, y0: y, w: tiles * T, t: 0, dx: 0, dy: 0, vy: 0, sprite, touchedMs: -1 });
+    this.list.push({ kind, x, y, x0: x, y0: y, w: tiles * T, t: (col * 7) % 6, dx: 0, dy: 0, vy: 0, sprite, touchedMs: -1 });
   }
 
   update(dtMs) {
@@ -192,6 +204,11 @@ export class Platforms {
       p.t += dt;
       if (p.kind === 'm') p.x = p.x0 + Math.sin(p.t * 0.9) * T * 3;
       else if (p.kind === 'u') p.y = p.y0 + Math.sin(p.t * 0.9) * T * 2.5;
+      else if (p.kind === 'y') {
+        // Da vueltas alrededor de donde la pusieron.
+        p.x = p.x0 + Math.cos(p.t * 0.8) * T * 2.5;
+        p.y = p.y0 + Math.sin(p.t * 0.8) * T * 2.5;
+      }
       else if (p.touchedMs >= 0) {
         p.touchedMs += dtMs;
         if (p.touchedMs > 450) {

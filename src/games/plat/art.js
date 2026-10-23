@@ -1,7 +1,7 @@
 import manifest from './art.json';
 
 // Arte de Súper Bolitas (Gemini), preparado con `npm run arte`. Si falta algo se dibuja con figuras. Del arte de
-// Pelea en equipo se usan el dinosaurio y el cangrejo.
+// Pelea en equipo se usan el dinosaurio, el cangrejo, el pulpo y tres jefes.
 export function loadPlatArt(scene) {
   const load = (key, url) => {
     if (!scene.textures.exists(key)) scene.load.image(key, url);
@@ -11,7 +11,8 @@ export function loadPlatArt(scene) {
   for (const name of manifest.objetos ?? []) load(`plat:objeto-${name}`, `plat/objetos/${name}.png`);
   for (const name of manifest.fondos ?? []) load(`plat:fondo-${name}`, `plat/fondos/${name}.jpg`);
   load('plat:dinosaurio', 'brawl/objetos/dinosaurio.png');
-  load('plat:cangrejo', 'brawl/monstruos/cangrejo.png');
+  // Del arte de Pelea en equipo: el cangrejo, el pulpo (mini jefe) y los jefes de nieve, dulces y la casa embrujada.
+  for (const name of ['cangrejo', 'capitan-pulpo', 'gran-yeti', 'rey-pastel', 'rey-calabaza']) load(`plat:${name}`, `brawl/monstruos/${name}.png`);
 }
 
 export function platTexture(scene, key) {

@@ -8,20 +8,26 @@ import { rewards } from '../../shared/rewards.js';
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
-import { TEXT, textStyle } from '../../ui/style.js';
+import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
+import { COSTUMES } from '../duelo/DueloFighter.js';
 import { FightTalk } from '../duelo/talk.js';
 import { burst, confetti, popText } from '../brawl/effects.js';
+import { coinBank } from '../brawl/coins.js';
+import { Shop, dressFighter, wardrobe } from '../brawl/shop.js';
 import { loadSmashArt } from '../smash/art.js';
 import { loadPlatArt, platTexture } from './art.js';
 import { Boss, BOSSES } from './boss.js';
 import { Dino } from './dino.js';
 import { ENEMIES, Enemy } from './enemies.js';
+import { GhostRecorder, GhostRunner } from './ghost.js';
+import { House } from './house.js';
 import { Items, Platforms } from './items.js';
 import { LEVELS, Level, WORLDS } from './levels.js';
-import { formatTime, progress, showMap } from './map.js';
+import { BATTLE1, BATTLE2, MAP_FIGHT } from './levels2.js';
+import { MAP_ENEMY, MODES, formatTime, ghosts, nodeOpen, progress, showMap, showModes, worldNodes, worldOpen } from './map.js';
 import { overlaps, tileAt } from './physics.js';
 import { Player, STAR_MS } from './Player.js';
-import { THEMES, T, ROWS, isSolid, themeTextures, tileTexture } from './tiles.js';
+import { THEMES, T, ROWS, isSolid, switches, themeTextures, tileTexture } from './tiles.js';
 
 const HUD_DEPTH = 10000;
 const CHUNK = 16;
@@ -33,10 +39,19 @@ const END_SCREEN_DELAY_MS = 900;
 const EXIT_HOLD_MS = 1200;
 const OUTLINE = { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 };
 const MULTI_COINS = 6;
+const P_SWITCH_MS = 10000;
+const CANNON = { everyMs: 3200, range: 760 };
+const CAPE_SPIN = { reach: 84 };
+const DINO_QUAKE = 170;
+const LIFE_PRICE = 20;
+const BATTLE = { ms: 90000, coinEveryMs: 1100, maxCoins: 10, drop: 3 };
+const FIGHT_ENEMIES = 4;
+const FIGHT_REWARD = 10;
 
-// "Súper Bolitas": plataformas como Mario Bros para toda la familia, todos a la vez en la misma pantalla. Mapa con
-// 4 mundos de 3 niveles (el tercero con jefe). Monedas, 3 monedas grandes escondidas por nivel, bloques sorpresa
-// con poderes, tubos secretos, dinosaurio, burbujas para los que se caen y vidas para todo el equipo.
+// "Súper Bolitas": plataformas como Mario Bros para toda la familia, todos a la vez en la misma pantalla. Mapa de 7
+// mundos (cada uno con su nivel, fuerte con mini jefe, otro nivel, castillo con jefe, casita de hongo con regalos y a
+// veces un nivel secreto que se abre con la bandera secreta), un enemigo que camina por el mapa y, con X, los modos:
+// contrarreloj contra tu fantasma, batalla de monedas, jefes en serie, la tienda y vidas extra.
 export class PlatScene extends Phaser.Scene {
   constructor() {
     super('Plat');
@@ -59,13 +74,21 @@ export class PlatScene extends Phaser.Scene {
     this.layer = [];
     this.enemies = [];
     this.dinos = [];
+    this.cannons = [];
     this.boss = null;
     this.items = null;
     this.platforms = null;
+    this.ghost = null;
     this.exitMs = 0;
     this.exiting = false;
-    this.lives = this.startLives();
-    this.mapIndex = Math.min(progress.get().unlocked, LEVELS.length - 1);
+    this.coins = 0;
+    // Dónde está el equipo en el mapa: en el último nivel abierto.
+    const lastWorld = WORLDS.reduce((best, _, i) => (worldOpen(i) ? i : best), 0);
+    const lastNode = worldNodes(lastWorld).reduce((best, node, i) => (node.kind === 'level' && nodeOpen(lastWorld, node) ? i : best), 0);
+    this.mapState = { world: lastWorld, node: lastNode, enemy: null };
+    this.mapEnemies = WORLDS.map(() => 3);
+    this.housesUsed = new Set();
+    this.modeIndex = 0;
     this.createHud();
     this.talk = new FightTalk(this, this.scale.height - 60, HUD_DEPTH + 2);
     this.talk.caption.setScrollFactor(0);
@@ -77,17 +100,38 @@ export class PlatScene extends Phaser.Scene {
     return this.players.some((p) => p.peque) ? LIVES.peque : LIVES.normal;
   }
 
+  get hostInput() {
+    return this.players[0].input;
+  }
+
   // ---------- Mapa ----------
 
   openMap() {
+    const fromRun = Boolean(this.run);
     this.clearLevel();
     this.phase = 'map';
+    this.run = null;
     this.hud.setVisible(false);
+    this.hideBanner();
     this.talk.hide();
-    this.cameras.main.setScroll(0, 0);
+    this.cameras.main.setScroll(0, 0).setBackgroundColor(0x7fd0ff);
     music.play('plat');
     this.screen?.destroy();
-    this.map = showMap(this, this.mapIndex, this.picks);
+    // El enemigo del mapa (cuando ya pasaron el primer nivel del mundo) se mueve un lugar cada vez que regresan de
+    // jugar, hasta que le ganen.
+    const world = this.mapState.world;
+    const nodes = worldNodes(world);
+    let enemy = this.mapEnemies[world];
+    if (enemy !== null && progress.level(LEVELS[nodes[0].index].id).done) {
+      if (fromRun) {
+        const choices = [2, 3, 4].filter((n) => n !== this.mapState.node && Math.abs(n - enemy) <= 1);
+        enemy = Phaser.Utils.Array.GetRandom(choices.length ? choices : [enemy]);
+        this.mapEnemies[world] = enemy;
+      }
+      if (enemy === this.mapState.node) enemy = null;
+    } else enemy = null;
+    this.mapState.enemy = enemy;
+    this.map = showMap(this, this.mapState, this.picks);
     this.screen = this.map.root;
   }
 
@@ -97,34 +141,50 @@ export class PlatScene extends Phaser.Scene {
     const id = host.deviceId;
     const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
     if (step) {
-      const next = this.map.selected + step;
-      if (next >= 0 && next < LEVELS.length) {
-        this.map.select(next);
+      const next = this.mapState.node + step;
+      const nodes = this.map.nodes;
+      if (next >= 0 && next < nodes.length && (nodes[next].open || step < 0)) {
+        this.map.select(next, { animate: true });
         sfx.select();
+        // ¡Te encontraste al enemigo del mapa!
+        if (this.mapState.enemy === next) {
+          this.time.delayedCall(400, () => this.phase === 'map' && this.startRun('fight'));
+          return;
+        }
+      } else sfx.back();
+    }
+    const worldStep = (controls.justPressed(id, 'rb') ? 1 : 0) - (controls.justPressed(id, 'lb') ? 1 : 0);
+    if (worldStep) {
+      const next = this.mapState.world + worldStep;
+      if (next >= 0 && next < WORLDS.length && worldOpen(next)) {
+        this.mapState = { world: next, node: 0, enemy: null };
+        sfx.confirm();
+        this.openMap();
+        return;
       }
+      sfx.back();
     }
     // Y: cada quien prende o apaga su modo peque.
     for (const p of this.players) {
       if (!controls.justPressed(p.deviceId, 'y')) continue;
       p.peque = progress.togglePeque(p.deviceId);
-      this.map.refreshPeque();
+      this.map.refresh();
       say(p.peque ? `${p.label}: modo peque` : `${p.label}: modo normal`);
       sfx.confirm();
     }
     if (controls.justPressed(id, 'a')) {
-      if (!this.map.nodes[this.map.selected].open) {
+      const { node, open } = this.map.nodes[this.mapState.node];
+      if (!open) {
         sfx.back();
         return;
       }
       sfx.confirm();
-      this.mapIndex = this.map.selected;
-      this.closeScreen();
-      this.lives = this.startLives();
-      for (const p of this.players) {
-        p.fire = false;
-        p.setSize('small');
-      }
-      this.startLevel(this.mapIndex);
+      if (node.kind === 'house') this.openHouse();
+      else if (node.kind === 'secret') this.startRun('secret', { info: node.info });
+      else this.startRun('level', { index: node.index });
+    } else if (controls.justPressed(id, 'x')) {
+      sfx.confirm();
+      this.openModes();
     } else if (controls.justPressed(id, 'b')) {
       this.exit();
     }
@@ -136,38 +196,202 @@ export class PlatScene extends Phaser.Scene {
     this.map = null;
   }
 
-  // ---------- Nivel ----------
+  // ---------- Casita de hongo ----------
 
-  startLevel(index, { checkpoint = null } = {}) {
+  openHouse() {
+    if (this.housesUsed.has(this.mapState.world)) {
+      say('Ya abriste esta casita. Regresa después de jugar otro nivel');
+      sfx.back();
+      return;
+    }
+    this.closeScreen();
+    this.phase = 'house';
+    this.house = new House(this);
+  }
+
+  updateHouse(dt) {
+    const prize = this.house.update(dt, this.hostInput);
+    if (!prize) return;
+    this.housesUsed.add(this.mapState.world);
+    rewards.earn('plat-casita');
+    if (prize.kind === 'power') this.startPower = prize.power;
+    else if (prize.kind === 'lives') this.bonusLives = (this.bonusLives ?? 0) + prize.amount;
+    else coinBank.add(prize.amount);
+    this.house.destroy();
+    this.house = null;
+    this.openMap();
+  }
+
+  // ---------- Modos (X en el mapa) ----------
+
+  openModes() {
+    this.closeScreen();
+    this.phase = 'modes';
+    this.modes = showModes(this, this.modeIndex, coinBank.get());
+    this.screen = this.modes.root;
+  }
+
+  updateModes() {
+    const input = this.hostInput;
+    const step = (input.pressed('down') ? 1 : 0) - (input.pressed('up') ? 1 : 0);
+    if (step) {
+      this.modes.select(this.modes.selected + step);
+      sfx.select();
+    }
+    if (input.pressed('b')) {
+      this.modeIndex = this.modes.selected;
+      sfx.back();
+      this.openMap();
+      return;
+    }
+    if (!input.pressed('a')) return;
+    this.modeIndex = this.modes.selected;
+    const mode = MODES[this.modes.selected].id;
+    if (mode === 'trial') {
+      const node = worldNodes(this.mapState.world)[this.mapState.node];
+      if (node.kind !== 'level' || !progress.level(LEVELS[node.index].id).done) {
+        say('Primero escoge en el mapa un nivel que ya pasaron');
+        sfx.back();
+        return;
+      }
+      this.startRun('trial', { index: node.index });
+    } else if (mode === 'battle') {
+      this.startRun('battle');
+    } else if (mode === 'rush') {
+      if (!progress.level(LEVELS[3].id).done) {
+        say('Primero venzan al primer jefe');
+        sfx.back();
+        return;
+      }
+      this.startRun('rush');
+    } else if (mode === 'shop') {
+      this.closeScreen();
+      this.phase = 'shop';
+      this.shop = new Shop(this);
+    } else if (mode === 'life') {
+      if (coinBank.spend(LIFE_PRICE)) {
+        progress.addExtraLife();
+        sfx.coin();
+        say('¡Una vida extra para el siguiente nivel!');
+        this.openModes();
+      } else {
+        sfx.back();
+        say('No alcanzan las monedas');
+      }
+    }
+  }
+
+  updateShop() {
+    if (!this.shop.update()) return;
+    this.shop.destroy();
+    this.shop = null;
+    sfx.back();
+    this.openModes();
+  }
+
+  // ---------- Partidas ----------
+
+  // mode: 'level' | 'secret' | 'trial' (contrarreloj) | 'battle' (monedas) | 'rush' (jefes en serie) | 'fight'
+  // (contra el enemigo del mapa).
+  startRun(mode, { index = null, info = null } = {}) {
+    this.closeScreen();
+    this.run = { mode, ms: 0 };
+    // Las vidas compradas y las de la casita se guardan para una partida con vidas (no contrarreloj ni batalla).
+    const withLives = !['trial', 'battle'].includes(mode);
+    this.lives = this.startLives() + (withLives ? progress.takeExtraLives() + (this.bonusLives ?? 0) : 0);
+    if (withLives) this.bonusLives = 0;
+    this.coinsRun = 0;
+    for (const p of this.players) {
+      p.power = null;
+      p.setSize('small');
+      p.giantMs = 0;
+      p.starMs = 0;
+      p.stats = { coins: 0, stomps: 0, bigCoins: 0 };
+      p.battleCoins = 0;
+      const outfit = wardrobe.outfit(p.deviceId);
+      dressFighter(this, p, outfit);
+      p.outfitTint = outfit?.costume ? COSTUMES[outfit.costume] : null;
+    }
+    // El regalo de la casita: todos empiezan con ese poder.
+    if (this.startPower) {
+      for (const p of this.players) this.givePower(p, this.startPower, { quiet: true });
+      this.startPower = null;
+    }
+    if (mode === 'level' || mode === 'trial') this.loadLevel(LEVELS[index]);
+    else if (mode === 'secret') this.loadLevel(info);
+    else if (mode === 'battle') {
+      const spec = Math.random() < 0.5 ? BATTLE1 : BATTLE2;
+      this.run.left = BATTLE.ms;
+      this.run.coinMs = 0;
+      this.loadLevel({ spec, id: 'batalla', world: this.mapState.world, index: null });
+    } else if (mode === 'rush') {
+      this.run.list = LEVELS.map((lv, i) => (lv.index === 3 && progress.open(i) ? i : -1)).filter((i) => i >= 0);
+      this.run.step = 0;
+      this.loadLevel(LEVELS[this.run.list[0]], { arenaStart: true });
+    } else if (mode === 'fight') {
+      const world = WORLDS[this.mapState.world];
+      const theme = world.levels[0].theme;
+      const spec = { ...MAP_FIGHT, theme, background: world.levels[0].background };
+      this.loadLevel({ spec, id: 'pelea', world: this.mapState.world, index: null });
+    }
+  }
+
+  // Para las pruebas: jugar directo el nivel `index`.
+  startLevel(index) {
+    this.startRun('level', { index });
+  }
+
+  loadLevel(info, { checkpoint = null, arenaStart = false } = {}) {
     this.clearLevel();
-    this.levelIndex = index;
-    this.info = LEVELS[index];
-    const level = new Level(this.info.spec);
+    this.info = info;
+    switches.red = true;
+    const level = new Level(info.spec);
     this.level = level;
     this.keys = themeTextures(this, level.theme);
     this.drawBackground();
     this.drawTiles();
     this.items = new Items(this);
     this.platforms = new Platforms(this, level.theme);
-    const saved = progress.level(this.info.id).big;
-    this.bigTaken = this.bigTaken?.levelIndex === index ? this.bigTaken : { levelIndex: index, got: [false, false, false] };
+    const saved = info.id ? progress.level(info.id).big : [false, false, false];
+    this.bigTaken = this.bigTaken?.id === info.id ? this.bigTaken : { id: info.id, got: [false, false, false] };
     let bigIndex = 0;
     this.checkpoints = [];
+    this.pButtons = [];
+    const eggColor = level.dino ?? WORLDS[info.world]?.dino ?? 'verde';
+    this.eggColor = eggColor;
     for (const e of level.entities) {
       if (e.ch === 'o') this.items.addCoin(e.x, e.y);
       else if (e.ch === 'O') {
         this.items.addBigCoin(e.x, e.y, bigIndex, saved[bigIndex] || this.bigTaken.got[bigIndex]);
         bigIndex += 1;
       } else if (e.ch === 'R') this.items.addSpring(e.x, e.y);
-      else if ('muz'.includes(e.ch)) this.platforms.add(e.ch, e.col, e.row);
-      else if (e.ch === 'D') this.dinos.push(new Dino(this, e.x, e.y));
+      else if ('muzy'.includes(e.ch)) this.platforms.add(e.ch, e.col, e.row);
+      else if (e.ch === 'D') this.dinos.push(new Dino(this, e.x, e.y, eggColor));
       else if (ENEMIES[e.ch]) this.enemies.push(new Enemy(this, e.ch, e.x, e.y));
       else if (e.ch === 'C') this.checkpoints.push(this.drawCheckpoint(e));
-      else if (e.ch === 'F') this.goal = this.drawGoal(e);
+      else if (e.ch === 'F') this.goal = this.drawGoal(e, 0x4cd97b);
+      else if (e.ch === 'G') this.secretGoal = this.drawGoal(e, 0x3fa7ff);
+      else if (e.ch === 'P') this.pButtons.push(this.drawPButton(e));
+      else if (e.ch === 'd') this.drawDoor(e);
     }
+    // La batalla del mapa: los enemigos del mundo (más si son más jugadores).
+    if (this.run?.mode === 'fight') {
+      const key = MAP_ENEMY[info.world];
+      for (let i = 0; i < FIGHT_ENEMIES + this.players.length - 1; i += 1) this.enemies.push(new Enemy(this, key, (5 + i * 3) * T, 3 * T));
+    }
+    // Los cañones.
+    this.cannons = [];
+    level.grid.forEach((row, r) => row.forEach((ch, c) => ch === 'Z' && this.cannons.push({ col: c, row: r, ms: (c * 97) % CANNON.everyMs })));
     this.checkpoint = checkpoint;
+    const solo = this.run?.mode === 'trial';
     const start = checkpoint ?? level.start;
     this.players.forEach((p, i) => {
+      if (solo && i > 0) {
+        p.state = 'off';
+        p.sprite.setVisible(false);
+        p.tag.setVisible(false);
+        return;
+      }
       p.spawn(start.x + i * 30, start.y);
       p.sprite.setVisible(true);
       p.dino = null;
@@ -176,13 +400,33 @@ export class PlatScene extends Phaser.Scene {
     this.levelMs = 0;
     this.levelCoins = this.levelCoins ?? 0;
     this.bossFight = false;
-    this.cameras.main.setScroll(Phaser.Math.Clamp(start.x - 300, 0, this.areaRight() - this.scale.width), 0);
+    this.pSwitchMs = 0;
+    this.cameras.main.setScroll(Phaser.Math.Clamp(start.x - 300, 0, Math.max(0, this.areaRight() - this.scale.width)), 0);
     this.cameras.main.setBackgroundColor(THEMES[level.theme]?.sky ?? 0x8fd3ff);
     this.phase = 'play';
     this.hud.setVisible(true);
-    music.play('plat');
-    this.waveText.setText(`${this.info.id}  ${level.name}`);
-    this.showBanner(`${this.info.id} ${level.name}`, WORLDS[this.info.world].name, 1600);
+    music.play(this.run?.mode === 'battle' ? 'brawl' : 'plat');
+    // Contrarreloj: graba al jugador y, si hay récord guardado, sale su fantasma.
+    if (solo) {
+      this.recorder = new GhostRecorder();
+      const ghost = ghosts.get(info.id);
+      this.ghost = ghost ? new GhostRunner(this, ghost, this.players[0].character) : null;
+    }
+    const label = info.id === 'batalla' || info.id === 'pelea' ? level.name : `${info.id}  ${level.name}`;
+    this.waveText.setText(label);
+    if (arenaStart) {
+      // Jefes en serie: directo a la arena.
+      const a = level.arena;
+      for (const p of this.players) if (p.state !== 'off') Object.assign(p, { x: (a.left + 3) * T + Math.random() * 60, y: (a.boss.row + 1) * T });
+      this.cameras.main.setScroll(a.left * T, 0);
+      this.startBossFight();
+    } else if (this.run?.mode === 'battle') {
+      this.showBanner('¡Batalla de monedas!', 'El que junte más gana · ¡brínquenle encima a los demás!', 2200);
+    } else if (this.run?.mode === 'fight') {
+      this.showBanner('¡Batalla!', 'Tumben a todos los enemigos', 1600);
+    } else {
+      this.showBanner(label.replace('  ', ' '), info.secret ? '¡Nivel secreto!' : WORLDS[info.world].name, 1600);
+    }
   }
 
   clearLevel() {
@@ -203,10 +447,20 @@ export class PlatScene extends Phaser.Scene {
     this.background = null;
     this.water?.destroy();
     this.water = null;
+    this.ghost?.destroy();
+    this.ghost = null;
+    this.recorder = null;
     for (const c of this.checkpoints ?? []) c.sprite.destroy();
     this.checkpoints = [];
+    for (const b of this.pButtons ?? []) b.sprite.destroy();
+    this.pButtons = [];
+    for (const d of this.doorSprites ?? []) d.destroy();
+    this.doorSprites = [];
     this.goal?.sprite.destroy();
     this.goal = null;
+    this.secretGoal?.sprite.destroy();
+    this.secretGoal = null;
+    this.cannons = [];
     for (const p of this.players ?? []) {
       p.sprite.setVisible(false);
       p.tag.setVisible(false);
@@ -217,15 +471,15 @@ export class PlatScene extends Phaser.Scene {
   // El fondo lejano: la imagen del mundo repetida, que se mueve más despacio que el nivel.
   drawBackground() {
     const level = this.level;
-    const name = `plat:fondo-${level.background}`;
-    const key = platTexture(this, name);
+    const key = platTexture(this, `plat:fondo-${level.background}`);
     this.background = this.add.container(0, 0).setDepth(-100).setScrollFactor(0.25, 0);
-    if (!key) return;
-    const probe = this.textures.get(key).getSourceImage();
-    const scale = this.scale.height / probe.height;
-    const w = probe.width * scale;
-    const count = Math.ceil((level.width * 0.25 + this.scale.width) / w) + 1;
-    for (let k = 0; k < count; k += 1) this.background.add(this.add.image(k * w, 0, key).setOrigin(0, 0).setScale(scale).setFlipX(k % 2 === 1));
+    if (key) {
+      const probe = this.textures.get(key).getSourceImage();
+      const scale = this.scale.height / probe.height;
+      const w = probe.width * scale;
+      const count = Math.ceil((level.width * 0.25 + this.scale.width) / w) + 1;
+      for (let k = 0; k < count; k += 1) this.background.add(this.add.image(k * w, 0, key).setOrigin(0, 0).setScale(scale).setFlipX(k % 2 === 1));
+    }
     if (level.water) this.water = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x1d6fb0, 0.22).setOrigin(0, 0).setScrollFactor(0).setDepth(70);
   }
 
@@ -245,6 +499,7 @@ export class PlatScene extends Phaser.Scene {
     const id = `${col},${row}`;
     this.tileImages.get(id)?.destroy();
     this.tileImages.delete(id);
+    if (!container) return;
     const ch = this.level.at(col, row);
     if (ch === 'w') {
       const above = this.level.at(col, row - 1) === 'w';
@@ -259,7 +514,6 @@ export class PlatScene extends Phaser.Scene {
     const image = this.add.image(col * T, row * T, key).setOrigin(0, 0);
     container.add(image);
     this.tileImages.set(id, image);
-    // El de abajo cambia de "pasto" a "tierra" si se puso o quitó algo encima.
   }
 
   drawCheckpoint(e) {
@@ -270,20 +524,44 @@ export class PlatScene extends Phaser.Scene {
     return { x: e.x, y: e.y, sprite: g, flag, reached: false };
   }
 
-  drawGoal(e) {
+  drawGoal(e, color) {
     const g = this.add.container(e.x, e.y).setDepth(9);
     const height = 8 * T;
     g.add(this.add.rectangle(0, -height / 2, 10, height, 0xe8e8f0).setStrokeStyle(3, 0x1b1530));
     g.add(this.add.circle(0, -height - 8, 12, 0xffd84d).setStrokeStyle(3, 0x1b1530));
-    const flag = this.add.triangle(5, -height + 6, 0, 0, 64, 22, 0, 44, 0x4cd97b).setOrigin(0, 0).setStrokeStyle(4, 0x1b1530);
+    const flag = this.add.triangle(5, -height + 6, 0, 0, 64, 22, 0, 44, color).setOrigin(0, 0).setStrokeStyle(4, 0x1b1530);
     g.add(flag);
     g.add(this.add.rectangle(0, -10, 40, 20, 0x8a8a9e).setStrokeStyle(3, 0x1b1530));
     return { x: e.x, y: e.y, height, sprite: g, flag };
   }
 
+  // El botón P: un botón azul en el piso.
+  drawPButton(e) {
+    const sprite = this.add.container(e.x, e.y, [
+      this.add.rectangle(0, -14, 40, 28, 0x3f7fe0).setStrokeStyle(4, 0x1b1530),
+      this.add.text(0, -14, 'P', textStyle(22, '#ffffff', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 })).setOrigin(0.5),
+    ]);
+    sprite.setDepth(30);
+    return { x: e.x, y: e.y, w: 40, h: 28, sprite, pressed: false };
+  }
+
+  drawDoor(e) {
+    const door = this.add.container(e.x, e.y, [
+      this.add.rectangle(0, -40, 44, 80, 0x8a5a2e).setStrokeStyle(4, 0x1b1530),
+      this.add.rectangle(0, -40, 32, 66, 0x6e4422),
+      this.add.circle(10, -38, 4, 0xffd84d),
+    ]);
+    door.setDepth(8);
+    // Una flechita: arriba en el stick para entrar.
+    const arrow = this.add.text(0, -100, '▲', textStyle(26, '#ffd84d', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5);
+    door.add(arrow);
+    this.tweens.add({ targets: arrow, y: -110, duration: 500, yoyo: true, repeat: -1 });
+    this.doorSprites.push(door);
+  }
+
   // Hasta dónde llega la pantalla: el nivel normal, el cuarto secreto o la arena del jefe.
   areaLeft() {
-    if (this.bossFight) return this.level.arena.left * T + (this.level.arena.right - this.level.arena.left + 1) * T / 2 - this.scale.width / 2;
+    if (this.bossFight) return this.level.arena.left * T + ((this.level.arena.right - this.level.arena.left + 1) * T) / 2 - this.scale.width / 2;
     if (this.inBonus()) return this.level.bonus * T;
     return 0;
   }
@@ -305,15 +583,15 @@ export class PlatScene extends Phaser.Scene {
     const dt = Math.min(50, frameDelta());
     this.updateExit(dt);
     this.talk.update(dt);
-    if (this.phase === 'map') {
-      this.updateMap();
-      return;
+    if (this.phase === 'map') return this.updateMap();
+    if (this.phase === 'modes') return this.updateModes();
+    if (this.phase === 'shop') return this.updateShop();
+    if (this.phase === 'house') return this.updateHouse(dt);
+    if (['results', 'gameover'].includes(this.phase)) return this.updateEndScreen(dt);
+    if (this.phase === 'play') {
+      this.levelMs += dt;
+      this.run.ms += dt;
     }
-    if (['results', 'gameover'].includes(this.phase)) {
-      this.updateEndScreen(dt);
-      return;
-    }
-    if (this.phase === 'play' || this.phase === 'clear') this.levelMs += this.phase === 'play' ? dt : 0;
     if (this.phase === 'clear') {
       this.updateClear(dt);
       this.renderAll();
@@ -321,9 +599,12 @@ export class PlatScene extends Phaser.Scene {
     }
     this.platforms.update(dt);
     for (const p of this.players) {
+      if (p.state === 'off') continue;
       if (p.state === 'bubble') this.updateBubble(p, dt);
       else p.update(dt, this.level);
     }
+    if (this.recorder && this.players[0].active) this.recorder.record(dt, this.players[0]);
+    this.ghost?.update(dt);
     for (const d of this.dinos) d.update(dt, this);
     this.dinos = this.dinos.filter((d) => {
       if (!d.gone) return true;
@@ -334,8 +615,11 @@ export class PlatScene extends Phaser.Scene {
     this.enemies = this.enemies.filter((e) => !e.gone);
     this.items.update(dt);
     this.updateHazards();
+    this.updatePSwitch(dt);
+    this.updateCannons(dt);
     this.playerVsEnemies(dt);
     this.shellsVsEnemies();
+    if (this.run.mode === 'battle') this.updateBattle(dt);
     this.updateBoss(dt);
     this.updateCheckpoints();
     this.updateDeaths();
@@ -343,10 +627,12 @@ export class PlatScene extends Phaser.Scene {
     this.renderAll();
     this.updateHud();
     if (this.phase === 'play') this.checkGoal();
+    // (Los caparazones y los esqueletos desarmados ya cuentan como vencidos.)
+    if (this.phase === 'play' && this.run.mode === 'fight' && this.enemies.every((e) => e.dead || e.gone || e.type.kind === 'shell' || e.state === 'pile')) this.levelClear();
   }
 
   renderAll() {
-    for (const p of this.players) p.render();
+    for (const p of this.players) if (p.state !== 'off') p.render();
     for (const d of this.dinos) d.render();
     for (const e of this.enemies) e.render();
     this.boss?.render();
@@ -377,7 +663,12 @@ export class PlatScene extends Phaser.Scene {
   bumpBlock(col, row, player) {
     const level = this.level;
     const ch = level.at(col, row);
-    if (!'Bb?MSYH'.includes(ch)) return;
+    if (ch === '!') {
+      this.toggleSwitch();
+      this.wobbleTile(col, row);
+      return;
+    }
+    if (!'Bb?MSYH$%'.includes(ch)) return;
     // Los enemigos parados encima del bloque salen volando.
     for (const e of this.enemies) {
       if (!e.dead && Math.abs(e.x - (col * T + T / 2)) < T && Math.abs(e.y - row * T) < 8) e.kill('bump', Math.sign(e.x - player.x) || 1);
@@ -387,12 +678,8 @@ export class PlatScene extends Phaser.Scene {
       this.drawTile(col, row);
     };
     if (ch === 'B') {
-      if (player.big) {
-        level.set(col, row, ' ');
-        this.drawTile(col, row);
-        this.drawTile(col, row + 1);
-        this.items.breakBits(col, row, this.keys);
-        sfx.boom();
+      if (player.big || player.giantMs > 0) {
+        this.breakBlock(col, row);
         return;
       }
       this.wobbleTile(col, row);
@@ -417,18 +704,28 @@ export class PlatScene extends Phaser.Scene {
     }
     used();
     this.wobbleTile(col, row);
-    if (ch === 'M') this.items.spawnPower(player.big ? 'flor' : 'hongo', col, row);
+    if (ch === 'M') this.items.spawnPower(player.big || player.size === 'mini' ? this.level.power ?? 'flor' : 'hongo', col, row);
     else if (ch === 'S') this.items.spawnPower('estrella', col, row);
+    else if (ch === '$') this.items.spawnPower('hongo-mini', col, row);
+    else if (ch === '%') this.items.spawnPower('hongo-gigante', col, row);
     else if (ch === 'H') {
       this.items.spawnPower('vida', col, row);
       this.talk.line('¡Un bloque escondido!', { important: true });
     } else if (ch === 'Y') {
-      const dino = new Dino(this, col * T + T / 2, row * T);
+      const dino = new Dino(this, col * T + T / 2, row * T, this.eggColor);
       dino.vy = -500;
       this.dinos.push(dino);
       burst(this, col * T + T / 2, row * T - 20, 0x4cd97b, 12);
       this.talk.line('¡Un dinosaurio! ¡Súbete!', { important: true });
     }
+  }
+
+  breakBlock(col, row) {
+    this.level.set(col, row, ' ');
+    this.drawTile(col, row);
+    this.drawTile(col, row + 1);
+    this.items.breakBits(col, row, this.keys);
+    sfx.boom();
   }
 
   wobbleTile(col, row) {
@@ -437,11 +734,112 @@ export class PlatScene extends Phaser.Scene {
     this.tweens.add({ targets: image, y: row * T - 12, duration: 70, yoyo: true });
   }
 
+  // El bloque de colores: cambia cuáles bloques (rojos o azules) están.
+  toggleSwitch() {
+    switches.red = !switches.red;
+    sfx.special();
+    this.level.grid.forEach((row, r) => row.forEach((ch, c) => '!ri'.includes(ch) && this.drawTile(c, r)));
+    // Si a alguien le apareció un bloque encima, se sube.
+    for (const p of this.players) {
+      if (!p.active) continue;
+      for (let k = 0; k < 4 && isSolid(tileAt(this.level, p.x, p.y - 4)); k += 1) p.y = Math.floor((p.y - 4) / T) * T;
+    }
+    this.talk.line(switches.red ? '¡Rojos!' : '¡Azules!');
+  }
+
+  // El botón P: las monedas se vuelven ladrillos y los ladrillos monedas un ratito.
+  updatePSwitch(dt) {
+    for (const b of this.pButtons) {
+      if (b.pressed) continue;
+      const presser = this.players.find((p) => p.active && p.vy >= 0 && Math.abs(p.x - b.x) < (p.w + b.w) / 2 && Math.abs(p.y - b.y) < 20);
+      if (!presser) continue;
+      b.pressed = true;
+      this.tweens.add({ targets: b.sprite, scaleY: 0.3, duration: 120 });
+      presser.bounce();
+      this.pSwitch();
+    }
+    if (this.pSwitchMs > 0) {
+      this.pSwitchMs -= dt;
+      if (this.pSwitchMs <= 0) this.pSwitchBack();
+    }
+  }
+
+  pSwitch() {
+    sfx.special();
+    this.pSwitchMs = P_SWITCH_MS;
+    this.swapped = { bricks: [], coins: [] };
+    // Ladrillos → monedas.
+    this.level.grid.forEach((row, r) =>
+      row.forEach((ch, c) => {
+        if (ch !== 'B') return;
+        this.level.set(c, r, ' ');
+        this.drawTile(c, r);
+        this.items.addCoin(c * T + T / 2, (r + 1) * T);
+        this.swapped.bricks.push([c, r]);
+      }),
+    );
+    // Monedas → ladrillos (las que estaban antes).
+    for (const coin of [...this.items.coins]) {
+      if (this.swapped.bricks.some(([c, r]) => Math.abs(coin.x - (c * T + T / 2)) < 2 && Math.abs(coin.y - ((r + 1) * T - T / 2 + 15)) < 2)) continue;
+      const c = Math.floor(coin.x / T);
+      const r = Math.floor(coin.y / T);
+      if (this.level.at(c, r) !== ' ') continue;
+      coin.sprite.destroy();
+      this.items.coins = this.items.coins.filter((k) => k !== coin);
+      this.level.set(c, r, 'B');
+      this.drawTile(c, r);
+      this.swapped.coins.push([c, r]);
+    }
+    this.talk.line('¡Botón P! Los ladrillos se volvieron monedas', { important: true });
+  }
+
+  pSwitchBack() {
+    const occupied = (c, r) => this.players.some((p) => p.active && Math.abs(p.x - (c * T + T / 2)) < T && p.y > r * T && p.y - p.h < (r + 1) * T);
+    // Las monedas que quedan regresan a ser ladrillos; los ladrillos que eran monedas, a monedas.
+    for (const [c, r] of this.swapped.bricks) {
+      const coin = this.items.coins.find((k) => Math.floor(k.x / T) === c && Math.floor(k.y / T) === r);
+      if (!coin || occupied(c, r)) continue;
+      coin.sprite.destroy();
+      this.items.coins = this.items.coins.filter((k) => k !== coin);
+      this.level.set(c, r, 'B');
+      this.drawTile(c, r);
+    }
+    for (const [c, r] of this.swapped.coins) {
+      if (this.level.at(c, r) !== 'B') continue;
+      this.level.set(c, r, ' ');
+      this.drawTile(c, r);
+      this.items.addCoin(c * T + T / 2, (r + 1) * T);
+    }
+    this.swapped = null;
+    sfx.powerDown();
+  }
+
+  // Gigante: rompe los bloques que tiene enfrente y arriba.
+  giantSmash(player) {
+    const x0 = player.x - player.w / 2 - 6;
+    const x1 = player.x + player.w / 2 + 6;
+    for (let c = Math.floor(x0 / T); c <= Math.floor(x1 / T); c += 1) {
+      for (let r = Math.floor((player.y - player.h - 6) / T); r <= Math.floor((player.y - 4) / T); r += 1) {
+        const ch = this.level.at(c, r);
+        if ('Bb?MSYUH$%'.includes(ch) && ch !== ' ') this.breakBlock(c, r);
+      }
+    }
+  }
+
+  giantEnded(player) {
+    popText(this, player.x, player.y - player.h - 20, '¡Se acabó lo gigante!', '#ffffff');
+    sfx.powerDown();
+  }
+
   // ---------- Jugadores ----------
 
-  // X: bola de fuego (con la flor) o lengüetazo (en el dinosaurio).
+  // X: el poder de cada quien (o el dinosaurio).
   action(player) {
     if (player.dino) {
+      if (player.dino.color === 'rojo') {
+        if (this.items.fireball(player, 'fire')) player.throwMs = 200;
+        return;
+      }
       const area = player.dino.lick();
       for (const e of this.enemies) {
         if (e.dead || e.type.immune || !overlaps(area, e)) continue;
@@ -451,16 +849,34 @@ export class PlatScene extends Phaser.Scene {
       }
       return;
     }
-    if (player.fire && this.items.fireball(player)) player.throwMs = 200;
+    if (player.power === 'fire' && this.items.fireball(player, 'fire')) player.throwMs = 200;
+    else if (player.power === 'ice' && this.items.fireball(player, 'ice')) player.throwMs = 200;
+    else if (player.power === 'cape' && player.spinMs === 0) this.capeSpin(player);
+  }
+
+  // La capa gira y tumba a los de alrededor.
+  capeSpin(player) {
+    player.spinMs = 320;
+    sfx.throw();
+    for (const e of this.enemies) {
+      if (e.dead || e.type.immune || Math.hypot(e.x - player.x, e.y - e.h / 2 - (player.y - player.h / 2)) > CAPE_SPIN.reach + e.w / 2) continue;
+      e.kill('star', Math.sign(e.x - player.x) || 1);
+      sfx.hit(0.5);
+    }
+    if (this.boss && !this.boss.dead && Math.abs(this.boss.x - player.x) < CAPE_SPIN.reach + this.boss.w / 2 && overlaps(player, this.boss, -30)) {
+      if (this.boss.fireHit()) this.bossDefeated();
+    }
   }
 
   coinTaken(player) {
     player.stats.coins += 1;
+    if (this.run?.mode === 'battle') player.battleCoins += 1;
     this.levelCoins += 1;
-    this.coins = (this.coins ?? 0) + 1;
+    this.coins += 1;
+    coinBank.add(1);
     sfx.coin();
     // Cada 50 monedas, una vida.
-    if (this.coins % 50 === 0) this.addLife(player);
+    if (this.coins % 50 === 0 && this.run?.mode !== 'battle') this.addLife(player);
   }
 
   addLife(player) {
@@ -479,19 +895,44 @@ export class PlatScene extends Phaser.Scene {
   }
 
   powerTaken(player, kind) {
-    if (kind === 'hongo') {
-      player.grow();
-      this.talk.line(['¡Creció!', `¡${player.label} está grandote!`]);
-    } else if (kind === 'flor') {
-      player.getFire();
-      this.talk.line('¡Fuego! Aprieta X', { important: true });
-    } else if (kind === 'estrella') {
+    if (kind === 'vida') {
+      this.addLife(player);
+      return;
+    }
+    if (kind === 'estrella') {
       player.starMs = STAR_MS;
       sfx.star();
       rewards.earn('plat-estrella');
       this.talk.line('¡Estrella! ¡Nadie te puede pegar!', { important: true });
-    } else if (kind === 'vida') {
-      this.addLife(player);
+      return;
+    }
+    this.givePower(player, kind);
+  }
+
+  // Le da un poder (hongo, flor, flor de hielo, pluma, hongo mini o gigante).
+  givePower(player, kind, { quiet = false } = {}) {
+    const say = (line) => !quiet && this.talk.line(line, { important: true });
+    if (kind === 'hongo') {
+      player.grow();
+      if (!quiet) this.talk.line(['¡Creció!', `¡${player.label} está grandote!`]);
+    } else if (kind === 'flor') {
+      player.getPower('fire');
+      say('¡Fuego! Aprieta X');
+    } else if (kind === 'flor-hielo') {
+      player.getPower('ice');
+      say('¡Hielo! Aprieta X para congelar');
+    } else if (kind === 'pluma') {
+      player.getPower('cape');
+      rewards.earn('plat-capa');
+      say('¡Capa! Mantén A en el aire para planear');
+    } else if (kind === 'hongo-mini') {
+      player.shrinkMini();
+      say('¡Chiquitito! Cabes por todos lados');
+    } else if (kind === 'hongo-gigante') {
+      player.growGiant();
+      rewards.earn('plat-gigante');
+      say('¡GIGANTE! ¡Rompe todo!');
+      this.cameras.main.shake(300, 0.01);
     }
   }
 
@@ -502,7 +943,8 @@ export class PlatScene extends Phaser.Scene {
 
   mounted(player) {
     rewards.earn('plat-dino');
-    this.talk.line([`¡${player.label} se subió al dinosaurio!`, '¡Arre, dinosaurio!']);
+    const what = { rojo: '¡Dinosaurio rojo! Con X escupe fuego', azul: '¡Dinosaurio azul! Mantén A para aletear', amarillo: '¡Dinosaurio amarillo! Al caer hace temblar el piso' }[player.dino?.color];
+    this.talk.line(what ?? [`¡${player.label} se subió al dinosaurio!`, '¡Arre, dinosaurio!']);
   }
 
   dinoRunsAway(player, { silent = false } = {}) {
@@ -510,31 +952,56 @@ export class PlatScene extends Phaser.Scene {
     if (!silent) popText(this, player.x, player.y - player.h - 20, '¡Se asustó!', '#ffffff');
   }
 
+  // Dinosaurio amarillo: al caer tumba a los enemigos del piso cercanos.
+  dinoQuake(player) {
+    this.cameras.main.shake(200, 0.01);
+    sfx.boom();
+    burst(this, player.x, player.y, 0xffe14d, 10);
+    for (const e of this.enemies) {
+      if (e.dead || e.type.immune || Math.abs(e.x - player.x) > DINO_QUAKE || Math.abs(e.y - player.y) > T) continue;
+      e.kill('bump', Math.sign(e.x - player.x) || 1);
+    }
+  }
+
   // Abajo en la boca de un tubo secreto: todos se van por el tubo.
   tryWarp(player) {
     if (this.warping) return;
     const warp = this.level.warps.find((w) => player.x > w.enter.col * T && player.x < (w.enter.col + 2) * T && Math.abs(player.y - w.enter.row * T) < 4);
     if (!warp) return;
+    this.teleportAll(warp.exit, () => {
+      if (this.level.inBonus(warp.exit.x)) {
+        rewards.earn('plat-secreto');
+        this.talk.line('¡Un cuarto secreto!', { important: true });
+      }
+    });
+  }
+
+  // Arriba frente a una puerta: todos pasan a la otra puerta.
+  tryDoor(player) {
+    if (this.warping) return;
+    const door = this.level.doors.find((d) => Math.abs(player.x - d.x) < 26 && Math.abs(player.y - d.y) < 8);
+    if (!door) return;
+    this.teleportAll(door.to);
+  }
+
+  teleportAll(to, then) {
     this.warping = true;
     sfx.powerDown();
     this.cameras.main.fadeOut(220, 0, 0, 0);
     this.time.delayedCall(240, () => {
       this.players.forEach((p, i) => {
-        if (p.state === 'dead') return;
-        p.x = warp.exit.x + i * 26;
-        p.y = warp.exit.y;
+        if (p.state === 'dead' || p.state === 'off') return;
+        p.x = to.x + i * 26;
+        p.y = to.y;
         p.vx = 0;
         p.vy = 0;
         if (p.state === 'bubble') p.popBubble();
       });
       for (const d of this.dinos) if (d.rider) Object.assign(d, { x: d.rider.x, y: d.rider.y });
-      this.cameras.main.setScroll(Phaser.Math.Clamp(warp.exit.x - this.scale.width / 2, this.areaLeft(), Math.max(this.areaLeft(), this.areaRight() - this.scale.width)), 0);
+      this.cameras.main.setScroll(Phaser.Math.Clamp(to.x - this.scale.width / 2, this.areaLeft(), Math.max(this.areaLeft(), this.areaRight() - this.scale.width)), 0);
       this.cameras.main.fadeIn(260, 0, 0, 0);
       this.warping = false;
-      if (this.level.inBonus(warp.exit.x)) {
-        rewards.earn('plat-secreto');
-        this.talk.line('¡Un cuarto secreto!', { important: true });
-      }
+      then?.();
     });
   }
 
@@ -559,12 +1026,25 @@ export class PlatScene extends Phaser.Scene {
 
   playerDied(player) {
     this.deathAt = this.time.now;
+    if (this.run?.mode === 'battle') {
+      // En la batalla no hay vidas: pierde unas monedas y regresa.
+      player.battleCoins = Math.max(0, player.battleCoins - BATTLE.drop);
+      return;
+    }
     if (this.players.some((p) => p.active)) this.talk.line([`¡Ayuden a ${player.label}! ¡Toquen su burbuja!`, `¡${player.label} se cayó!`], { important: true });
   }
 
   // Los que cayeron: si quedan compañeros regresan en burbuja; si no queda nadie, se pierde una vida.
   updateDeaths() {
     if (this.phase !== 'play') return;
+    if (this.run.mode === 'battle') {
+      for (const p of this.players) {
+        if (p.state !== 'dead' || p.deadMs < 800) continue;
+        p.spawn((3 + Math.random() * 20) * T, 3 * T);
+        p.invulnMs = 1500;
+      }
+      return;
+    }
     const someoneActive = this.players.some((p) => p.active);
     for (const p of this.players) {
       if (p.state !== 'dead' || p.deadMs < RESPAWN_MS) continue;
@@ -579,8 +1059,19 @@ export class PlatScene extends Phaser.Scene {
   }
 
   loseLife() {
+    // En la contrarreloj no hay vidas: se vuelve a empezar.
+    if (this.run.mode === 'trial') {
+      this.phase = 'retry';
+      this.showBanner('¡Otra vez!', '', 900);
+      this.time.delayedCall(1000, () => this.phase === 'retry' && this.loadLevel(this.info));
+      return;
+    }
     this.lives -= 1;
     if (this.lives <= 0) {
+      if (this.run.mode === 'rush') {
+        this.rushResults(false);
+        return;
+      }
       this.phase = 'gameover';
       this.endMs = 0;
       music.play(null);
@@ -591,12 +1082,11 @@ export class PlatScene extends Phaser.Scene {
     this.showBanner(`¡Uy! Quedan ${this.lives} ${this.lives === 1 ? 'vida' : 'vidas'}`, '', 1100);
     this.time.delayedCall(1300, () => {
       if (this.phase !== 'retry') return;
-      const checkpoint = this.checkpoint;
-      this.startLevel(this.levelIndex, { checkpoint });
+      this.loadLevel(this.info, { checkpoint: this.checkpoint, arenaStart: this.run.mode === 'rush' });
     });
   }
 
-  // Lava y picos.
+  // Lava (o chocolate) y picos.
   updateHazards() {
     for (const p of this.players) {
       if (!p.active) continue;
@@ -604,7 +1094,8 @@ export class PlatScene extends Phaser.Scene {
       const body = tileAt(this.level, p.x, p.y - p.h / 2);
       if (feet === 'L' || body === 'L') {
         if (p.peque && p.lastSafe) {
-          Object.assign(p, { x: p.lastSafe.x, y: p.lastSafe.y - 4, vx: 0, vy: -300, invulnMs: 1500 });
+          const spot = p.safeSpot(this.level);
+          Object.assign(p, { x: spot.x, y: spot.y - 4, vx: 0, vy: -300, invulnMs: 1500 });
           this.pequeRescue(p);
         } else {
           p.die();
@@ -612,6 +1103,22 @@ export class PlatScene extends Phaser.Scene {
       } else if (feet === '^' || tileAt(this.level, p.x, p.y + 2) === '^') {
         if (p.hurt()) p.vy = -500;
       }
+    }
+  }
+
+  // Los enemigos congelados son bloques de hielo: se pueden pisar.
+  iceBlocksCarry(player) {
+    player.onIce = false;
+    if (player.vy < 0) return;
+    for (const e of this.enemies) {
+      if (!e.frozen || e.dead) continue;
+      const top = e.y - e.h - 5;
+      if (Math.abs(player.x - e.x) > (player.w + e.w) / 2 || player.y < top - 2 || player.y > top + Math.max(14, player.vy * 0.055)) continue;
+      player.y = top;
+      player.vy = 0;
+      player.onGround = true;
+      player.onIce = true;
+      return;
     }
   }
 
@@ -635,6 +1142,26 @@ export class PlatScene extends Phaser.Scene {
     return enemy;
   }
 
+  // Los cañones disparan balas hacia el jugador más cercano (si está en la pantalla).
+  updateCannons(dt) {
+    const cam = this.cameras.main;
+    for (const cannon of this.cannons) {
+      const x = cannon.col * T + T / 2;
+      const y = (cannon.row + 1) * T;
+      if (x < cam.scrollX - T || x > cam.scrollX + cam.width + T) continue;
+      cannon.ms += dt;
+      if (cannon.ms < CANNON.everyMs) continue;
+      cannon.ms = 0;
+      const target = this.nearestPlayer(x, y);
+      if (!target || Math.abs(target.x - x) > CANNON.range || Math.abs(target.x - x) < T) continue;
+      const dir = Math.sign(target.x - x);
+      const bullet = this.spawnEnemy('bala', x + dir * T * 0.8, y - 6);
+      bullet.launch(dir);
+      sfx.boom();
+      burst(this, x + dir * 26, y - 24, 0x9a9aae, 6);
+    }
+  }
+
   playerVsEnemies(dtMs) {
     const dt = dtMs / 1000;
     for (const p of this.players) {
@@ -642,14 +1169,20 @@ export class PlatScene extends Phaser.Scene {
       for (const e of this.enemies) {
         if (e.dead || e.gone || !e.awake || !overlaps(p, e, 4)) continue;
         const fromAbove = p.vy > 40 && p.y - (e.y - e.h) < Math.max(22, p.vy * dt + 12);
+        // Gigante o con estrella: tumba todo lo que toca.
+        if ((p.giantMs > 0 || p.starMs > 0) && !e.type.immune) {
+          e.kill('star', Math.sign(e.x - p.x) || 1);
+          sfx.hit(0.6);
+          continue;
+        }
+        if (e.frozen) {
+          // Bloque de hielo: desde arriba es piso (iceBlocksCarry); de lado se patea.
+          if (!fromAbove && e.iceState !== 'slide') e.kickIce(Math.sign(e.x - p.x) || p.facing);
+          continue;
+        }
         if (e.type.safeTop && fromAbove) {
           p.y = e.y - e.h;
           p.bounce();
-          continue;
-        }
-        if (p.starMs > 0 && !e.type.immune) {
-          e.kill('star', Math.sign(e.x - p.x) || 1);
-          sfx.hit(0.6);
           continue;
         }
         if (e.type.kind === 'shell' && e.state !== 'slide') {
@@ -675,21 +1208,24 @@ export class PlatScene extends Phaser.Scene {
     sfx.hit(0.5);
     popText(this, enemy.x, enemy.y - enemy.h - 20, '¡Pum!', '#ffffff');
     if (enemy.type.stomp === 'shell') {
-      const shell = this.spawnEnemy('shell', enemy.x, enemy.y);
+      const shell = this.spawnEnemy(enemy.type.shellAs ?? 'shell', enemy.x, enemy.y);
       shell.state = 'idle';
       enemy.remove();
     } else if (enemy.type.stomp === 'kick') {
       enemy.state = 'idle';
       enemy.vx = 0;
+    } else if (enemy.type.stomp === 'collapse') {
+      enemy.collapse();
     } else {
       enemy.kill('stomp');
     }
   }
 
-  // Los caparazones que van patinando tumban a los enemigos que encuentren.
+  // Los caparazones (y los bloques de hielo) que van patinando tumban a los enemigos que encuentren.
   shellsVsEnemies() {
     for (const shell of this.enemies) {
-      if (shell.type.kind !== 'shell' || shell.state !== 'slide' || shell.dead) continue;
+      const sliding = (shell.type.kind === 'shell' && shell.state === 'slide' && !shell.frozen) || (shell.frozen && shell.iceState === 'slide');
+      if (!sliding || shell.dead) continue;
       for (const e of this.enemies) {
         if (e === shell || e.dead || e.type.immune || !overlaps(shell, e)) continue;
         e.kill('shell', Math.sign(shell.vx) || 1);
@@ -698,11 +1234,13 @@ export class PlatScene extends Phaser.Scene {
     }
   }
 
-  // Una bola de fuego le pegó a algo (devuelve true para que desaparezca).
+  // Una bola de fuego o de hielo le pegó a algo (devuelve true para que desaparezca).
   fireballHits(f) {
     for (const e of this.enemies) {
       if (e.dead || e.gone || !e.awake || !overlaps(f, e)) continue;
-      if (!e.type.immune) {
+      if (f.look === 'ice') {
+        if (!e.frozen && e.freeze()) rewards.earn('plat-hielo');
+      } else if (!e.type.immune && !e.type.fireproof) {
         e.kill('fire', Math.sign(f.vx) || 1);
         sfx.hit(0.4);
       }
@@ -717,6 +1255,64 @@ export class PlatScene extends Phaser.Scene {
 
   puff(x, y, color) {
     burst(this, x, y, color, 5);
+  }
+
+  // ---------- Batalla de monedas ----------
+
+  updateBattle(dt) {
+    const run = this.run;
+    run.left -= dt;
+    // Salen monedas en lugares al azar.
+    run.coinMs += dt;
+    if (run.coinMs > BATTLE.coinEveryMs && this.items.coins.length < BATTLE.maxCoins) {
+      run.coinMs = 0;
+      const spot = this.randomSpot();
+      if (spot) this.items.addCoin(spot.x, spot.y);
+    }
+    // Brincarle encima a otro jugador le tumba monedas.
+    for (const a of this.players) {
+      for (const b of this.players) {
+        if (a === b || !a.active || !b.active || b.invulnMs > 0 || a.vy <= 80 || !overlaps(a, b)) continue;
+        if (a.y - (b.y - b.h) > 26) continue;
+        a.bounce();
+        const lost = Math.min(BATTLE.drop, b.battleCoins);
+        b.battleCoins -= lost;
+        b.invulnMs = 1500;
+        b.look.flash();
+        sfx.hit(0.7);
+        popText(this, b.x, b.y - b.h - 20, lost ? `-${lost} 🪙` : '¡Pum!', '#ffd84d');
+        for (let i = 0; i < lost; i += 1) {
+          const spot = this.randomSpot();
+          if (spot) this.items.addCoin(spot.x, spot.y);
+        }
+      }
+    }
+    if (run.left <= 0 && this.phase === 'play') this.battleResults();
+  }
+
+  // Un lugar libre arriba de algo pisable (para poner una moneda).
+  randomSpot() {
+    for (let tries = 0; tries < 30; tries += 1) {
+      const col = 1 + Math.floor(Math.random() * (this.level.cols - 2));
+      const row = 2 + Math.floor(Math.random() * 10);
+      const below = this.level.at(col, row + 1);
+      if (this.level.at(col, row) === ' ' && (isSolid(below) || below === '=')) return { x: col * T + T / 2, y: (row + 1) * T };
+    }
+    return null;
+  }
+
+  battleResults() {
+    this.phase = 'results';
+    this.endMs = 0;
+    const ranking = [...this.players].sort((a, b) => b.battleCoins - a.battleCoins);
+    const best = ranking[0].battleCoins;
+    const winners = ranking.filter((p) => p.battleCoins === best);
+    if (best > 0) rewards.earn('plat-batalla');
+    confetti(this, winners.map((p) => p.color));
+    const title = winners.length > 1 ? '¡Empate!' : `¡Ganó ${winners[0].label}!`;
+    const lines = ranking.map((p, i) => `${['🥇', '🥈', '🥉', '4°'][i]}  ${p.label}: ${p.battleCoins} monedas`);
+    this.showEndScreen(title, lines, 'A = otra batalla   ·   B = mapa');
+    this.nextAction = 'battle';
   }
 
   // ---------- Jefe ----------
@@ -735,12 +1331,13 @@ export class PlatScene extends Phaser.Scene {
       if (fromAbove && boss.stompable) {
         p.vy = -900;
         const done = boss.stomped();
-        popText(this, boss.x, boss.y - boss.h - 30, done ? '¡Ganaron!' : ['¡Uno!', '¡Dos!', '¡Tres!'][2 - Math.ceil(boss.hp)] ?? '¡Pum!', '#ffd84d');
+        const count = boss.maxHp - Math.ceil(boss.hp);
+        popText(this, boss.x, boss.y - boss.h - 30, done ? '¡Ganaron!' : ['¡Uno!', '¡Dos!', '¡Tres!'][count - 1] ?? '¡Pum!', '#ffd84d');
         if (done) this.bossDefeated();
         else this.talk.line(['¡Bien! ¡Otra vez!', '¡Eso!', `¡Le duele a ${boss.type.name}!`]);
       } else if (fromAbove || boss.stunMs > 0) {
         p.vy = -500;
-      } else if (p.starMs > 0) {
+      } else if (p.starMs > 0 || p.giantMs > 0) {
         if (boss.fireHit()) this.bossDefeated();
         p.vx = Math.sign(p.x - boss.x) * 400;
       } else if (p.hurt()) {
@@ -758,20 +1355,57 @@ export class PlatScene extends Phaser.Scene {
     }
     // Los que se quedaron atrás entran también.
     const inside = (arena.left + 2) * T;
-    for (const p of this.players) if (p.state !== 'dead' && p.x < inside) Object.assign(p, { x: inside + 20, y: (arena.boss.row + 1) * T });
+    for (const p of this.players) if (p.state !== 'dead' && p.state !== 'off' && p.x < inside) Object.assign(p, { x: inside + 20, y: (arena.boss.row + 1) * T });
     const key = this.level.boss;
     const k = arena.boss;
     this.boss = new Boss(this, key, k.x, k.y, { left: (arena.left + 1) * T, right: arena.right * T });
     music.play('jefe');
     this.cameras.main.shake(300, 0.006);
-    this.showBanner(`¡${BOSSES[key].name.replace(/^el /, 'El ')}!`, 'Brínquenle encima 3 veces', 2000);
+    const name = BOSSES[key].name.replace(/^(el|la) /, (m) => m[0].toUpperCase() + m.slice(1));
+    this.showBanner(`¡${name}!`, `Brínquenle encima ${this.boss.maxHp} veces`, 2000);
   }
 
   bossDefeated() {
     confetti(this, this.players.map((p) => p.color));
     this.cameras.main.shake(400, 0.012);
     this.talk.line(`¡Vencieron a ${this.boss.type.name}!`, { important: true });
+    if (this.run.mode === 'rush') {
+      this.time.delayedCall(1500, () => this.nextRushBoss());
+      return;
+    }
     this.time.delayedCall(1500, () => this.levelClear());
+  }
+
+  nextRushBoss() {
+    if (this.phase !== 'play') return;
+    this.run.step += 1;
+    if (this.run.step >= this.run.list.length) {
+      this.rushResults(true);
+      return;
+    }
+    this.loadLevel(LEVELS[this.run.list[this.run.step]], { arenaStart: true });
+  }
+
+  rushResults(won) {
+    this.phase = 'results';
+    this.endMs = 0;
+    music.play(null);
+    const total = this.run.list.length;
+    let title;
+    const lines = [];
+    if (won) {
+      const record = progress.saveRush(this.run.ms);
+      rewards.earn('plat-jefes');
+      confetti(this, this.players.map((p) => p.color));
+      title = '¡Vencieron a todos los jefes!';
+      lines.push(`⏱️  Tiempo: ${formatTime(this.run.ms)}${record ? '   🏆 ¡Récord!' : ''}`);
+    } else {
+      title = `Llegaron al jefe ${this.run.step + 1} de ${total}`;
+    }
+    const best = progress.get().rushBest;
+    if (best) lines.push(`🏆  Récord: ${formatTime(best)}`);
+    this.showEndScreen(title, lines, 'A = otra vez   ·   B = mapa');
+    this.nextAction = 'rush';
   }
 
   quake() {
@@ -814,30 +1448,39 @@ export class PlatScene extends Phaser.Scene {
   }
 
   checkGoal() {
-    const goal = this.goal;
-    if (!goal) return;
     // (El cuarto secreto está pasando la bandera: ahí no cuenta.)
-    const winner = this.players.find((p) => p.active && p.x >= goal.x - 12 && !this.level.inBonus(p.x));
-    if (!winner) return;
-    sfx.win();
-    this.tweens.add({ targets: goal.flag, y: -40, duration: 900 });
-    this.levelClear(winner);
+    const at = (goal) => goal && this.players.find((p) => p.active && Math.abs(p.x - goal.x) < 24 + p.w / 2 && p.y > goal.y - goal.height && p.y <= goal.y + 4 && !this.level.inBonus(p.x));
+    const goal = this.goal;
+    const passed = goal && this.players.find((p) => p.active && p.x >= goal.x - 12 && !this.level.inBonus(p.x));
+    if (passed) {
+      sfx.win();
+      this.tweens.add({ targets: goal.flag, y: -40, duration: 900 });
+      this.levelClear();
+      return;
+    }
+    if (at(this.secretGoal)) {
+      sfx.win();
+      this.tweens.add({ targets: this.secretGoal.flag, y: -40, duration: 900 });
+      this.levelClear({ secret: true });
+    }
   }
 
-  levelClear() {
+  levelClear({ secret = false } = {}) {
     if (this.phase !== 'play') return;
     this.phase = 'clear';
     this.clearMs = 0;
+    this.secretExit = secret;
     for (const p of this.players) if (p.state === 'bubble') p.popBubble();
     music.play(null);
-    this.showBanner('¡Lo lograron!', '', 1800);
+    this.showBanner(secret ? '¡Bandera secreta!' : '¡Lo lograron!', '', 1800);
+    if (secret) rewards.earn('plat-secreta');
   }
 
   updateClear(dt) {
     this.clearMs += dt;
     // Todos festejan (los que estaban en burbuja también).
     for (const p of this.players) {
-      if (p.state === 'dead') continue;
+      if (p.state === 'dead' || p.state === 'off') continue;
       p.state = 'play';
       p.vx = 0;
       if (p.onGround && Math.floor(this.clearMs / 500) % 2 === 0) p.vy = -420;
@@ -854,36 +1497,61 @@ export class PlatScene extends Phaser.Scene {
   }
 
   showResults() {
+    const mode = this.run.mode;
+    if (mode === 'fight') {
+      this.mapEnemies[this.mapState.world] = null;
+      coinBank.add(FIGHT_REWARD);
+      rewards.earn('plat-mapa');
+      this.phase = 'results';
+      this.endMs = 0;
+      this.showEndScreen('¡Ganaron la batalla!', [`🪙  +${FIGHT_REWARD} monedas`], 'A = regresar al mapa');
+      this.nextAction = 'map';
+      return;
+    }
     this.phase = 'results';
     this.endMs = 0;
     const info = this.info;
     const got = this.bigTaken.got.map((g, i) => g || progress.level(info.id).big[i]);
-    const result = progress.complete(this.levelIndex, { big: got, ms: this.levelMs });
+    const index = info.secret ? null : LEVELS.indexOf(info);
+    const sourceOfSecret = this.secretExit && WORLDS[info.world].secret ? info.world : null;
+    const result = progress.complete(info.id, { big: got, ms: this.levelMs, index, secretWorld: sourceOfSecret });
     rewards.earn('plat-bandera');
     if (result.allBig) rewards.earn('plat-monedas');
     const world = WORLDS[info.world];
-    const lastOfWorld = info.index === world.levels.length - 1;
+    const lastOfWorld = !info.secret && info.index === world.levels.length - 1;
     if (lastOfWorld) rewards.earn(world.sticker);
+    const lines = [`⏱️  Tiempo: ${formatTime(this.levelMs)}${result.record ? '   🏆 ¡Récord!' : ''}`];
+    // Contrarreloj: ¿le ganaste a tu fantasma?
+    if (mode === 'trial') {
+      const ghost = ghosts.get(info.id);
+      const beat = !ghost || this.levelMs < ghost.ms;
+      if (beat) ghosts.save(info.id, { ms: Math.round(this.levelMs), path: this.recorder.samples });
+      if (ghost && beat) rewards.earn('plat-fantasma');
+      lines.push(ghost ? (beat ? `👻  ¡Le ganaste a tu fantasma! (${formatTime(ghost.ms)})` : `👻  Tu fantasma: ${formatTime(ghost.ms)}`) : '👻  Ahora tu fantasma correrá contigo');
+    } else {
+      lines.push(`🪙  Monedas: ${this.levelCoins}`, `🔵  Monedas grandes: ${got.map((g) => (g ? '●' : '○')).join(' ')}`);
+    }
+    if (result.secretOpened) lines.push('★  ¡Se abrió un nivel secreto en el mapa!');
+    const title = lastOfWorld ? `¡Ganaron ${world.name}!` : this.secretExit ? '¡Bandera secreta!' : '¡Nivel superado!';
+    const next = mode === 'level' && index !== null && index + 1 < LEVELS.length;
+    this.nextLevel = next ? index + 1 : null;
+    this.nextAction = next ? 'next' : 'map';
+    const stats = this.players.filter((p) => p.state !== 'off').map((p) => `${p.label}: 🪙 ${p.stats.coins}  👟 ${p.stats.stomps}`);
+    this.showEndScreen(title, [...lines, '', stats.join('      ')], next ? 'A = siguiente nivel   ·   B = mapa' : 'A = mapa', `${info.id}  ${info.spec.name}`);
+    if (lastOfWorld) confetti(this, this.players.map((p) => p.color));
+  }
+
+  showEndScreen(title, lines, hint, subtitle = '') {
     const { width, height } = this.scale;
     const root = this.add.container(0, 0).setDepth(HUD_DEPTH + 3).setScrollFactor(0);
     root.add(this.add.rectangle(width / 2, height / 2, width, height, 0x14112b, 0.86));
-    const title = lastOfWorld ? `¡Ganaron ${world.name}!` : '¡Nivel superado!';
-    root.add(this.add.text(width / 2, 90, title, textStyle(54, TEXT.accent, { ...OUTLINE, strokeThickness: 10 })).setOrigin(0.5));
-    root.add(this.add.text(width / 2, 165, `${info.id}  ${info.spec.name}`, textStyle(28, '#ffffff', OUTLINE)).setOrigin(0.5));
-    const lines = [
-      `⏱️  Tiempo: ${formatTime(this.levelMs)}${result.record ? '   🏆 ¡Récord!' : ''}`,
-      `🪙  Monedas: ${this.levelCoins}`,
-      `🔵  Monedas grandes: ${got.map((g) => (g ? '●' : '○')).join(' ')}`,
-    ];
-    root.add(this.add.text(width / 2, 300, lines.join('\n'), textStyle(28, '#ffffff', { ...OUTLINE, align: 'center', lineSpacing: 14 })).setOrigin(0.5));
-    const stats = this.players.map((p) => `${p.label}: 🪙 ${p.stats.coins}  👟 ${p.stats.stomps}`).join('      ');
-    root.add(this.add.text(width / 2, 450, stats, textStyle(22, '#ffd84d', OUTLINE)).setOrigin(0.5));
-    const next = this.levelIndex + 1 < LEVELS.length;
-    this.nextLevel = next ? this.levelIndex + 1 : null;
-    root.add(this.add.text(width / 2, height - 60, next ? 'A = siguiente nivel   ·   B = mapa' : 'A = mapa', textStyle(24, TEXT.accent, OUTLINE)).setOrigin(0.5));
+    root.add(this.add.text(width / 2, 90, title, textStyle(52, TEXT.accent, { ...OUTLINE, strokeThickness: 10 })).setOrigin(0.5));
+    if (subtitle) root.add(this.add.text(width / 2, 160, subtitle, textStyle(28, '#ffffff', OUTLINE)).setOrigin(0.5));
+    root.add(this.add.text(width / 2, 340, lines.join('\n'), textStyle(26, '#ffffff', { ...OUTLINE, align: 'center', lineSpacing: 12 })).setOrigin(0.5));
+    root.add(this.add.text(width / 2, height - 60, hint, textStyle(24, TEXT.accent, OUTLINE)).setOrigin(0.5));
+    this.screen?.destroy();
     this.screen = root;
-    say(`${title} ${result.record ? '¡Récord!' : ''}`.trim());
-    if (lastOfWorld) confetti(this, this.players.map((p) => p.color));
+    say(title);
   }
 
   updateEndScreen(dt) {
@@ -894,23 +1562,37 @@ export class PlatScene extends Phaser.Scene {
       if (pressed('a')) {
         this.hideBanner();
         this.lives = this.startLives();
-        this.startLevel(this.levelIndex);
+        this.loadLevel(this.info);
       } else if (pressed('b')) {
         this.hideBanner();
         this.openMap();
       }
       return;
     }
-    if (pressed('a') && this.nextLevel !== null) {
-      this.closeScreen();
-      this.mapIndex = this.nextLevel;
-      this.levelCoins = 0;
-      this.startLevel(this.nextLevel);
-    } else if (pressed('a') || pressed('b')) {
-      this.mapIndex = this.nextLevel ?? this.levelIndex;
-      this.levelCoins = 0;
-      this.openMap();
+    if (!pressed('a') && !pressed('b')) return;
+    const again = pressed('a');
+    this.closeScreen();
+    this.levelCoins = 0;
+    if (again && this.nextAction === 'next') {
+      this.syncMapNode(this.nextLevel);
+      this.loadLevel(LEVELS[this.nextLevel]);
+      return;
     }
+    if (again && (this.nextAction === 'battle' || this.nextAction === 'rush')) {
+      this.startRun(this.nextAction);
+      return;
+    }
+    if (this.run.mode === 'level') this.syncMapNode(LEVELS.indexOf(this.info) + (this.nextAction === 'next' ? 1 : 0));
+    this.openMap();
+  }
+
+  // Pone al equipo del mapa en el lugar del nivel `index`.
+  syncMapNode(index) {
+    const lv = LEVELS[Math.min(index, LEVELS.length - 1)];
+    if (!lv) return;
+    if (lv.world !== this.mapState.world) this.mapState = { world: lv.world, node: 0, enemy: null };
+    const node = worldNodes(lv.world).findIndex((n) => n.kind === 'level' && n.index === LEVELS.indexOf(lv));
+    if (node >= 0 && nodeOpen(lv.world, worldNodes(lv.world)[node])) this.mapState.node = node;
   }
 
   // ---------- Marcador ----------
@@ -930,11 +1612,27 @@ export class PlatScene extends Phaser.Scene {
   }
 
   updateHud() {
-    const text = `❤️ ${this.lives}    🪙 ${this.coins ?? 0}`;
-    if (this.livesText.text !== text) this.livesText.setText(text);
-    const saved = progress.level(this.info.id).big;
-    const big = this.bigTaken.got.map((g, i) => (g || saved[i] ? '●' : '○')).join(' ');
-    if (this.bigText.text !== big) this.bigText.setText(big);
+    const mode = this.run.mode;
+    let left;
+    let right;
+    if (mode === 'battle') {
+      left = `⏱️ ${Math.ceil(Math.max(0, this.run.left) / 1000)}`;
+      right = this.players.map((p) => `${p.label} ${p.battleCoins}`).join('  ');
+    } else if (mode === 'trial') {
+      const ghost = ghosts.get(this.info.id);
+      left = `⏱️ ${formatTime(this.levelMs)}`;
+      right = ghost ? `👻 ${formatTime(ghost.ms)}` : '';
+    } else if (mode === 'rush') {
+      left = `❤️ ${this.lives}    ⏱️ ${formatTime(this.run.ms)}`;
+      right = `👑 ${this.run.step + 1} de ${this.run.list.length}`;
+    } else {
+      const saved = this.info.id ? progress.level(this.info.id).big : [false, false, false];
+      left = `❤️ ${this.lives}    🪙 ${this.coins}`;
+      right = mode === 'fight' ? '' : this.bigTaken.got.map((g, i) => (g || saved[i] ? '●' : '○')).join(' ');
+    }
+    if (this.livesText.text !== left) this.livesText.setText(left);
+    if (this.bigText.text !== right) this.bigText.setText(right);
+    if (mode === 'battle') this.bigText.setColor(hexToCss(0xffd84d));
   }
 
   showBanner(title, subtitle = '', holdMs = 1300) {
@@ -963,6 +1661,8 @@ export class PlatScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
+    switches.red = true;
     this.scene.start('Menu', { selected: this.returnData.selected });
   }
 }
+

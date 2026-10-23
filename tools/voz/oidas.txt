@@ -385,3 +385,94 @@ Semifinal: el jugador 1 · Tanque contra la compu · Rayo
 Final: el jugador 1 · Tanque contra la compu · Robot
 ¡la compu llamó a Astronauta!
 ¡el jugador 1 está grandote!
+Tanque, Hada
+Tanque, Gatito
+Robotote, Robot
+Mundo 7. Casa embrujada
+Mundo 6. Dulcelandia
+Contrarreloj con fantasma (el nivel escogido)
+5-1 Montaña nevada
+5-3 Cueva de hielo
+6-1 Dulcelandia
+6-3 Fábrica de chicle
+7-1 Casa embrujada
+7-3 Ático de los fantasmas
+1-2 Fuerte de la Gran Tortuga
+2-2 Fuerte del Gran Pájaro
+3-2 Fuerte del Capitán Pulpo
+4-2 Fuerte de la Gran Bola de Fuego
+5-2 Fuerte del Gran Pingüino
+6-2 Fuerte de la Gran Galleta
+7-2 Fuerte del Gran Fantasma
+¡Nueva calcomanía! A volar
+¡Capa! Mantén A en el aire para planear
+¡el jugador 2 se cayó!
+¡Hielo! Aprieta X para congelar
+¡Nueva calcomanía! Congelado
+¡GIGANTE! ¡Rompe todo!
+¡Nueva calcomanía! Gigantote
+¡Chiquitito! Cabes por todos lados
+¡Dinosaurio amarillo! Al caer hace temblar el piso
+¡Botón P! Los ladrillos se volvieron monedas
+¡Azules!
+¡Bandera secreta!
+¡Nueva calcomanía! Bandera secreta
+¡Batalla de monedas!
+¡Nueva calcomanía! Rey de las monedas
+¡Ganó el jugador 2!
+¡Otra vez!
+¡Batalla!
+¡Nueva calcomanía! Camino libre
+¡Ganaron la batalla!
+Casita de hongo. Fíjate dónde está cada premio
+¿Cuál escoges?
+¡Un hongo!
+¡Nueva calcomanía! Regalo sorpresa
+Mundo 1. Pradera y cuevas
+Batalla de monedas
+Jefes en serie
+Tienda de sombreros y trajes
+Comprar una vida extra (20 monedas)
+¡Una vida extra para el siguiente nivel!
+Fuerte de la Gran Tortuga
+Casita de hongo
+1-4 El fuerte del Rey Hongo
+Mundo 2. Nubes y cielo
+¡Una flor de hielo!
+Cueva
+¡Vencieron a todos los jefes!
+¡Nueva calcomanía! Todos los jefes
+¡Una flor de fuego!
+¡Récord! combo de 21
+¡Récord! combo de 22
+¡Primer golpe de Robot!
+¡Primer golpe de Pingüino!
+¡Primer golpe de Hada!
+Tanque, Astronauta
+¡Un bumerán! Va y regresa
+Robotote, Pirata
+¡Robotote pega primero!
+¡Adiós, Rayo!
+Pirata dice: ¡Nos vemos, el jugador 1!
+Astronauta dice: ¡Auch! ¡Me las vas a pagar, el jugador 2!
+Astronauta dice: ¡Soy el más rápido!
+¡Ganó la compu, Astronauta!
+¡La bala atropelló a Abeja!
+¡Pingüino cruza la meta en primer lugar!
+Abeja dice: ¡Oye, el jugador 1, no se vale!
+Resorte dice: ¡Uy, casi te alcanzo, el jugador 1!
+Resorte dice: ¡La próxima te gano, el jugador 1!
+Estrella dice: ¡Soy el más rápido!
+Gatito dice: ¡Uy, casi te alcanzo, el jugador 1!
+Robot dice: ¡Con permiso, el jugador 1!
+¡De volea!
+¡Tanque contra Bombero!
+Semifinal: el jugador 1 · Tanque contra la compu · Bloquecito
+Final: el jugador 1 · Tanque contra la compu · Astronauta
+¡15 monedas!
+Semifinal: el jugador 1 · Tanque contra la compu · Ninja
+Final: el jugador 1 · Tanque contra la compu · Rayo
+Para ganarla: Pasen 10 rondas en el modo sin fin de Pelea en equipo
+Para ganarla: Gana el mundo del agua en Súper Bolitas
+A volar. Agarra la pluma y planea con la capa en Súper Bolitas
+Para ganarla: Lanza una bomba en Bolitas Bros
