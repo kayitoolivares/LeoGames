@@ -2294,15 +2294,20 @@ test('súper bolitas: correr, saltar, bloques, hongo, pisar enemigos, burbuja, m
   });
   await p.until(() => window.leogames.scene.getScene('Plat').players[0].size === 'big', ms(3000), 'crecer con el hongo');
 
-  // Brincarle encima a un hongo malo lo aplasta.
+  // Brincarle encima a un hongo malo (en el piso) lo aplasta. (Si en un cuadro lento no le atina, vuelve a caerle.)
   await plat(p.page, () => {
     const s = window.leogames.scene.getScene('Plat');
-    const pl = s.players[0];
-    const e = s.spawnEnemy('g', pl.x, pl.y);
-    e.vx = 0;
-    Object.assign(pl, { y: e.y - e.h - 30, vy: 500, onGround: false });
+    const x = s.level.start.x + 300;
+    window.__goomba = s.spawnEnemy('g', x, s.groundY(x));
+    window.__dropper = setInterval(() => {
+      const e = window.__goomba;
+      const pl = s.players[0];
+      if (e.dead || pl.stats.stomps > 0) return clearInterval(window.__dropper);
+      if (pl.onGround) Object.assign(pl, { x: e.x, y: e.y - e.h - 30, vx: 0, vy: 500, onGround: false });
+    }, 120);
   });
-  await p.until(() => window.leogames.scene.getScene('Plat').players[0].stats.stomps === 1, ms(3000), 'aplastar al hongo malo');
+  await p.until(() => window.leogames.scene.getScene('Plat').players[0].stats.stomps === 1, ms(5000), 'aplastar al hongo malo');
+  await plat(p.page, () => clearInterval(window.__dropper));
 
   // Si el Jugador 1 cae (y el 2 sigue), regresa en burbuja; el 2 la revienta tocándola.
   await plat(p.page, () => {
@@ -2324,11 +2329,10 @@ test('súper bolitas: correr, saltar, bloques, hongo, pisar enemigos, burbuja, m
     const s = window.leogames.scene.getScene('Plat');
     Object.assign(s.players[1], { y: s.level.height + 120, vy: 0 });
   });
-  await p.wait(300);
-  assert.deepEqual(await plat(p.page, () => {
+  await p.until(() => {
     const s = window.leogames.scene.getScene('Plat');
-    return [s.players[1].state, s.players[1].y < s.level.height];
-  }), ['play', true]);
+    return s.players[1].state === 'play' && s.players[1].y < s.level.height;
+  }, ms(3000), 'que el modo peque lo regrese del hoyo');
 
   // A la bandera: nivel superado, se abre el 1-2 y la calcomanía.
   await plat(p.page, () => {
