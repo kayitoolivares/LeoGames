@@ -1879,11 +1879,20 @@ test('duelo de bolitas: barrida, arrancón, agarre y golpe final', { timeout: ms
   // Dos toques a la derecha: arrancón.
   await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].canAct(), ms(3000), 'poder moverse otra vez');
   await place(300);
-  for (let i = 0; i < 2; i += 1) {
-    await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
-    await p.wait(70);
-    await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
-    await p.wait(70);
+  // Cada toque dura un cuadro del juego (en GitHub va lento: con tiempos fijos un toque se podía perder). Si los dos
+  // no cayeron a tiempo, se intenta otra vez.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    for (let i = 0; i < 2; i += 1) {
+      await p.page.evaluate(() => (window.__pads[0].axes = [1, 0, 0, 0]));
+      await p.frames(1);
+      await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+      await p.frames(1);
+    }
+    const dashed = await p.page.evaluate(() => {
+      const me = window.leogames.scene.getScene('Duelo').fighters[0];
+      return Boolean(me.dash) || me.x > 560;
+    });
+    if (dashed) break;
   }
   await p.until(() => window.leogames.scene.getScene('Duelo').fighters[0].dash || window.leogames.scene.getScene('Duelo').fighters[0].x > 560, ms(2000), 'hacer el arrancón');
 
