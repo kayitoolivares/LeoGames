@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { paintBlockCharacter } from '../../ui/BlockBody.js';
 import smashArt from '../smash/art.json';
+import kartArt from './art.json';
 import { announceNumber, isBlockCharacter, nextNumber } from '../smash/bloquecito.js';
 import { CHARACTERS } from '../smash/characters.js';
 
@@ -23,8 +24,16 @@ const BEHIND = -0.65;
 const AHEAD = 0.65;
 const TURNING = 0.35;
 
+// Los jefes de la Aventura: manejando (kart/jefes) y sus poses del Duelo (duelo/jefe).
+export const BOSS_NAMES = { rey: 'Rey Bolón', dragonzote: 'Dragonzote', robotote: 'Robotote' };
+const BOSS_POSES = { normal: 'normal', golpe: 'golpe', salto: 'salto', dolor: 'dolor', gana: 'normal' };
+
 // Dirección de la imagen de un personaje en una pose (para el 3D y para el podio en HTML). null si no hay.
 export function characterImageUrl(character, pose = 'normal') {
+  if (BOSS_NAMES[character]) {
+    if (kartArt.jefes?.includes(`${character}-${pose}`)) return `kart/jefes/${character}-${pose}.png`;
+    return BOSS_POSES[pose] ? `duelo/jefe/${character}-${BOSS_POSES[pose]}.png` : null;
+  }
   return smashArt.characters[character]?.includes(pose) ? `smash/personajes/${character}-${pose}.png` : null;
 }
 
@@ -116,7 +125,7 @@ class ImageDriver {
   }
 
   get name() {
-    return CHARACTERS[this.character].name;
+    return BOSS_NAMES[this.character] ?? CHARACTERS[this.character].name;
   }
 
   get imageUrl() {

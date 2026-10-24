@@ -1429,10 +1429,7 @@ test('karts locos: carrera por equipos', { timeout: ms(120000) }, async () => {
   await p.joinPlayers(2);
   await p.openGameCard('Karts locos');
   await passGarage(p, 2);
-  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
-  await p.tap(0, BUTTON.DOWN);
-  await p.tap(0, BUTTON.A);
-  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(10000), 'ver las pistas');
+  await chooseKartMode(p, 3, 'Escoge pista');
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'countdown', ms(15000), 'empezar');
   const teams = await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.team));
@@ -1483,9 +1480,8 @@ test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
   await p.joinPlayers(1);
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
-  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
-  await p.tap(0, BUTTON.RIGHT);
-  await p.tap(0, BUTTON.RIGHT);
+  await chooseKartMode(p, 2, 'Escoge batalla');
+  // La primera: Globos.
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar la batalla');
   assert.deepEqual(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.balloons)), [3, 3, 3, 3]);
@@ -1511,6 +1507,205 @@ test('karts locos: batalla de globos', { timeout: ms(120000) }, async () => {
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(5000), 'otra batalla');
   assert.deepEqual(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.racers.map((r) => r.balloons)), [3, 3, 3, 3]);
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Después del taller: el modo número `index` (0 = Carrera) y se espera la pantalla que abre.
+async function chooseKartMode(p, index, title) {
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  for (let i = 0; i < index; i += 1) await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.page.waitForFunction((text) => document.querySelector('.kart-choose h1')?.textContent.includes(text), title, { timeout: ms(10000) });
+}
+
+// Atrapa la estrella (se la lleva el que la toca y la suelta si le pegan) y Monedas (si te pegan se te caen).
+test('karts locos: batallas de estrella y de monedas', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await chooseKartMode(p, 2, 'Escoge batalla');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar la batalla de la estrella');
+  // El jugador llega a la estrella: se la lleva y le cuenta el tiempo.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    Object.assign(k.humans[0], { x: k.battle.star.x + 1, z: k.battle.star.z });
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.battle.star.holder?.isCpu === false, ms(5000), 'agarrar la estrella');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].holdMs > 500, ms(5000), 'sumar tiempo con la estrella');
+  // Le pegan: la suelta.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    Object.assign(k.humans[0], { shieldMs: 0, safeMs: 0 });
+    k.battle.hit(k.humans[0], k.racers[1]);
+  });
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.battle.star.holder), null, 'si te pegan sueltas la estrella');
+  // Se acaba el tiempo: gana el que la tuvo más.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    k.humans[0].holdMs = 60000;
+    k.battle.timeMs = 10;
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'terminar la batalla de la estrella');
+  assert.ok((await stickers(p.page)).includes('kart-batalla'), 'ganar la batalla da su calcomanía');
+  // B = otra clase de batalla: Monedas.
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda cambiar');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge batalla', ms(30000), 'regresar a las batallas');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar la batalla de monedas');
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    k.battle.addCoin(k.humans[0].x, k.humans[0].z);
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].battleCoins === 1, ms(5000), 'agarrar una moneda');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Eliminación: cada ratito sale el último; el que queda gana.
+test('karts locos: carrera de eliminación', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await chooseKartMode(p, 5, 'Escoge pista');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar la eliminación');
+  // El jugador va hasta adelante y el reloj de la eliminación casi en cero, una y otra vez: van saliendo los demás.
+  await p.page.evaluate(() => {
+    window.__elim = setInterval(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      if (k?.phase !== 'race') return;
+      k.humans[0].lap = 1;
+      k.elimLeft = Math.min(k.elimLeft, 200);
+    }, 100);
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(30000), 'que se queden fuera todos los demás');
+  await p.page.evaluate(() => clearInterval(window.__elim));
+  const state = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    return { out: k.racers.filter((r) => r.out).length, total: k.racers.length, first: k.ranking()[0].isCpu };
+  });
+  assert.equal(state.out, state.total - 1, 'salen todos menos uno');
+  assert.equal(state.first, false, 'gana el jugador');
+  assert.ok((await stickers(p.page)).includes('kart-eliminacion'), 'ganar la eliminación da su calcomanía');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Escuela de manejo: el reto de los aros (sin compu ni cajitas); al pasar los 8 aros, la medalla.
+test('karts locos: escuela de manejo con medalla', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await chooseKartMode(p, 6, 'Escuela de manejo');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar el reto de los aros');
+  const setup = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    return { racers: k.racers.length, boxes: k.boxes.boxes.length, rings: k.lesson.rings.length };
+  });
+  assert.deepEqual(setup, { racers: 1, boxes: 0, rings: 8 });
+  // Pasa por cada aro (se le pone encima, uno por uno).
+  for (let i = 0; i < 8; i += 1) {
+    await p.page.evaluate(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      const s = k.lesson.state.get(k.humans[0]);
+      const ring = k.lesson.rings[s.ring];
+      Object.assign(k.humans[0], { x: ring.x, z: ring.z, index: ring.index });
+    });
+    await p.page.waitForFunction((n) => window.leogames.scene.getScene('Kart').game3d.lesson.state.values().next().value.ring > n, i, { timeout: ms(5000) });
+  }
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'ver la medalla');
+  assert.ok((await stickers(p.page)).includes('kart-escuela'), 'el oro da su calcomanía');
+  // B = otro reto.
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda cambiar');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent.includes('Escuela'), ms(30000), 'regresar a la escuela');
+  assert.ok(await p.page.evaluate(() => document.querySelector('.kart-choose').textContent.includes('🥇')), 'la medalla se ve en el reto');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Aventura: el primer reto (llegar entre los 3 primeros) abre el que sigue; el jefe es más grande y avienta cosas.
+test('karts locos: aventura con retos y jefe', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await chooseKartMode(p, 7, 'Aventura');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent.includes('Pradera'), ms(10000), 'ver los retos del mundo');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar el primer reto');
+  // Llega primero.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const h = k.humans[0];
+    h.lap = k.laps;
+    k.onLap(h);
+    k.showResults();
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'ver si pasó el reto');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.stageWon), 'pasó el reto');
+  // A = el siguiente reto: las monedas en la playa (llega con 10) y luego Rayo uno contra uno (le gana).
+  for (const [stage, track, racers] of [
+    [1, 'playa', 6],
+    [2, 'dulces', 2],
+  ]) {
+    await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda seguir');
+    await p.tap(0, BUTTON.A);
+    await p.page.waitForFunction((n) => window.leogames.scene.getScene('Kart').game3d?.stage?.stage === n && window.leogames.scene.getScene('Kart').game3d.phase === 'race', stage, {
+      timeout: ms(30000),
+    });
+    const now = await p.page.evaluate(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      return [k.trackKey, k.racers.length];
+    });
+    assert.deepEqual(now, [track, racers]);
+    await p.page.evaluate(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      const h = k.humans[0];
+      h.coins = 10;
+      h.lap = k.laps;
+      k.onLap(h);
+      k.showResults();
+    });
+    await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'ver si pasó el reto');
+    assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.stageWon), `pasó el reto ${stage + 1}`);
+  }
+  // El jefe del primer mundo: el Rey Bolón en su kart (más grande) con dos de la compu.
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda seguir');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.stage?.stage === 3 && window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(30000), 'empezar la carrera contra el jefe');
+  const boss = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    k.bossAttackMs = 0;
+    return { name: k.rivalRacer.driver.name, big: k.rivalRacer.bigness, racers: k.racers.length };
+  });
+  assert.deepEqual(boss, { name: 'Rey Bolón', big: 1.35, racers: 4 });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.bossAttackMs > 1000, ms(5000), 'que el jefe aviente algo');
+  // Le gana al jefe.
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const h = k.humans[0];
+    h.lap = k.laps;
+    k.onLap(h);
+    k.showResults();
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'ganarle al jefe');
+  assert.ok((await stickers(p.page)).includes('kart-jefe'), 'ganarle al jefe da su calcomanía');
   await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.deepEqual(p.errors, []);
   await p.context.close();

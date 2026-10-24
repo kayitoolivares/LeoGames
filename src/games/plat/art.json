@@ -59,5 +59,15 @@
     "nieve",
     "playa",
     "pradera"
+  ],
+  "ambiente": [
+    "copo",
+    "dulce",
+    "hoja",
+    "mariposa",
+    "murcielago1",
+    "murcielago2",
+    "pajaro1",
+    "pajaro2"
   ]
 }

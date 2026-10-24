@@ -188,6 +188,8 @@ export class Racer {
     this.slipMs = 0;
     this.slipDir = 0;
     this.draftMs = 0;
+    // Cuántas veces le pegaron (para el reto "sin un rasguño" de la Aventura).
+    this.hitsTaken = 0;
     // Lo que pasó este cuadro (mini turbo, truco...), para que el juego ponga sonidos y letreros.
     this.events = [];
   }
@@ -264,6 +266,7 @@ export class Racer {
     const peque = this.setup.peque;
     this.spinMs = SPIN_MS * (peque ? 0.6 : 1);
     this.spinTotal = this.spinMs;
+    this.hitsTaken += 1;
     this.speed *= 0.3;
     this.boostMs = 0;
     this.coins = Math.max(0, this.coins - (peque ? 1 : COINS_LOST));
@@ -404,9 +407,10 @@ export class Racer {
     this.object.rotation.x = -this.pitch;
     // Encogido por el rayo: se hace chiquito poco a poco (y vuelve a crecer igual).
     this.size += ((this.shrinkMs > 0 ? SHRINK_SCALE : 1) - this.size) * 0.15;
-    // Recién caído: se aplasta y rebota.
+    // Recién caído: se aplasta y rebota. (Los jefes son más grandes: `bigness`.)
     const land = this.landMs > 0 ? Math.sin((this.landMs / LAND_MS) * Math.PI) * (this.landMs / LAND_MS) : 0;
-    this.object.scale.set(this.size * (1 + 0.16 * land), this.size * (1 - 0.24 * land), this.size * (1 + 0.16 * land));
+    const size = this.size * (this.bigness ?? 1);
+    this.object.scale.set(size * (1 + 0.16 * land), size * (1 - 0.24 * land), size * (1 + 0.16 * land));
     // Derrapando, la trompa apunta más hacia adentro de la curva (se ve de lado).
     this.visualYaw += ((this.drifting ? -this.driftDir * DRIFT_YAW : 0) - this.visualYaw) * 0.2;
     this.object.rotation.y = this.heading + spin + this.visualYaw;

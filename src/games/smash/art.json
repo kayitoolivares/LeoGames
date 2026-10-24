@@ -20,10 +20,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -31,13 +35,21 @@
       "salto"
     ],
     "abeja_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "astronauta": [
@@ -60,10 +72,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -71,13 +87,21 @@
       "salto"
     ],
     "astronauta_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "bloque1": [
@@ -239,10 +263,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -250,13 +278,21 @@
       "salto"
     ],
     "bombero_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "dino": [
@@ -279,10 +315,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -290,13 +330,21 @@
       "salto"
     ],
     "dino_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "dragon": [
@@ -319,10 +367,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -330,13 +382,21 @@
       "salto"
     ],
     "dragon_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "estrella": [
@@ -359,10 +419,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -370,13 +434,21 @@
       "salto"
     ],
     "estrella_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "fantasma": [
@@ -399,10 +471,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -410,13 +486,21 @@
       "salto"
     ],
     "fantasma_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "gatito": [
@@ -439,10 +523,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -479,10 +567,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -490,13 +582,21 @@
       "salto"
     ],
     "hada_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "ninja": [
@@ -519,10 +619,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -530,13 +634,21 @@
       "salto"
     ],
     "ninja_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "octobloque": [
@@ -573,10 +685,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -584,13 +700,21 @@
       "salto"
     ],
     "pinguino_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "pirata": [
@@ -613,10 +737,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -624,13 +752,21 @@
       "salto"
     ],
     "pirata_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "rayo": [
@@ -653,10 +789,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -664,13 +804,21 @@
       "salto"
     ],
     "rayo_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "resorte": [
@@ -693,10 +841,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -704,13 +856,21 @@
       "salto"
     ],
     "resorte_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "robot": [
@@ -733,10 +893,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -744,13 +908,21 @@
       "salto"
     ],
     "robot_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "tanque": [
@@ -773,10 +945,14 @@
       "especial",
       "feliz",
       "frente",
+      "frente_enojado",
+      "frente_feliz",
       "gana",
       "giro",
       "golpe",
       "lado",
+      "lado_enojado",
+      "lado_feliz",
       "mareado",
       "normal",
       "parpadeo",
@@ -784,13 +960,21 @@
       "salto"
     ],
     "tanque_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ]
   },
@@ -922,6 +1106,16 @@
       0.508,
       256
     ],
+    "abeja-frente_enojado": [
+      37271,
+      0.508,
+      256
+    ],
+    "abeja-frente_feliz": [
+      37219,
+      0.511,
+      256
+    ],
     "abeja-gana": [
       22898,
       0.506,
@@ -940,6 +1134,16 @@
     "abeja-lado": [
       40630,
       0.575,
+      256
+    ],
+    "abeja-lado_enojado": [
+      41747,
+      0.578,
+      256
+    ],
+    "abeja-lado_feliz": [
+      41822,
+      0.578,
       256
     ],
     "abeja-mareado": [
@@ -967,6 +1171,26 @@
       0.513,
       256
     ],
+    "abeja_super-asustado": [
+      42163,
+      0.514,
+      256
+    ],
+    "abeja_super-baile1": [
+      38270,
+      0.522,
+      256
+    ],
+    "abeja_super-baile2": [
+      38497,
+      0.52,
+      256
+    ],
+    "abeja_super-caer": [
+      36154,
+      0.498,
+      256
+    ],
     "abeja_super-caminar1": [
       34834,
       0.525,
@@ -992,15 +1216,35 @@
       0.526,
       256
     ],
+    "abeja_super-enojado": [
+      40231,
+      0.535,
+      256
+    ],
+    "abeja_super-feliz": [
+      40227,
+      0.5,
+      256
+    ],
     "abeja_super-golpe": [
       42886,
       0.521,
       246
     ],
+    "abeja_super-mareado": [
+      40425,
+      0.539,
+      256
+    ],
     "abeja_super-normal": [
       40490,
       0.51,
       237
+    ],
+    "abeja_super-parpadeo": [
+      41508,
+      0.51,
+      242
     ],
     "abeja_super-salto": [
       40212,
@@ -1102,6 +1346,16 @@
       0.5,
       256
     ],
+    "astronauta-frente_enojado": [
+      39666,
+      0.493,
+      256
+    ],
+    "astronauta-frente_feliz": [
+      39704,
+      0.493,
+      256
+    ],
     "astronauta-gana": [
       31306,
       0.503,
@@ -1120,6 +1374,16 @@
     "astronauta-lado": [
       39371,
       0.454,
+      256
+    ],
+    "astronauta-lado_enojado": [
+      37535,
+      0.488,
+      256
+    ],
+    "astronauta-lado_feliz": [
+      37538,
+      0.488,
       256
     ],
     "astronauta-mareado": [
@@ -1147,6 +1411,26 @@
       0.488,
       256
     ],
+    "astronauta_super-asustado": [
+      31868,
+      0.515,
+      256
+    ],
+    "astronauta_super-baile1": [
+      33087,
+      0.534,
+      256
+    ],
+    "astronauta_super-baile2": [
+      32620,
+      0.535,
+      256
+    ],
+    "astronauta_super-caer": [
+      35773,
+      0.435,
+      256
+    ],
     "astronauta_super-caminar1": [
       28096,
       0.524,
@@ -1172,13 +1456,33 @@
       0.536,
       256
     ],
+    "astronauta_super-enojado": [
+      33994,
+      0.478,
+      256
+    ],
+    "astronauta_super-feliz": [
+      35186,
+      0.477,
+      256
+    ],
     "astronauta_super-golpe": [
       36443,
       0.518,
       256
     ],
+    "astronauta_super-mareado": [
+      34238,
+      0.514,
+      256
+    ],
     "astronauta_super-normal": [
       30184,
+      0.503,
+      256
+    ],
+    "astronauta_super-parpadeo": [
+      30253,
       0.503,
       256
     ],
@@ -1877,6 +2181,16 @@
       0.537,
       256
     ],
+    "bombero-frente_enojado": [
+      40704,
+      0.502,
+      256
+    ],
+    "bombero-frente_feliz": [
+      40657,
+      0.502,
+      256
+    ],
     "bombero-gana": [
       32758,
       0.474,
@@ -1895,6 +2209,16 @@
     "bombero-lado": [
       36446,
       0.552,
+      256
+    ],
+    "bombero-lado_enojado": [
+      39214,
+      0.505,
+      256
+    ],
+    "bombero-lado_feliz": [
+      39253,
+      0.505,
       256
     ],
     "bombero-mareado": [
@@ -1922,6 +2246,26 @@
       0.517,
       256
     ],
+    "bombero_super-asustado": [
+      32898,
+      0.506,
+      256
+    ],
+    "bombero_super-baile1": [
+      34844,
+      0.55,
+      256
+    ],
+    "bombero_super-baile2": [
+      35125,
+      0.45,
+      256
+    ],
+    "bombero_super-caer": [
+      27961,
+      0.549,
+      222
+    ],
     "bombero_super-caminar1": [
       33288,
       0.481,
@@ -1947,14 +2291,34 @@
       0.473,
       256
     ],
+    "bombero_super-enojado": [
+      35679,
+      0.449,
+      256
+    ],
+    "bombero_super-feliz": [
+      37674,
+      0.494,
+      256
+    ],
     "bombero_super-golpe": [
       25851,
       0.4,
       199
     ],
+    "bombero_super-mareado": [
+      36051,
+      0.435,
+      256
+    ],
     "bombero_super-normal": [
       37713,
       0.491,
+      256
+    ],
+    "bombero_super-parpadeo": [
+      37288,
+      0.488,
       256
     ],
     "bombero_super-salto": [
@@ -2057,6 +2421,16 @@
       0.5,
       256
     ],
+    "dino-frente_enojado": [
+      38439,
+      0.5,
+      256
+    ],
+    "dino-frente_feliz": [
+      36965,
+      0.497,
+      256
+    ],
     "dino-gana": [
       30819,
       0.484,
@@ -2075,6 +2449,16 @@
     "dino-lado": [
       41174,
       0.553,
+      256
+    ],
+    "dino-lado_enojado": [
+      36068,
+      0.603,
+      256
+    ],
+    "dino-lado_feliz": [
+      36905,
+      0.589,
       256
     ],
     "dino-mareado": [
@@ -2102,6 +2486,26 @@
       0.55,
       256
     ],
+    "dino_super-asustado": [
+      40014,
+      0.545,
+      256
+    ],
+    "dino_super-baile1": [
+      38363,
+      0.471,
+      256
+    ],
+    "dino_super-baile2": [
+      38365,
+      0.471,
+      256
+    ],
+    "dino_super-caer": [
+      42274,
+      0.528,
+      256
+    ],
     "dino_super-caminar1": [
       37196,
       0.512,
@@ -2127,14 +2531,34 @@
       0.521,
       256
     ],
+    "dino_super-enojado": [
+      42000,
+      0.513,
+      256
+    ],
+    "dino_super-feliz": [
+      35048,
+      0.478,
+      256
+    ],
     "dino_super-golpe": [
       44374,
       0.498,
       256
     ],
+    "dino_super-mareado": [
+      38966,
+      0.498,
+      249
+    ],
     "dino_super-normal": [
       40231,
       0.511,
+      256
+    ],
+    "dino_super-parpadeo": [
+      40079,
+      0.509,
       256
     ],
     "dino_super-salto": [
@@ -2237,6 +2661,16 @@
       0.496,
       256
     ],
+    "dragon-frente_enojado": [
+      39876,
+      0.498,
+      256
+    ],
+    "dragon-frente_feliz": [
+      39651,
+      0.498,
+      256
+    ],
     "dragon-gana": [
       31561,
       0.462,
@@ -2255,6 +2689,16 @@
     "dragon-lado": [
       36076,
       0.528,
+      256
+    ],
+    "dragon-lado_enojado": [
+      41000,
+      0.535,
+      256
+    ],
+    "dragon-lado_feliz": [
+      40968,
+      0.533,
       256
     ],
     "dragon-mareado": [
@@ -2282,6 +2726,26 @@
       0.542,
       256
     ],
+    "dragon_super-asustado": [
+      36361,
+      0.587,
+      256
+    ],
+    "dragon_super-baile1": [
+      36184,
+      0.536,
+      256
+    ],
+    "dragon_super-baile2": [
+      35795,
+      0.537,
+      256
+    ],
+    "dragon_super-caer": [
+      28681,
+      0.593,
+      256
+    ],
     "dragon_super-caminar1": [
       37731,
       0.564,
@@ -2307,14 +2771,34 @@
       0.568,
       233
     ],
+    "dragon_super-enojado": [
+      36344,
+      0.555,
+      256
+    ],
+    "dragon_super-feliz": [
+      36241,
+      0.557,
+      256
+    ],
     "dragon_super-golpe": [
       33292,
       0.518,
       234
     ],
+    "dragon_super-mareado": [
+      35730,
+      0.575,
+      256
+    ],
     "dragon_super-normal": [
       37132,
       0.573,
+      256
+    ],
+    "dragon_super-parpadeo": [
+      37082,
+      0.572,
       256
     ],
     "dragon_super-salto": [
@@ -2417,6 +2901,16 @@
       0.5,
       256
     ],
+    "estrella-frente_enojado": [
+      35816,
+      0.502,
+      256
+    ],
+    "estrella-frente_feliz": [
+      36007,
+      0.5,
+      256
+    ],
     "estrella-gana": [
       34001,
       0.498,
@@ -2435,6 +2929,16 @@
     "estrella-lado": [
       34159,
       0.492,
+      256
+    ],
+    "estrella-lado_enojado": [
+      35491,
+      0.5,
+      256
+    ],
+    "estrella-lado_feliz": [
+      33222,
+      0.484,
       256
     ],
     "estrella-mareado": [
@@ -2462,6 +2966,26 @@
       0.5,
       256
     ],
+    "estrella_super-asustado": [
+      34528,
+      0.404,
+      253
+    ],
+    "estrella_super-baile1": [
+      33943,
+      0.561,
+      246
+    ],
+    "estrella_super-baile2": [
+      33715,
+      0.436,
+      245
+    ],
+    "estrella_super-caer": [
+      32959,
+      0.447,
+      244
+    ],
     "estrella_super-caminar1": [
       31463,
       0.58,
@@ -2487,15 +3011,35 @@
       0.604,
       234
     ],
+    "estrella_super-enojado": [
+      27132,
+      0.459,
+      207
+    ],
+    "estrella_super-feliz": [
+      32299,
+      0.463,
+      221
+    ],
     "estrella_super-golpe": [
       25333,
       0.518,
       200
     ],
+    "estrella_super-mareado": [
+      36021,
+      0.607,
+      248
+    ],
     "estrella_super-normal": [
       27067,
       0.455,
       206
+    ],
+    "estrella_super-parpadeo": [
+      27261,
+      0.455,
+      208
     ],
     "estrella_super-salto": [
       30345,
@@ -2597,6 +3141,16 @@
       0.5,
       256
     ],
+    "fantasma-frente_enojado": [
+      43773,
+      0.495,
+      256
+    ],
+    "fantasma-frente_feliz": [
+      42982,
+      0.502,
+      256
+    ],
     "fantasma-gana": [
       32262,
       0.459,
@@ -2615,6 +3169,16 @@
     "fantasma-lado": [
       40661,
       0.471,
+      256
+    ],
+    "fantasma-lado_enojado": [
+      39769,
+      0.491,
+      256
+    ],
+    "fantasma-lado_feliz": [
+      39640,
+      0.491,
       256
     ],
     "fantasma-mareado": [
@@ -2642,6 +3206,26 @@
       0.47,
       256
     ],
+    "fantasma_super-asustado": [
+      37236,
+      0.572,
+      256
+    ],
+    "fantasma_super-baile1": [
+      34696,
+      0.473,
+      256
+    ],
+    "fantasma_super-baile2": [
+      34964,
+      0.475,
+      256
+    ],
+    "fantasma_super-caer": [
+      37487,
+      0.564,
+      231
+    ],
     "fantasma_super-caminar1": [
       40632,
       0.591,
@@ -2667,15 +3251,35 @@
       0.521,
       237
     ],
+    "fantasma_super-enojado": [
+      40693,
+      0.54,
+      256
+    ],
+    "fantasma_super-feliz": [
+      43414,
+      0.508,
+      256
+    ],
     "fantasma_super-golpe": [
       32614,
       0.486,
       224
     ],
+    "fantasma_super-mareado": [
+      36639,
+      0.496,
+      256
+    ],
     "fantasma_super-normal": [
       37242,
       0.521,
       239
+    ],
+    "fantasma_super-parpadeo": [
+      40579,
+      0.573,
+      256
     ],
     "fantasma_super-salto": [
       37929,
@@ -2777,6 +3381,16 @@
       0.497,
       256
     ],
+    "gatito-frente_enojado": [
+      40519,
+      0.49,
+      256
+    ],
+    "gatito-frente_feliz": [
+      40574,
+      0.495,
+      256
+    ],
     "gatito-gana": [
       32654,
       0.503,
@@ -2795,6 +3409,16 @@
     "gatito-lado": [
       38131,
       0.583,
+      256
+    ],
+    "gatito-lado_enojado": [
+      40004,
+      0.554,
+      256
+    ],
+    "gatito-lado_feliz": [
+      38988,
+      0.538,
       256
     ],
     "gatito-mareado": [
@@ -2957,6 +3581,16 @@
       0.498,
       256
     ],
+    "hada-frente_enojado": [
+      45058,
+      0.5,
+      256
+    ],
+    "hada-frente_feliz": [
+      45093,
+      0.5,
+      256
+    ],
     "hada-gana": [
       29497,
       0.51,
@@ -2975,6 +3609,16 @@
     "hada-lado": [
       44452,
       0.539,
+      256
+    ],
+    "hada-lado_enojado": [
+      40921,
+      0.568,
+      256
+    ],
+    "hada-lado_feliz": [
+      40886,
+      0.563,
       256
     ],
     "hada-mareado": [
@@ -3002,6 +3646,26 @@
       0.508,
       256
     ],
+    "hada_super-asustado": [
+      34747,
+      0.51,
+      218
+    ],
+    "hada_super-baile1": [
+      38345,
+      0.525,
+      256
+    ],
+    "hada_super-baile2": [
+      39072,
+      0.51,
+      251
+    ],
+    "hada_super-caer": [
+      29269,
+      0.471,
+      213
+    ],
     "hada_super-caminar1": [
       30999,
       0.5,
@@ -3027,15 +3691,35 @@
       0.486,
       256
     ],
+    "hada_super-enojado": [
+      40789,
+      0.521,
+      248
+    ],
+    "hada_super-feliz": [
+      34105,
+      0.502,
+      212
+    ],
     "hada_super-golpe": [
       28660,
       0.442,
       256
     ],
+    "hada_super-mareado": [
+      36260,
+      0.568,
+      246
+    ],
     "hada_super-normal": [
       40180,
       0.522,
       256
+    ],
+    "hada_super-parpadeo": [
+      37945,
+      0.521,
+      234
     ],
     "hada_super-salto": [
       26973,
@@ -3137,6 +3821,16 @@
       0.578,
       256
     ],
+    "ninja-frente_enojado": [
+      46196,
+      0.518,
+      256
+    ],
+    "ninja-frente_feliz": [
+      44223,
+      0.521,
+      223
+    ],
     "ninja-gana": [
       29644,
       0.533,
@@ -3156,6 +3850,16 @@
       38634,
       0.541,
       245
+    ],
+    "ninja-lado_enojado": [
+      37155,
+      0.613,
+      256
+    ],
+    "ninja-lado_feliz": [
+      37272,
+      0.616,
+      256
     ],
     "ninja-mareado": [
       32142,
@@ -3182,6 +3886,26 @@
       0.533,
       248
     ],
+    "ninja_super-asustado": [
+      36416,
+      0.607,
+      235
+    ],
+    "ninja_super-baile1": [
+      31938,
+      0.483,
+      256
+    ],
+    "ninja_super-baile2": [
+      32897,
+      0.449,
+      256
+    ],
+    "ninja_super-caer": [
+      28424,
+      0.581,
+      256
+    ],
     "ninja_super-caminar1": [
       37849,
       0.6,
@@ -3207,15 +3931,35 @@
       0.576,
       203
     ],
+    "ninja_super-enojado": [
+      35477,
+      0.564,
+      226
+    ],
+    "ninja_super-feliz": [
+      30975,
+      0.553,
+      206
+    ],
     "ninja_super-golpe": [
       27059,
       0.521,
       190
     ],
+    "ninja_super-mareado": [
+      35582,
+      0.467,
+      256
+    ],
     "ninja_super-normal": [
       37057,
       0.607,
       228
+    ],
+    "ninja_super-parpadeo": [
+      34153,
+      0.631,
+      215
     ],
     "ninja_super-salto": [
       30996,
@@ -3377,6 +4121,16 @@
       0.502,
       256
     ],
+    "pinguino-frente_enojado": [
+      42002,
+      0.502,
+      256
+    ],
+    "pinguino-frente_feliz": [
+      42035,
+      0.502,
+      256
+    ],
     "pinguino-gana": [
       30423,
       0.539,
@@ -3395,6 +4149,16 @@
     "pinguino-lado": [
       42154,
       0.5,
+      256
+    ],
+    "pinguino-lado_enojado": [
+      40275,
+      0.502,
+      256
+    ],
+    "pinguino-lado_feliz": [
+      39854,
+      0.498,
       256
     ],
     "pinguino-mareado": [
@@ -3422,6 +4186,26 @@
       0.506,
       256
     ],
+    "pinguino_super-asustado": [
+      37013,
+      0.513,
+      256
+    ],
+    "pinguino_super-baile1": [
+      37999,
+      0.482,
+      256
+    ],
+    "pinguino_super-baile2": [
+      37548,
+      0.488,
+      256
+    ],
+    "pinguino_super-caer": [
+      39172,
+      0.495,
+      256
+    ],
     "pinguino_super-caminar1": [
       31608,
       0.5,
@@ -3447,13 +4231,33 @@
       0.513,
       256
     ],
+    "pinguino_super-enojado": [
+      39123,
+      0.47,
+      256
+    ],
+    "pinguino_super-feliz": [
+      38437,
+      0.493,
+      256
+    ],
     "pinguino_super-golpe": [
       29313,
       0.521,
       162
     ],
+    "pinguino_super-mareado": [
+      36975,
+      0.473,
+      256
+    ],
     "pinguino_super-normal": [
       38253,
+      0.498,
+      256
+    ],
+    "pinguino_super-parpadeo": [
+      40854,
       0.498,
       256
     ],
@@ -3557,6 +4361,16 @@
       0.544,
       256
     ],
+    "pirata-frente_enojado": [
+      38542,
+      0.49,
+      231
+    ],
+    "pirata-frente_feliz": [
+      41110,
+      0.502,
+      241
+    ],
     "pirata-gana": [
       41524,
       0.506,
@@ -3575,6 +4389,16 @@
     "pirata-lado": [
       39577,
       0.527,
+      256
+    ],
+    "pirata-lado_enojado": [
+      43034,
+      0.502,
+      256
+    ],
+    "pirata-lado_feliz": [
+      40690,
+      0.485,
       256
     ],
     "pirata-mareado": [
@@ -3602,6 +4426,26 @@
       0.492,
       256
     ],
+    "pirata_super-asustado": [
+      42283,
+      0.482,
+      251
+    ],
+    "pirata_super-baile1": [
+      41425,
+      0.532,
+      256
+    ],
+    "pirata_super-baile2": [
+      42054,
+      0.522,
+      256
+    ],
+    "pirata_super-caer": [
+      43081,
+      0.52,
+      256
+    ],
     "pirata_super-caminar1": [
       45096,
       0.496,
@@ -3627,14 +4471,34 @@
       0.514,
       240
     ],
+    "pirata_super-enojado": [
+      35024,
+      0.451,
+      218
+    ],
+    "pirata_super-feliz": [
+      36430,
+      0.455,
+      218
+    ],
     "pirata_super-golpe": [
       33846,
       0.443,
       214
     ],
+    "pirata_super-mareado": [
+      41075,
+      0.516,
+      256
+    ],
     "pirata_super-normal": [
       45089,
       0.531,
+      256
+    ],
+    "pirata_super-parpadeo": [
+      44370,
+      0.529,
       256
     ],
     "pirata_super-salto": [
@@ -3737,6 +4601,16 @@
       0.582,
       256
     ],
+    "rayo-frente_enojado": [
+      34094,
+      0.578,
+      256
+    ],
+    "rayo-frente_feliz": [
+      35260,
+      0.583,
+      256
+    ],
     "rayo-gana": [
       30758,
       0.454,
@@ -3755,6 +4629,16 @@
     "rayo-lado": [
       37133,
       0.453,
+      256
+    ],
+    "rayo-lado_enojado": [
+      34001,
+      0.438,
+      256
+    ],
+    "rayo-lado_feliz": [
+      32361,
+      0.533,
       256
     ],
     "rayo-mareado": [
@@ -3782,6 +4666,26 @@
       0.476,
       256
     ],
+    "rayo_super-asustado": [
+      31814,
+      0.565,
+      256
+    ],
+    "rayo_super-baile1": [
+      30921,
+      0.448,
+      256
+    ],
+    "rayo_super-baile2": [
+      29370,
+      0.476,
+      256
+    ],
+    "rayo_super-caer": [
+      33994,
+      0.482,
+      254
+    ],
     "rayo_super-caminar1": [
       32822,
       0.449,
@@ -3807,14 +4711,34 @@
       0.482,
       241
     ],
+    "rayo_super-enojado": [
+      35879,
+      0.524,
+      256
+    ],
+    "rayo_super-feliz": [
+      39984,
+      0.466,
+      256
+    ],
     "rayo_super-golpe": [
       32715,
       0.436,
       221
     ],
+    "rayo_super-mareado": [
+      30867,
+      0.542,
+      256
+    ],
     "rayo_super-normal": [
       31225,
       0.488,
+      256
+    ],
+    "rayo_super-parpadeo": [
+      33678,
+      0.568,
       256
     ],
     "rayo_super-salto": [
@@ -3917,6 +4841,16 @@
       0.543,
       256
     ],
+    "resorte-frente_enojado": [
+      35373,
+      0.526,
+      256
+    ],
+    "resorte-frente_feliz": [
+      36921,
+      0.541,
+      256
+    ],
     "resorte-gana": [
       26669,
       0.43,
@@ -3935,6 +4869,16 @@
     "resorte-lado": [
       32227,
       0.421,
+      256
+    ],
+    "resorte-lado_enojado": [
+      37226,
+      0.487,
+      256
+    ],
+    "resorte-lado_feliz": [
+      36847,
+      0.494,
       256
     ],
     "resorte-mareado": [
@@ -3962,6 +4906,26 @@
       0.51,
       256
     ],
+    "resorte_super-asustado": [
+      28196,
+      0.631,
+      256
+    ],
+    "resorte_super-baile1": [
+      31049,
+      0.484,
+      256
+    ],
+    "resorte_super-baile2": [
+      30894,
+      0.492,
+      256
+    ],
+    "resorte_super-caer": [
+      33726,
+      0.545,
+      245
+    ],
     "resorte_super-caminar1": [
       32297,
       0.569,
@@ -3987,14 +4951,34 @@
       0.553,
       255
     ],
+    "resorte_super-enojado": [
+      31035,
+      0.569,
+      256
+    ],
+    "resorte_super-feliz": [
+      34080,
+      0.485,
+      256
+    ],
     "resorte_super-golpe": [
       28362,
       0.514,
       241
     ],
+    "resorte_super-mareado": [
+      31047,
+      0.551,
+      256
+    ],
     "resorte_super-normal": [
       31236,
       0.572,
+      256
+    ],
+    "resorte_super-parpadeo": [
+      29823,
+      0.634,
       256
     ],
     "resorte_super-salto": [
@@ -4097,6 +5081,16 @@
       0.5,
       256
     ],
+    "robot-frente_enojado": [
+      33656,
+      0.5,
+      256
+    ],
+    "robot-frente_feliz": [
+      33594,
+      0.5,
+      256
+    ],
     "robot-gana": [
       28745,
       0.473,
@@ -4115,6 +5109,16 @@
     "robot-lado": [
       31577,
       0.428,
+      256
+    ],
+    "robot-lado_enojado": [
+      28184,
+      0.497,
+      256
+    ],
+    "robot-lado_feliz": [
+      27681,
+      0.484,
       256
     ],
     "robot-mareado": [
@@ -4142,6 +5146,26 @@
       0.488,
       256
     ],
+    "robot_super-asustado": [
+      31065,
+      0.505,
+      256
+    ],
+    "robot_super-baile1": [
+      28928,
+      0.431,
+      256
+    ],
+    "robot_super-baile2": [
+      29424,
+      0.438,
+      256
+    ],
+    "robot_super-caer": [
+      31730,
+      0.481,
+      256
+    ],
     "robot_super-caminar1": [
       27981,
       0.497,
@@ -4167,14 +5191,34 @@
       0.474,
       256
     ],
+    "robot_super-enojado": [
+      35316,
+      0.458,
+      256
+    ],
+    "robot_super-feliz": [
+      36736,
+      0.477,
+      256
+    ],
     "robot_super-golpe": [
       29959,
       0.377,
       232
     ],
+    "robot_super-mareado": [
+      36226,
+      0.445,
+      256
+    ],
     "robot_super-normal": [
       33913,
       0.502,
+      256
+    ],
+    "robot_super-parpadeo": [
+      33773,
+      0.505,
       256
     ],
     "robot_super-salto": [
@@ -4277,6 +5321,16 @@
       0.505,
       256
     ],
+    "tanque-frente_enojado": [
+      42988,
+      0.507,
+      256
+    ],
+    "tanque-frente_feliz": [
+      42788,
+      0.505,
+      256
+    ],
     "tanque-gana": [
       32558,
       0.456,
@@ -4295,6 +5349,16 @@
     "tanque-lado": [
       44806,
       0.444,
+      256
+    ],
+    "tanque-lado_enojado": [
+      40214,
+      0.51,
+      256
+    ],
+    "tanque-lado_feliz": [
+      38652,
+      0.516,
       256
     ],
     "tanque-mareado": [
@@ -4322,6 +5386,26 @@
       0.498,
       222
     ],
+    "tanque_super-asustado": [
+      38609,
+      0.472,
+      256
+    ],
+    "tanque_super-baile1": [
+      39320,
+      0.447,
+      256
+    ],
+    "tanque_super-baile2": [
+      38405,
+      0.444,
+      256
+    ],
+    "tanque_super-caer": [
+      29768,
+      0.519,
+      256
+    ],
     "tanque_super-caminar1": [
       36283,
       0.456,
@@ -4347,14 +5431,34 @@
       0.443,
       223
     ],
+    "tanque_super-enojado": [
+      41285,
+      0.439,
+      256
+    ],
+    "tanque_super-feliz": [
+      33622,
+      0.479,
+      226
+    ],
     "tanque_super-golpe": [
       33249,
       0.361,
       219
     ],
+    "tanque_super-mareado": [
+      39030,
+      0.429,
+      256
+    ],
     "tanque_super-normal": [
       42082,
       0.468,
+      256
+    ],
+    "tanque_super-parpadeo": [
+      41995,
+      0.47,
       256
     ],
     "tanque_super-salto": [

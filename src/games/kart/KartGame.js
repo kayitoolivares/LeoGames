@@ -14,7 +14,7 @@ import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
-import { Arena, Battle, BATTLE_RACERS } from './battle.js';
+import { Arena, Battle, BATTLE_KINDS, BATTLE_KIND_KEYS, BATTLE_RACERS } from './battle.js';
 import { Ceremony } from './ceremony.js';
 import { Coins } from './coins.js';
 import { Particles } from './particles.js';
@@ -29,6 +29,8 @@ import { Shortcut } from './shortcut.js';
 import { WEATHERS, WEATHER_KEYS, Weather } from './weather.js';
 import { GhostKart, GhostRecorder, TIME_TRIAL_LAPS, formatTime, loadRecord, recordKey, saveRecord } from './ghost.js';
 import { FinishReplay } from './replay.js';
+import { LESSONS, LESSON_KEYS, Lesson, MEDALS, goalsText, schoolMedals } from './school.js';
+import { BOSSES, WORLDS, adventure, nextStage, stagePassed } from './adventure.js';
 import { RaceTalk, assignPersonalities, nameOf, personalityOf, rivalPush } from './rivals.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTER_KEYS } from '../smash/characters.js';
@@ -144,10 +146,18 @@ let resume = null;
 const MODES = [
   { key: 'race', emoji: '🏁', name: 'Carrera', info: 'Una carrera en la pista que quieras' },
   { key: 'cup', emoji: '🏆', name: 'Gran Premio', info: '3 pistas seguidas: el que junte más puntos gana la copa' },
-  { key: 'battle', emoji: '🎈', image: 'globos', name: 'Batalla de globos', info: 'Revienta los globos de los demás: gana el último con globos' },
+  { key: 'battle', emoji: '🎈', image: 'globos', name: 'Batallas', info: 'Globos, Atrapa la estrella o Monedas, en la arena' },
   { key: 'teams', emoji: '🤝', name: 'Por equipos', info: 'Rojos contra Azules: se suman los puntos de cada equipo' },
   { key: 'timetrial', emoji: '⏱️', name: 'Contrarreloj', info: 'Tú solo contra el reloj y tu fantasma (el kart de tu récord)' },
+  { key: 'elimination', emoji: '💥', name: 'Eliminación', info: 'Cada ratito sale el que va al último: gana el que quede' },
+  { key: 'school', emoji: '🎓', name: 'Escuela de manejo', info: 'Retos cortitos con medallas de oro, plata y bronce' },
+  { key: 'adventure', emoji: '🗺️', name: 'Aventura', info: 'Retos uno tras otro y un jefe en su kart al final de cada mundo' },
 ];
+// Aventura: cada cuánto avienta algo el jefe (y lo que dice).
+const BOSS_ATTACK_MS = [5500, 8500];
+const BOSS_TAUNTS = ['¡Jo, jo, jo! ¡Nadie me gana!', '¡Ahí les va uno!', '¡Atrápenme si pueden!', '¡Soy el más rápido!'];
+// Carrera de eliminación: cuándo sale el primero y luego cada cuánto; unos segundos antes se avisa al último.
+const ELIMINATION = { firstMs: 25000, everyMs: 18000, warnMs: 5000, laps: 99 };
 // Carreras por equipos: los colores y nombres de los dos equipos.
 const TEAMS = [
   { name: 'Rojos', color: 0xff5a5f, emoji: '🔴' },
@@ -195,6 +205,9 @@ export class KartGame {
     // Carrera por equipos (se recuerda al reabrir para cambiar de pista).
     this.teams = next?.teams ?? false;
     this.timeTrial = next?.timeTrial ?? false;
+    this.elimination = next?.elimination ?? false;
+    this.lessonKey = next?.lesson ?? null;
+    this.stage = next?.stage ?? null;
     if (next?.gp) {
       this.gp = next.gp;
       this.build(CUPS[this.gp.cup].tracks[this.gp.race]);
@@ -204,6 +217,16 @@ export class KartGame {
       this.showTracks();
     } else if (next?.to === 'cups') {
       this.showCups();
+    } else if (next?.to === 'battles') {
+      this.showBattles();
+    } else if (next?.to === 'school') {
+      this.showSchool();
+    } else if (next?.to === 'adventure') {
+      this.showAdventure(next.world ?? 0);
+    } else if (next?.stage) {
+      this.buildStage();
+    } else if (next?.lesson) {
+      this.build(LESSONS[next.lesson].track);
     } else {
       this.phase = 'garage';
       this.garage = new Garage(this.view, this.drivers);
@@ -260,12 +283,112 @@ export class KartGame {
     }));
     this.choose(cards, 0, '¿Qué jugamos?', (i) => {
       this.closeChooser();
-      this.teams = MODES[i].key === 'teams';
-      this.timeTrial = MODES[i].key === 'timetrial';
-      if (MODES[i].key === 'cup') this.showCups();
-      else if (MODES[i].key === 'battle') this.buildBattle();
+      const key = MODES[i].key;
+      this.teams = key === 'teams';
+      this.timeTrial = key === 'timetrial';
+      this.elimination = key === 'elimination';
+      this.lessonKey = null;
+      this.stage = null;
+      if (key === 'cup') this.showCups();
+      else if (key === 'battle') this.showBattles();
+      else if (key === 'school') this.showSchool();
+      else if (key === 'adventure') this.showAdventure();
       else this.showTracks();
     });
+  }
+
+  // La Aventura: primero el mundo (con cuántos retos lleva) y luego el reto.
+  showAdventure(selected = 0) {
+    const cards = WORLDS.map((world, w) => ({
+      emoji: world.emoji,
+      name: world.name,
+      info: `${adventure.count(w)} de ${world.stages.length} retos<br>${world.stages.map((s, j) => (adventure.done(w, j) ? '✅' : s.emoji)).join(' ')}`,
+      open: adventure.open(w, 0),
+      lock: 'Gánale al jefe del mundo anterior',
+    }));
+    this.choose(
+      cards,
+      selected,
+      '🗺️ Aventura',
+      (w) => {
+        this.closeChooser();
+        this.showStages(w);
+      },
+      () => this.showModes(),
+    );
+  }
+
+  showStages(w) {
+    const world = WORLDS[w];
+    const cards = world.stages.map((stage, j) => ({
+      emoji: stage.emoji,
+      name: `${stage.name}${adventure.done(w, j) ? ' ✅' : ''}`,
+      info: `${stage.info}<br>${TRACKS[stage.track].emoji} ${TRACKS[stage.track].name}`,
+      open: adventure.open(w, j),
+      lock: 'Pasa el reto anterior',
+    }));
+    const first = world.stages.findIndex((_, j) => !adventure.done(w, j));
+    this.choose(
+      cards,
+      Math.max(0, first),
+      `${world.emoji} ${world.name}`,
+      (j) => {
+        this.closeChooser();
+        this.stage = { world: w, stage: j };
+        this.buildStage();
+      },
+      () => this.showAdventure(w),
+    );
+  }
+
+  get stageData() {
+    return this.stage ? WORLDS[this.stage.world].stages[this.stage.stage] : null;
+  }
+
+  // Un reto de la Aventura: su pista (la eliminación, como eliminación).
+  buildStage() {
+    this.elimination = this.stageData.kind === 'elimination';
+    this.build(this.stageData.track);
+    say(`${this.stageData.name}. ${this.stageData.info}`);
+  }
+
+  // La Escuela de manejo: cada reto con la mejor medalla que ya tiene la familia.
+  showSchool() {
+    const best = schoolMedals.get();
+    const cards = LESSON_KEYS.map((key) => {
+      const lesson = LESSONS[key];
+      const medal = best[key] !== undefined ? ` ${MEDALS[best[key]].emoji}` : '';
+      return { ...lesson, name: `${lesson.name}${medal}`, info: `${lesson.info}<br>${goalsText(key)}`, open: true };
+    });
+    this.choose(
+      cards,
+      Math.max(0, LESSON_KEYS.indexOf(this.lessonKey)),
+      '🎓 Escuela de manejo',
+      (i) => {
+        this.closeChooser();
+        this.lessonKey = LESSON_KEYS[i];
+        this.build(LESSONS[this.lessonKey].track);
+      },
+      () => this.showModes(),
+    );
+  }
+
+  // Las batallas: Globos, Atrapa la estrella y Monedas.
+  showBattles() {
+    const cards = BATTLE_KIND_KEYS.map((key) => {
+      const kind = BATTLE_KINDS[key];
+      return { ...kind, emoji: manifest.objetos.includes(kind.image) ? `<img src="kart/objetos/${kind.image}.png" alt="" style="height:56px">` : kind.emoji, open: true };
+    });
+    this.choose(
+      cards,
+      0,
+      'Escoge batalla',
+      (i) => {
+        this.closeChooser();
+        this.buildBattle(BATTLE_KIND_KEYS[i]);
+      },
+      () => this.showModes(),
+    );
   }
 
   showTracks() {
@@ -367,7 +490,7 @@ export class KartGame {
     const speed = SPEEDS[options.speed];
     this.speedFactor = speed.factor;
     this.mirror = Boolean(speed.mirror);
-    this.weatherKey = options.weather === 'auto' ? (look.weather ?? 'sol') : options.weather;
+    this.weatherKey = this.stageData?.weather ?? (options.weather === 'auto' ? (look.weather ?? 'sol') : options.weather);
     const weather = WEATHERS[this.weatherKey];
     this.skyTint = weather.sky ?? 1;
     this.setSky(dim(look.sky, this.skyTint), look.groundLight, (look.light ?? 1) * (weather.light ?? 1), look.fog);
@@ -400,13 +523,15 @@ export class KartGame {
     const pads = this.mirror ? look.pads.map(([at, lane]) => [at, -lane]) : look.pads;
     this.features = new TrackFeatures(this.scene, this.track, { pads, ramps: look.ramps, gliders: look.gliders, water: look.water });
     this.coins = new Coins(this.scene, this.track);
-    this.hazards = look.hazards ? new Hazards(this.scene, this.track, look.hazards) : null;
-    // En el contrarreloj no hay cajitas (ni compu).
-    this.boxes = new ItemBoxes(this.scene, this.track, this.timeTrial ? [] : null);
+    // (En la escuela no hay peligros.)
+    this.hazards = look.hazards && !this.lessonKey ? new Hazards(this.scene, this.track, look.hazards) : null;
+    // En el contrarreloj y en la escuela no hay cajitas (ni compu).
+    const alone = this.timeTrial || Boolean(this.lessonKey);
+    this.boxes = new ItemBoxes(this.scene, this.track, alone ? [] : null);
     this.particles = new Particles(this.scene);
     this.dustColor = look.dust ?? 0xb59a6a;
     this.projectiles = new Projectiles(this.scene);
-    this.createRacers(this.timeTrial ? 0 : TOTAL_RACERS);
+    this.createRacers(alone ? 0 : TOTAL_RACERS);
     this.weather = new Weather(this.scene, this.track, this.weatherKey, this.racers);
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views, { rain: this.weatherKey === 'lluvia' });
@@ -430,8 +555,8 @@ export class KartGame {
     this.scene.add(sun);
   }
 
-  // Batalla de globos: la arena en vez de pista, con 4 karts.
-  buildBattle() {
+  // Batalla: la arena en vez de pista, con 4 karts. `kind`: globos, estrella o monedas.
+  buildBattle(kind = 'globos') {
     this.trackKey = 'arena';
     this.setSky(0x8fd3ff, 0x5a7a3a, 1);
     this.track = new Arena();
@@ -444,9 +569,9 @@ export class KartGame {
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views);
     this.hud.setMapOutline(this.track.points);
-    this.battle = new Battle(this);
+    this.battle = new Battle(this, kind);
     this.startBattle();
-    say('¡Batalla de globos! Revienta los globos de los demás');
+    say({ globos: '¡Batalla de globos! Revienta los globos de los demás', estrella: '¡Atrapa la estrella! Gana el que la tenga más tiempo', monedas: '¡Batalla de monedas! Junta todas las que puedas' }[kind]);
   }
 
   startBattle() {
@@ -470,14 +595,14 @@ export class KartGame {
     this.battle.update(dtMs);
   }
 
-  // A = otra batalla, B = cambiar de modo, X = taller.
+  // A = otra batalla, B = otra clase de batalla, X = taller.
   updateBattleResults() {
     if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
     const pressed = (button) => this.humans.some((racer) => controls.justPressed(racer.deviceId, button));
     if (pressed('a')) {
       this.startBattle();
     } else if (pressed('b')) {
-      resume = { to: 'modes' };
+      resume = { to: 'battles' };
       this.onRestart?.();
     } else if (pressed('x')) {
       this.onRestart?.();
@@ -549,6 +674,20 @@ export class KartGame {
     // En el Gran Premio la compu trae el mismo personaje y kart en todas las carreras de la copa.
     const characters = new Set(this.racers.map((racer) => racer.setup.character));
     const saved = this.gp?.setups;
+    // Aventura: el rival (uno contra uno) o el jefe (con dos más de la compu).
+    this.rivalRacer = null;
+    const stage = this.stageData;
+    if (stage?.kind === 'rival') {
+      const setup = { ...randomSetup(characters), character: stage.rival };
+      this.rivalRacer = new Racer({ color: cpuColors[0].hex, label: 'CPU', setup, drivers });
+      this.racers.push(this.rivalRacer);
+      total = this.racers.length;
+    } else if (stage?.kind === 'boss') {
+      this.rivalRacer = new Racer({ color: 0x8158d8, label: 'JEFE', setup: BOSSES[stage.boss].setup, drivers });
+      this.rivalRacer.bigness = 1.35;
+      this.racers.push(this.rivalRacer);
+      total = this.racers.length + 2;
+    }
     for (let i = 0; this.racers.length < total; i += 1) {
       const setup = saved?.[i] ?? randomSetup(characters);
       characters.add(setup.character);
@@ -572,6 +711,8 @@ export class KartGame {
     });
     this.humans = this.racers.filter((racer) => !racer.isCpu);
     assignPersonalities(this.racers);
+    // El jefe: un poquito más rápido y siempre con buena salida.
+    if (stage?.kind === 'boss') this.rivalRacer.stats = { ...this.rivalRacer.stats, maxSpeed: this.rivalRacer.stats.maxSpeed * 1.06 };
   }
 
   createViews() {
@@ -634,7 +775,130 @@ export class KartGame {
     this.lapTimes = new Map(this.racers.map((racer) => [racer, []]));
     for (const racer of this.racers) racer.planShortcut = false;
     if (this.timeTrial) this.startTimeTrial();
+    if (this.elimination) this.startElimination();
+    if (this.lessonKey) this.startLesson();
+    if (this.stageData) this.startStage();
     this.updateCameras(0, true);
+  }
+
+  // Aventura: el letrero del reto y, con jefe, cuándo avienta lo primero.
+  startStage() {
+    const stage = this.stageData;
+    this.bossAttackMs = BOSS_ATTACK_MS[1];
+    this.talk.line(`${stage.emoji} ${stage.name}: ${stage.info}`, { important: true, voice: `${stage.name}. ${stage.info}` });
+  }
+
+  // El jefe avienta algo cada ratito: un cohete al jugador que le vaya ganando o un plátano atrás (o un rayo).
+  updateBoss(dtMs, ranking) {
+    const boss = this.rivalRacer;
+    if (!boss || boss.finished || this.stageData.kind !== 'boss') return;
+    this.bossAttackMs -= dtMs;
+    if (this.bossAttackMs > 0) return;
+    this.bossAttackMs = BOSS_ATTACK_MS[0] + Math.random() * (BOSS_ATTACK_MS[1] - BOSS_ATTACK_MS[0]);
+    const kinds = BOSSES[this.stageData.boss].throws;
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    const ahead = this.rivalAhead(boss, ranking);
+    boss.throwMs = THROW_POSE_MS;
+    if (kind === 'rocket' && ahead) this.projectiles.addRocket(boss, ahead);
+    else if (kind === 'lightning') this.strikeLightning(boss);
+    else this.projectiles.addBanana(boss);
+    if (Math.random() < 0.5) this.talk.line(`${BOSSES[this.stageData.boss].name}: ${BOSS_TAUNTS[Math.floor(Math.random() * BOSS_TAUNTS.length)]}`);
+  }
+
+  // Escuela de manejo: el reto pone sus aros o conos y acomoda a los karts; no hay vueltas que contar.
+  startLesson() {
+    this.lesson?.dispose();
+    this.lesson = new Lesson(this, this.lessonKey);
+    this.lesson.setup();
+    this.laps = 99;
+    const data = LESSONS[this.lessonKey];
+    this.talk.line(`🎓 ${data.name}: ${data.info}`, { important: true, voice: `${data.name}. ${data.info}` });
+  }
+
+  // Se acabó el reto: la medalla de cada quien.
+  showLessonResults() {
+    this.phase = 'results';
+    this.phaseMs = 0;
+    this.hud.setCenter('');
+    const data = LESSONS[this.lessonKey];
+    const rows = this.lesson.results().map(({ racer, medal, text }) => ({
+      label: racer.label,
+      color: hexToCss(racer.color),
+      name: racer.driver.name,
+      image: racer.driver.imageUrl,
+      total: text,
+      gainText: medal === null ? '😅' : MEDALS[medal].emoji,
+    }));
+    const best = rows.find((row) => row.gainText !== '😅');
+    this.hud.showStandings({
+      title: `🎓 ${data.name}`,
+      rows,
+      footer: 'A = otra vez  ·  B = otro reto  ·  X = taller',
+      note: `Medallas: ${goalsText(this.lessonKey)}`,
+    });
+    say(best ? '¡Muy bien!' : '¡Casi! Inténtalo otra vez');
+  }
+
+  // Eliminación: nadie llega a la meta (vueltas sin fin); cada ratito sale el último.
+  startElimination() {
+    this.laps = ELIMINATION.laps;
+    this.elimLeft = ELIMINATION.firstMs;
+    this.eliminated = [];
+    this.warned = null;
+    for (const view of this.views) view.watch = null;
+    for (const racer of this.racers) {
+      racer.out = false;
+      racer.object.visible = true;
+    }
+    this.talk.line('💥 ¡Eliminación! Cada ratito sale el que va al último', { important: true, voice: '¡Eliminación! Cada ratito sale el que va al último' });
+  }
+
+  updateElimination(dtMs, ranking) {
+    const active = ranking.filter((racer) => !racer.out);
+    // Si ya no queda ningún jugador, que la compu acabe rápido.
+    if (!active.some((racer) => !racer.isCpu)) this.elimLeft = Math.min(this.elimLeft, 2500);
+    this.elimLeft -= dtMs;
+    const last = active.at(-1);
+    if (this.elimLeft < ELIMINATION.warnMs && last && !last.isCpu && this.warned !== last) {
+      this.warned = last;
+      last.say('¡Vas al último! ¡Rebasa a alguien! 💥', 2500);
+    }
+    if (this.elimLeft > 0) return;
+    this.eliminate(last);
+    this.elimLeft = ELIMINATION.everyMs;
+    this.warned = null;
+    const left = active.filter((racer) => racer !== last);
+    // Aventura: se acaba al llegar a los últimos que pide el reto (o si ya salieron todos los jugadores).
+    const survive = this.stageData?.survive;
+    if (survive && (left.length <= survive || !left.some((racer) => !racer.isCpu))) {
+      this.showResults();
+      return;
+    }
+    if (left.length > 1) return;
+    // ¡Queda uno! Gana.
+    const winner = left[0];
+    winner.finished = true;
+    this.finishOrder = [winner];
+    if (!winner.isCpu) rewards.earn('kart-eliminacion');
+    this.talk.line(`¡${nameOf(winner)} es el último en pie!`, { important: true });
+    sfx.win();
+    this.showResults();
+  }
+
+  // Sale de la carrera: explota (chispas y humo), desaparece y su cámara se va con el que va en primero.
+  eliminate(racer) {
+    this.particles.burst('spark', racer.x, racer.y + 1.5, racer.z, 26, HIT_COLORS, { speed: 10, up: 10, lifeMs: 800 });
+    this.particles.burst('dust', racer.x, racer.y + 1, racer.z, 14, [0x8a8a9e, 0xffffff], { speed: 6, up: 6, lifeMs: 900 });
+    sfx.boom();
+    racer.out = true;
+    racer.object.visible = false;
+    racer.speed = 0;
+    // (Lejos de todo, para que nadie choque con él.)
+    racer.x = 5000 + this.eliminated.length * 40;
+    racer.z = 5000;
+    this.eliminated.push(racer);
+    say(`¡Fuera ${racer.label}!`);
+    if (!racer.isCpu) racer.say('¡Fuera! 💥 Ahora ves al que va en primero', 4000);
   }
 
   // Contrarreloj: se graba la carrera de cada jugador y corre el fantasma del récord (si hay).
@@ -724,6 +988,8 @@ export class KartGame {
 
     const ranking = this.ranking();
     for (const racer of this.racers) {
+      // (En la eliminación, los que ya salieron no juegan.)
+      if (racer.out) continue;
       // Al llegar a la meta, la computadora maneja por ellos (y la bala maneja sola).
       const input = racer.bulletMs > 0 ? this.autoPilot(racer) : racer.isCpu || racer.finished ? this.cpuInput(racer, ranking) : this.humanInput(racer);
       const offroad = !racer.shortcut && Math.abs(this.track.lateral(racer.x, racer.z, racer.index)) > this.track.roadWidth / 2 + 0.3;
@@ -753,6 +1019,7 @@ export class KartGame {
     this.weather?.update(dtMs / 1000, this.racers, (racer) => this.onSlip(racer));
     this.updateHazards(dtMs, now);
     this.coins.update(dtMs, now, this.racers, (racer) => {
+      this.lesson?.onCoin(racer);
       if (!racer.isCpu) sfx.coin();
       this.particles.burst('spark', racer.x, racer.y + 1.4, racer.z, 6, COIN_COLORS, { speed: 4, up: 5, lifeMs: 450 });
     });
@@ -769,6 +1036,15 @@ export class KartGame {
     for (const [racer, run] of this.ghostRuns ?? []) if (!racer.finished) run.update(this.raceMs, racer);
     this.replay.record(dtMs, this.racers);
     this.talk.update(dtMs, ranking, this.raceMs);
+    if (this.elimination) {
+      this.updateElimination(dtMs, ranking);
+      return;
+    }
+    if (this.lesson) {
+      if (this.lesson.update(dtMs)) this.showLessonResults();
+      return;
+    }
+    if (this.stageData) this.updateBoss(dtMs, ranking);
 
     const humansDone = this.humans.every((racer) => racer.finished);
     const waitedEnough = this.firstHumanFinishMs !== null && this.raceMs - this.firstHumanFinishMs > RESULTS_AFTER_FIRST_MS;
@@ -978,6 +1254,7 @@ export class KartGame {
 
   // Sonido y letrero de lo que le pasó a un jugador (a la compu no, para no llenar todo de ruido).
   announce(racer, event) {
+    this.lesson?.event(racer, event);
     // Al caer de un salto: polvito en las llantas.
     if (event === 'land') this.particles.burst('dust', racer.x, racer.y + 0.4, racer.z, 10, [this.dustColor, 0xffffff], { speed: 6, up: 3, lifeMs: 500 });
     if (racer.isCpu) return;
@@ -1323,6 +1600,11 @@ export class KartGame {
   }
 
   ranking() {
+    // Eliminación: los que siguen (el ganador primero) y luego los que salieron, del último que salió al primero.
+    if (this.elimination) {
+      const active = this.racers.filter((racer) => !racer.out).sort((a, b) => b.progress - a.progress);
+      return [...active, ...[...(this.eliminated ?? [])].reverse()];
+    }
     const rest = this.racers.filter((racer) => !racer.finished).sort((a, b) => b.progress - a.progress);
     return [...this.finishOrder, ...rest];
   }
@@ -1343,6 +1625,10 @@ export class KartGame {
       this.showStandings(ranking, note);
       return;
     }
+    if (this.stageData) {
+      this.showStageResults(ranking, note);
+      return;
+    }
     const rows = ranking.map((racer) => ({
       label: racer.label,
       color: hexToCss(racer.color),
@@ -1358,9 +1644,27 @@ export class KartGame {
       this.hud.showResults(rows, { title: winner ? `¡Ganaron los ${winner.name}! ${score}` : `¡Empate! ${score}`, note });
       say(winner ? `¡Ganaron los ${winner.name}!` : '¡Empate!');
     } else {
-      this.hud.showResults(rows, { note });
+      this.hud.showResults(rows, { note, title: this.elimination ? `¡${ranking[0].label} quedó en pie! 💥` : undefined });
       say(`¡Ganó ${ranking[0].label}, ${ranking[0].driver.name}!`);
     }
+    this.startCeremony(ranking);
+  }
+
+  // Aventura: ¿lo pasó? Se guarda y se dice qué sigue.
+  showStageResults(ranking, note) {
+    const stage = this.stageData;
+    this.stageWon = stagePassed(stage, ranking, this.humans, this.rivalRacer);
+    if (this.stageWon) adventure.complete(this.stage.world, this.stage.stage);
+    const next = this.stageWon ? nextStage(this.stage) : null;
+    const rows = ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color), name: racer.driver.name, image: racer.driver.imageUrl }));
+    const footer = `${next ? 'A = siguiente reto' : 'A = otra vez'}  ·  B = mapa de la aventura  ·  X = taller`;
+    this.hud.showResults(rows, {
+      title: this.stageWon ? `✅ ¡Reto superado! ${stage.emoji}` : `❌ ¡Casi! ${stage.emoji}`,
+      footer,
+      note: `${stage.name}: ${stage.info}  ·  ${note}`,
+    });
+    say(this.stageWon ? '¡Reto superado!' : '¡Casi! Inténtalo otra vez');
+    if (this.stageWon) sfx.win();
     this.startCeremony(ranking);
   }
 
@@ -1458,10 +1762,23 @@ export class KartGame {
       }
       return;
     }
+    if (this.stage) {
+      const next = this.stageWon ? nextStage(this.stage) : null;
+      if (pressed('a')) {
+        resume = { stage: next ?? this.stage };
+        this.onRestart?.();
+      } else if (pressed('b')) {
+        resume = { to: 'adventure', world: this.stage.world };
+        this.onRestart?.();
+      } else if (pressed('x')) {
+        this.onRestart?.();
+      }
+      return;
+    }
     if (pressed('a')) {
       this.startRace();
     } else if (pressed('b')) {
-      resume = { to: 'tracks', teams: this.teams, timeTrial: this.timeTrial };
+      resume = this.lessonKey ? { to: 'school', lesson: null } : { to: 'tracks', teams: this.teams, timeTrial: this.timeTrial, elimination: this.elimination };
       this.onRestart?.();
     } else if (pressed('x')) {
       this.onRestart?.();
@@ -1482,10 +1799,14 @@ export class KartGame {
       const battle = this.battle?.panel(racer);
       // En el contrarreloj: el reloj en vez del lugar.
       const clock = this.timeTrial ? formatTime(racer.finished ? racer.finishMs : this.raceMs) : null;
+      // En la eliminación: cuánto falta para que salga el último (o que ya saliste).
+      const elimination = this.elimination ? (racer.out ? '💥 ¡Fuera!' : racer.finished ? '🏆 ¡Ganaste!' : `💥 en ${Math.max(0, Math.ceil(this.elimLeft / 1000))} s`) : null;
+      // En la escuela: cómo va el reto y el reloj.
+      const lesson = this.lesson ? { pos: this.lesson.panel(racer), lap: `⏱️ ${formatTime(this.raceMs)}` } : null;
       this.hud.setPanel(i, {
-        pos: battle?.pos ?? clock ?? `${ranking.indexOf(racer) + 1}°`,
+        pos: lesson?.pos ?? battle?.pos ?? clock ?? `${ranking.indexOf(racer) + 1}°`,
         who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
-        lap: battle?.lap ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
+        lap: lesson?.lap ?? battle?.lap ?? elimination ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
         coins: this.battle ? '' : `🪙 ${racer.coins}`,
         item,
         rolling,
@@ -1520,7 +1841,14 @@ export class KartGame {
     const blend = snap ? 1 : 1 - Math.pow(0.001, dt);
     for (const view of this.views) {
       if (view.kind !== 'player') continue;
-      const racer = view.racer;
+      // (Eliminado, la cámara se va con el que va en primero.)
+      let jump = false;
+      if (this.elimination && view.racer.out) {
+        const leader = this.ranking()[0];
+        jump = view.watch !== leader;
+        view.watch = leader;
+      }
+      const racer = view.watch ?? view.racer;
       const fx = Math.sin(racer.heading);
       const fz = Math.cos(racer.heading);
       // La altura del camino bajo el kart (las lomas) se sigue toda; los saltos, solo un poco.
@@ -1528,8 +1856,8 @@ export class KartGame {
       const up = racer.y - road;
       desiredPos.set(racer.x - fx * 9, road + 4.6 + up * 0.7, racer.z - fz * 9);
       desiredLook.set(racer.x + fx * 7, road + 1.4 + up + Math.tan(racer.pitch) * 7, racer.z + fz * 7);
-      view.pos.lerp(desiredPos, blend);
-      view.look.lerp(desiredLook, blend);
+      view.pos.lerp(desiredPos, jump ? 1 : blend);
+      view.look.lerp(desiredLook, jump ? 1 : blend);
       view.camera.position.copy(view.pos);
       view.camera.lookAt(view.look);
       const fov = view.baseFov + (racer.boostMs > 0 ? 10 : 0);
@@ -1622,6 +1950,7 @@ export class KartGame {
     this.ghost?.dispose(this.scene);
     for (const racer of this.humans ?? []) racer.engine?.stop();
     music.setTempo(1);
+    this.lesson?.dispose();
     this.projectiles?.dispose();
     this.features?.dispose();
     this.hazards?.dispose();

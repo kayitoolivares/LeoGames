@@ -36,9 +36,15 @@ const CHARACTERS = [
   // Bloquecito: un dibujo por número (bloque1 a bloque10) y su súper forma, Octobloque.
   ...Array.from({ length: 10 }, (_, i) => `bloque${i + 1}`), 'octobloque',
 ];
-const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente', 'parpadeo', 'feliz', 'enojado', 'asustado', 'caer', 'mareado', 'baile1', 'baile2'];
+const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente', 'parpadeo', 'feliz', 'enojado', 'asustado', 'caer', 'mareado', 'baile1', 'baile2', 'frente_feliz', 'frente_enojado', 'lado_feliz', 'lado_enojado'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella', 'bate', 'pistola', 'patineta', 'huevo', 'bola-super', 'diana', 'bumeran', 'flor-fuego', 'resorte', 'capsula', 'tornado', 'saco'];
 const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos'];
+
+// Poses de los monstruos y los jefes (ver src/ui/creature.js): <monstruo>-<pose>.
+const MONSTER_POSES = ['paso', 'ataque', 'dolor', 'burla'];
+const BOSS_POSES = [...MONSTER_POSES, 'furioso', 'cargando', 'mareado', 'derrotado'];
+const BRAWL_BOSSES = ['rey-slime', 'gran-hongo', 'dragon-lava', 'capitan-pulpo', 'gran-yeti', 'rey-calabaza', 'rey-pastel', 'mega-robot'];
+const withPoses = (names, bosses = []) => names.flatMap((name) => [name, ...(bosses.includes(name) ? BOSS_POSES : MONSTER_POSES).map((pose) => `${name}-${pose}`)]);
 
 // Arte de los otros juegos: por carpeta, qué nombres valen y si es recorte (cutout) o fondo.
 const GAMES = {
@@ -46,11 +52,14 @@ const GAMES = {
     monstruos: {
       kind: 'cutout',
       max: 256,
-      names: [
-        'slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava',
-        'cangrejo', 'almeja', 'capitan-pulpo', 'muneco-nieve', 'yeti-bebe', 'gran-yeti', 'murcielago', 'calabaza', 'rey-calabaza',
-        'gomita', 'cupcake', 'caramelo', 'rey-pastel', 'marcianito', 'ovni', 'robotito', 'mega-robot',
-      ],
+      names: withPoses(
+        [
+          'slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava',
+          'cangrejo', 'almeja', 'capitan-pulpo', 'muneco-nieve', 'yeti-bebe', 'gran-yeti', 'murcielago', 'calabaza', 'rey-calabaza',
+          'gomita', 'cupcake', 'caramelo', 'rey-pastel', 'marcianito', 'ovni', 'robotito', 'mega-robot',
+        ],
+        BRAWL_BOSSES,
+      ),
     },
     fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo', 'dulces', 'espacio'] },
     objetos: {
@@ -68,12 +77,12 @@ const GAMES = {
     enemigos: {
       kind: 'cutout',
       max: 160,
-      names: [
+      names: withPoses([
         'hongo-malo', 'tortuga', 'caparazon', 'murcielago', 'pajaro', 'nube-mala', 'pez', 'medusa', 'bola-fuego', 'aplastador', 'erizo', 'planta',
         'pinguino', 'pinguino-panza', 'carambano', 'bola-nieve', 'galleta', 'dona', 'paleta', 'chicle', 'fantasma', 'fantasma-boca', 'esqueleto', 'vela',
-      ],
+      ]),
     },
-    jefes: { kind: 'cutout', max: 320, names: ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon'] },
+    jefes: { kind: 'cutout', max: 320, names: withPoses(['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon'], ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon']) },
     objetos: {
       kind: 'cutout',
       max: 128,
@@ -84,10 +93,25 @@ const GAMES = {
     ambiente: { kind: 'cutout', max: 96, names: ['pajaro1', 'pajaro2', 'murcielago1', 'murcielago2', 'mariposa', 'hoja', 'copo', 'dulce'] },
   },
   kart: {
-    objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja'] },
-    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura', 'copa-sorpresa'] },
-    fondos: { kind: 'background', names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes', 'embrujada', 'pastel', 'dinos', 'nubes'] },
-    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto', 'roca', 'selva', 'alfombra', 'betun', 'nube'] },
+    objetos: {
+      kind: 'cutout',
+      max: 128,
+      names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja', 'iman', 'gelatina', 'tornado', 'resorte', 'bomba', 'cronometro'],
+    },
+    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura', 'copa-sorpresa', 'copa-tesoro'] },
+    fondos: {
+      kind: 'background',
+      names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes', 'embrujada', 'pastel', 'dinos', 'nubes', 'desierto', 'neon', 'casa', 'pirata'],
+    },
+    texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto', 'roca', 'selva', 'alfombra', 'betun', 'nube', 'madera', 'azulejo', 'neon'] },
+    // Medallas (escuela y récords) y lo de la tele (helicóptero, dirigible, globo, camarógrafo).
+    extras: { kind: 'cutout', max: 192, names: ['medalla-oro', 'medalla-plata', 'medalla-bronce', 'bandera', 'helicoptero', 'dirigible', 'globo', 'camarografo'] },
+    // Los jefes de la Aventura manejando (de espaldas, girando, de lado y de frente).
+    jefes: {
+      kind: 'cutout',
+      max: 256,
+      names: ['atras', 'giro', 'lado', 'frente'].flatMap((view) => ['rey', 'dragonzote', 'robotote'].map((boss) => `${boss}-${view}`)),
+    },
     calcomanias: {
       kind: 'cutout',
       max: 256,
@@ -96,7 +120,7 @@ const GAMES = {
     peligros: {
       kind: 'cutout',
       max: 256,
-      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota', 'espectro', 'fresa', 'dino', 'relampago'],
+      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota', 'espectro', 'fresa', 'dino', 'relampago', 'rodadora', 'taxi', 'pantufla', 'bala-canon'],
     },
   },
   futbol: {
@@ -110,7 +134,9 @@ const GAMES = {
     jefe: {
       kind: 'cutout',
       max: 384,
-      names: ['normal', 'golpe', 'salto', 'dolor'].flatMap((pose) => ['rey', 'dragonzote', 'robotote'].map((boss) => `${boss}-${pose}`)),
+      names: ['normal', 'golpe', 'salto', 'dolor', 'paso', 'burla', 'gana', 'bloqueo', 'furioso', 'cargando', 'mareado', 'derrotado'].flatMap((pose) =>
+        ['rey', 'dragonzote', 'robotote'].map((boss) => `${boss}-${pose}`),
+      ),
     },
     publico: { kind: 'cutout', max: 192, names: ['fan1', 'fan2', 'fan3', 'fan4', 'fan5', 'fan6'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-torneo'] },
@@ -315,9 +341,9 @@ async function main() {
   }
 
   await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
-  // Las medidas de cada pose (para que el personaje se vea igual de grande en todas).
-  report.push(`  ✓ medidas de ${await saveMetrics()} poses`);
   for (const [game, folders] of Object.entries(GAMES)) await prepareGame(game, folders, report);
+  // Las medidas de cada pose (para que el personaje, el jefe o el monstruo se vea igual de grande en todas).
+  report.push(`  ✓ medidas de ${await saveMetrics()} poses`);
   console.log(report.length ? report.join('\n') : `No hay imágenes en ${path.relative(ROOT, ART)}/`);
 }
 

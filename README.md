@@ -236,6 +236,20 @@ Abre http://localhost:5173 en Edge o Chrome.
   al pegarle o al final. Un **narrador** (voz y letrero arriba) cuenta quién va primero, los atajos, los golpes grandes
   y quién cruza la meta. Al terminar, **repetición** de la llegada en cámara lenta con cámaras de tele (A la brinca)
   y una foto del podio. Chispas de colores al derrapar, salpicadas, rayitas de velocidad con el turbo y confeti en la meta.
+  **Batallas** (en la arena): **Globos** (la de siempre), **Atrapa la estrella** (el que toca la estrella se la lleva
+  arriba de su kart y le cuenta el tiempo; si le pegan, la suelta; gana el que la tuvo más) y **Monedas** (van saliendo
+  monedas por la arena y si te pegan se te caen 3; gana el que junte más). Al terminar, **B** = otra batalla.
+  **Eliminación**: carrera sin fin de vueltas; a los 25 segundos y luego cada 18 sale el que va al último (avisa antes);
+  gana el último que queda. Los que salen ven la carrera desde el kart del primero.
+  **Escuela de manejo**: retos cortitos para los jugadores (sin compu ni cajitas) con medalla de oro, plata o bronce, y
+  se guarda la mejor de la familia: **Aros** (pasar por 8 aros), **Derrapes** (3 turbos de derrape), **Salto largo**,
+  **Conos** (slalom: cada cono tirado o puerta saltada, +2 segundos) y **Monedas** (las más en 40 segundos). Las medallas
+  se calibraron con un bot que maneja perfecto: el oro pide casi lo que hace el bot.
+  **Aventura**: 3 mundos (Pradera, Aventura y Estrella) de 4 retos que se van abriendo: llegar entre los primeros,
+  terminar con 10 monedas, ganarle a un rival uno contra uno, llegar sin que te peguen, aguantar en una eliminación o
+  ganar en una tormenta de nieve; el último de cada mundo es una carrera contra un **jefe en su kart** (Rey Bolón,
+  Dragonzote y Robotote, dibujados manejando por Gemini): es más grande, más rápido y avienta cohetes, plátanos o rayos.
+  Al pasar un reto, **A** = el que sigue y **B** = el mapa de la aventura.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
@@ -444,7 +458,8 @@ antes de cada publicación, y si alguna falla no se publica.
   (`coins.js`), rey de la colina (`hill.js`), tornado (`tornado.js`), concurso de jonrón (`jonron.js`), Aventura
   (`adventure.js`), repetición del K.O. (`replay.js`) y narrador (`talk.js`).
 - `src/games/kart/`: Karts locos: además de lo de siempre, atajos (`shortcut.js`), clima (`weather.js`), contrarreloj y
-  fantasma (`ghost.js`), repetición de la llegada (`replay.js`) y pilotos con personalidad y narrador (`rivals.js`).
+  fantasma (`ghost.js`), repetición de la llegada (`replay.js`), pilotos con personalidad y narrador (`rivals.js`),
+  batallas (`battle.js`), escuela de manejo (`school.js`) y aventura con jefes (`adventure.js`).
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha y uniformes (`field.js`), balón (`Ball.js`), jugadores
   (`FutbolPlayer.js`), la compu (`cpu.js`), canchas (`pitches.js`), poderes (`powers.js`), penales
   (`penalties.js`), público y narrador (`crowd.js`) y las pantallas de la Copa y del final (`screens.js`).
