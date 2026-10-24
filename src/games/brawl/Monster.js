@@ -173,7 +173,8 @@ export class Monster {
       this.image.setScale((this.radius * 2.6) / Math.max(this.image.width, this.image.height));
       this.sprite.figure.addAt(this.image, 0);
       // Camina, se agacha antes de lanzarse, ataca, le duele, se burla y (los jefes) se enoja y se marea.
-      this.creature = brawlCreature(scene, this.image, this.type.art, this.radius * 2.6);
+      // (Los que dan saltitos ya rebotan solos; los demás caminan balanceándose y los que vuelan aletean.)
+      this.creature = brawlCreature(scene, this.image, this.type.art, this.radius * 2.6, this.type.fly ? 'fly' : this.type.hop ? null : 'walk');
     } else if (this.type.crown) {
       this.sprite.figure.add(drawCrown(scene, this.radius));
     }
@@ -390,6 +391,7 @@ export class Monster {
     this.sprite.figure.y = -lift;
     this.sprite.figure.angle = this.state === 'thrown' ? (this.sprite.figure.angle + 25 * this.thrownDir) % 360 : this.grabbedBy ? 180 : 0;
     if (this.creature) {
+      this.creature.face(this.facing);
       this.creature.angry = this.angry;
       this.creature.set(this.creaturePose());
       this.creature.update();

@@ -105,7 +105,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   Los niveles son largos (unos 200–260 cuadritos los normales y ~140 los fuertes y castillos) y `tools/plat-check.mjs`
   revisa que se puedan pasar saltando, que no haya bloques sobre hoyos y que a cada bloque se le pueda pegar por
   abajo (que quepa uno debajo: el jugador chiquito mide más que un cuadrito). Los jefes que vuelan bajan al piso a
-  descansar: ahí se les brinca encima.
+  descansar: ahí se les brinca encima. Los monstruitos se mueven con vida: los que caminan rebotan y se balancean en cada paso
+  (y dan un brinquito al verte), los que vuelan aletean y dan la vuelta en las paredes, los peces coletean y las
+  medusas y velas laten; ninguno se mete en el piso, el techo ni las paredes.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),

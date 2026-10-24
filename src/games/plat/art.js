@@ -19,7 +19,7 @@ export function loadPlatArt(scene) {
 }
 
 // Un enemigo o jefe con vida (ui/creature.js): sus poses se bajan cuando aparece. null si se dibuja con figuras.
-export function platCreature(scene, image, key, size) {
+export function platCreature(scene, image, key, size, gait = null) {
   if (!image.setTexture) return null;
   const art = key.slice('plat:'.length);
   const [dir, list] = (manifest.enemigos ?? []).includes(art)
@@ -28,7 +28,7 @@ export function platCreature(scene, image, key, size) {
       ? ['plat/jefes', manifest.jefes]
       : ['brawl/monstruos', brawlManifest.monstruos ?? []];
   requestCreaturePoses(scene, key, (pose) => `${dir}/${art}-${pose}.png`, list);
-  return new Creature(scene, image, key, { size, metrics: { ...brawlManifest.metrics, ...manifest.metrics } });
+  return new Creature(scene, image, key, { size, gait, metrics: { ...brawlManifest.metrics, ...manifest.metrics } });
 }
 
 export function platTexture(scene, key) {

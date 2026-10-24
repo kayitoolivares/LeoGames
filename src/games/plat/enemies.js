@@ -1,7 +1,7 @@
 import { sfx } from '../../shared/sound.js';
 import { artImage, platCreature } from './art.js';
-import { moveBody } from './physics.js';
-import { T } from './tiles.js';
+import { moveBody, tileAt } from './physics.js';
+import { T, isSolid } from './tiles.js';
 
 // Los enemigos de Súper Bolitas (la letra es la de levels.js). `size`: alto del dibujo; `w`, `h`: su caja.
 //   stomp: qué pasa si le brincas encima ('squash' se aplasta, 'fall' se cae, 'shell' se vuelve caparazón,
@@ -47,6 +47,15 @@ const GRAVITY = 2200;
 const MAX_FALL = 900;
 const SHELL_SPEED = 560;
 const ACTIVATE_MARGIN = 220;
+// Los que vuelan: el pájaro y la dona van y vienen de lado (y dan la vuelta en las paredes); la medusa y la vela
+// suben y bajan. Ninguno se mete en el piso ni en el techo: su vuelo se acomoda al espacio que tienen.
+const FLYER = { speed: 120, range: 150, bob: 30 };
+// El pez nada igual que el pájaro vuela (más lejos y subiendo y bajando menos).
+const FISH = { speed: 100, range: 170, bob: 14 };
+const BOB = { jelly: 80, floater: 60, fish: FISH.bob };
+// Cómo se mueve cada clase de enemigo (ver ui/creature.js) y de qué tan cerca te ve el que camina (brinquito).
+const GAIT = { walker: 'walk', flyer: 'fly', bat: 'fly', cloud: 'fly', fish: 'swim', jelly: 'float', floater: 'float' };
+const SPOT = { reach: 260, everyMs: 4000 };
 
 export class Enemy {
   constructor(scene, key, x, y) {
@@ -62,8 +71,11 @@ export class Enemy {
     this.look = artImage(scene, this.type.art, this.type.size, { color: this.type.color });
     this.sprite = scene.add.container(x, y, [this.look]).setDepth(this.type.kind === 'plant' ? 5 : 40);
     // Camina, ataca, le duele y se burla con sus poses (el fantasma ya cambia de cara solo; caparazones y balas no).
-    this.creature = ['boo', 'shell', 'bullet'].includes(this.type.kind) ? null : platCreature(scene, this.look, this.type.art, this.type.size);
+    this.creature = ['boo', 'shell', 'bullet'].includes(this.type.kind)
+      ? null
+      : platCreature(scene, this.look, this.type.art, this.type.size, GAIT[this.type.kind]);
     if (this.type.kind === 'podoboo') this.base = lavaBelow(scene.level, x, y);
+    if (['flyer', 'jelly', 'floater', 'fish'].includes(this.type.kind)) this.fitFlight(scene.level);
     if (this.type.kind === 'plant') {
       // Sale del tubo que tiene abajo: escondida, la boca del tubo la tapa.
       this.top = y;
@@ -135,24 +147,26 @@ export class Enemy {
       }
       if (this.vx) this.facing = Math.sign(this.vx);
       if (this.y > level.height + 100) this.remove();
+      if (kind === 'walker') this.spotPlayer(dtMs, scene);
     } else if (kind === 'bat') {
       this.updateBat(dt, scene);
     } else if (kind === 'flyer') {
-      const prevX = this.x;
-      this.x = this.x0 + Math.sin(this.t * 1.1) * 150;
-      this.y = this.y0 + Math.sin(this.t * 2.2) * 30;
-      this.facing = Math.sign(this.x - prevX) || this.facing;
+      this.updateFlyer(dt, level);
     } else if (kind === 'cloud') {
       this.updateCloud(dt, scene);
     } else if (kind === 'fish') {
-      const prevX = this.x;
-      this.x = this.x0 + Math.sin(this.t * 0.7) * 170;
-      this.y = this.y0 + Math.sin(this.t * 2) * 14;
-      this.facing = Math.sign(this.x - prevX) || this.facing;
+      this.updateFlyer(dt, level, FISH);
     } else if (kind === 'jelly') {
-      this.y = this.y0 + Math.sin(this.t * 1.2) * 80;
+      this.y = this.y0 + Math.sin(this.t * 1.2) * this.bob;
+      // Se acerca despacito al jugador (sin meterse en las paredes ni el coral).
       const target = scene.nearestPlayer(this.x, this.y);
-      if (target) this.x += Math.sign(target.x - this.x) * Math.min(25 * dt, Math.abs(target.x - this.x));
+      if (target) {
+        const step = Math.sign(target.x - this.x) * Math.min(25 * dt, Math.abs(target.x - this.x));
+        const front = this.x + step + Math.sign(step) * (this.w / 2);
+        // (Revisa todo lo alto de su subir y bajar, no solo donde va ahorita.)
+        const heights = [this.y0 - this.bob - this.h + 2, this.y0 - this.h / 2, this.y0 + this.bob - 2];
+        if (heights.every((y) => !isSolid(tileAt(level, front, y)))) this.x += step;
+      }
       this.x = Math.max(this.x0 - 160, Math.min(this.x0 + 160, this.x));
     } else if (kind === 'podoboo') {
       this.updatePodoboo(dt);
@@ -167,11 +181,53 @@ export class Enemy {
     } else if (kind === 'boo') {
       this.updateBoo(dt, scene);
     } else if (kind === 'floater') {
-      this.y = this.y0 + Math.sin(this.t * 1.5) * 60;
+      this.y = this.y0 + Math.sin(this.t * 1.5) * this.bob;
     } else if (kind === 'bullet') {
       this.x += this.vx * dt;
       if (this.x < scene.cameras.main.scrollX - 300 || this.x > scene.cameras.main.scrollX + scene.cameras.main.width + 300) this.remove();
     }
+  }
+
+  // El que camina, si ve a un jugador cerca enfrente de él, da un brinquito (cada tanto).
+  spotPlayer(dtMs, scene) {
+    this.spotMs = Math.max(0, (this.spotMs ?? Math.random() * SPOT.everyMs) - dtMs);
+    if (this.spotMs > 0 || !this.creature || !this.onGround) return;
+    const target = scene.nearestPlayer(this.x, this.y);
+    if (!target || Math.abs(target.x - this.x) > SPOT.reach || Math.abs(target.y - this.y) > 2 * T) return;
+    if (Math.sign(target.x - this.x) !== this.facing) return;
+    this.spotMs = SPOT.everyMs;
+    this.creature.hop();
+  }
+
+  // Acomoda el vuelo al espacio entre el piso y el techo de donde sale: que al subir y bajar no se meta en ninguno
+  // (antes los pájaros a ras de piso se hundían medio cuerpo y las medusas y velas se metían en el piso).
+  fitFlight(level) {
+    const col = Math.floor(this.x / T);
+    const row = Math.max(0, Math.floor((this.y - this.h / 2) / T));
+    let floor = row;
+    while (floor < level.grid.length && !isSolid(level.at(col, floor))) floor += 1;
+    let ceiling = row;
+    while (ceiling >= 0 && !isSolid(level.at(col, ceiling))) ceiling -= 1;
+    const bottom = floor * T - 2;
+    const top = (ceiling + 1) * T + 2;
+    const want = this.type.kind === 'flyer' ? FLYER.bob : BOB[this.type.kind];
+    // Lo que cabe: la mitad del espacio libre menos el cuerpo.
+    this.bob = Math.max(0, Math.min(want, (bottom - top - this.h) / 2));
+    // Sus pies (y) van de y0 - bob a y0 + bob.
+    this.y0 = Math.min(Math.max(this.y0, top + this.h + this.bob), bottom - this.bob);
+    this.y = this.y0;
+  }
+
+  // Pájaro, dona y pez: van y vienen de lado (hasta `range` de donde salieron, o hasta una pared) subiendo y bajando.
+  updateFlyer(dt, level, move = FLYER) {
+    if (!this.vx) this.vx = -move.speed;
+    const next = this.x + this.vx * dt;
+    const front = next + Math.sign(this.vx) * (this.w / 2);
+    const wall = isSolid(tileAt(level, front, this.y - this.h / 2)) || isSolid(tileAt(level, front, this.y - 4));
+    if (wall || Math.abs(next - this.x0) > move.range) this.vx = -this.vx;
+    else this.x = next;
+    this.y = this.y0 + Math.sin(this.t * (move === FISH ? 2 : 2.2)) * this.bob;
+    this.facing = Math.sign(this.vx) || this.facing;
   }
 
   // Carámbano: colgado; si alguien pasa abajo, tiembla y se cae (y se rompe en el piso).
@@ -474,10 +530,12 @@ export class Enemy {
     if (this.deathKind === 'fall') this.sprite.setScale(1, -1);
     else if (!this.dead && this.state !== 'pile') this.sprite.setScale(flip * Math.abs(this.sprite.scaleX || 1), this.sprite.scaleY);
     if (this.type.kind === 'shell' && this.state === 'slide') this.look.setAngle?.(this.look.angle + this.vx * 0.05);
-    if (this.type.kind === 'walker' && !this.dead && !this.frozen) this.look.setAngle?.(Math.sin(this.t * 12) * 5);
+    // (Con dibujo, el balanceo al caminar lo hace ui/creature.js; si no, se tambalea.)
+    if (this.type.kind === 'walker' && !this.dead && !this.frozen && !this.creature) this.look.setAngle?.(Math.sin(this.t * 12) * 5);
     if (this.type.kind === 'thwomp' && this.state === 'land') this.look.setAngle?.(Math.sin(this.stateMs / 30) * 2);
     // Congelado se queda tieso en su pose.
     if (this.creature && !this.frozen) {
+      this.creature.face(this.facing);
       this.creature.set(this.creaturePose());
       this.creature.update();
     }

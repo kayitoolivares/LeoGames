@@ -16,10 +16,10 @@ export function loadBrawlArt(scene) {
 }
 
 // Un monstruo con vida (ui/creature.js): su imagen `image` cabe en `size` (lo más largo); sus poses se bajan al aparecer.
-export function brawlCreature(scene, image, name, size) {
+export function brawlCreature(scene, image, name, size, gait = null) {
   const key = `brawl:${name}`;
   requestCreaturePoses(scene, key, (pose) => `brawl/monstruos/${name}-${pose}.png`, manifest.monstruos ?? []);
-  return new Creature(scene, image, key, { size, fit: 'max', metrics: manifest.metrics ?? {} });
+  return new Creature(scene, image, key, { size, fit: 'max', gait, metrics: manifest.metrics ?? {} });
 }
 
 export function monsterTexture(scene, name) {

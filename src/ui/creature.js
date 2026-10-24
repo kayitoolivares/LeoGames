@@ -8,6 +8,11 @@ import { frameDelta } from '../shared/clock.js';
 //   jefes:  furioso (con poca vida camina y respira enojado y tiembla), cargando (se agacha temblando antes de su
 //           ataque), mareado (se tambalea) y derrotado (aplastado).
 // Si le falta una pose se usa la que se parece y al final la normal (sin las poses nuevas solo se estira y aplasta).
+// Su manera de moverse (`gait`), aunque no tenga dibujos de paso:
+//   walk:  caminando rebota en cada paso y se balancea de un lado al otro (tortugas, hongos...);
+//   fly:   aletea (se estira y aplasta rapidito) y se inclina hacia donde va (pájaros, murciélagos...);
+//   swim:  coletea (se mece) (peces);   float: late como medusa (se contrae y se estira despacito).
+// Al darse la vuelta se aplasta de lado (face) y puede dar un brinquito de "¡te vi!" (hop).
 // El tamaño: con las medidas de art.json (tools/pose-metrics.mjs) todas las poses "pesan" lo mismo y se paran en el
 // mismo lugar aunque la imagen sea más ancha o más bajita; sin medidas, todas del mismo alto.
 export const MONSTER_POSES = ['paso', 'ataque', 'dolor', 'burla'];
@@ -41,6 +46,16 @@ const BREATHE = { amount: 0.03, angry: 0.06 };
 const LAUGH = { amount: 0.05, speed: 26 };
 const TREMBLE = { furioso: 1.6, cargando: 2.6 };
 const SWAY = { amount: 0.08, speed: 5 };
+// Las maneras de moverse: qué tanto rebota (fracción de su tamaño) y se balancea al caminar, el aleteo, el coleteo y
+// el latido; y el brinquito.
+const GAITS = {
+  walk: { bounce: 0.09, waddle: 8 },
+  fly: { flap: 0.14, flapSpeed: 17, tilt: 9 },
+  swim: { tilt: 11, speed: 4.5 },
+  float: { pulse: 0.13, speed: 3.5 },
+};
+const HOP = { ms: 380, height: 0.28 };
+const TURN_SQUASH = 0.3;
 
 // Pide las poses de un monstruo que estén en `available` (la lista de art.json): `key` = su textura normal
 // ('plat:hongo-malo') y `url(pose)` = de dónde se baja cada una. Se cargan mientras se juega y aparecen al llegar.
@@ -59,7 +74,8 @@ export function requestCreaturePoses(scene, key, url, available, poses = BOSS_PO
 export class Creature {
   // `image`: la imagen (origen abajo, en los pies). `key`: su textura normal. `size`: qué tan alta se ve la normal (con
   // fit 'max', lo más largo). `metrics`: las medidas de art.json ({ <arte>-<pose>: [área, centro, alto] }).
-  constructor(scene, image, key, { size, fit = 'height', metrics = {} }) {
+  // `gait`: cómo se mueve (walk | fly | swim | float, o null).
+  constructor(scene, image, key, { size, fit = 'height', metrics = {}, gait = null }) {
     this.scene = scene;
     this.image = image;
     this.key = key;
@@ -68,6 +84,10 @@ export class Creature {
     this.fit = fit;
     this.metrics = metrics;
     this.baseX = image.x;
+    this.baseY = image.y;
+    this.gait = gait;
+    this.facing = null;
+    this.hopMs = 0;
     this.shown = null;
     this.request = 'normal';
     this.stretch = 0;
@@ -97,6 +117,23 @@ export class Creature {
 
   taunt(ms = 900) {
     if (this.hurtMs === 0) this.tauntMs = ms;
+  }
+
+  // Hacia dónde ve (1 o -1): si se da la vuelta, se aplasta de lado.
+  face(dir) {
+    if (this.facing !== null && dir !== this.facing) {
+      this.side = -TURN_SQUASH;
+      this.sideSpeed = 0;
+    }
+    this.facing = dir;
+  }
+
+  // Un brinquito (como diciendo "¡te vi!").
+  hop() {
+    if (this.hopMs > 0) return;
+    this.hopMs = HOP.ms;
+    this.stretch = 0.18;
+    this.speed = 0;
   }
 
   // Cayó al piso: se aplasta (`k` = qué tan fuerte, 0 a 1).
@@ -156,7 +193,10 @@ export class Creature {
     // A dónde quiere regresar el resorte: respirando parado, carcajeándose o aplastado de derrotado.
     let target = 0;
     const request = this.request;
+    const gait = GAITS[this.gait];
     if (pose === 'burla') target = LAUGH.amount * Math.sin(this.time * LAUGH.speed);
+    else if (this.gait === 'fly' && pose !== 'dolor') target = gait.flap * Math.sin(this.time * gait.flapSpeed);
+    else if (this.gait === 'float' && pose !== 'dolor') target = gait.pulse * Math.sin(this.time * gait.speed);
     else if (request === 'normal') target = (this.angry ? BREATHE.angry : BREATHE.amount) * Math.sin(this.time * Math.PI * (this.angry ? 1.8 : 0.9));
     else if (pose === 'derrotado') target = -0.08;
     const sideTarget = pose === 'mareado' ? SWAY.amount * Math.sin(this.time * SWAY.speed) : 0;
@@ -171,6 +211,30 @@ export class Creature {
     const tremble = TREMBLE[pose] ?? (this.angry && request === 'normal' ? TREMBLE.furioso * 0.5 : 0);
     this.image.x = this.baseX + (tremble ? Math.sin(this.time * 60) * tremble : 0);
     this.image.setOrigin(this.image.flipX ? 1 - this.center : this.center, 1);
+    this.move(dtMs, request);
+  }
+
+  // Lo que hace su manera de moverse: el rebote y el balanceo de cada paso, la inclinación al volar o nadar y el
+  // brinquito. (Mueve la imagen hacia arriba y la gira; el juego mueve y voltea lo de afuera.)
+  move(dtMs, request) {
+    this.hopMs = Math.max(0, this.hopMs - dtMs);
+    const hop = this.hopMs > 0 ? Math.sin((1 - this.hopMs / HOP.ms) * Math.PI) * HOP.height * this.size : 0;
+    let lift = hop;
+    let angle = null;
+    const gait = GAITS[this.gait];
+    const walking = request === 'caminar';
+    if (this.gait === 'walk') {
+      // Media vuelta de seno por paso: sube y baja en cada uno y se ladea a un lado y luego al otro.
+      const phase = ((this.step + this.stepMs / STEP_MS) * Math.PI) % (Math.PI * 2);
+      lift += walking ? Math.abs(Math.sin(phase)) * gait.bounce * this.size : 0;
+      angle = walking ? Math.sin(phase) * gait.waddle : 0;
+    } else if (this.gait === 'fly') {
+      angle = gait.tilt * (this.image.flipX ? -1 : 1) + Math.sin(this.time * 3) * 3;
+    } else if (this.gait === 'swim') {
+      angle = Math.sin(this.time * gait.speed) * gait.tilt;
+    }
+    this.image.y = this.baseY - lift;
+    if (angle !== null) this.image.setAngle(angle);
   }
 
   // Cambia a esa textura y calcula su escala (para que todas las poses se vean del mismo tamaño).

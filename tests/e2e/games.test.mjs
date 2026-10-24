@@ -3346,6 +3346,57 @@ test('súper bolitas: el Rey Nube baja al piso a descansar', { timeout: ms(90000
   await p.context.close();
 });
 
+// Los voladores (pájaros, peces, medusas, velas) no se meten en el piso, el techo ni las paredes, y los que caminan
+// rebotan y se balancean al caminar.
+test('súper bolitas: los voladores no se meten en los bloques y los monstruitos caminan', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 1, null);
+  // Nubes, Bajo el mar y Casa embrujada.
+  for (const level of [4, 10, 24]) {
+    await plat(p.page, (n) => window.leogames.scene.getScene('Plat').startLevel(n), level);
+    await p.wait(800);
+    const inside = await plat(p.page, async () => {
+      const s = window.leogames.scene.getScene('Plat');
+      const { isSolid } = await import('/src/games/plat/tiles.js');
+      Object.assign(s.players[0], { invulnMs: 1e9 });
+      const flyers = s.enemies.filter((e) => ['flyer', 'jelly', 'floater', 'fish'].includes(e.type.kind));
+      for (const e of flyers) e.awake = true;
+      let bad = 0;
+      let n = 0;
+      for (let k = 0; k < 25; k += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        for (const e of flyers) {
+          if (e.dead || e.gone) continue;
+          n += 1;
+          if (isSolid(s.level.at(Math.floor(e.x / 48), Math.floor((e.y - e.h / 2) / 48)))) bad += 1;
+        }
+      }
+      return n ? bad / n : 0;
+    });
+    assert.ok(inside < 0.03, `nivel ${level}: ${Math.round(inside * 100)}% del tiempo dentro de bloques`);
+  }
+  // Un hongo caminando: su dibujo sube y baja y se ladea.
+  await plat(p.page, () => window.leogames.scene.getScene('Plat').startLevel(0));
+  await p.wait(800);
+  const walk = await plat(p.page, async () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const g = s.enemies.find((e) => e.type.kind === 'walker' && e.creature);
+    g.awake = true;
+    const ys = new Set();
+    const angles = new Set();
+    for (let k = 0; k < 15; k += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      ys.add(Math.round(g.look.y));
+      angles.add(Math.round(g.look.angle));
+    }
+    return { ys: ys.size, angles: angles.size };
+  });
+  assert.ok(walk.ys > 2 && walk.angles > 2, `el hongo rebota y se balancea (${JSON.stringify(walk)})`);
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 // Monstruos y jefes con poses (ui/creature.js): el Rey Cangrejo camina, carga su ataque, se marea, se enoja y se
 // burla; los monstruos de Pelea en equipo se agachan antes de lanzarse y quedan tirados al vencerlos.
 test('monstruos y jefes con poses en Súper Bolitas y Pelea en equipo', { timeout: ms(120000) }, async () => {
