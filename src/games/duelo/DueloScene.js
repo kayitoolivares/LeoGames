@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
-import { frameDelta } from '../../shared/clock.js';
+import { frameDelta, setTimeScale } from '../../shared/clock.js';
 import { characterPicks } from '../../shared/picks.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { rewards } from '../../shared/rewards.js';
@@ -8,7 +8,7 @@ import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
-import { burst, confetti, popText, randomPow } from '../brawl/effects.js';
+import { burst, confetti, fireworks, popText, randomPow } from '../brawl/effects.js';
 import { loadSmashArt } from '../smash/art.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../smash/characters.js';
@@ -30,6 +30,8 @@ import { fame, showFame } from './records.js';
 import { KoReplay } from './replay.js';
 import { SCHOOL_PARRY_MS, School } from './school.js';
 import { FightTalk } from './talk.js';
+import { go } from '../../shared/transition.js';
+import { bounceIn } from '../../ui/bounce.js';
 
 const ROUND_SECONDS = 60;
 const ROUND_INTRO_MS = 1100;
@@ -452,7 +454,7 @@ export class DueloScene extends Phaser.Scene {
   }
 
   toCharacters() {
-    this.scene.start('Personajes', { selected: this.returnData.selected, next: 'Duelo', title: 'Duelo de bolitas' });
+    go(this, 'Personajes', { selected: this.returnData.selected, next: 'Duelo', title: 'Duelo de bolitas' });
   }
 
   // ---------- Torneo y supervivencia ----------
@@ -495,6 +497,7 @@ export class DueloScene extends Phaser.Scene {
     });
     say(rush ? '¡Venciste a los jefes!' : '¡Campeón del torneo!');
     confetti(this, [winner.color, 0xffd84d, 0xffffff], 140);
+    fireworks(this, [winner.color, 0xffd84d, 0xffffff], 5);
     sfx.win();
     this.endActions = { a: () => this.beginMode(), b: () => this.toCharacters() };
   }
@@ -833,7 +836,10 @@ export class DueloScene extends Phaser.Scene {
     if (this.phase === 'intro' && this.phaseMs >= ROUND_INTRO_MS) {
       this.phase = 'go';
       this.phaseMs = 0;
-      for (const fighter of this.fighters) fighter.posing = false;
+      for (const fighter of this.fighters) {
+        fighter.posing = false;
+        fighter.look.express('enojado', 1400);
+      }
       this.showBanner('¡Peleen!', '', FIGHT_INTRO_MS);
       sfx.countdown(true);
     } else if (this.phase === 'go' && this.phaseMs >= FIGHT_INTRO_MS * 0.5) {
@@ -1121,6 +1127,8 @@ export class DueloScene extends Phaser.Scene {
     const big = data.grab || finisher || dealt >= 10;
     const word = data.grab ? '¡Agarrado!' : finisher ? '¡Remate!' : data.hammer ? '¡Martillazo!' : randomPow();
     comicHit(this, x, y - 50, word, { big, red: big });
+    // El golpe "se siente": se congela un instante (más en los fuertes).
+    setTimeScale(0, big ? 120 : 40 + Math.min(40, dealt * 4));
     sfx.hit(Math.min(1, dealt / 12));
     this.stageLife?.cheer(Math.min(1, dealt / 12));
     if (data.launch) this.cameras.main.shake(140, 0.007);
@@ -1366,6 +1374,7 @@ export class DueloScene extends Phaser.Scene {
     this.victory = showVictory(this, winner, `¡Ganó ${winner.label}!`, `${nextText}\n\nA = siguiente pelea\nB = cambiar personajes\nMantén LB + RB + Y = salir`);
     say(`¡Ganó ${winner.label}!`);
     confetti(this, [winner.color, 0xffffff, 0xffc93c], 90);
+    fireworks(this, [winner.color, 0xffffff, 0xffc93c], 4);
     sfx.win();
     this.endActions = {
       a: () => {
@@ -1540,7 +1549,7 @@ export class DueloScene extends Phaser.Scene {
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setColor(color).setAlpha(1).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(subtitle ? 1 : 0);
-    this.tweens.add({ targets: this.banner, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    bounceIn(this, this.banner, this.subBanner);
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
   }
 
@@ -1560,7 +1569,7 @@ export class DueloScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }
 

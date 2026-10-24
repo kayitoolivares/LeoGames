@@ -3,7 +3,7 @@ import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { hasPose, itemTexture, superArtKey } from '../smash/art.js';
+import { fitPose, hasPose, itemTexture, superArtKey } from '../smash/art.js';
 import { isBlockCharacter, lerp, numberSize } from '../smash/bloquecito.js';
 import { CHARACTERS } from '../smash/characters.js';
 import { BOSSES, addCrown, isBoss } from './boss.js';
@@ -26,6 +26,9 @@ const GRAVITY = 2300;
 const FRICTION = 2400; // cómo se frenan los empujones en el piso
 const WALK = 0.55; // velocidad al caminar = `run` del personaje × WALK
 const BACK = 0.75; // hacia atrás camina más lento
+// Pegando parado (golpe, patada o remate) se puede seguir caminando, un poco más despacio: no se queda frenado.
+const ATTACK_WALK = 0.65;
+const WALKING_ATTACKS = new Set(['punch', 'kick', 'finisher']);
 const AIR_CONTROL = 900;
 const JUMP = 1.08;
 const COMBO_WINDOW_MS = 650;
@@ -116,7 +119,7 @@ export class DueloFighter {
 
     const r = this.radius;
     this.blob = new Blob(scene, 0, FLOOR - r, color, r).setDepth(100);
-    this.look = new CharacterLook(scene, this.blob, character, { height: LOOK_HEIGHT });
+    this.look = new CharacterLook(scene, this.blob, character, { height: LOOK_HEIGHT, fx: true, poses: 'all' });
     if (stats.crown && !this.look.hasArt) addCrown(scene, this.blob);
     this.superArt = superArtKey(scene, character);
     // Estatura (para las cajas de golpe): la imagen trae un borde blanco alrededor.
@@ -334,6 +337,10 @@ export class DueloFighter {
     if (this.grounded && this.canAct()) this.facing = Math.sign(opponent.x - this.x) || this.facing;
     if (this.canAct()) this.act(input, dt, opponent);
     else if (this.attack && (input.punch || input.kick)) this.buffered = input.punch ? 'punch' : 'kick';
+    if (this.attack && this.grounded && WALKING_ATTACKS.has(this.attack.type)) {
+      const backwards = Math.sign(input.x) === -this.facing;
+      this.vx = Math.abs(input.x) > 0.25 ? input.x * this.walkSpeed * ATTACK_WALK * (backwards ? BACK : 1) * this.speed : 0;
+    }
     this.updateDash(dtMs);
     this.updateAttack(dtMs);
     this.updateSpecial(dtMs, opponent);
@@ -653,7 +660,6 @@ export class DueloFighter {
     if (data.freeze) this.chillMs = data.stunMs;
     if (this.look.hasArt) this.flashMs = 70;
     else this.blob.flash();
-    this.blob.squish();
     return { blocked: false, dealt };
   }
 
@@ -687,7 +693,6 @@ export class DueloFighter {
       this.launched = false;
       this.pushVx *= 0.4;
       if (!this.koed) this.downMs = DOWN_MS;
-      this.blob.squish();
       sfx.hit(0.3);
       this.scene.landed?.(this);
     }
@@ -722,11 +727,12 @@ export class DueloFighter {
     this.look.show(shown, this.facing, this.special?.action ?? null);
     if (this.blocks) this.tag.setY(this.look.top - 16);
     const image = this.look.image;
-    if (image) image.setScale((r * LOOK_HEIGHT * (POSE_HEIGHT[shown] ?? 1)) / image.height);
+    if (image) fitPose(image, r * LOOK_HEIGHT, POSE_HEIGHT[shown] ?? 1);
     this.blob.setPosition(this.x, FLOOR - r);
     this.blob.look(this.facing * 0.9, pose === 'dolor' ? -0.6 : 0);
 
-    // Caminando se bambolea (si no tiene cuadros de caminata); parado "respira". Así se ve vivo.
+    // Caminando se bambolea (si no tiene cuadros de caminata); cubriéndose "respira". (Parado respira, se estira y se
+    // aplasta con ui/motion.js.)
     let bob = 0;
     let angle = 0;
     let sx = 1;
@@ -736,7 +742,7 @@ export class DueloFighter {
       this.walkPhase += (dtMs / 1000) * 13;
       bob = -Math.abs(Math.sin(this.walkPhase)) * r * 0.14;
       angle = Math.sin(this.walkPhase) * 4;
-    } else if (pose === 'normal' || pose === 'cubrirse') {
+    } else if (pose === 'cubrirse') {
       sy = 1 + 0.025 * Math.sin(now / 260);
       sx = 1 - 0.015 * Math.sin(now / 260);
     } else if (pose === 'gana') {

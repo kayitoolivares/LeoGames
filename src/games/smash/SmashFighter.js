@@ -3,10 +3,12 @@ import { frameDelta } from '../../shared/clock.js';
 import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook, WALK_FPS } from '../../ui/CharacterLook.js';
+import { Motion } from '../../ui/motion.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { characterTexture, hasPose, superArtKey, walkPose } from './art.js';
+import { EXPRESSION_POSES, characterTexture, fitPose, hasPose, requestPoses, superArtKey, walkPose } from './art.js';
 import { OCTO, isBlockCharacter, lerp, numberSize } from './bloquecito.js';
 import { addCrown } from '../duelo/boss.js';
+import { dustPuff } from '../duelo/fx.js';
 import { COSTUMES } from '../duelo/DueloFighter.js';
 import { CHARACTERS, addAccessory, characterInfo } from './characters.js';
 import { drawItem } from './items.js';
@@ -324,7 +326,7 @@ export class SmashFighter {
     this.image = null;
     if (this.blocks) {
       // Bloquecito se dibuja con bloques; su súper forma (Octobloque) también, así que no se pinta dorado.
-      this.look = new CharacterLook(scene, this.sprite, this.characterKey);
+      this.look = new CharacterLook(scene, this.sprite, this.characterKey, { fx: true });
       this.superArt = OCTO;
       this.ring = scene.add.ellipse(0, this.baseRadius - 2, this.baseRadius * 2.4, this.baseRadius * 0.6).setStrokeStyle(5, this.color);
       this.sprite.addAt(this.ring, 1);
@@ -335,9 +337,19 @@ export class SmashFighter {
     this.superArt = superArtKey(scene, this.characterKey);
     if (!key) return;
     for (const part of this.sprite.figure.list) part.setVisible(false);
-    this.image = scene.add.image(0, this.baseRadius, key).setOrigin(0.5, 1);
+    // La imagen va en un contenedor parado en los pies que se estira y se aplasta (ui/motion.js).
+    this.rig = scene.add.container(0, this.baseRadius);
+    this.rig.baseY = this.baseRadius;
+    this.image = scene.add.image(0, 0, key).setOrigin(0.5, 1);
     this.image.setScale((this.baseRadius * 2.8) / this.image.height);
-    this.sprite.figure.addAt(this.image, 0);
+    this.rig.add(this.image);
+    this.sprite.figure.addAt(this.rig, 0);
+    if (!fixed) {
+      const art = () => (this.superMs > 0 && this.superArt ? this.superArt : this.characterKey);
+      const onDust = (x, y, dir, count) => dustPuff(scene, x, y, dir, count, this.sprite.parentContainer ?? null, this.sprite.depth + 1);
+      this.motion = new Motion(this.rig, { has: (pose) => hasPose(scene, art(), pose), onDust });
+      requestPoses(scene, this.characterKey, EXPRESSION_POSES);
+    }
     this.ring = scene.add.ellipse(0, this.baseRadius - 2, this.baseRadius * 2.4, this.baseRadius * 0.6).setStrokeStyle(5, this.color);
     this.sprite.addAt(this.ring, 1);
   }
@@ -890,8 +902,8 @@ export class SmashFighter {
     } else if (this.rocketMs > 0) {
       this.vx = this.facing * ROCKET.vx;
     } else if (this.grounded) {
-      // Atacando camina despacito; cargando un golpe, nada.
-      const slow = this.attack?.charge > 0 ? 0 : this.attack ? 0.3 : 1;
+      // Atacando sigue caminando, un poco más despacio (no se queda frenado); cargando un golpe, nada.
+      const slow = this.attack?.charge > 0 ? 0 : this.attack ? 0.65 : 1;
       this.vx = approach(this.vx, input.x * stats.run * slow * speedBonus, GROUND_FRICTION * dt);
     } else {
       this.vx = approach(this.vx, input.x * stats.air * speedBonus, AIR_ACCEL * dt);
@@ -1138,7 +1150,7 @@ export class SmashFighter {
     this.platform = null;
     this.attack = null;
     this.sprite.flash();
-    this.sprite.squish();
+    if (!this.image) this.sprite.squish();
     this.flashImage();
     return { blocked: false, speed, dealt };
   }
@@ -1199,12 +1211,13 @@ export class SmashFighter {
     else if (!this.grounded) pose = 'salto';
     // (Las poses de pelea son opcionales: si el personaje no la tiene, usa la más parecida.)
     const shown = (POSE_CHAIN[pose] ?? [pose]).find((p) => hasPose(this.scene, art, p)) ?? 'normal';
-    const key = characterTexture(this.scene, art, shown);
-    if (this.image.texture.key !== key) {
-      this.image.setTexture(key);
-      this.image.setScale((this.baseRadius * 2.8 * (POSE_HEIGHT[shown] ?? 1)) / this.image.height);
-    }
-    this.image.setFlipX(this.facing < 0);
+    // (Se estira, se aplasta, parpadea, pone caras y baila.)
+    const drawn = this.motion ? this.motion.frame(shown, this.x, this.y + this.radius) : shown;
+    const key = characterTexture(this.scene, art, drawn);
+    if (this.image.texture.key !== key) this.image.setTexture(key);
+    this.image.setFlipX((this.motion?.flipped ? -this.facing : this.facing) < 0);
+    // Igual de grande y parado en el mismo lugar en todas las poses.
+    fitPose(this.image, this.baseRadius * 2.8, POSE_HEIGHT[shown] ?? 1);
     this.punchArt = hasPose(this.scene, art, 'golpe');
   }
 

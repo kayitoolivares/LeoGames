@@ -11,7 +11,10 @@ import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { COSTUMES } from '../duelo/DueloFighter.js';
 import { FightTalk } from '../duelo/talk.js';
-import { burst, confetti, popText } from '../brawl/effects.js';
+import { burst, confetti, fireworks, popText, randomPow, sparkles } from '../brawl/effects.js';
+import { comicHit, impact } from '../duelo/fx.js';
+import { epicMoment } from '../../ui/epic.js';
+import { Ambience } from '../../ui/ambient.js';
 import { coinBank } from '../brawl/coins.js';
 import { Shop, dressFighter, wardrobe } from '../brawl/shop.js';
 import { loadSmashArt } from '../smash/art.js';
@@ -28,6 +31,8 @@ import { MAP_ENEMY, MODES, formatTime, ghosts, nodeOpen, progress, showMap, show
 import { overlaps, tileAt } from './physics.js';
 import { Player, STAR_MS } from './Player.js';
 import { THEMES, T, ROWS, isSolid, switches, themeTextures, tileTexture } from './tiles.js';
+import { go } from '../../shared/transition.js';
+import { bounceIn, bump } from '../../ui/bounce.js';
 
 const HUD_DEPTH = 10000;
 const CHUNK = 16;
@@ -35,6 +40,7 @@ const LIVES = { normal: 5, peque: 10 };
 const BUBBLE_SPEED = 170;
 const RESPAWN_MS = 1100;
 const CLEAR_MS = 2600;
+const FLAG_EPIC_MS = 900;
 const END_SCREEN_DELAY_MS = 900;
 const EXIT_HOLD_MS = 1200;
 const OUTLINE = { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 };
@@ -349,6 +355,8 @@ export class PlatScene extends Phaser.Scene {
     this.level = level;
     this.keys = themeTextures(this, level.theme);
     this.drawBackground();
+    // Lo que se mueve en el fondo (pájaros, nieve, burbujas...).
+    this.ambience = new Ambience(this, level.water ? 'mar' : level.theme, { depth: -90 });
     this.drawTiles();
     this.items = new Items(this);
     this.platforms = new Platforms(this, level.theme);
@@ -445,6 +453,8 @@ export class PlatScene extends Phaser.Scene {
     this.platforms = null;
     this.background?.destroy();
     this.background = null;
+    this.ambience?.destroy();
+    this.ambience = null;
     this.water?.destroy();
     this.water = null;
     this.ghost?.destroy();
@@ -572,6 +582,12 @@ export class PlatScene extends Phaser.Scene {
     return this.level.width;
   }
 
+  // Lo que se puede ver ahorita (para los acercamientos de ui/epic.js).
+  viewBounds() {
+    const left = this.areaLeft();
+    return { x: left, y: 0, width: Math.max(this.scale.width, this.areaRight() - left), height: this.scale.height };
+  }
+
   inBonus() {
     const lead = this.players.find((p) => p.active) ?? this.players[0];
     return this.level.inBonus(lead.x);
@@ -642,6 +658,8 @@ export class PlatScene extends Phaser.Scene {
   }
 
   updateCamera(dt) {
+    // (En un momento épico la cámara la mueve ui/epic.js.)
+    if (this.epicBusy) return;
     const cam = this.cameras.main;
     const W = this.scale.width;
     const active = this.players.filter((p) => p.active);
@@ -721,6 +739,7 @@ export class PlatScene extends Phaser.Scene {
   }
 
   breakBlock(col, row) {
+    this.cameras.main.shake(80, 0.004);
     this.level.set(col, row, ' ');
     this.drawTile(col, row);
     this.drawTile(col, row + 1);
@@ -895,6 +914,8 @@ export class PlatScene extends Phaser.Scene {
   }
 
   powerTaken(player, kind) {
+    sparkles(this, player.x, player.y - player.h / 2, 8, 50);
+    player.look.express('feliz', 1000);
     if (kind === 'vida') {
       this.addLife(player);
       return;
@@ -1021,6 +1042,7 @@ export class PlatScene extends Phaser.Scene {
     if (helper) {
       p.popBubble();
       popText(this, p.x, p.y - 80, '¡Pop!', '#bfe9ff');
+      burst(this, p.x, p.y - 30, 0xbfe9ff, 10);
     }
   }
 
@@ -1207,6 +1229,7 @@ export class PlatScene extends Phaser.Scene {
     player.stats.stomps += 1;
     sfx.hit(0.5);
     popText(this, enemy.x, enemy.y - enemy.h - 20, '¡Pum!', '#ffffff');
+    impact(this, enemy.x, enemy.y - enemy.h / 2, { power: 0.5, shake: false });
     if (enemy.type.stomp === 'shell') {
       const shell = this.spawnEnemy(enemy.type.shellAs ?? 'shell', enemy.x, enemy.y);
       shell.state = 'idle';
@@ -1333,6 +1356,8 @@ export class PlatScene extends Phaser.Scene {
         const done = boss.stomped();
         const count = boss.maxHp - Math.ceil(boss.hp);
         popText(this, boss.x, boss.y - boss.h - 30, done ? '¡Ganaron!' : ['¡Uno!', '¡Dos!', '¡Tres!'][count - 1] ?? '¡Pum!', '#ffd84d');
+        impact(this, boss.x, boss.y - boss.h, { power: done ? 2 : 1.3 });
+        comicHit(this, boss.x + 50, boss.y - boss.h - 40, done ? '¡KO!' : randomPow(), { big: done });
         if (done) this.bossDefeated();
         else this.talk.line(['¡Bien! ¡Otra vez!', '¡Eso!', `¡Le duele a ${boss.type.name}!`]);
       } else if (fromAbove || boss.stunMs > 0) {
@@ -1366,11 +1391,18 @@ export class PlatScene extends Phaser.Scene {
   }
 
   bossDefeated() {
+    const boss = this.boss;
+    // Cámara lenta y acercamiento al jefe vencido; luego fuegos artificiales y todos festejan.
+    epicMoment(this, boss.x, boss.y - boss.h / 2, { zoom: 1.4, ms: 1300, slow: 0.25, hide: [this.hud, this.talk.caption], bounds: this.viewBounds() });
+    this.time.delayedCall(1300, () => fireworks(this, this.players.map((p) => p.color), 4));
+    for (const p of this.players) {
+      p.look.dance(2600);
+    }
     confetti(this, this.players.map((p) => p.color));
     this.cameras.main.shake(400, 0.012);
     this.talk.line(`¡Vencieron a ${this.boss.type.name}!`, { important: true });
     if (this.run.mode === 'rush') {
-      this.time.delayedCall(1500, () => this.nextRushBoss());
+      this.time.delayedCall(1800, () => this.nextRushBoss());
       return;
     }
     this.time.delayedCall(1500, () => this.levelClear());
@@ -1455,24 +1487,39 @@ export class PlatScene extends Phaser.Scene {
     if (passed) {
       sfx.win();
       this.tweens.add({ targets: goal.flag, y: -40, duration: 900 });
-      this.levelClear();
+      this.flagMoment(passed);
+      this.levelClear({ delay: FLAG_EPIC_MS });
       return;
     }
-    if (at(this.secretGoal)) {
+    const secretBy = at(this.secretGoal);
+    if (secretBy) {
       sfx.win();
       this.tweens.add({ targets: this.secretGoal.flag, y: -40, duration: 900 });
-      this.levelClear({ secret: true });
+      this.flagMoment(secretBy);
+      this.levelClear({ secret: true, delay: FLAG_EPIC_MS });
     }
   }
 
-  levelClear({ secret = false } = {}) {
+  // El que llegó a la bandera: cámara lenta con acercamiento y destellitos.
+  flagMoment(player) {
+    epicMoment(this, player.x, player.y - player.h, { zoom: 1.3, ms: FLAG_EPIC_MS, slow: 0.35, hide: [this.hud, this.talk.caption], bounds: this.viewBounds() });
+    sparkles(this, player.x, player.y - player.h, 10, 70);
+  }
+
+  levelClear({ secret = false, delay = 0 } = {}) {
     if (this.phase !== 'play') return;
     this.phase = 'clear';
     this.clearMs = 0;
     this.secretExit = secret;
     for (const p of this.players) if (p.state === 'bubble') p.popBubble();
     music.play(null);
-    this.showBanner(secret ? '¡Bandera secreta!' : '¡Lo lograron!', '', 1800);
+    // (Después del acercamiento a la bandera, si hubo.)
+    this.time.delayedCall(delay, () => {
+      if (this.phase !== 'clear') return;
+      this.showBanner(secret ? '¡Bandera secreta!' : '¡Lo lograron!', '', 1800);
+      fireworks(this, this.players.map((p) => p.color), 3);
+      for (const p of this.players) p.look.dance(CLEAR_MS);
+    });
     if (secret) rewards.earn('plat-secreta');
   }
 
@@ -1630,7 +1677,10 @@ export class PlatScene extends Phaser.Scene {
       left = `❤️ ${this.lives}    🪙 ${this.coins}`;
       right = mode === 'fight' ? '' : this.bigTaken.got.map((g, i) => (g || saved[i] ? '●' : '○')).join(' ');
     }
-    if (this.livesText.text !== left) this.livesText.setText(left);
+    if (this.livesText.text !== left) {
+      this.livesText.setText(left);
+      bump(this, this.livesText, 1.15);
+    }
     if (this.bigText.text !== right) this.bigText.setText(right);
     if (mode === 'battle') this.bigText.setColor(hexToCss(0xffd84d));
   }
@@ -1640,7 +1690,7 @@ export class PlatScene extends Phaser.Scene {
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setAlpha(0).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(0);
-    this.tweens.add({ targets: this.banner, alpha: 1, scale: 1, duration: 250, ease: 'Back.easeOut' });
+    bounceIn(this, this.banner, this.subBanner);
     this.tweens.add({ targets: this.subBanner, alpha: 1, duration: 250 });
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
   }
@@ -1662,7 +1712,7 @@ export class PlatScene extends Phaser.Scene {
     if (this.exiting) return;
     this.exiting = true;
     switches.red = true;
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }
 

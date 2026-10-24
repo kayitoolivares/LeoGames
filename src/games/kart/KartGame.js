@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
+import { setTimeScale } from '../../shared/clock.js';
 import { music } from '../../shared/music.js';
 import { createEngine, sfx } from '../../shared/sound.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
@@ -977,6 +978,8 @@ export class KartGame {
 
   // Sonido y letrero de lo que le pasó a un jugador (a la compu no, para no llenar todo de ruido).
   announce(racer, event) {
+    // Al caer de un salto: polvito en las llantas.
+    if (event === 'land') this.particles.burst('dust', racer.x, racer.y + 0.4, racer.z, 10, [this.dustColor, 0xffffff], { speed: 6, up: 3, lifeMs: 500 });
     if (racer.isCpu) return;
     if (event === 'item') sfx.pickup();
     if (event === 'pad' || event === 'draft' || event.startsWith('turbo')) sfx.boost();
@@ -1136,7 +1139,9 @@ export class KartGame {
 
   onProjectileHit(victim, projectile) {
     const hurt = victim.hit();
-    if (hurt) this.particles.burst('spark', victim.x, victim.y + 1.5, victim.z, 14, HIT_COLORS);
+    if (hurt) this.particles.burst('spark', victim.x, victim.y + 1.5, victim.z, 22, HIT_COLORS, { speed: 10, up: 9 });
+    // Si le pegan a un jugador (o un jugador le pega a alguien), el golpe se siente: todo se congela un instante.
+    if (hurt && (!victim.isCpu || !projectile.owner.isCpu)) setTimeScale(0, 70);
     if (hurt && (!victim.isCpu || !projectile.owner.isCpu)) sfx.hit(projectile.kind === 'comet' ? 1 : 0.7);
     if (!victim.isCpu && (hurt || !victim.invincible)) victim.say(hurt ? '¡Te dieron! 💫' : '¡La burbuja te salvó!');
     if (hurt) this.talk?.hit(projectile.owner, victim, projectile.kind);
@@ -1225,6 +1230,11 @@ export class KartGame {
       this.replay?.markFinish(racer);
       // Confeti en la meta.
       this.particles.burst('confetti', racer.x, racer.y + 2, racer.z, 36, CONFETTI_COLORS, { speed: 7, up: 10, lifeMs: 1700 });
+      // El primer jugador que llega: cámara lenta y "fuegos artificiales" de chispas.
+      if (!racer.isCpu && this.firstHumanFinishMs === null && !this.timeTrial) {
+        setTimeScale(0.35, 1300);
+        for (const [up, speed] of [[16, 9], [20, 12], [24, 7]]) this.particles.burst('spark', racer.x, racer.y + 3, racer.z, 30, CONFETTI_COLORS, { speed, up, lifeMs: 1400 });
+      }
       if (this.finishOrder.length === 1 && !this.timeTrial) this.talk.line(`¡${nameOf(racer)} cruza la meta en primer lugar!`, { important: true });
       if (!racer.isCpu && this.finishOrder.length === 1 && !this.timeTrial) rewards.earn('kart-gana');
       if (!racer.isCpu) {

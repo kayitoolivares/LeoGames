@@ -15,6 +15,8 @@ import { isBlockCharacter } from './bloquecito.js';
 import { BOSS_CHARACTERS, BOSS_CHARACTER_KEYS, CHARACTER_KEYS, addAccessory, characterInfo } from './characters.js';
 import { MODES, MODE_KEYS } from './modes.js';
 import { STAGES, STAGE_KEYS } from './stages.js';
+import { go } from '../../shared/transition.js';
+import { Ambience } from '../../ui/ambient.js';
 
 const CARD_W = 270;
 const CARD_H = 420;
@@ -80,6 +82,7 @@ export class SmashSelectScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.ambience = new Ambience(this, 'menu', { depth: -10 });
     this.humans = players.sorted();
     this.settings = { ...lastSettings };
     this.fixCpus();
@@ -269,7 +272,7 @@ export class SmashSelectScene extends Phaser.Scene {
           this.showStatus(card);
         } else if (controls.justPressed(id, 'b') && slot.player === players.host()) {
           sfx.back();
-          this.scene.start('Menu', { selected: this.returnData.selected });
+          go(this, 'Menu', { selected: this.returnData.selected });
           return;
         }
       } else if (controls.justPressed(id, 'b')) {
@@ -337,6 +340,6 @@ export class SmashSelectScene extends Phaser.Scene {
       costumes[id] = slot.costume;
     }
     Object.assign(lastSettings, this.settings);
-    this.scene.start('Smash', { selected: this.returnData.selected, picks, peque, costumes, settings: { ...this.settings } });
+    go(this, 'Smash', { selected: this.returnData.selected, picks, peque, costumes, settings: { ...this.settings } });
   }
 }

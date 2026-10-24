@@ -13,11 +13,12 @@ export async function startGame() {
   const server = await createServer({ root: ROOT, logLevel: 'error', server: { port: 5199, strictPort: false } });
   await server.listen();
   const url = server.resolvedUrls.local[0];
-  // En GitHub no hay tarjeta de video: el 3D se dibuja por software (SwiftShader).
+  // En GitHub no hay tarjeta de video: el 3D se dibuja por software (SwiftShader). En la compu, Edge sin ventana y
+  // sin sonido (si no, el narrador se oye por las bocinas mientras corren las pruebas).
   const browser = await chromium.launch(
     process.env.CI
-      ? { headless: true, args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] }
-      : { channel: 'msedge', headless: true },
+      ? { headless: true, args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--mute-audio'] }
+      : { channel: 'msedge', headless: true, args: ['--mute-audio'] },
   );
   return {
     url,
@@ -52,6 +53,9 @@ export async function openPage(game, { touch = false } = {}) {
     if (m.type() === 'error') errors.push(m.text());
   });
   await page.addInitScript(() => {
+    // La voz del navegador habla por las bocinas de Windows aunque la página no tenga sonido: en las pruebas, calladita
+    // (la frase igual se anota en el registro de la voz).
+    if (window.speechSynthesis) window.speechSynthesis.speak = () => {};
     const makePad = (index) => ({
       index, id: `prueba ${index + 1}`, connected: true, mapping: 'standard', timestamp: 0,
       buttons: Array.from({ length: 17 }, () => ({ pressed: false, touched: false, value: 0 })),

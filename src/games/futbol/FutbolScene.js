@@ -11,7 +11,9 @@ import { rewards } from '../../shared/rewards.js';
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
-import { burst, confetti, popText } from '../brawl/effects.js';
+import { burst, confetti, fireworks, popText } from '../brawl/effects.js';
+import { epicMoment } from '../../ui/epic.js';
+import { Ambience } from '../../ui/ambient.js';
 import { comicHit, dustPuff, loadFxArt, shockwave, spark } from '../duelo/fx.js';
 import { loadStageArt } from '../duelo/stage.js';
 import { Ball } from './Ball.js';
@@ -23,9 +25,12 @@ import { PENALTY_ROUNDS, Shootout } from './penalties.js';
 import { PITCHES, PITCH_KEYS, drawPitch, loadPitchArt } from './pitches.js';
 import { POWERS, Powers, loadPowerArt, powerIcon } from './powers.js';
 import { COPA_ROUNDS, copaRivals, loadScreenArt, showCopaRoad, showMatchEnd } from './screens.js';
+import { go } from '../../shared/transition.js';
+import { bounceIn } from '../../ui/bounce.js';
 
 const KICKOFF_MS = 1100;
 const GOAL_PAUSE_MS = 1700;
+const GOAL_EPIC_MS = 700;
 // La repetición del gol: lo último que pasó antes del gol, en cámara lenta.
 const REPLAY_RECORD_MS = 1800;
 const REPLAY_SPEED = 0.5;
@@ -140,6 +145,9 @@ export class FutbolScene extends Phaser.Scene {
     const { parts, update } = drawPitch(this, key);
     this.pitchParts = parts;
     this.pitchUpdate = update;
+    // Lo que se mueve en el cielo de la cancha (la nieve ya la trae la cancha de nieve).
+    this.ambience?.destroy();
+    this.ambience = new Ambience(this, { estadio: 'cancha', playa: 'playa', luna: 'luna', azotea: 'nubes' }[key] ?? null, { depth: -60 });
     this.pitch = PITCHES[key];
     this.ball.gravity = this.pitch.gravity;
     this.ball.friction = this.pitch.friction;
@@ -206,7 +214,7 @@ export class FutbolScene extends Phaser.Scene {
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setColor(color).setAlpha(1).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(subtitle ? 1 : 0);
-    this.tweens.add({ targets: this.banner, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    bounceIn(this, this.banner, this.subBanner);
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
   }
 
@@ -804,7 +812,13 @@ export class FutbolScene extends Phaser.Scene {
     }
     for (const p of this.team) if (p.team === team) p.celebrate();
     const color = TEAM_COLORS[team];
-    this.showBanner('¡GOOOL!', ours ? `de ${scorer.label} · ${TEAM_NAMES[team]}` : `de los ${TEAM_NAMES[team]}`, GOAL_PAUSE_MS - 300, hexToCss(color), false);
+    // Cámara lenta y acercamiento a la portería; luego el letrero.
+    epicMoment(this, this.ball.x, this.ball.y, { zoom: 1.35, ms: GOAL_EPIC_MS, slow: 0.25, hide: [this.board], bounds: { x: 0, y: 0, width: this.scale.width, height: this.scale.height } });
+    this.time.delayedCall(GOAL_EPIC_MS, () => {
+      if (this.phase !== 'goal') return;
+      this.showBanner('¡GOOOL!', ours ? `de ${scorer.label} · ${TEAM_NAMES[team]}` : `de los ${TEAM_NAMES[team]}`, GOAL_PAUSE_MS - 300, hexToCss(color), false);
+      fireworks(this, [color, 0xffffff, 0xffc93c], 3);
+    });
     const lines = ours ? [`¡Gooool de ${scorer.label}!`, `¡Golazo de los ${TEAM_NAMES[team]}!`, `¡Gol, gol, gol de ${scorer.label}!`] : ['¡Uy, autogol!', `¡Gol para los ${TEAM_NAMES[team]}!`];
     this.narrator.line(lines, { important: true });
     confetti(this, [color, 0xffffff, 0xffc93c], 60);
@@ -943,6 +957,7 @@ export class FutbolScene extends Phaser.Scene {
     say(title);
     this.crowd.cheer(3000, winner);
     confetti(this, [TEAM_COLORS[winner], 0xffffff, 0xffd84d], cup ? 140 : 90);
+    fireworks(this, [TEAM_COLORS[winner], 0xffffff, 0xffd84d], cup ? 6 : 4);
     sfx.win();
     this.endScreen = showMatchEnd(this, { title, color: TEAM_COLORS[winner], score, players: this.team, cup, hint, depth: HUD_DEPTH + 3 });
   }
@@ -980,7 +995,7 @@ export class FutbolScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }
 

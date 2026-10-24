@@ -1,5 +1,7 @@
-# Publica el juego en GitHub Pages cada vez que se sube código a main o master,
-# pero solo si pasan las pruebas (bots que juegan cada juego con controles simulados).
+# Publica el juego en GitHub Pages cada vez que se sube código a main o master: revisa que los niveles de Súper
+# Bolitas se puedan pasar, arma el juego y lo publica (unos minutos). Las pruebas completas (bots que juegan cada
+# juego con controles simulados) se corren en la compu antes de subir (npm test, unos 20 minutos), porque aquí, sin
+# tarjeta de video, tardaban unos 45; si se quieren correr aquí también, está "Pruebas completas" (pruebas.yml).
 # Requiere: Settings → Pages → Source: "GitHub Actions" en el repo de GitHub.
 name: Publicar en GitHub Pages
 
@@ -18,22 +20,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    # Las pruebas de todos los juegos ya tardan unos 40 minutos en GitHub (sin tarjeta de video).
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npx playwright-core install --with-deps chromium
-      - run: npm test
-
   build:
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,6 +29,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: node tools/plat-check.mjs
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

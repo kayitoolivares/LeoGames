@@ -9,6 +9,7 @@ import { rewards } from '../../shared/rewards.js';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
+import { go } from '../../shared/transition.js';
 
 // Botones con los colores del control de Xbox, para ir nombrando los colores con el bebé.
 // `note` es el paso de la escala pentatónica (sound.js), así cada botón tiene "su" nota.
@@ -344,6 +345,6 @@ export class BabyScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }

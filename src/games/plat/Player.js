@@ -85,7 +85,7 @@ export class Player {
     this.stats = { coins: 0, stomps: 0, bigCoins: 0 };
 
     this.sprite = new Blob(scene, 0, 0, this.color, RADIUS);
-    this.look = new CharacterLook(scene, this.sprite, character, { height: 2.6 });
+    this.look = new CharacterLook(scene, this.sprite, character, { height: 2.6, fx: true, poses: 'all' });
     this.aura = scene.add.circle(0, 0, RADIUS * 1.7, 0xffd84d, 0.4).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.sprite.addAt(this.aura, 0);
     // La capa: un triángulo rojo detrás del personaje.
@@ -273,6 +273,7 @@ export class Player {
       this.invulnMs = INVULN_MS;
       sfx.powerDown();
       this.look.flash();
+      this.look.express('asustado', 900);
       return true;
     }
     this.die();
@@ -370,6 +371,7 @@ export class Player {
     else if (this.state === 'bubble') pose = 'normal';
     else if (this.throwMs > 0 || this.spinMs > 0) pose = 'golpe';
     else if (!this.onGround || this.swimming) pose = 'salto';
+    else if (this.stunMs > 0) pose = 'mareado';
     else pose = this.look.groundPose(this.walking && !this.dino);
     this.look.show(pose, this.facing);
     if (this.state === 'dead') this.sprite.setAngle(this.sprite.angle + 6);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { setTimeScale } from '../../shared/clock.js';
 import { textStyle } from '../../ui/style.js';
 import manifest from './art.json';
 
@@ -20,9 +21,14 @@ function art(scene, name) {
   return scene.textures.exists(key) ? key : null;
 }
 
-// Un estallido de cómic con su letrero encima. `big` para remates, agarres y golpes finales.
+// Un estallido de cómic con su letrero encima, con un destello blanco detrás y rayitas de velocidad que salen
+// disparadas. `big` para remates, agarres y golpes finales.
 export function comicHit(scene, x, y, word, { big = false, red = false, layer = null } = {}) {
   const size = big ? 150 : 104;
+  const flash = scene.add.circle(x, y, size * 0.35, 0xffffff, 0.95).setDepth(DEPTH - 2);
+  layer?.add(flash);
+  scene.tweens.add({ targets: flash, scale: 2.2, alpha: 0, duration: 200, ease: 'Quad.easeOut', onComplete: () => flash.destroy() });
+  speedLines(scene, x, y, big ? 12 : 8, size * 0.45, size * (big ? 1.25 : 1), layer);
   const box = scene.add.container(x, y).setDepth(DEPTH).setScale(0.3).setAngle(Phaser.Math.Between(-12, 12));
   layer?.add(box);
   const key = art(scene, red ? 'zas' : 'pow');
@@ -43,8 +49,39 @@ export function comicHit(scene, x, y, word, { big = false, red = false, layer = 
     box.add(g);
   }
   box.add(scene.add.text(0, 0, word, textStyle(big ? 40 : 28, '#ffffff', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 7 })).setOrigin(0.5));
-  scene.tweens.add({ targets: box, scale: 1, duration: 120, ease: 'Back.easeOut' });
-  scene.tweens.add({ targets: box, alpha: 0, y: y - 30, delay: big ? 500 : 300, duration: 250, onComplete: () => box.destroy() });
+  scene.tweens.add({ targets: box, scale: big ? 1.15 : 1.08, duration: 120, ease: 'Back.easeOut' });
+  // Tiembla tantito, como letrero de cómic.
+  scene.tweens.add({ targets: box, angle: box.angle + Phaser.Math.Between(-8, 8), scale: 1, delay: 120, duration: 90, yoyo: true, repeat: 1 });
+  scene.tweens.add({ targets: box, alpha: 0, y: y - 30, delay: big ? 560 : 340, duration: 250, onComplete: () => box.destroy() });
+}
+
+// Rayitas que salen disparadas desde (x, y), como en los cómics.
+export function speedLines(scene, x, y, count = 8, from = 30, to = 110, layer = null, color = 0xffffff) {
+  for (let i = 0; i < count; i += 1) {
+    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.3;
+    const line = scene.add.rectangle(x + Math.cos(angle) * from, y + Math.sin(angle) * from, 26 + Math.random() * 16, 5, color).setDepth(DEPTH - 1);
+    line.setRotation(angle).setStrokeStyle(2, 0x1b1530);
+    layer?.add(line);
+    scene.tweens.add({
+      targets: line,
+      x: x + Math.cos(angle) * to,
+      y: y + Math.sin(angle) * to,
+      scaleX: 0.3,
+      alpha: 0,
+      duration: 260,
+      ease: 'Quad.easeOut',
+      onComplete: () => line.destroy(),
+    });
+  }
+}
+
+// Un golpe que se siente: el juego se congela un instante (más entre más fuerte), la pantalla tiembla, sale la
+// chispa y, si es fuerte, la onda de choque. power: 0.5 (golpecito) a 2 (remate o golpe final).
+export function impact(scene, x, y, { power = 1, layer = null, shake = true } = {}) {
+  setTimeScale(0, Math.round(35 + 45 * Math.min(2, power)));
+  if (shake) scene.cameras.main.shake(90 + 60 * power, 0.003 + 0.004 * power);
+  spark(scene, x, y, 0xffffff, layer);
+  if (power >= 1.4) shockwave(scene, x, y, 0xffffff, layer);
 }
 
 // Chispa blanca donde pega (y cuando se cubre, azul).
@@ -57,6 +94,13 @@ export function spark(scene, x, y, tint = 0xffffff, layer = null) {
   const scale = flash.scale;
   flash.setScale(scale * 0.4);
   scene.tweens.add({ targets: flash, scale: scale * 1.2, alpha: 0, angle: flash.angle + 40, duration: 260, onComplete: () => flash.destroy() });
+  // Chispitas que brincan.
+  for (let i = 0; i < 5; i += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const bit = scene.add.rectangle(x, y, 10, 3, i % 2 ? 0xffd84d : tint).setRotation(angle).setDepth(DEPTH);
+    layer?.add(bit);
+    scene.tweens.add({ targets: bit, x: x + Math.cos(angle) * 60, y: y + Math.sin(angle) * 60, alpha: 0, duration: 240, ease: 'Quad.easeOut', onComplete: () => bit.destroy() });
+  }
 }
 
 // Onda de choque: un anillo que crece (golpes fuertes, aterrizajes duros, el golpe final).
@@ -68,18 +112,22 @@ export function shockwave(scene, x, y, color = 0x7fdcff, layer = null) {
   layer?.add(ring);
   const start = ring.scale;
   scene.tweens.add({ targets: ring, scale: start * 4, alpha: 0, duration: 420, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+  // Un segundo anillo, más delgado y un poquito después.
+  const inner = scene.add.circle(x, y, 30).setStrokeStyle(4, 0xffffff, 0.9).setDepth(DEPTH - 1);
+  layer?.add(inner);
+  scene.tweens.add({ targets: inner, scale: 3.4, alpha: 0, delay: 70, duration: 380, ease: 'Quad.easeOut', onComplete: () => inner.destroy() });
 }
 
 // Nube de polvo en los pies, que se va hacia `dir` (-1, 0 o 1).
-export function dustPuff(scene, x, y, dir = 0, count = 5, layer = null) {
+export function dustPuff(scene, x, y, dir = 0, count = 5, layer = null, depth = 150) {
   const key = art(scene, 'polvo');
   for (let i = 0; i < count; i += 1) {
     const size = 18 + Math.random() * 14;
     const puff = key ? scene.add.image(x, y - 8, key) : scene.add.circle(x, y - 6, size / 2, 0xe8dcc8, 0.85);
     if (key) puff.setScale(size / puff.width);
-    puff.setDepth(150);
+    puff.setDepth(depth);
     layer?.add(puff);
-    const spread = dir === 0 ? (i / (count - 1) - 0.5) * 2 : dir;
+    const spread = dir === 0 && count > 1 ? (i / (count - 1) - 0.5) * 2 : dir;
     scene.tweens.add({
       targets: puff,
       x: x + spread * (30 + Math.random() * 40),

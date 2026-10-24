@@ -4,6 +4,8 @@ import { players } from '../shared/players.js';
 import { sfx } from '../shared/sound.js';
 import { say } from '../shared/voice.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
+import { go } from '../shared/transition.js';
+import { Ambience } from '../ui/ambient.js';
 
 // Cómo se dibuja cada botón del control (los colores de los botones de Xbox).
 const BUTTONS = {
@@ -166,6 +168,7 @@ export class ControlsScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.ambience = new Ambience(this, 'menu', { depth: -10 });
     this.add.text(width / 2, 44, 'Cómo jugar', textStyle(46, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     this.dots = PAGES.map((_, i) => this.add.circle(width / 2 + (i - (PAGES.length - 1) / 2) * 26, height - 62, 7, COLORS.panelBorder));
     this.add
@@ -269,7 +272,7 @@ export class ControlsScene extends Phaser.Scene {
   update() {
     const host = players.host();
     if (!host) {
-      this.scene.start('Join');
+      go(this, 'Join');
       return;
     }
     const id = host.deviceId;
@@ -280,10 +283,10 @@ export class ControlsScene extends Phaser.Scene {
     }
     if (controls.justPressed(id, 'y')) {
       sfx.confirm();
-      this.scene.start('PadTest', { selected: this.returnData.selected });
+      go(this, 'PadTest', { selected: this.returnData.selected });
     } else if (controls.justPressed(id, 'b')) {
       sfx.back();
-      this.scene.start('Menu', { selected: this.returnData.selected });
+      go(this, 'Menu', { selected: this.returnData.selected });
     }
   }
 }

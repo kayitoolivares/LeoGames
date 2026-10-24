@@ -9,6 +9,8 @@ import { CharacterLook } from '../ui/CharacterLook.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
 import { loadSmashArt } from '../games/smash/art.js';
 import { CHARACTERS, CHARACTER_KEYS } from '../games/smash/characters.js';
+import { go } from '../shared/transition.js';
+import { Ambience } from '../ui/ambient.js';
 
 const CARD_W = 270;
 const CARD_H = 380;
@@ -41,6 +43,7 @@ export class CharacterSelectScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.ambience = new Ambience(this, 'menu', { depth: -10 });
     this.add.text(width / 2, 70, 'Escoge tu personaje', textStyle(48, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     if (this.returnData.title) {
       this.add.text(width / 2, 124, `para ${this.returnData.title}`, textStyle(24, TEXT.muted)).setOrigin(0.5);
@@ -90,13 +93,19 @@ export class CharacterSelectScene extends Phaser.Scene {
     card.arrows.setVisible(!card.ready);
   }
 
+  // ¡Listo!: brinca y baila de gusto.
   hop(card) {
     this.tweens.add({ targets: card.preview.figure, y: -24, duration: 140, yoyo: true, ease: 'Quad.easeOut' });
+    card.look.dance(1400);
   }
 
   update() {
     if (this.leaving) return;
-    for (const card of this.cards) card.look.showcase(PREVIEW_MAX_HEIGHT);
+    // (Bloquecito va contando; los demás respiran, parpadean y hacen gestos.)
+    for (const card of this.cards) {
+      if (card.look.body) card.look.showcase(PREVIEW_MAX_HEIGHT);
+      else card.look.show('normal', 1);
+    }
     for (const card of this.cards) {
       const id = card.player.deviceId;
       if (!card.ready) {
@@ -116,7 +125,7 @@ export class CharacterSelectScene extends Phaser.Scene {
         } else if (controls.justPressed(id, 'b') && card.player === players.host()) {
           sfx.back();
           this.leaving = true;
-          this.scene.start('Menu', { selected: this.returnData.selected });
+          go(this, 'Menu', { selected: this.returnData.selected });
           return;
         }
       } else if (controls.justPressed(id, 'b')) {
@@ -137,6 +146,6 @@ export class CharacterSelectScene extends Phaser.Scene {
     if (this.time.now - this.startMs < START_DELAY_MS) return;
     this.leaving = true;
     for (const card of this.cards) characterPicks.set(card.player.deviceId, card.pick);
-    this.scene.start(this.returnData.next, { selected: this.returnData.selected });
+    go(this, this.returnData.next, { selected: this.returnData.selected });
   }
 }

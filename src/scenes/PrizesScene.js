@@ -5,6 +5,8 @@ import { STICKERS, UNLOCKS, rewards } from '../shared/rewards.js';
 import { sfx } from '../shared/sound.js';
 import { say } from '../shared/voice.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
+import { go } from '../shared/transition.js';
+import { Ambience } from '../ui/ambient.js';
 
 const COLUMNS = 10;
 const CELL_W = 118;
@@ -30,6 +32,7 @@ export class PrizesScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.ambience = new Ambience(this, 'menu', { depth: -10 });
     this.add.text(width / 2, 46, 'Mis premios', textStyle(48, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
     this.countText = this.add.text(width / 2, 96, '', textStyle(24, TEXT.accent)).setOrigin(0.5);
     this.album = this.add.container(0, 0);
@@ -80,7 +83,7 @@ export class PrizesScene extends Phaser.Scene {
   update() {
     const host = players.host();
     if (!host) {
-      this.scene.start('Join');
+      go(this, 'Join');
       return;
     }
     const id = host.deviceId;
@@ -95,7 +98,7 @@ export class PrizesScene extends Phaser.Scene {
     }
     if (controls.justPressed(id, 'b')) {
       sfx.back();
-      this.scene.start('Menu', { selected: this.returnData.selected });
+      go(this, 'Menu', { selected: this.returnData.selected });
     }
   }
 }

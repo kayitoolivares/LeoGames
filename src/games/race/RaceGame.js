@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { controls } from '../../shared/controls.js';
+import { setTimeScale } from '../../shared/clock.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { say } from '../../shared/voice.js';
 import { rewards } from '../../shared/rewards.js';
@@ -198,6 +199,8 @@ export class RaceGame {
       this.finishOrder.push(kart);
       if (!kart.isCpu && this.finishOrder.length === 1) rewards.earn('carrera-gana');
       if (!kart.isCpu) {
+        // El primer jugador que llega: un ratito en cámara lenta.
+        if (this.firstHumanFinishMs === null) setTimeScale(0.35, 1200);
         if (this.firstHumanFinishMs === null) this.firstHumanFinishMs = this.raceMs;
         const message = `¡${kart.label} llegó en ${this.finishOrder.length}° lugar!`;
         this.hud.flash(message);

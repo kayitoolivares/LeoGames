@@ -4,7 +4,7 @@ import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { hasPose, superArtKey } from '../smash/art.js';
+import { fitPose, hasPose, superArtKey } from '../smash/art.js';
 import { isBlockCharacter } from '../smash/bloquecito.js';
 import { drawItem } from '../smash/items.js';
 import { ARENA } from './arena.js';
@@ -105,7 +105,7 @@ export class Fighter {
     this.stats = newStats();
 
     this.sprite = new Blob(scene, x, y, this.color, RADIUS);
-    this.look = new CharacterLook(scene, this.sprite, character);
+    this.look = new CharacterLook(scene, this.sprite, character, { fx: true, poses: 'all' });
     this.blocks = isBlockCharacter(character);
     this.superArt = this.blocks ? null : superArtKey(scene, character);
     // Con imagen, un aro del color del jugador en el piso dice quién es quién.
@@ -373,7 +373,7 @@ export class Fighter {
     this.knockback = (Math.sign(this.x - fromX) || 1) * 420;
     this.addMeter(METER_PER_HURT);
     this.look.flash();
-    this.sprite.squish();
+    this.look.express('asustado', 800);
     if (this.holding) this.throwHeld();
     this.special = null;
     this.dashMs = 0;
@@ -442,7 +442,7 @@ export class Fighter {
     // Las poses de pelea son opcionales (y las súper formas solo traen las básicas).
     if (wanted && !this.look.body) pose = (POSE_CHAIN[wanted] ?? [wanted]).find((p) => hasPose(this.scene, this.look.character, p)) ?? 'normal';
     this.look.show(pose, this.facing);
-    if (this.look.image) this.look.image.setScale((this.radius * 2.8 * (POSE_HEIGHT[pose] ?? 1)) / this.look.image.height);
+    if (this.look.image) fitPose(this.look.image, this.radius * 2.8, POSE_HEIGHT[pose] ?? 1);
     // Bloquecito sube y baja de tamaño con su número: los letreros van arriba de su cabeza.
     if (this.look.body) {
       this.tag.setY(this.look.top - 14);

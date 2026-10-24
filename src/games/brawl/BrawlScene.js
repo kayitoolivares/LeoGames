@@ -5,7 +5,7 @@ import { defaultCharacter } from '../../scenes/CharacterSelectScene.js';
 import { loadSmashArt } from '../smash/art.js';
 import { isBlockCharacter } from '../smash/bloquecito.js';
 import { CHARACTERS } from '../smash/characters.js';
-import { frameDelta } from '../../shared/clock.js';
+import { frameDelta, setTimeScale } from '../../shared/clock.js';
 import { music } from '../../shared/music.js';
 import { PLAYER_COLORS, players } from '../../shared/players.js';
 import { rewards } from '../../shared/rewards.js';
@@ -15,6 +15,7 @@ import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { comicHit, loadFxArt, shockwave } from '../duelo/fx.js';
 import { ARENA, SECTION_W, setSection } from './arena.js';
 import { backgroundTexture, loadBrawlArt } from './art.js';
+import { Ambience } from '../../ui/ambient.js';
 import { CpuBuddy, buddyCount } from './buddies.js';
 import { Coins, coinBank, coinsFor } from './coins.js';
 import { COMBO_STICKER_AT, TeamCombo } from './combo.js';
@@ -30,7 +31,9 @@ import { Shop, dressFighter, wardrobe } from './shop.js';
 import { BrawlTalk } from './talk.js';
 import { Traps } from './traps.js';
 import { ENDLESS_BOSS_EVERY, MINI_WAVE, WORLDS, bossRushWaves, buildSpawnQueue, endlessWave } from './worlds.js';
-import { burst, confetti, popText, randomPow } from './effects.js';
+import { burst, confetti, fireworks, popText, randomPow } from './effects.js';
+import { go } from '../../shared/transition.js';
+import { bounceIn } from '../../ui/bounce.js';
 
 const SPAWN_INTERVAL_MS = 1100;
 const FIRST_SPAWN_MS = 1500;
@@ -135,6 +138,9 @@ export class BrawlScene extends Phaser.Scene {
 
   drawBackground(world, sections) {
     this.backgroundLayer.removeAll(true);
+    // Lo que se mueve en el fondo (pájaros, chispas, nieve...).
+    this.ambience?.destroy();
+    this.ambience = new Ambience(this, world.background, { depth: -90 });
     const { width, height } = this.scale;
     const key = backgroundTexture(this, world.background);
     for (let k = 0; k <= sections; k += 1) {
@@ -217,7 +223,7 @@ export class BrawlScene extends Phaser.Scene {
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setAlpha(0).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(0);
-    this.tweens.add({ targets: this.banner, alpha: 1, scale: 1, duration: 250, ease: 'Back.easeOut' });
+    bounceIn(this, this.banner, this.subBanner);
     this.tweens.add({ targets: this.subBanner, alpha: 1, duration: 250 });
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
   }
@@ -657,6 +663,8 @@ export class BrawlScene extends Phaser.Scene {
     monster.lastHitBy = fighter;
     fighter.landedHit();
     comicHit(this, monster.x, monster.y - monster.radius - 40, word ?? randomPow(), { big, red: big });
+    // El golpe "se siente": se congela un instante (más en los fuertes).
+    setTimeScale(0, big ? 110 : 45);
     if (big) shockwave(this, monster.x, monster.y - monster.radius * 0.6, fighter.color);
     this.cameras.main.shake(big ? 120 : 60, big ? 0.006 : 0.003);
     sfx.hit(big ? 0.8 : 0.4);
@@ -1215,6 +1223,7 @@ export class BrawlScene extends Phaser.Scene {
     confetti(this, this.fighters.map((f) => f.color));
     const stars = 1 + (this.anyoneFell ? 0 : 1) + (this.worldMs < STAR_TIME_MS ? 1 : 0);
     worldStars.save(this.worldIndex, stars);
+    this.celebrate();
     const extra = this.saveRecords(this.worldIndex);
     const next = WORLDS[this.worldIndex + 1];
     this.nextWorld = next && rewards.unlocked(next.unlock) ? this.worldIndex + 1 : null;
@@ -1232,9 +1241,16 @@ export class BrawlScene extends Phaser.Scene {
     this.nextWorld = null;
     this.rushOver = true;
     confetti(this, this.fighters.map((f) => f.color));
+    this.celebrate();
     this.saveRecords();
     const extra = record ? '🏆 ¡Récord nuevo!' : `Récord: ${formatTime(brawlRecords.get().bossRush)}`;
     this.screen = showResults(this, this.fighters, { title: `¡Vencieron a los jefes en ${formatTime(ms)}!`, hint: 'A = otra vez   ·   B = mapa', extra });
+  }
+
+  // ¡Ganaron!: fuegos artificiales y todos bailan.
+  celebrate() {
+    fireworks(this, this.fighters.map((f) => f.color), 5);
+    for (const f of this.fighters) f.look.dance(5000);
   }
 
   lose() {
@@ -1307,6 +1323,6 @@ export class BrawlScene extends Phaser.Scene {
     this.exiting = true;
     setSection(0);
     this.cameras.main.setZoom(1);
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }

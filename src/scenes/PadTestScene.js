@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { controls, readGamepads } from '../shared/controls.js';
 import { frameDelta } from '../shared/clock.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
+import { go } from '../shared/transition.js';
 
 // Nombres de los botones en el mapeo "standard" (el que usan los controles de Xbox).
 const BUTTON_LABELS = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'Vista', 'Menú', 'LS', 'RS', '↑', '↓', '←', '→', 'Xbox'];
@@ -130,7 +131,7 @@ export class PadTestScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }
 

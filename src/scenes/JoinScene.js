@@ -8,6 +8,8 @@ import { rewards } from '../shared/rewards.js';
 import { players, MAX_PLAYERS } from '../shared/players.js';
 import { Blob } from '../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../ui/style.js';
+import { go } from '../shared/transition.js';
+import { Ambience } from '../ui/ambient.js';
 
 const HOLD_TO_START_MS = 900;
 const CARD_W = 260;
@@ -24,6 +26,7 @@ export class JoinScene extends Phaser.Scene {
 
   create() {
     const { width, height } = this.scale;
+    this.ambience = new Ambience(this, 'menu', { depth: -10 });
     this.holdMs = 0;
     this.holding = false;
     this.holdDevice = null;
@@ -187,7 +190,7 @@ export class JoinScene extends Phaser.Scene {
     this.cardFor(host).holdBar.setScale(Math.min(1, this.holdMs / HOLD_TO_START_MS), 1);
     if (this.holdMs >= HOLD_TO_START_MS) {
       sfx.confirm();
-      this.scene.start('Menu');
+      go(this, 'Menu');
     }
   }
 

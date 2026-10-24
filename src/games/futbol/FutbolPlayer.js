@@ -3,7 +3,7 @@ import { sfx } from '../../shared/sound.js';
 import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
-import { hasPose, superArtKey } from '../smash/art.js';
+import { fitPose, hasPose, superArtKey } from '../smash/art.js';
 import { FIELD, TEAM_COLORS, attackDir } from './field.js';
 
 export const PLAYER_RADIUS = 36;
@@ -76,7 +76,7 @@ export class FutbolPlayer {
     this.blob.ball.setStrokeStyle(6, TEAM_COLORS[team]);
     this.blob.setDepth(100);
     this.shadow = this.blob.list[0];
-    this.look = new CharacterLook(scene, this.blob, character);
+    this.look = new CharacterLook(scene, this.blob, character, { fx: true, poses: 'all' });
     this.superArt = this.look.body ? null : superArtKey(scene, character);
     if (this.look.hasArt) {
       this.blob.addAt(scene.add.ellipse(0, PLAYER_RADIUS - 2, PLAYER_RADIUS * 2.4, PLAYER_RADIUS * 0.6).setStrokeStyle(6, TEAM_COLORS[team]), 1);
@@ -272,6 +272,7 @@ export class FutbolPlayer {
 
   celebrate() {
     this.celebrateMs = CELEBRATE_MS;
+    this.look.dance(CELEBRATE_MS);
   }
 
   // Qué pose mostrar (null = parado o caminando).
@@ -311,7 +312,7 @@ export class FutbolPlayer {
     if (wanted && !this.look.body) pose = (POSE_CHAIN[wanted] ?? [wanted]).find((p) => hasPose(this.scene, this.look.character, p)) ?? 'normal';
     else if (wanted && this.look.body) pose = BLOCK_POSES[wanted] ?? wanted;
     this.look.show(pose, snap.facing);
-    if (this.look.image) this.look.image.setScale((this.radius * 2.8 * (POSE_HEIGHT[pose] ?? 1)) / this.look.image.height);
+    if (this.look.image) fitPose(this.look.image, this.radius * 2.8, POSE_HEIGHT[pose] ?? 1);
     // Bloquecito sube y baja de tamaño con su número: el letrero va arriba de su cabeza.
     if (this.look.body) {
       this.tag.setY(this.look.top - 24);

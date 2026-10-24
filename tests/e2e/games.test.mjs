@@ -934,7 +934,7 @@ test('bolitas bros: jonrón, monedas, rey de la colina y jefes para escoger', { 
       }
       return me.record.coins > 0;
     },
-    ms(5000),
+    ms(10000),
     'agarrar monedas',
   );
   await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').timeMs = 1));

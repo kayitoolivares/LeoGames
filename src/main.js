@@ -8,6 +8,7 @@ import { MenuScene } from './scenes/MenuScene.js';
 import { ControlsScene } from './scenes/ControlsScene.js';
 import { PadTestScene } from './scenes/PadTestScene.js';
 import { PrizesScene } from './scenes/PrizesScene.js';
+import { WipeScene } from './scenes/WipeScene.js';
 import { BabyScene } from './games/baby/BabyScene.js';
 import { BrawlScene } from './games/brawl/BrawlScene.js';
 import { DueloScene } from './games/duelo/DueloScene.js';
@@ -46,6 +47,8 @@ const game = new Phaser.Game({
     // Los juegos 3D se descargan hasta que alguien entra a ellos.
     new ThreeGameScene('Race', () => import('./games/race/RaceGame.js').then((m) => m.RaceGame)),
     new ThreeGameScene('Kart', () => import('./games/kart/KartGame.js').then((m) => m.KartGame)),
+    // La cortinilla entre pantallas va al último: así queda encima de todo.
+    WipeScene,
   ],
 });
 
@@ -74,6 +77,7 @@ const SCENE_MUSIC = {
 };
 game.events.once(Phaser.Core.Events.READY, () => {
   for (const scene of game.scene.scenes) {
+    if (scene.sys.settings.key === 'Wipe') continue;
     scene.events.on(Phaser.Scenes.Events.CREATE, () => music.play(SCENE_MUSIC[scene.sys.settings.key] ?? null));
   }
 });

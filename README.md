@@ -387,6 +387,29 @@ Deja las poses sueltas en `arte/smash/personajes/`. Todos los juegos usan ademá
 `arte/duelo/fondos/dojo.jpg`. El fútbol usa `arte/futbol/fondos/<estadio|playa|nieve|luna|azotea>.jpg`,
 `arte/futbol/poderes/<balon-gigante|porteria-chica|iman|hielo|tenis>.jpg` y `arte/futbol/copas/copa-futbol.jpg`.
 
+Las animaciones usan además `parpadeo`, `feliz`, `enojado`, `asustado`, `caer`, `mareado`, `baile1` y `baile2`
+(dos hojas de 2x2 por personaje). Si Gemini escribe el nombre de la pose o deja rayitas sueltas,
+`node tools/keep-main.mjs <poses...>` deja solo al personaje. `npm run arte` también mide cada pose
+(`tools/pose-metrics.mjs`): en el juego todas se ven del mismo tamaño (se iguala lo que pinta el personaje, no
+el alto de la imagen) y paradas en el mismo lugar.
+
+## Animaciones
+
+Iguales en todos los juegos (`src/ui/motion.js`, `src/ui/epic.js`, `src/ui/ambient.js`, `src/ui/bounce.js`):
+
+- **Personajes de caricatura**: se estiran al saltar, se aplastan al caer y se estiran de lado al pegar; parados
+  respiran, parpadean y, si nadie los mueve, festejan o bailan; cayendo usan su pose de caída; corriendo se
+  inclinan y echan polvito. Ponen caras (enojados al empezar la pelea, asustados si les pegan, mareados) y bailan
+  al ganar.
+- **Golpes que se sienten**: el juego se congela un instante al pegar (más en los golpes fuertes), con destello,
+  rayitas de cómic y onda de choque.
+- **Momentos épicos**: cámara lenta con acercamiento al vencer a un jefe, al llegar a la bandera, al meter gol y
+  al cruzar la meta en los karts.
+- **Festejos**: confeti que se mece y fuegos artificiales.
+- **Pantallas**: cortinillas (bolitas, estrellas o un círculo) al cambiar de pantalla, el menú con tarjetas que
+  rebotan y los personajes de los jugadores paseando, letreros que entran rebotando y fondos con vida (pájaros,
+  nubes, nieve, burbujas, chispas, murciélagos, chispitas de dulce...).
+
 ## Jugar en el Xbox
 
 El navegador solo deja leer controles en páginas **HTTPS** (o `localhost`), así que en el Xbox

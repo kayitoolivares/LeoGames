@@ -1,0 +1,24 @@
+# Las pruebas completas (bots que juegan cada juego con controles simulados), solo cuando se piden a mano
+# (Actions → Pruebas completas → Run workflow). Normalmente se corren en la compu antes de subir: aquí, sin tarjeta
+# de video, tardan unos 45 minutos.
+name: Pruebas completas
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright-core install --with-deps chromium
+      - run: npm test

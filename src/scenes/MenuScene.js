@@ -5,14 +5,23 @@ import { sfx } from '../shared/sound.js';
 import { say, setVoiceEnabled, voiceEnabled } from '../shared/voice.js';
 import { players } from '../shared/players.js';
 import { GAMES } from '../games.js';
+import { Ambience } from '../ui/ambient.js';
 import { Blob } from '../ui/Blob.js';
+import { CharacterLook } from '../ui/CharacterLook.js';
+import { characterPicks } from '../shared/picks.js';
+import { defaultCharacter } from './CharacterSelectScene.js';
+import { requestPoses } from '../games/smash/art.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
+import { go } from '../shared/transition.js';
 
 const COLUMNS = 6;
 const CARD_W = 198;
 const CARD_H = 190;
 const CARD_GAP_X = 10;
 const ROW_Y = [235, 440];
+// Los personajes de los jugadores pasean abajo: qué tan rápido y qué tan lejos de su lugar.
+const STROLL = { speed: 75, reach: 170, waitMin: 900, waitMax: 3200 };
+const WALKER_POSES = ['normal', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'parpadeo', 'feliz'];
 
 // Menú de juegos en cuadrícula. Solo el Jugador 1 mueve la selección, para que nadie (¡el bebé!)
 // la cambie por accidente; los demás pueden hacer saltar a su bolita mientras esperan.
@@ -25,9 +34,20 @@ export class MenuScene extends Phaser.Scene {
     this.selected = data?.selected ?? 0;
   }
 
+  // Los dibujos de los personajes de los jugadores (para que paseen abajo).
+  preload() {
+    for (const player of players.sorted()) requestPoses(this, this.pickOf(player), WALKER_POSES, { start: false });
+  }
+
+  pickOf(player) {
+    return characterPicks.get(player.deviceId, defaultCharacter(player));
+  }
+
   create() {
     const { width, height } = this.scale;
-    this.add.text(width / 2, 50, '¿A qué jugamos?', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.ambience = new Ambience(this, 'menu', { depth: -10 });
+    const title = this.add.text(width / 2, 50, '¿A qué jugamos?', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.tweens.add({ targets: title, scale: 1.05, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.hostText = this.add.text(width / 2, 104, '', textStyle(24)).setOrigin(0.5);
 
     // Cada fila se centra aunque tenga menos tarjetas.
@@ -44,6 +64,12 @@ export class MenuScene extends Phaser.Scene {
 
     this.drawPlayers();
     this.select(this.selected, false);
+    // Las tarjetas entran rebotando, una tras otra.
+    this.cards.forEach(({ card }, i) => {
+      const scale = card.scale;
+      card.setScale(0);
+      this.tweens.add({ targets: card, scale, delay: 60 + i * 35, duration: 320, ease: 'Back.easeOut' });
+    });
     say('¿A qué jugamos?');
   }
 
@@ -72,7 +98,7 @@ export class MenuScene extends Phaser.Scene {
 
     inner.add([bg, emoji, title, description, badge, badgeText]);
     card.add(inner);
-    return { card, inner, bg };
+    return { card, inner, bg, emoji, baseY: y };
   }
 
   drawPlayers() {
@@ -80,12 +106,16 @@ export class MenuScene extends Phaser.Scene {
     const list = players.sorted();
     this.playersRow = this.add.container(this.scale.width / 2, 625);
     this.playerBlobs = new Map();
+    this.walkers = [];
     list.forEach((player, i) => {
       const x = (i - (list.length - 1) / 2) * 110;
       const blob = new Blob(this, x, 0, players.color(player).hex, 22);
       const label = this.add.text(x, 38, `J${player.slot + 1}`, textStyle(16, TEXT.muted)).setOrigin(0.5);
       this.playersRow.add([blob, label]);
       this.playerBlobs.set(player.deviceId, blob);
+      // Su personaje, que pasea por abajo (y brinca con A).
+      const look = new CharacterLook(this, blob, this.pickOf(player), { height: 2.8 });
+      this.walkers.push({ blob, label, look, home: x, target: x, waitMs: Math.random() * 1500, facing: 1 });
     });
   }
 
@@ -93,14 +123,40 @@ export class MenuScene extends Phaser.Scene {
     this.selected = (index + GAMES.length) % GAMES.length;
     const host = players.host();
     const highlight = host ? players.color(host).hex : COLORS.accent;
-    this.cards.forEach(({ card, bg }, i) => {
+    this.cards.forEach(({ card, bg, emoji, baseY }, i) => {
       const isSelected = i === this.selected;
       bg.setStrokeStyle(isSelected ? 8 : 4, isSelected ? highlight : COLORS.panelBorder);
       const scale = isSelected ? 1.06 : 1;
-      this.tweens.killTweensOf(card);
-      if (animate) this.tweens.add({ targets: card, scale, duration: 120, ease: 'Quad.easeOut' });
+      this.tweens.killTweensOf([card, emoji]);
+      card.y = baseY;
+      emoji.setAngle(0).setScale(1);
+      if (animate) this.tweens.add({ targets: card, scale: isSelected ? 1.12 : 1, duration: 110, ease: 'Quad.easeOut', yoyo: isSelected, onComplete: () => card.setScale(scale) });
       else card.setScale(scale);
+      // La escogida brinca despacito y su dibujo se mece.
+      if (isSelected) {
+        this.tweens.add({ targets: card, y: baseY - 6, duration: 520, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: 120 });
+        this.tweens.add({ targets: emoji, angle: { from: -8, to: 8 }, scale: 1.12, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
     });
+  }
+
+  // Los personajes de abajo caminan un rato, se paran, y vuelven a caminar (cerca de su lugar).
+  stroll() {
+    const dt = this.game.loop.delta / 1000;
+    for (const w of this.walkers ?? []) {
+      let walking = false;
+      if (w.waitMs > 0) w.waitMs -= dt * 1000;
+      else if (Math.abs(w.target - w.blob.x) < 3) {
+        w.waitMs = Phaser.Math.Between(STROLL.waitMin, STROLL.waitMax);
+        w.target = w.home + Phaser.Math.Between(-STROLL.reach, STROLL.reach);
+      } else {
+        w.facing = Math.sign(w.target - w.blob.x);
+        w.blob.x += w.facing * Math.min(Math.abs(w.target - w.blob.x), STROLL.speed * dt);
+        walking = true;
+      }
+      w.label.x = w.blob.x;
+      w.look.show(w.look.groundPose(walking), w.facing);
+    }
   }
 
   update() {
@@ -114,7 +170,7 @@ export class MenuScene extends Phaser.Scene {
 
     const host = players.host();
     if (!host) {
-      this.scene.start('Join');
+      go(this, 'Join');
       return;
     }
     if (changed) {
@@ -131,6 +187,7 @@ export class MenuScene extends Phaser.Scene {
       blob.look(stick.x, stick.y);
       if (controls.justPressed(player.deviceId, 'a')) blob.hop();
     }
+    this.stroll();
 
     const id = host.deviceId;
     const before = this.selected;
@@ -155,7 +212,7 @@ export class MenuScene extends Phaser.Scene {
     }
     if (controls.justPressed(id, 'b')) {
       sfx.back();
-      this.scene.start('Join');
+      go(this, 'Join');
       return;
     }
     if (controls.justPressed(id, 'a')) this.launch();
@@ -178,11 +235,11 @@ export class MenuScene extends Phaser.Scene {
     if (game.scene || game.url) sfx.confirm();
     else sfx.back();
     if (game.scene && game.pick) {
-      this.scene.start('Personajes', { selected: this.selected, next: game.scene, title: game.title });
+      go(this, 'Personajes', { selected: this.selected, next: game.scene, title: game.title });
       return;
     }
     if (game.scene) {
-      this.scene.start(game.scene, { selected: this.selected });
+      go(this, game.scene, { selected: this.selected });
       return;
     }
     if (game.url) {

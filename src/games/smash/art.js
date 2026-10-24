@@ -29,6 +29,9 @@ const WALK_POSES = Array.from({ length: WALK_FRAMES }, (_, i) => `caminar${i + 1
 // (Las de manejar un kart, atras/giro/lado/frente, las carga el juego de karts por su cuenta.)
 const BASIC_POSES = ['normal', 'golpe', 'salto', 'dolor', ...WALK_POSES];
 const DUEL_POSES = ['patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada'];
+// Las poses de las animaciones (ui/motion.js): se cargan aparte, solo de los personajes que salen (requestPoses).
+export const FACE_POSES = ['parpadeo', 'feliz'];
+export const EXPRESSION_POSES = [...FACE_POSES, 'enojado', 'asustado', 'caer', 'mareado', 'baile1', 'baile2'];
 
 // Bloquecito tiene un dibujo por número (bloque1 a bloque10) y otro para Octobloque.
 const BLOCK_ART = /^(bloque\d+|octobloque)$/;
@@ -68,6 +71,21 @@ export function loadBlockArt(scene) {
   if (added && !scene.load.isLoading()) scene.load.start();
 }
 
+// Carga en segundo plano las `poses` de un personaje (las que tenga y no estén cargadas); mientras llegan, se usa
+// la pose parecida.
+// (Con `start: false` solo las pone en la fila, para llamarla en preload().)
+export function requestPoses(scene, character, poses, { start = true } = {}) {
+  const have = manifest.characters[character] ?? [];
+  let added = false;
+  for (const pose of poses) {
+    const key = `smash:${character}-${pose}`;
+    if (!have.includes(pose) || scene.textures.exists(key)) continue;
+    scene.load.image(key, `${BASE}personajes/${character}-${pose}.png`);
+    added = true;
+  }
+  if (start && added && !scene.load.isLoading()) scene.load.start();
+}
+
 // La textura de Bloquecito en un número (u Octobloque, 'octo') y una pose, o null si no hay.
 export function blockArtKey(scene, form, pose) {
   const key = `smash:${form === 'octo' ? 'octobloque' : `bloque${form}`}-${pose}`;
@@ -81,6 +99,24 @@ export function characterTexture(scene, character, pose = 'normal') {
     if (scene.textures.exists(key)) return key;
   }
   return null;
+}
+
+// Pone el tamaño y el punto de apoyo de una imagen de personaje (después de voltearla): que el cuerpo se vea igual de
+// grande en todas las poses y parado en el mismo lugar. No se iguala el alto de la imagen (con los brazos arriba es
+// más alta y agachado más bajita, y el personaje se veía cambiar de tamaño), sino lo que pinta (el área, que mide
+// tools/pose-metrics.mjs) con el de su pose normal, que mide `height` de alto. Y de lado, el centro del cuerpo (no el
+// de la imagen, que se mueve con un brazo o una pierna estirada). Sin medidas: el alto × `factor` como antes.
+export function fitPose(image, height, factor = 1) {
+  const match = /^smash:(.+)-([^-]+)$/.exec(image.texture.key);
+  const metrics = manifest.metrics ?? {};
+  const pose = match && metrics[`${match[1]}-${match[2]}`];
+  const normal = match && metrics[`${match[1]}-normal`];
+  if (!pose || !normal) {
+    image.setOrigin(0.5, 1).setScale((height * factor) / image.height);
+    return;
+  }
+  const [area, center] = pose;
+  image.setOrigin(image.flipX ? 1 - center : center, 1).setScale((height / normal[2]) * Math.sqrt(normal[0] / area));
 }
 
 export function hasPose(scene, character, pose) {

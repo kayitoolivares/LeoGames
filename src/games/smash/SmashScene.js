@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import { controls } from '../../shared/controls.js';
-import { frameDelta } from '../../shared/clock.js';
+import { frameDelta, setTimeScale } from '../../shared/clock.js';
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
 import { rewards } from '../../shared/rewards.js';
 import { players, PLAYER_COLORS } from '../../shared/players.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
-import { burst, confetti, popText } from '../brawl/effects.js';
+import { burst, confetti, fireworks, popText } from '../brawl/effects.js';
 import { comicHit, dustPuff, loadFxArt, shockwave, spark } from '../duelo/fx.js';
 import { SmashFinal } from './final.js';
 import { awards, showLineup, showResults } from './show.js';
@@ -17,6 +17,7 @@ import { GIANTS, SANDBAG, TARGETS, TEAMS, TIME_MS, jonronRecord, targetRecords, 
 import { BOSS_CHARACTERS, CHARACTERS, CHARACTER_KEYS, characterInfo } from './characters.js';
 import { METER_MAX, SUPER_MS, SmashFighter, STOCKS, THROW_HIT } from './SmashFighter.js';
 import { backgroundTexture, characterTexture, loadSmashArt } from './art.js';
+import { Ambience } from '../../ui/ambient.js';
 import { MAX_NUMBER, RAINBOW, numberStep } from './bloquecito.js';
 import { CAPSULE_ITEMS, SmashItems, drawItem } from './items.js';
 import { ADVENTURE, showAdventureMap } from './adventure.js';
@@ -29,6 +30,8 @@ import { Tornadoes } from './tornado.js';
 import { Geysers } from './geysers.js';
 import { StageEvents } from './events.js';
 import { STAGES, buildPlatforms, movePlatforms } from './stages.js';
+import { go } from '../../shared/transition.js';
+import { bounceIn } from '../../ui/bounce.js';
 
 const COUNTDOWN_STEP_MS = 800;
 const EXIT_HOLD_MS = 1200;
@@ -168,6 +171,9 @@ export class SmashScene extends Phaser.Scene {
     this.uiCam.ignore(this.world);
 
     this.drawBackground();
+    // Lo que se mueve en el escenario (pájaros, nubes, chispas...): en la cámara de la pantalla, debajo del marcador.
+    this.ambience = new Ambience(this, this.settings.stage, { depth: -1 });
+    this.cameras.main.ignore(this.ambience.root);
     this.platforms = buildPlatforms(this, this.world, this.stage);
     this.main = this.platforms.find((p) => p.main);
     this.mode = this.settings.mode;
@@ -466,7 +472,7 @@ export class SmashScene extends Phaser.Scene {
     this.tweens.killTweensOf([this.banner, this.subBanner]);
     this.banner.setText(title).setColor(color).setAlpha(1).setScale(0.6);
     this.subBanner.setText(subtitle).setAlpha(subtitle ? 1 : 0);
-    this.tweens.add({ targets: this.banner, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    bounceIn(this, this.banner, this.subBanner);
     if (holdMs > 0) this.tweens.add({ targets: [this.banner, this.subBanner], alpha: 0, delay: holdMs, duration: 300 });
   }
 
@@ -1025,6 +1031,8 @@ export class SmashScene extends Phaser.Scene {
         }
         const word = attacker.attack?.type === 'bat' ? '¡JONRÓN!' : charged ? '¡SÚPER GOLPE!' : HIT_WORDS[Math.floor(Math.random() * HIT_WORDS.length)];
         comicHit(this, box.x, box.y - 50, word, { big: strong || charged, red: strong, layer: this.world });
+        // El golpe "se siente": se congela un instante (más en los fuertes).
+        setTimeScale(0, strong || charged ? 120 : 45);
         if (strong) {
           this.cameras.main.shake(120, 0.006);
           shockwave(this, box.x, box.y, attacker.color, this.world);
@@ -1393,7 +1401,11 @@ export class SmashScene extends Phaser.Scene {
     const notes = this.jonron ? [] : awards(this.players.filter((f) => !f.isBoss && !f.isDummy));
     // (Si ganaron la Aventura, todos los del podio salen contentos.)
     this.results = showResults(this, ranking, this.ui, title, this.endHint(), describe, notes, this.adventureWon);
-    if (winner) confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
+    if (winner) {
+      confetti(this, [winner.color, 0xffffff, 0xffc93c], 80, this.ui);
+      fireworks(this, [winner.color, 0xffffff, 0xffc93c], 4, this.ui);
+    }
+    for (const fighter of this.fighters) if (fighter.celebrating) (fighter.motion ?? fighter.look?.motion)?.dance(5000);
     sfx.win();
   }
 
@@ -1411,7 +1423,7 @@ export class SmashScene extends Phaser.Scene {
     if (this.phaseMs < END_INPUT_DELAY_MS) return;
     const ids = players.sorted().map((p) => p.deviceId);
     if (ids.some((id) => controls.justPressed(id, 'a'))) this.scene.restart(this.nextRound());
-    else if (ids.some((id) => controls.justPressed(id, 'b'))) this.scene.start('SmashSelect', { selected: this.returnData.selected });
+    else if (ids.some((id) => controls.justPressed(id, 'b'))) go(this, 'SmashSelect', { selected: this.returnData.selected });
   }
 
   // Lo que sigue al apretar A en el podio: la revancha, otra ronda del jonrón (desde el primero) o, en la Aventura,
@@ -1515,7 +1527,7 @@ export class SmashScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
-    this.scene.start('Menu', { selected: this.returnData.selected });
+    go(this, 'Menu', { selected: this.returnData.selected });
   }
 }
 

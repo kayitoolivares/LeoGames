@@ -31,6 +31,8 @@ const STICK = 0.6;
 // El rayo encoge: más chiquito y más lento un rato. La tinta mancha la pantalla.
 export const SHRINK_MS = 6000;
 const SHRINK_SCALE = 0.55;
+// Al caer de un salto el kart se aplasta tantito y rebota (como resorte).
+const LAND_MS = 280;
 const SHRINK_SPEED = 0.72;
 export const INK_MS = 4500;
 // Cuánto se ve al piloto lanzando el poder.
@@ -274,6 +276,7 @@ export class Racer {
   update(dtMs, input, offroad, topFactor = 1) {
     const dt = dtMs / 1000;
     this.boostMs = Math.max(0, this.boostMs - dtMs);
+    this.landMs = Math.max(0, (this.landMs ?? 0) - dtMs);
     this.spinMs = Math.max(0, this.spinMs - dtMs);
     this.shieldMs = Math.max(0, this.shieldMs - dtMs);
     this.messageMs = Math.max(0, this.messageMs - dtMs);
@@ -372,6 +375,7 @@ export class Racer {
         this.gliding = false;
         if (this.trick) this.boost(TRICK_BOOST.factor, TRICK_BOOST.ms);
         this.trick = false;
+        this.landMs = LAND_MS;
         this.events.push('land');
       }
     } else {
@@ -400,7 +404,9 @@ export class Racer {
     this.object.rotation.x = -this.pitch;
     // Encogido por el rayo: se hace chiquito poco a poco (y vuelve a crecer igual).
     this.size += ((this.shrinkMs > 0 ? SHRINK_SCALE : 1) - this.size) * 0.15;
-    this.object.scale.setScalar(this.size);
+    // Recién caído: se aplasta y rebota.
+    const land = this.landMs > 0 ? Math.sin((this.landMs / LAND_MS) * Math.PI) * (this.landMs / LAND_MS) : 0;
+    this.object.scale.set(this.size * (1 + 0.16 * land), this.size * (1 - 0.24 * land), this.size * (1 + 0.16 * land));
     // Derrapando, la trompa apunta más hacia adentro de la curva (se ve de lado).
     this.visualYaw += ((this.drifting ? -this.driftDir * DRIFT_YAW : 0) - this.visualYaw) * 0.2;
     this.object.rotation.y = this.heading + spin + this.visualYaw;

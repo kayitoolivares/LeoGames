@@ -9,6 +9,8 @@
 //                                                  caminar1 a caminar4 (los cuadros de la caminata, en todos los juegos)
 //                                                  y para el Duelo: patada | cubrirse | especial | gana
 //                                                  y manejando un kart: atras | giro | lado | frente
+//                                                  y las animaciones (ui/motion.js): parpadeo | feliz | enojado |
+//                                                  asustado | caer | mareado | baile1 | baile2
 //   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
 //   arte/smash/fondos/<escenario>.png              castillo | nubes | barco | espacio | volcan
 // Los demás juegos (ver GAMES): arte/<juego>/<carpeta>/<nombre>.png
@@ -20,6 +22,7 @@
 import sharp from 'sharp';
 import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { saveMetrics } from './pose-metrics.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const ART = process.argv[2] ? path.resolve(process.argv[2]) : path.join(ROOT, 'arte');
@@ -33,7 +36,7 @@ const CHARACTERS = [
   // Bloquecito: un dibujo por número (bloque1 a bloque10) y su súper forma, Octobloque.
   ...Array.from({ length: 10 }, (_, i) => `bloque${i + 1}`), 'octobloque',
 ];
-const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente'];
+const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente', 'parpadeo', 'feliz', 'enojado', 'asustado', 'caer', 'mareado', 'baile1', 'baile2'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella', 'bate', 'pistola', 'patineta', 'huevo', 'bola-super', 'diana', 'bumeran', 'flor-fuego', 'resorte', 'capsula', 'tornado', 'saco'];
 const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos'];
 
@@ -77,6 +80,8 @@ const GAMES = {
       names: ['hongo', 'flor', 'estrella', 'huevo', 'moneda', 'moneda-grande', 'bandera', 'resorte', 'pluma', 'flor-hielo', 'hongo-mini', 'hongo-gigante', 'bala', 'casita', 'regalo', 'canon'],
     },
     fondos: { kind: 'background', names: ['pradera', 'cueva', 'cielo', 'playa', 'mar', 'castillo', 'nieve', 'dulces', 'embrujada'] },
+    // Las cositas de los fondos con vida (ui/ambient.js), en todos los juegos.
+    ambiente: { kind: 'cutout', max: 96, names: ['pajaro1', 'pajaro2', 'murcielago1', 'murcielago2', 'mariposa', 'hoja', 'copo', 'dulce'] },
   },
   kart: {
     objetos: { kind: 'cutout', max: 128, names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja'] },
@@ -310,6 +315,8 @@ async function main() {
   }
 
   await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`);
+  // Las medidas de cada pose (para que el personaje se vea igual de grande en todas).
+  report.push(`  ✓ medidas de ${await saveMetrics()} poses`);
   for (const [game, folders] of Object.entries(GAMES)) await prepareGame(game, folders, report);
   console.log(report.length ? report.join('\n') : `No hay imágenes en ${path.relative(ROOT, ART)}/`);
 }
