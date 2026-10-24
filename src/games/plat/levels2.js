@@ -67,6 +67,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
              e
 ######    ##############
 ######    ##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   g        t        g
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   g     XXXXX    XXXXX     t
+##############    ##############
+##############    ##############`),
     ARENA,
   ),
 };
@@ -117,6 +143,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
     X             C
 ########################
 ########################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   g                    q
+#########         ##########
+#########         ##########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   g        q        g
+############################
+############################`),
     ARENA,
   ),
 };
@@ -167,6 +219,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
   c      BBBBB   C
 ########################
 ########################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   c        t        c
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   c                    t
+#########         ##########
+#########         ##########`),
     ARENA,
   ),
 };
@@ -213,6 +291,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
    e        X
 ########################
 ########################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   e     XXXXX    XXXXX     g
+##############LLLL##############
+##############LLLL##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   e         x          g
+#########LLLLLLLLL##########
+#########LLLLLLLLL##########`),
     ARENA,
   ),
 };
@@ -249,6 +353,28 @@ export const W51 = {
                        N
 ###########   ######    ########
 ###########   ######    ########`),
+    seg(`
+            o o o
+      ?B?M?B
+
+                  []
+   p     N      ()    p
+############################
+############################`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   p     XXXXX    XXXXX     N
+##############    ##############
+##############    ##############`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   p                    N
+#########         ##########
+#########         ##########`),
     seg(`
              O
          ======          ooo
@@ -291,6 +417,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
    p            X     C
 ########     ###########
 ########     ###########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   p        N        p
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   p                    N
+#########         ##########
+#########         ##########`),
     ARENA,
   ),
 };
@@ -333,6 +485,45 @@ XXXX                 XXXXXXX
 #########   ######   ######
 #########   ######   ######`),
     seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   p     XXXXX    XXXXX     N
+##############    ##############
+##############    ##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   p        N        p
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   p                    N
+#########         ##########
+#########         ##########`),
+    seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXX        XXXXXXXXXXXXXX
                  l
@@ -355,6 +546,7 @@ export const W54 = {
     seg(`
           O
        ?M?B?
+
  @         p       N
 ######################   ####
 ######################   ####`),
@@ -365,6 +557,20 @@ export const W54 = {
         p
 ######     ######################
 ######     ######################`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   p                    N
+#########         ##########
+#########         ##########`),
+    seg(`
+          o o o o o
+       B?BB?B
+
+   p        N        p
+############################
+############################`),
     ARENA,
   ),
 };
@@ -386,8 +592,8 @@ export const W61 = {
 ########################`),
     seg(`
                  O
-           ====
-   ?Y?          Q
+   ?Y?     ====
+                Q
                        A
 ######ssssss######LLLLL#####
 ######ssssss######LLLLL#####`),
@@ -395,9 +601,33 @@ export const W61 = {
                          H
      C          ooo
             BBBBBBB
+
     J              W
 #######LLLL##################
 #######LLLL##################`),
+    seg(`
+            o o o
+        ?B?B?
+
+
+   J       A
+######sssssssssss###########
+######sssssssssss###########`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   J                    A
+#########LLLLLLLLL##########
+#########LLLLLLLLL##########`),
+    seg(`
+            o o o
+      ?B?M?B
+
+                  []
+   J     A      ()    J
+############################
+############################`),
     seg(`
                 O
           =====      ===
@@ -440,6 +670,32 @@ XXXXXXXXXXXXXXXXXXXXXXXXXX
     BBB   W         X  C
 #####sssssss##############
 #####sssssss##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   J        A        J
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+            o o o
+        ?B?B?
+
+
+   J       A
+######sssssssssss###########
+######sssssssssss###########`),
     ARENA,
   ),
 };
@@ -469,11 +725,33 @@ export const W63 = {
                               =====
                        =====
                 ====
-         ====         O
-    H
+    H    ====         O
+
      C        J
 ###########sssss########       ##
 ###########sssss########       ##`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   J                    W
+#########LLLLLLLLL##########
+#########LLLLLLLLL##########`),
+    seg(`
+            o o o
+        ?B?B?
+
+
+   J       W
+######sssssssssss###########
+######sssssssssss###########`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   J     XXXXX    XXXXX     W
+##############LLLL##############
+##############LLLL##############`),
     seg(`
             ?S?
                       O
@@ -493,6 +771,7 @@ export const W64 = {
     seg(`
           O
        ?M?B?
+
  @         J       A
 #####################LLL####
 #####################LLL####`),
@@ -503,6 +782,21 @@ export const W64 = {
         W
 ######ss###########sss###########
 ######ss###########sss###########`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   J     XXXXX    XXXXX     A
+##############LLLL##############
+##############LLLL##############`),
+    seg(`
+            o o o
+        ?B?B?
+
+
+   J       A
+######sssssssssss###########
+######sssssssssss###########`),
     ARENA,
   ),
 };
@@ -549,6 +843,45 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ##############################
 ##############################`),
     seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   E        V        E
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   E     XXXXX    XXXXX     V
+##############    ##############
+##############    ##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   E                    V
+#########         ##########
+#########         ##########`),
+    seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
          h
@@ -591,6 +924,32 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXX
     E                 C
 ######LLLLLLLLLLLLLL########
 ######LLLLLLLLLLLLLL########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   E                    V
+#########         ##########
+#########         ##########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   E        V        E
+############################
+############################`),
     ARENA,
   ),
 };
@@ -623,6 +982,45 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   d   E                 C
 ###############################
 ###############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+            o o o
+      ?B???B
+
+                  []
+   E     V      ()    E
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   E                    V
+#########         ##########
+#########         ##########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   E     XXXXX    XXXXX     V
+##############    ##############
+##############    ##############`),
     seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -664,6 +1062,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
   E         V
 ########LLLL###########
 ########LLLL###########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   E     XXXXX    XXXXX     V
+##############    ##############
+##############    ##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   E        V        E
+############################
+############################`),
     ARENA,
   ),
 };
@@ -746,6 +1170,7 @@ export const SECRET6 = {
     seg(`
         o o o o o
        ?%?$?M?
+
  @
 ##########################
 ##########################`),

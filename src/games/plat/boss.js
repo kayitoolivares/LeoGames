@@ -152,8 +152,10 @@ export class Boss {
       }
     } else if (this.state === 'down') {
       this.vx = 0;
-      this.y = Math.min(scene.groundY(this.x) - 4, this.y + 360 * dt);
-      if (this.y >= scene.groundY(this.x) - 4) this.setState('rest');
+      // (El piso de abajo de él: buscando desde arriba se encontraba el techo del castillo y nunca bajaba.)
+      const ground = scene.groundY(this.x, this.y);
+      this.y = Math.min(ground - 4, this.y + 360 * dt);
+      if (this.y >= ground - 4) this.setState('rest');
     } else if (this.state === 'rest') {
       if (this.stateMs > 2200) this.setState('up');
     } else if (this.state === 'up') {

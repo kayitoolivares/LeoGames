@@ -45,6 +45,28 @@ const W11 = {
 ######   ##########################
 ######   ##########################`),
     seg(`
+            o o o
+      ?B?M?B
+
+                  []
+   g     t      ()    g
+############################
+############################`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   g     XXXXX    XXXXX     t
+##############    ##############
+##############    ##############`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   g                    t
+#########         ##########
+#########         ##########`),
+    seg(`
                                    o
          ?S?                      XX
                            ooo   XXX
@@ -119,11 +141,50 @@ XXXXXXXXXXXXXXXXXXXXXXXXXX
 ######   ####    ##########
 ######   ####    ##########`),
     seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   g        t        g
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   g     XXXXX    XXXXX     t
+##############    ##############
+##############    ##############`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+            o o o
+      ?B???B
+
+                  []
+   g     t      ()    g
+############################
+############################`),
+    seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXX         XXXXXXXXXXXXXXXX
                    O
-
-      ===      ?B?     G
+               ?B?
+      ===              G
    g        g          []
 ############# ######   ()        F
 ############# #####    ()  ##########
@@ -151,6 +212,20 @@ const W13 = {
  g     XX    g  O    g  g
 ####  XXX  ############## ##
 ####  XXX  ############## ##`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   g                    t
+#########         ##########
+#########         ##########`),
+    seg(`
+          o o o o o
+       B?BB?B
+
+   g        t        g
+############################
+############################`),
     seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X                          X
@@ -206,6 +281,29 @@ const W21 = {
 #######  ####   m      g      #########
 #######  ####                 #########`),
     seg(`
+                  q
+          o o o
+         #######     ######
+
+   g
+#######             ##########
+#######             ##########`),
+    seg(`
+            o o o
+      ?B???B
+
+                  []
+   g     q      ()    g
+############################
+############################`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   g                    q
+#########         ##########
+#########         ##########`),
+    seg(`
                  ?Y?
 
           ==                      F
@@ -246,6 +344,28 @@ const W22 = {
 #####           ===            #####
 #####                          #####`),
     seg(`
+              o o
+            ======
+       ===          ===
+   g                    q
+#########         ##########
+#########         ##########`),
+    seg(`
+                  q
+          o o o
+         #######     ######
+
+   g
+#######             ##########
+#######             ##########`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   g     XXXXX    XXXXX     q
+##############    ##############
+##############    ##############`),
+    seg(`
              n                         O
        ===         H      ===     ===
              ===        R
@@ -266,6 +386,7 @@ const W23 = {
     seg(`
          o o o    O
        ?M?B?
+
  @         q        q
 ######################   ====
 ######################`),
@@ -276,6 +397,21 @@ const W23 = {
     q          q
 =======    ====    ====   ====
 =======`),
+    seg(`
+                  q
+          o o o
+         #######     ######
+
+   g
+#######             ##########
+#######             ##########`),
+    seg(`
+          o o o o o
+       B?BB?B
+
+   g        q        g
+############################
+############################`),
     seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X                          X
@@ -321,6 +457,28 @@ const W31 = {
     c C        c          c
 #############wwwwwww############
 #############wwwwwww############`),
+    seg(`
+            o o o
+      ?B?M?B
+
+                  []
+   c     t      ()    c
+############################
+############################`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   c                    t
+#########         ##########
+#########         ##########`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   c     XXXXX    XXXXX     t
+##############    ##############
+##############    ##############`),
     seg(`
             G   O
           =====      ===
@@ -370,6 +528,45 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #############   ##############
 #############   ##############`),
     seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+            o o o
+      ?B???B
+
+                  []
+   f     j      ()    f
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   f        j        f
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+            o o o
+      ?B???B
+
+                  []
+   f     j      ()    f
+############################
+############################`),
+    seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                 f
        j                  ooo
@@ -390,6 +587,7 @@ const W33 = {
     seg(`
           O
        ?M?B?
+
  @         c       c
 #####################www####
 #####################www####`),
@@ -400,6 +598,20 @@ const W33 = {
   ====          c
 ######wwww##########wwww####
 ######wwww##########wwww####`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   c     XXXXX    XXXXX     t
+##############    ##############
+##############    ##############`),
+    seg(`
+          o o o o o
+       B?BB?B
+
+   c        t        c
+############################
+############################`),
     seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X                          X
@@ -444,6 +656,27 @@ const W41 = {
 ######  zzzzzzz  #####   #####
 ######LLLLLLLLLLL#####LLL#####
 ######LLLLLLLLLLL#####LLL#####`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   e         x          g
+#########LLLLLLLLL##########
+#########LLLLLLLLL##########`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   e     XXXXX    XXXXX     g
+##############LLLL##############
+##############LLLL##############`),
+    seg(`
+          o o o o o
+       B?BB?B
+
+   e        g        e
+############################
+############################`),
     seg(`
                     O
               a
@@ -490,6 +723,45 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 ######################LLL#####
 ######################LLL#####`),
     seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+          o o o o o
+       B?BB?B
+
+   e        g        e
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   e         x          g
+#########LLLLLLLLL##########
+#########LLLLLLLLL##########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   e     XXXXX    XXXXX     g
+##############LLLL##############
+##############LLLL##############`),
+    seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
            a
                O
@@ -527,6 +799,32 @@ XXXXXXXXXXXXXXXXXXXXXXXX
   e         e
 ########LLLL###########
 ########LLLL###########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+            ======
+       ===          ===
+   e         x          g
+#########LLLLLLLLL##########
+#########LLLLLLLLL##########`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   e     XXXXX    XXXXX     g
+##############LLLL##############
+##############LLLL##############`),
     seg(`
 XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 X                          X

@@ -355,7 +355,8 @@ test('pelea en equipo: amigos de la compu, tienda, montar, objetos, jaula y jefe
     s.props.take(f, { kind: 'sword', x: f.x, y: f.y });
     s.props.take(f, { kind: 'shield', x: f.x, y: f.y });
     s.props.take(f, { kind: 'pet', x: f.x, y: f.y });
-    f.invulnerableMs = 0;
+    // (En el piso y sin nada que lo proteja: brincando, un golpe no le pega.)
+    Object.assign(f, { invulnerableMs: 0, z: 0, down: false, starMs: 0, ghostMs: 0 });
     const hp = f.hp;
     f.hurt(f.x + 10);
     return { sword: f.item?.type, longer: f.reach > reach, power: f.power, shield: f.shieldHits, hp: f.hp === hp, pets: s.pets.list.length };
@@ -3310,6 +3311,36 @@ test('súper bolitas: mapa por mundos, casita de hongo, enemigo del mapa, batall
   assert.ok(await plat(p.page, () => Boolean(JSON.parse(localStorage.getItem('leogames:platGhosts'))['1-1'])), 'no se guardó el fantasma');
   await plat(p.page, () => window.leogames.scene.getScene('Plat').startRun('trial', { index: 0 }));
   await p.until(() => Boolean(window.leogames.scene.getScene('Plat').ghost), ms(3000), 'que salga el fantasma');
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Los jefes que vuelan (Rey Nube, Gran Pájaro...) bajan al piso a descansar: ahí se les puede brincar encima. (Antes
+// buscaban el piso desde arriba, encontraban el techo del castillo y nunca bajaban.)
+test('súper bolitas: el Rey Nube baja al piso a descansar', { timeout: ms(90000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 1, null);
+  await plat(p.page, () =>
+    import('/src/games/plat/levels.js').then(({ LEVELS }) => window.leogames.scene.getScene('Plat').startLevel(LEVELS.findIndex((l) => l.spec.boss === 'reyNube'))),
+  );
+  await p.wait(1000);
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const a = s.level.arena;
+    Object.assign(s.players[0], { x: (a.boss.col - 6) * 48, y: (a.boss.row + 1) * 48 - 2, vy: 0, invulnMs: 1e9 });
+    s.cameras.main.setScroll(a.left * 48, 0);
+  });
+  await p.until(() => Boolean(window.leogames.scene.getScene('Plat').boss), ms(5000), 'que llegue el Rey Nube');
+  await p.until(
+    () => {
+      const s = window.leogames.scene.getScene('Plat');
+      const b = s.boss;
+      return b.state === 'rest' && b.stompable && Math.abs(b.y - s.groundY(b.x, b.y)) < 10;
+    },
+    ms(20000),
+    'que baje al piso a descansar',
+  );
   await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
   assert.deepEqual(p.errors, []);
   await p.context.close();

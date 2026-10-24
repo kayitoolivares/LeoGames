@@ -5,7 +5,8 @@
 //      cualquiera de los dos se tiene que poder pasar.
 //   2. Que ningún bloque sorpresa o ladrillo (de los que tienen aire abajo) esté encima de un hoyo, lava o agua: al
 //      brincar para pegarle, uno se caería.
-//   3. Que cada nivel tenga sus 3 monedas grandes.
+//   3. Que a cada bloque sorpresa o ladrillo se le pueda pegar por abajo (que quepa uno abajo y que no esté muy alto).
+//   4. Que cada nivel tenga sus 3 monedas grandes.
 // (Si el nivel tiene botón P, los ladrillos cuentan como que se pueden atravesar: el botón los vuelve monedas.)
 // Uso: node tools/plat-check.mjs
 import { LEVELS, Level, SECRETS } from '../src/games/plat/levels.js';
@@ -106,7 +107,22 @@ for (const info of [...LEVELS, ...SECRETS]) {
     );
   }
 
-  // 3. Las 3 monedas grandes.
+  // 3. Bloques que no se pueden pegar por abajo: con un solo cuadrito de aire abajo nadie cabe (el jugador chiquito
+  //    mide más que un cuadrito) y con más de 5 no se alcanzan brincando.
+  level.grid.forEach((row, r) =>
+    row.forEach((ch, c) => {
+      // (Aquí los ladrillos cuentan como pared aunque haya botón P: las paredes de ladrillos no son para pegarles.)
+      const wall = (cc, rr) => isSolid(level.at(cc, rr)) || level.at(cc, rr) === '=';
+      if (!BLOCKS.has(ch) || c >= limit || wall(c, r + 1)) return;
+      let gap = 0;
+      while (r + 1 + gap < 15 && !wall(c, r + 1 + gap)) gap += 1;
+      if (r + 1 + gap >= 15) return;
+      if (gap === 1) notes.push(`bloque '${ch}' en la columna ${c}, fila ${r}: un solo cuadrito abajo (nadie cabe para pegarle)`);
+      if (gap > 5 && !level.water) notes.push(`bloque '${ch}' en la columna ${c}, fila ${r}: muy alto (${gap} cuadritos de aire abajo)`);
+    }),
+  );
+
+  // 4. Las 3 monedas grandes.
   const big = level.entities.filter((e) => e.ch === 'O').length;
   if (big !== 3) notes.push(`tiene ${big} monedas grandes (deben ser 3)`);
 

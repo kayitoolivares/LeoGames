@@ -102,6 +102,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   monedas, una más) y **banderín** a la mitad. **Modo peque** (Y en el mapa, cada quien): si se cae a un hoyo o a la
   lava, regresa rebotando a donde estaba, y el equipo tiene más vidas. Narrador, calcomanías y mejor tiempo por
   nivel. Los dibujos (enemigos, jefes, objetos y fondos) son de Gemini; los bloques y el piso se dibujan con código.
+  Los niveles son largos (unos 200–260 cuadritos los normales y ~140 los fuertes y castillos) y `tools/plat-check.mjs`
+  revisa que se puedan pasar saltando, que no haya bloques sobre hoyos y que a cada bloque se le pueda pegar por
+  abajo (que quepa uno debajo: el jugador chiquito mide más que un cuadrito). Los jefes que vuelan bajan al piso a
+  descansar: ahí se les brinca encima.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),
