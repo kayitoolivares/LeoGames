@@ -18,6 +18,11 @@ export const KART_TYPES = {
   cohete: { name: 'Cohete', emoji: '🚀', stats: { Velocidad: 3, Arranque: 2, Giro: 1, Peso: 2 }, price: 60 },
   tina: { name: 'Tina de baño', emoji: '🛁', stats: { Velocidad: 1, Arranque: 2, Giro: 3, Peso: 2 }, price: 40 },
   pato: { name: 'Pato de hule', emoji: '🦆', stats: { Velocidad: 2, Arranque: 3, Giro: 2, Peso: 1 }, price: 50 },
+  // Karts especiales: cada uno con su truco (Y; ver KartGame.useSpecial).
+  moto: { name: 'Moto', emoji: '🏍️', stats: { Velocidad: 3, Arranque: 3, Giro: 2, Peso: 1 }, price: 80, special: 'wheelie' },
+  tanque: { name: 'Tanquecito', emoji: '🚜', stats: { Velocidad: 1, Arranque: 2, Giro: 2, Peso: 3 }, price: 80, special: 'cannon' },
+  nave: { name: 'Nave flotante', emoji: '🛸', stats: { Velocidad: 2, Arranque: 2, Giro: 3, Peso: 1 }, offroad: 1, price: 90, special: 'hop' },
+  bebe: { name: 'Carrito de bebé', emoji: '👶', stats: { Velocidad: 2, Arranque: 3, Giro: 3, Peso: 1 }, price: 60, special: 'cry' },
 };
 export const KART_TYPE_KEYS = Object.keys(KART_TYPES);
 
@@ -119,6 +124,46 @@ export function kartStats(type) {
   };
 }
 
+// Los trucos de los karts especiales (Y): qué dicen y cada cuánto se pueden usar.
+export const SPECIALS = {
+  wheelie: { name: 'Caballito', say: '¡Caballito! 🏍️', cooldownMs: 6000 },
+  cannon: { name: 'Cañonazo', say: '¡Cañonazo! 💥', cooldownMs: 7000 },
+  hop: { name: 'Salto de nave', say: '¡Salto de nave! 🛸', cooldownMs: 4000 },
+  cry: { name: '¡Bua!', say: '¡Buaaa! 👶', cooldownMs: 7000 },
+};
+
+// Mejoras de la tienda (para toda la familia), de 3 niveles cada una. Solo las usan los jugadores.
+export const UPGRADES = {
+  motor: { name: 'Motor', emoji: '🔧', info: 'Más rápido', prices: [30, 60, 100] },
+  llantas: { name: 'Llantas', emoji: '🛞', info: 'Gira mejor', prices: [25, 50, 90] },
+  turbo: { name: 'Turbo', emoji: '🔥', info: 'Nitro más fuerte', prices: [25, 50, 90] },
+};
+export const UPGRADE_KEYS = Object.keys(UPGRADES);
+const UPGRADE_LEVELS = 3;
+
+export const upgrades = {
+  get() {
+    return { motor: 0, llantas: 0, turbo: 0, ...settings.get('kartMejoras', {}) };
+  },
+  level(key) {
+    return this.get()[key] ?? 0;
+  },
+};
+
+// Las estadísticas con las mejoras: motor = más velocidad y arranque; llantas = gira mejor y el pasto frena menos;
+// turbo = el nitro empuja más y dura más.
+export function upgradedStats(stats, levels = upgrades.get()) {
+  return {
+    ...stats,
+    maxSpeed: stats.maxSpeed + levels.motor * 0.9,
+    accel: stats.accel + levels.motor * 1.2,
+    turn: stats.turn + levels.llantas * 0.07,
+    offroad: Math.min(1, stats.offroad + levels.llantas * 0.06),
+    nitroFactor: 1.45 + levels.turbo * 0.07,
+    nitroMs: 1200 + levels.turbo * 180,
+  };
+}
+
 // Lo que escogió cada control en el taller (dura mientras la página esté abierta, como los personajes).
 const picks = new Map();
 
@@ -162,15 +207,29 @@ export const wallet = {
   },
 };
 
-// ¿Ya se tiene? (lo que no tiene precio siempre se tiene). `kind`: type | wheels | extra | decal | color.
+// ¿Ya se tiene? (lo que no tiene precio siempre se tiene). `kind`: type | wheels | extra | decal | color | upgrade
+// (una mejora "se tiene" cuando ya está al máximo).
 export function owns(kind, key) {
+  if (kind === 'upgrade') return upgrades.level(key) >= UPGRADE_LEVELS;
   const price = kind === 'color' ? SHOP_PAINTS.find((paint) => paint.hex === key)?.price : CATALOGS[kind][key]?.price;
   return !price || settings.get(OWNED, []).includes(`${kind}:${key}`);
 }
 
 // Lo que se vende (las calcomanías nuevas solo si ya llegó su dibujo de Gemini).
 export function shopItems() {
-  const items = [];
+  // Primero las mejoras: su siguiente nivel.
+  const items = UPGRADE_KEYS.map((key) => {
+    const upgrade = UPGRADES[key];
+    const level = upgrades.level(key);
+    return {
+      kind: 'upgrade',
+      key,
+      name: `${upgrade.name} ${'●'.repeat(level)}${'○'.repeat(UPGRADE_LEVELS - level)}`,
+      price: upgrade.prices[level] ?? 0,
+      emoji: upgrade.emoji,
+      info: upgrade.info,
+    };
+  });
   for (const [kind, catalog] of Object.entries(CATALOGS)) {
     for (const [key, item] of Object.entries(catalog)) {
       if (!item.price || (kind === 'decal' && !DECAL_KEYS.includes(key))) continue;
@@ -185,6 +244,10 @@ export function shopItems() {
 export function buy(item) {
   if (owns(item.kind, item.key) || wallet.get() < item.price) return false;
   settings.set(WALLET, wallet.get() - item.price);
+  if (item.kind === 'upgrade') {
+    settings.set('kartMejoras', { ...upgrades.get(), [item.key]: upgrades.level(item.key) + 1 });
+    return true;
+  }
   settings.set(OWNED, [...settings.get(OWNED, []), `${item.kind}:${item.key}`]);
   return true;
 }

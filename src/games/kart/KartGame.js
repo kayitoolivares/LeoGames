@@ -22,7 +22,7 @@ import { DriverArt, driverView } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Hazards } from './hazards.js';
 import { Garage } from './garage.js';
-import { kartPicks, randomSetup, wallet } from './karts.js';
+import { KART_TYPES, SPECIALS, kartPicks, randomSetup, upgradedStats, wallet } from './karts.js';
 import { Snowfall, addScenery, addSnowmen } from './scenery.js';
 import { CUPS, CUP_KEYS, CUP_POINTS, TRACKS, TRACK_KEYS } from './tracks.js';
 import { Shortcut } from './shortcut.js';
@@ -34,7 +34,7 @@ import { BOSSES, WORLDS, adventure, nextStage, stagePassed } from './adventure.j
 import { LivingTrack } from './living.js';
 import { CUSTOM_KEY, TrackEditor, customLook } from './editor.js';
 import { RaceTalk, assignPersonalities, nameOf, personalityOf, rivalPush } from './rivals.js';
-import { numberStep } from '../smash/bloquecito.js';
+import { isBlockCharacter, numberStep } from '../smash/bloquecito.js';
 import { CHARACTER_KEYS } from '../smash/characters.js';
 
 const TOTAL_RACERS = 6;
@@ -111,7 +111,15 @@ const ITEM_ART = {
   ghost: 'fantasma',
   bullet: 'bala',
   bee: 'abeja',
+  magnet: 'iman',
+  jelly: 'gelatina',
+  tornado: 'tornado',
+  spring: 'resorte',
+  sticky: 'bomba',
 };
+// Imán: cuánto dura, de qué tan lejos jala y el turbito mientras jala. Resorte: qué tan alto brinca.
+const MAGNET = { ms: 6000, reach: 50, boost: 1.28 };
+const SPRING_JUMP = 21;
 const ITEM_ICONS = Object.fromEntries(
   Object.entries(ITEMS).map(([key, item]) => [
     key,
@@ -749,16 +757,42 @@ export class KartGame {
     this.scene.add(mountains);
   }
 
+  // Kart para dos: los que en el taller escogieron ir de copilotos de otro jugador (y ese otro maneja). Devuelve
+  // un Map: deviceId del que maneja → su copiloto.
+  copilots() {
+    const all = players.sorted();
+    const gunners = new Map();
+    const riding = new Set();
+    for (const player of all) {
+      const partner = kartPicks.get(player.deviceId)?.rideWith;
+      if (!partner || partner === player.deviceId || !all.some((p) => p.deviceId === partner)) continue;
+      // (El que maneja no puede ir de copiloto de alguien más, ni traer ya otro copiloto.)
+      if (riding.has(partner) || gunners.has(partner) || gunners.has(player.deviceId)) continue;
+      gunners.set(partner, player);
+      riding.add(player.deviceId);
+    }
+    return gunners;
+  }
+
   // Los jugadores con lo que escogieron en el taller; la compu, con personajes y karts al azar, hasta ser `total`.
   createRacers(total = TOTAL_RACERS) {
-    const humans = players.sorted();
-    const taken = new Set(humans.map((player) => player.colorIndex));
+    const gunners = this.copilots();
+    const riders = new Set([...gunners.values()].map((player) => player.deviceId));
+    const humans = players.sorted().filter((player) => !riders.has(player.deviceId));
+    const taken = new Set(players.sorted().map((player) => player.colorIndex));
     const cpuColors = PLAYER_COLORS.filter((_, i) => !taken.has(i));
     const drivers = this.drivers;
     this.racers = humans.map((player, i) => {
       const color = players.color(player).hex;
       const setup = kartPicks.get(player.deviceId) ?? { character: CHARACTER_KEYS[i], type: 'clasico', color, wheels: 'normales', extra: 'aleron' };
-      return new Racer({ color, label: `J${player.slot + 1}`, deviceId: player.deviceId, setup, drivers });
+      const partner = gunners.get(player.deviceId);
+      const gunner = partner
+        ? { deviceId: partner.deviceId, label: `J${partner.slot + 1}`, character: kartPicks.get(partner.deviceId)?.character ?? CHARACTER_KEYS[(i + 3) % CHARACTER_KEYS.length] }
+        : null;
+      const racer = new Racer({ color, label: `J${player.slot + 1}`, deviceId: player.deviceId, setup, drivers, gunner });
+      // Las mejoras de la tienda (motor, llantas, turbo) son de los jugadores.
+      racer.stats = upgradedStats(racer.stats);
+      return racer;
     });
     // En el Gran Premio la compu trae el mismo personaje y kart en todas las carreras de la copa.
     const characters = new Set(this.racers.map((racer) => racer.setup.character));
@@ -1094,6 +1128,7 @@ export class KartGame {
       racer.update(dtMs, input, offroad, topFactor);
       if (offroad) this.kickDust(racer);
       if (input.useItem) this.useItem(racer, ranking);
+      if (input.special) this.useSpecial(racer, ranking);
       if (input.change) racer.driver.changeNumber(input.change);
       this.updateShortcut(racer);
       this.keepInside(racer);
@@ -1114,6 +1149,7 @@ export class KartGame {
     }
     for (const racer of this.racers) this.tilt(racer);
     this.updateDrafting(dtMs);
+    this.updateMagnets(dtMs, ranking);
     this.weather?.update(dtMs / 1000, this.racers, (racer) => this.onSlip(racer));
     this.updateHazards(dtMs, now);
     this.coins.update(dtMs, now, this.racers, (racer) => {
@@ -1279,6 +1315,8 @@ export class KartGame {
 
   humanInput(racer) {
     const id = racer.deviceId;
+    // En el kart para dos el copiloto avienta los poderes (y también puede echar nitro).
+    const gunner = racer.gunner?.deviceId;
     const brake = controls.isDown(id, 'b') || controls.isDown(id, 'lt') ? 1 : 0;
     const peque = racer.setup.peque;
     return {
@@ -1286,8 +1324,10 @@ export class KartGame {
       // Modo peque: acelera solo (con B frena).
       gas: (peque && !brake) || controls.isDown(id, 'a') || controls.isDown(id, 'rt') ? 1 : 0,
       brake,
-      nitro: controls.justPressed(id, 'rb'),
-      useItem: controls.justPressed(id, 'x'),
+      nitro: controls.justPressed(id, 'rb') || (gunner ? controls.justPressed(gunner, 'rb') : false),
+      useItem: controls.justPressed(gunner ?? id, 'x'),
+      // Y: el truco de los karts especiales (Bloquecito usa la Y para cambiar de número).
+      special: controls.justPressed(id, 'y') && Boolean(KART_TYPES[racer.setup.type]?.special) && !isBlockCharacter(racer.setup.character),
       // LB: derrapar (mantener en la curva) y truco (apretarlo en el aire).
       drift: controls.isDown(id, 'lb'),
       trick: controls.justPressed(id, 'lb'),
@@ -1369,12 +1409,14 @@ export class KartGame {
 
   cpuWantsItem(racer, ranking) {
     if (!racer.item || racer.rollMs > 0) return false;
-    if (['turbo', 'shield', 'lightning', 'star', 'bullet'].includes(racer.item)) return true;
+    if (['turbo', 'shield', 'lightning', 'star', 'bullet', 'spring', 'tornado'].includes(racer.item)) return true;
+    // El imán, si trae a alguien adelante.
+    if (racer.item === 'magnet') return Boolean(this.rivalAhead(racer, ranking));
     // El cometa, la tinta y la abeja solo sirven si alguien va adelante.
     if (['comet', 'ink', 'bee'].includes(racer.item)) return ranking.indexOf(racer) > 0;
     // El fantasma, si alguien trae algo que robar.
     if (racer.item === 'ghost') return this.racers.some((other) => other !== racer && other.item && !this.sameTeam(racer, other));
-    if (racer.item === 'rocket') {
+    if (racer.item === 'rocket' || racer.item === 'sticky') {
       // El tramposo dispara de más lejos; todos prefieren a su rival si va adelante.
       const reach = personalityOf(racer).sneaky ? 90 : 60;
       const ahead = this.rivalAhead(racer, ranking);
@@ -1444,8 +1486,25 @@ export class KartGame {
   }
 
   // Los poderes nuevos (también en la batalla): estrella, fantasma, bala y abeja. Devuelve un letrero especial o null.
-  usePower(racer, item, ranking = null) {
-    if (item === 'star') {
+  // `target`: contra quién (en la batalla, el más cercano).
+  usePower(racer, item, ranking = null, target = null) {
+    if (item === 'magnet') {
+      racer.magnetMs = MAGNET.ms;
+      sfx.sparkle();
+    } else if (item === 'spring') {
+      racer.launch(SPRING_JUMP);
+      racer.boost(1.25, 900);
+      sfx.boing();
+    } else if (item === 'jelly') {
+      this.projectiles.addJelly(racer);
+      sfx.throw();
+    } else if (item === 'tornado') {
+      this.projectiles.addTornado(racer);
+      sfx.special();
+    } else if (item === 'sticky') {
+      this.projectiles.addSticky(racer, target ?? (ranking ? this.rivalAhead(racer, ranking) : null));
+      sfx.throw();
+    } else if (item === 'star') {
       racer.starMs = STAR_MS;
       racer.boost(1.2, 600);
       sfx.sparkle();
@@ -1513,7 +1572,70 @@ export class KartGame {
     sfx.throw();
   }
 
+  // El truco de los karts especiales (Y): la moto hace caballito (turbo), el tanquecito echa un cañonazo derechito,
+  // la nave da un salto y el carrito de bebé llora tan fuerte que avienta a los que tiene cerca.
+  useSpecial(racer, ranking) {
+    const special = KART_TYPES[racer.setup.type]?.special;
+    if (!special || racer.specialMs > 0 || racer.spinMs > 0) return;
+    racer.specialMs = SPECIALS[special].cooldownMs;
+    if (special === 'wheelie') {
+      racer.wheelieMs = 1500;
+      racer.boost(1.35, 1500);
+      sfx.boost();
+    } else if (special === 'cannon') {
+      this.projectiles.addRocket(racer, null);
+      racer.throwMs = THROW_POSE_MS;
+      sfx.boom();
+    } else if (special === 'hop') {
+      if (!racer.airborne) racer.launch(12);
+      sfx.jump();
+    } else if (special === 'cry') {
+      for (const other of this.racers) {
+        const d = Math.hypot(other.x - racer.x, other.z - racer.z);
+        if (other === racer || d > 9 || other.invincible) continue;
+        other.x += ((other.x - racer.x) / (d || 1)) * 3;
+        other.z += ((other.z - racer.z) / (d || 1)) * 3;
+        other.speed *= 0.6;
+        if (!other.isCpu) other.say('¡Ay, qué llorón! 😖', 1000);
+      }
+      this.particles.burst('spark', racer.x, racer.y + 2.5, racer.z, 14, [0x9fd8ff, 0xffffff], { speed: 9, up: 4, lifeMs: 500 });
+      sfx.ghost();
+    }
+    if (!racer.isCpu) racer.say(SPECIALS[special].say, 1000);
+    void ranking;
+  }
+
+  // El imán: mientras dura, jala hacia el de adelante (turbito si lo trae cerca) y atrae las monedas (coins.js).
+  updateMagnets(dtMs, ranking) {
+    for (const racer of this.racers) {
+      if (!(racer.magnetMs > 0)) continue;
+      racer.magnetMs = Math.max(0, racer.magnetMs - dtMs);
+      const ahead = this.rivalAhead(racer, ranking);
+      if (ahead && Math.hypot(ahead.x - racer.x, ahead.z - racer.z) < MAGNET.reach) racer.boost(MAGNET.boost, 200);
+      racer.magnetSparkMs = (racer.magnetSparkMs ?? 0) - dtMs;
+      if (racer.magnetSparkMs > 0) continue;
+      racer.magnetSparkMs = 220;
+      this.particles.burst('spark', racer.x, racer.y + 2.4, racer.z, 4, [0xff4d4d, 0x4d8cff], { speed: 3, up: 3, lifeMs: 350 });
+    }
+  }
+
+  // Chocó con un muro de gelatina: rebota para atrás (sin dar vueltas).
+  bounceOff(victim) {
+    victim.speed = -Math.max(6, Math.abs(victim.speed) * 0.5);
+    if (victim.drifting) victim.endDrift(true);
+    this.particles.burst('spark', victim.x, victim.y + 1, victim.z, 10, [0x7bea5a, 0xc8ffb0], { speed: 6, up: 5, lifeMs: 450 });
+    if (victim.isCpu) return;
+    sfx.boing();
+    victim.say('¡Boing! Gelatina 🟩', 1000);
+  }
+
   onProjectileHit(victim, projectile) {
+    if (projectile.kind === 'jelly') {
+      this.bounceOff(victim);
+      return;
+    }
+    // El tornado además lo levanta por los aires.
+    if (projectile.kind === 'tornado' && !victim.invincible && victim.shieldMs === 0) victim.launch(11);
     const hurt = victim.hit();
     if (hurt) this.particles.burst('spark', victim.x, victim.y + 1.5, victim.z, 22, HIT_COLORS, { speed: 10, up: 9 });
     // Si le pegan a un jugador (o un jugador le pega a alguien), el golpe se siente: todo se congela un instante.
@@ -1909,7 +2031,7 @@ export class KartGame {
       const lesson = this.lesson ? { pos: this.lesson.panel(racer), lap: `⏱️ ${formatTime(this.raceMs)}` } : null;
       this.hud.setPanel(i, {
         pos: lesson?.pos ?? battle?.pos ?? clock ?? `${ranking.indexOf(racer) + 1}°`,
-        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}</span>${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
+        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}${racer.gunner ? `+${racer.gunner.label}` : ''}</span>${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
         lap: lesson?.lap ?? battle?.lap ?? elimination ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
         coins: this.battle ? '' : `🪙 ${racer.coins}`,
         item,
@@ -2011,6 +2133,7 @@ export class KartGame {
       const labelHeight = (LABEL_PX / HEIGHT) * 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
       for (const racer of this.racers) {
         racer.driver.show(driverView(racer, camera));
+        racer.passenger?.show(driverView(racer, camera));
         racer.labelSprite.visible = true;
         racer.labelSprite.scale.set(labelHeight * 2, labelHeight, 1);
       }
@@ -2029,6 +2152,7 @@ export class KartGame {
       for (const racer of this.racers) {
         // El piloto, visto desde esta cámara (de espaldas, de lado, de frente...).
         if (!isMap) racer.driver.show(driverView(racer, view.camera));
+        if (!isMap) racer.passenger?.show(driverView(racer, view.camera));
         // Nadie ve su propio letrero encima de su carro.
         racer.labelSprite.visible = racer !== view.racer;
         racer.labelSprite.scale.set(labelHeight * 2, labelHeight, 1);
@@ -2063,7 +2187,10 @@ export class KartGame {
     this.hud?.destroy();
     this.chooser?.destroy();
     this.garage?.destroy();
-    for (const racer of this.racers ?? []) racer.driver.dispose();
+    for (const racer of this.racers ?? []) {
+      racer.driver.dispose();
+      racer.passenger?.dispose();
+    }
     this.drivers.dispose();
     this.view.destroy(this.scene);
   }

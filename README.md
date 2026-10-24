@@ -264,6 +264,17 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Arma tu pista** (el noveno modo): el Jugador 1 dibuja su pista moviendo puntos en un mapa (A agarra o pone un
   punto, X lo quita, LB/RB hacen lomas, Y cambia el paisaje, LT empieza otra vez, RT ¡a correr!). Se guarda sola,
   se pone en rojo si se encima y sale al final de las pistas como "Mi pista" (con flechas y rampa en sus rectas).
+  **Poderes nuevos** (dibujos de Gemini): 🧲 **imán** (un rato jala hacia el de adelante y atrae las monedas),
+  **muro de gelatina** (atrás: el que choca rebota; aguanta 3 golpes), 🌪️ **tornado** (avanza por la pista
+  zigzagueando y levanta a los que toca), **resorte** (súper brinco: por encima de plátanos y cohetes) y
+  **bomba pegajosa** (se le pega al de adelante y explota a los 3 segundos; chocando con otro se la pasas).
+  **Karts especiales** (en la tienda), cada uno con su truco con **Y**: **Moto** (caballito: turbo con la trompa
+  arriba), **Tanquecito** (cañonazo derechito), **Nave flotante** (flota: el pasto no la frena; da un salto) y
+  **Carrito de bebé** (¡bua!: llora tan fuerte que avienta a los que tiene cerca).
+  **Mejoras** (en la tienda, para toda la familia, 3 niveles cada una): **motor** (más rápido), **llantas** (gira
+  mejor y el pasto frena menos) y **turbo** (nitro más fuerte y más largo). En el taller se ven junto al kart.
+  **Kart para dos**: en el taller, **LB** = ir de copiloto de otro jugador: él maneja y tú avientas los poderes con
+  **X** (y también echas nitro con RB). Los dos se ven en el kart.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**

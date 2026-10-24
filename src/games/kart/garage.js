@@ -18,18 +18,23 @@ import {
   KART_TYPE_KEYS,
   PAINTS,
   SHOP_PAINTS,
+  SPECIALS,
+  UPGRADES,
+  UPGRADE_KEYS,
   WHEELS,
   WHEEL_KEYS,
   decalTexture,
   kartPicks,
   owns,
+  upgrades,
   wallet,
 } from './karts.js';
 import { ShopPanel } from './shop.js';
 
 // El taller de Karts locos: cada jugador escoge su piloto, su kart, el color, las llantas, un adorno y una calcomanía,
-// y lo ve en 3D dando vueltas. ↑ ↓ = qué cambiar, ◀ ▶ = cambiarlo, Y = modo peque, A = ¡listo!, B = ya no estoy listo
-// (si no estaba listo, el Jugador 1 regresa al menú). Cuando todos están listos, update() devuelve 'done'.
+// y lo ve en 3D dando vueltas. ↑ ↓ = qué cambiar, ◀ ▶ = cambiarlo, Y = modo peque, LB = ir de copiloto de otro jugador
+// (kart para dos: él maneja y tú avientas los poderes), A = ¡listo!, B = ya no estoy listo (si no estaba listo, el
+// Jugador 1 regresa al menú). Cuando todos están listos, update() devuelve 'done'.
 const STYLE_ID = 'kart-garage-style';
 const CARD_W = 290;
 const CARD_GAP = 16;
@@ -37,7 +42,7 @@ const CARD_TOP = 88;
 const CARD_H = 590;
 const BORDER = 4;
 const TITLE_H = 40;
-const PREVIEW_H = 172;
+const PREVIEW_H = 150;
 const START_DELAY_MS = 600;
 const SPIN_SPEED = 0.9;
 const BACKGROUND = 0x14112b;
@@ -63,8 +68,8 @@ const CSS = `
 .kart-garage .row.on .label { color: #ffc93c; }
 .kart-garage .dot { display: inline-block; width: 22px; height: 22px; border-radius: 50%; vertical-align: middle;
   box-shadow: 0 0 0 3px #1b1530, 0 0 0 5px #fff; }
-.kart-garage .stats { margin: 8px 22px 0; font-size: 15px; line-height: 20px; display: grid; grid-template-columns: 1fr auto; }
-.kart-garage .status { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 22px; font-weight: 700;
+.kart-garage .stats { margin: 6px 22px 0; font-size: 14px; line-height: 17px; display: grid; grid-template-columns: 1fr auto; }
+.kart-garage .status { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 19px; font-weight: 700;
   color: #a9a3d6; }
 .kart-garage .card.ready .status { color: #4cd97b; }
 .kart-garage p { position: absolute; bottom: 4px; left: 0; right: 0; margin: 0; text-align: center; font-size: 20px; color: #ffc93c; }
@@ -86,7 +91,7 @@ export class Garage {
     this.el = document.createElement('div');
     this.el.className = 'kart-garage';
     this.el.innerHTML = `<h1>🔧 Taller  <span class="coins"></span></h1>
-      <p>↑ ↓ qué cambiar  ·  ◀ ▶ cambiarlo  ·  Y = modo peque 🐣  ·  X = tienda 🛒  ·  A = ¡listo!  ·  B = regresar</p><div class="exit"><div></div></div>`;
+      <p>↑ ↓ qué cambiar  ·  ◀ ▶ cambiarlo  ·  Y = peque 🐣  ·  LB = copiloto 🤝  ·  X = tienda 🛒  ·  A = ¡listo!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     this.coinsEl = this.el.querySelector('.coins');
     this.showCoins();
     view.stage.append(this.el);
@@ -217,11 +222,18 @@ export class Garage {
       const value = on ? `◀ <b>${values[row]}</b> ▶` : `<b>${values[row]}</b>`;
       return `<div class="row${on ? ' on' : ''}"><span class="label">${ROW_LABELS[row]}</span><span>${value}</span></div>`;
     }).join('');
-    card.stats.innerHTML = Object.entries(KART_TYPES[setup.type].stats)
-      .map(([name, value]) => `<span>${name}</span><span>${'●'.repeat(value)}${'○'.repeat(3 - value)}</span>`)
-      .join('');
-    // Modo peque: el kart acelera solo y el volante le ayuda (para los más chiquitos).
-    card.status.textContent = `${card.setup.peque ? '🐣 Peque · ' : ''}${card.ready ? '¡Listo!' : 'A = listo'}`;
+    // Las estrellitas del kart, las mejoras de la tienda y el truco (Y) de los karts especiales.
+    const special = KART_TYPES[setup.type].special;
+    const levels = upgrades.get();
+    card.stats.innerHTML = [
+      ...Object.entries(KART_TYPES[setup.type].stats).map(([name, value]) => `<span>${name}</span><span>${'●'.repeat(value)}${'○'.repeat(3 - value)}</span>`),
+      `<span>Mejoras</span><span>${UPGRADE_KEYS.map((key) => `${UPGRADES[key].emoji}${levels[key]}`).join(' ')}</span>`,
+      special ? `<span>Truco (Y)</span><span>${SPECIALS[special].name}</span>` : '',
+    ].join('');
+    // Modo peque: el kart acelera solo y el volante le ayuda (para los más chiquitos). Copiloto: va en el kart de otro.
+    const partner = this.cards?.find((other) => other.id === setup.rideWith);
+    const copilot = partner ? `🤝 Copiloto de J${partner.player.slot + 1} · ` : '';
+    card.status.textContent = `${copilot}${card.setup.peque ? '🐣 Peque · ' : ''}${card.ready ? '¡Listo!' : 'A = listo'}`;
     card.el.classList.toggle('ready', card.ready);
   }
 
@@ -282,6 +294,16 @@ export class Garage {
       sfx.confirm();
       this.shop = new ShopPanel(this.el, id);
       return null;
+    }
+    // LB: copiloto de otro jugador (o de nadie): kart para dos.
+    if (controls.justPressed(id, 'lb') && this.cards.length > 1) {
+      const options = [null, ...this.cards.filter((other) => other !== card).map((other) => other.id)];
+      const next = options[(options.indexOf(card.setup.rideWith ?? null) + 1) % options.length];
+      card.setup = { ...card.setup, rideWith: next };
+      sfx.select();
+      const partner = this.cards.find((other) => other.id === next);
+      say(partner ? `De copiloto con el jugador ${partner.player.slot + 1}: tú avientas los poderes` : 'Cada quien en su kart');
+      this.refresh(card);
     }
     if (controls.justPressed(id, 'y')) {
       card.setup = { ...card.setup, peque: !card.setup.peque };

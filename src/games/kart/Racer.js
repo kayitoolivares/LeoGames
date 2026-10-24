@@ -8,6 +8,11 @@ const COAST = 10;
 export const NITRO_CHARGES = 3;
 const NITRO_FACTOR = 1.45;
 const NITRO_MS = 1200;
+// Dónde va el copiloto del kart para dos (respecto al asiento).
+const PASSENGER = { x: 0.85, y: 0.25, z: -0.6 };
+// La nave flota (y sube y baja tantito); la moto levanta la trompa en el caballito.
+const HOVER = { height: 0.45, bob: 0.12 };
+const WHEELIE_TILT = 0.38;
 const NITRO_REFILL_MS = 4000;
 const SPIN_MS = 1100;
 export const SHIELD_MS = 8000;
@@ -81,7 +86,8 @@ function sparkMap() {
 // `setup` es lo que se escogió en el taller ({ character, type, color, wheels, extra }); `drivers`, un DriverArt.
 // `color` es el del jugador (su letrero); el kart va pintado del color que escogió.
 export class Racer {
-  constructor({ color, label, deviceId = null, setup, drivers }) {
+  // `gunner`: el copiloto del kart para dos ({ deviceId, character, label }): avienta los poderes.
+  constructor({ color, label, deviceId = null, setup, drivers, gunner = null }) {
     this.color = color;
     this.label = label;
     this.deviceId = deviceId;
@@ -95,6 +101,13 @@ export class Racer {
     this.driver = drivers.createDriver(setup.character, deviceId);
     this.driver.sprite.position.copy(seat).setY(seat.y - this.driver.sink);
     this.object.add(this.driver.sprite);
+    // El copiloto va a un lado, un poquito atrás y más arriba (se ve junto al piloto desde la cámara).
+    this.gunner = gunner;
+    if (gunner) {
+      this.passenger = drivers.createDriver(gunner.character, gunner.deviceId);
+      this.passenger.sprite.position.set(seat.x + PASSENGER.x, seat.y - this.passenger.sink + PASSENGER.y, seat.z + PASSENGER.z);
+      this.object.add(this.passenger.sprite);
+    }
     this.labelSprite = buildKartLabel(label, color);
     // Con la cámara detrás, el letrero mide lo mismo en pantalla esté cerca o lejos
     // (si no, un carro pegado a la cámara tapa media pantalla con su letrero).
@@ -190,6 +203,11 @@ export class Racer {
     this.draftMs = 0;
     // Cuántas veces le pegaron (para el reto "sin un rasguño" de la Aventura).
     this.hitsTaken = 0;
+    // El imán (ver KartGame.updateMagnets).
+    this.magnetMs = 0;
+    // Los karts especiales: cuándo se puede volver a usar el truco y el caballito de la moto.
+    this.specialMs = 0;
+    this.wheelieMs = 0;
     // Lo que pasó este cuadro (mini turbo, truco...), para que el juego ponga sonidos y letreros.
     this.events = [];
   }
@@ -276,7 +294,14 @@ export class Racer {
 
   // input: { steer: -1..1, gas: 0..1, brake: 0..1, nitro: bool, drift: LB apretado, trick: LB recién apretado }.
   // `topFactor` ayuda a los que van atrás.
+  // El nombre para los resultados (con el copiloto, si es kart para dos).
+  get displayName() {
+    return this.passenger ? `${this.driver.name} y ${this.passenger.name}` : this.driver.name;
+  }
+
   update(dtMs, input, offroad, topFactor = 1) {
+    this.specialMs = Math.max(0, this.specialMs - dtMs);
+    this.wheelieMs = Math.max(0, this.wheelieMs - dtMs);
     const dt = dtMs / 1000;
     this.boostMs = Math.max(0, this.boostMs - dtMs);
     this.landMs = Math.max(0, (this.landMs ?? 0) - dtMs);
@@ -312,7 +337,7 @@ export class Racer {
     this.steerInput = steer;
     if (input.nitro && !spinning && this.nitro >= 1) {
       this.nitro -= 1;
-      this.boost(NITRO_FACTOR, NITRO_MS);
+      this.boost(this.stats.nitroFactor ?? NITRO_FACTOR, this.stats.nitroMs ?? NITRO_MS);
     }
 
     const { turn } = this.stats;
@@ -401,10 +426,11 @@ export class Racer {
 
   render(timeMs) {
     const spin = this.spinMs > 0 ? (1 - this.spinMs / (this.spinTotal ?? SPIN_MS)) * Math.PI * 4 : 0;
-    this.object.position.set(this.x, this.y, this.z);
+    const hover = this.setup.type === 'nave' ? HOVER.height + Math.sin(timeMs / 280) * HOVER.bob : 0;
+    this.object.position.set(this.x, this.y + hover, this.z);
     // Subiendo, la trompa va hacia arriba; bajando, hacia abajo.
     this.object.rotation.order = 'YXZ';
-    this.object.rotation.x = -this.pitch;
+    this.object.rotation.x = -this.pitch - (this.wheelieMs > 0 ? WHEELIE_TILT * Math.min(1, this.wheelieMs / 250) : 0);
     // Encogido por el rayo: se hace chiquito poco a poco (y vuelve a crecer igual).
     this.size += ((this.shrinkMs > 0 ? SHRINK_SCALE : 1) - this.size) * 0.15;
     // Recién caído: se aplasta y rebota. (Los jefes son más grandes: `bigness`.)

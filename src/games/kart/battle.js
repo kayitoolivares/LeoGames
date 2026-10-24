@@ -242,6 +242,7 @@ export class Battle {
       const input = racer.isCpu ? this.cpuInput(racer) : game.humanInput(racer);
       racer.update(dtMs, input, false);
       if (input.useItem) game.useItem(racer, null);
+      if (input.special) game.useSpecial(racer, null);
       if (input.change) racer.driver.changeNumber(input.change);
       this.arena.keepInside(racer);
     }
@@ -252,7 +253,8 @@ export class Battle {
     game.separateRacers();
     const players = this.alive();
     game.boxes.update(dtMs, performance.now(), players, (racer) => game.giveItem(racer));
-    game.projectiles.update(dtMs, players, this.arena, (victim, projectile) => this.hit(victim, projectile.owner));
+    // (La gelatina no revienta globos: rebota.)
+    game.projectiles.update(dtMs, players, this.arena, (victim, projectile) => (projectile.kind === 'jelly' ? game.bounceOff(victim) : this.hit(victim, projectile.owner)));
     if (this.star) this.updateStar(dtMs);
     if (this.coins) this.updateCoins(dtMs);
     // Se acaba si se acabó el tiempo; en la de globos, también si queda uno o si ya no queda ningún jugador (para no
@@ -428,7 +430,7 @@ export class Battle {
       const holder = this.star?.holder;
       if (holder && holder !== racer && holder.shrinkMs > 0) this.dropStar(holder);
     }
-    else if (item === 'star' || item === 'ghost') game.usePower(racer, item);
+    else if (['star', 'ghost', 'jelly', 'tornado', 'spring', 'sticky'].includes(item)) game.usePower(racer, item, null, nearest(racer, rivals));
     else if (item === 'ink') {
       for (const other of rivals) {
         other.inkMs = INK_MS;

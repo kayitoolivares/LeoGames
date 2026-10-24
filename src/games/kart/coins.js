@@ -11,6 +11,8 @@ const GAP = 3;
 const RESPAWN_MS = 8000;
 const HEIGHT = 1.2;
 const REACH = RACER_RADIUS + 0.9;
+// Con el imán se agarran de más lejos.
+const MAGNET_REACH = 9;
 
 export class Coins {
   constructor(scene, track) {
@@ -38,7 +40,7 @@ export class Coins {
       if (coin.respawnMs > 0) coin.respawnMs = Math.max(0, coin.respawnMs - dtMs);
       const visible = coin.respawnMs === 0;
       if (visible) {
-        const taker = racers.find((r) => r.coins < MAX_COINS && Math.hypot(r.x - coin.x, r.z - coin.z) < REACH);
+        const taker = racers.find((r) => r.coins < MAX_COINS && Math.hypot(r.x - coin.x, r.z - coin.z) < (r.magnetMs > 0 ? MAGNET_REACH : REACH));
         if (taker) {
           taker.coins += 1;
           coin.respawnMs = RESPAWN_MS;

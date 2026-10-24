@@ -154,7 +154,7 @@ export class KartHud {
       'beforeend',
       `<div class="kart-flash"></div><div class="kart-center"></div><div class="kart-caption"></div>
        <div class="kart-replay"><span>REPETICIÓN</span><p>A = brincar</p></div><div class="kart-results" hidden></div>
-       <div class="kart-help">A = acelerar  ·  B = frenar  ·  LB = derrapar  ·  X = lanzar poder  ·  RB = nitro  ·  Bloquecito: Y = número  ·  Mantén LB + RB + Y = salir</div>
+       <div class="kart-help">A = acelerar  ·  B = frenar  ·  LB = derrapar  ·  X = lanzar poder  ·  RB = nitro  ·  Y = truco del kart (o número de Bloquecito)  ·  Mantén LB + RB + Y = salir</div>
        <div class="kart-exit"><div></div></div>`,
     );
     this.center = this.el.querySelector('.kart-center');

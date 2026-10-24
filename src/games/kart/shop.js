@@ -7,15 +7,15 @@ import { buy, owns, shopItems, wallet } from './karts.js';
 // La tienda del taller: se abre con X y la maneja el jugador que la abrió. Las monedas son de toda la familia.
 // ◀ ▶ ↑ ↓ escoger, A = comprar, B = cerrar. Lo que se compra aparece luego en el taller para todos.
 const STYLE_ID = 'kart-shop-style';
-const COLUMNS = 5;
-const KIND_NAMES = { type: 'Kart', color: 'Color', wheels: 'Llantas', extra: 'Adorno', decal: 'Calcomanía' };
+const COLUMNS = 6;
+const KIND_NAMES = { type: 'Kart', color: 'Color', wheels: 'Llantas', extra: 'Adorno', decal: 'Calcomanía', upgrade: 'Mejora' };
 const CSS = `
 .kart-shop { position: absolute; inset: 0; background: rgba(20, 17, 43, 0.92); display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 18px; z-index: 5; }
 .kart-shop h2 { margin: 0; font-size: 44px; }
 .kart-shop h2 span { color: #ffc93c; }
-.kart-shop .grid { display: grid; grid-template-columns: repeat(${COLUMNS}, 200px); gap: 14px; }
-.kart-shop .item { height: 132px; border-radius: 18px; background: #231d45; border: 4px solid #3a3170; display: flex;
+.kart-shop .grid { display: grid; grid-template-columns: repeat(${COLUMNS}, 194px); gap: 12px; }
+.kart-shop .item { height: 128px; border-radius: 18px; background: #231d45; border: 4px solid #3a3170; display: flex;
   flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box; }
 .kart-shop .item.on { border-color: #ffc93c; box-shadow: 0 0 0 5px #ffc93c; }
 .kart-shop .item.mine { background: #2b3d4a; }
@@ -55,8 +55,8 @@ export class ShopPanel {
         if (item.kind === 'color') look = `<span class="dot" style="background:${hexToCss(item.key)}"></span>`;
         else if (item.kind === 'decal') look = `<img src="kart/calcomanias/${item.key}.png" alt="">`;
         return `<div class="item${i === this.selected ? ' on' : ''}${mine ? ' mine' : ''}"><div class="look">${look}</div>
-          <b>${item.name}</b><small>${KIND_NAMES[item.kind]}</small>
-          <span class="price">${mine ? '✓ Ya es tuyo' : `🪙 ${item.price}`}</span></div>`;
+          <b>${item.name}</b><small>${item.info ?? KIND_NAMES[item.kind]}</small>
+          <span class="price">${mine ? (item.kind === 'upgrade' ? '✓ Al máximo' : '✓ Ya es tuyo') : `🪙 ${item.price}`}</span></div>`;
       })
       .join('');
     this.el.innerHTML = `<h2>🛒 Tienda · <span>🪙 ${wallet.get()}</span></h2><div class="grid">${tiles}</div>
@@ -85,7 +85,9 @@ export class ShopPanel {
       } else if (buy(item)) {
         sfx.coin();
         sfx.confirm();
-        say(`¡Compraste ${item.name}!`);
+        say(`¡Compraste ${item.kind === 'upgrade' ? `${item.name.replace(/[●○ ]+$/, '')} nivel ${item.name.split('●').length}` : item.name}!`);
+        // (Las mejoras suben de nivel: su precio cambia.)
+        this.items = shopItems();
         this.draw();
       } else {
         sfx.back();

@@ -23,16 +23,26 @@ export const ITEMS = {
   bullet: { emoji: '💣', name: '¡Bala!' },
   // Una abeja que vuela por encima de todo hasta el primero y le pica (y a los que encuentre en el camino).
   bee: { emoji: '🐝', name: '¡Abeja!' },
+  // Un rato jala hacia el de adelante (más rápido si lo traes cerca) y atrae las monedas.
+  magnet: { emoji: '🧲', name: '¡Imán!' },
+  // Un muro de gelatina atrás: el que choca rebota (aguanta 3 golpes).
+  jelly: { emoji: '🟩', name: '¡Muro de gelatina!' },
+  // Un tornado que avanza por la pista y levanta a los que toca.
+  tornado: { emoji: '🌪️', name: '¡Tornado!' },
+  // ¡Súper brinco! Por encima de plátanos y peligros.
+  spring: { emoji: '🦘', name: '¡Resorte!' },
+  // Se le pega al de adelante y a los 3 segundos explota (pasársela chocando con otro).
+  sticky: { emoji: '🧨', name: '¡Bomba pegajosa!' },
 };
 
 // Como en Mario Kart: el que va adelante recibe cosas para defenderse
 // y los de atrás, cosas para alcanzar.
 const TABLES = {
-  front: { banana: 28, shield: 26, banana3: 18, rocket: 10, turbo: 5, ink: 5, ghost: 8 },
-  middle: { rocket: 22, banana: 12, turbo: 13, ink: 12, banana3: 8, shield: 8, comet: 5, lightning: 4, ghost: 7, star: 5, bee: 4 },
-  back: { turbo: 17, rocket: 18, comet: 12, lightning: 10, ink: 9, shield: 4, star: 12, bullet: 11, bee: 7 },
-  // En la batalla no hay pista para la bala ni primer lugar para la abeja.
-  battle: { rocket: 22, banana: 12, turbo: 12, ink: 10, banana3: 10, shield: 10, comet: 6, lightning: 6, ghost: 6, star: 6 },
+  front: { banana: 28, shield: 26, banana3: 18, rocket: 10, turbo: 5, ink: 5, ghost: 8, jelly: 12, spring: 6 },
+  middle: { rocket: 22, banana: 12, turbo: 13, ink: 12, banana3: 8, shield: 8, comet: 5, lightning: 4, ghost: 7, star: 5, bee: 4, magnet: 7, tornado: 6, sticky: 7, jelly: 5, spring: 5 },
+  back: { turbo: 17, rocket: 18, comet: 12, lightning: 10, ink: 9, shield: 4, star: 12, bullet: 11, bee: 7, magnet: 10, tornado: 8, sticky: 6, spring: 4 },
+  // En la batalla no hay pista para la bala ni primer lugar para la abeja (ni a quién jalar con el imán).
+  battle: { rocket: 22, banana: 12, turbo: 12, ink: 10, banana3: 10, shield: 10, comet: 6, lightning: 6, ghost: 6, star: 6, jelly: 7, tornado: 5, spring: 5, sticky: 8 },
 };
 
 // `place` es 0 para el primer lugar y 1 para el último (`battle`: los poderes de la batalla).
@@ -121,6 +131,15 @@ const BEE_HEIGHT = 4.5;
 const BEE_STING = 2.8;
 const BEE_LIFE_MS = 14000;
 const BEE_SIZE = 2.6;
+// Muro de gelatina: atravesado en el camino atrás del que lo suelta; el que choca rebota. Aguanta 3 golpes.
+const JELLY = { width: 7, height: 2.6, depth: 1.2, behind: 5, lifeMs: 20000, hits: 3, cooldownMs: 800, wobbleMs: 450 };
+// Tornado: avanza por la pista zigzagueando y levanta (y hace girar) a los que toca, a varios.
+const TORNADO = { speed: 38, lifeMs: 9000, reach: 2.8, lookahead: 7, weave: 6, size: 5 };
+// Bomba pegajosa: vuela hacia el de adelante, se le pega y explota a los 3 segundos (a él y a los de junto).
+// Chocando con otro kart se la pasas.
+const STICKY = { speed: 52, lifeMs: 5000, fuseMs: 3000, blast: 6.5, passMs: 600, size: 1.8 };
+// Saltando muy alto (resorte) no te pegan los plátanos ni los cohetes.
+const DODGE_HEIGHT = 2.5;
 
 // Cohetes que persiguen al de adelante, plátanos que se quedan en la pista y cometas que van por el primero.
 export class Projectiles {
@@ -145,6 +164,85 @@ export class Projectiles {
     } else {
       this.beeMaterial.color.setHex(0xffd02a);
     }
+    this.jellyGeometry = new THREE.BoxGeometry(JELLY.width, JELLY.height, JELLY.depth);
+    this.jellyMaterial = new THREE.MeshLambertMaterial({ color: 0x7bea5a, emissive: 0x2a6a1a, transparent: true, opacity: 0.75 });
+    this.tornadoMaterial = this.spriteMaterial('tornado', 0xb8c8d8);
+    this.stickyMaterial = this.spriteMaterial('bomba', 0x2a2a36);
+  }
+
+  // El dibujo de Gemini de un poder (o una bolita de ese color) que siempre ve a la cámara.
+  spriteMaterial(name, color) {
+    const material = new THREE.SpriteMaterial({ color: 0xffffff, depthWrite: false });
+    if (manifest.objetos.includes(name)) {
+      new THREE.TextureLoader().load(`kart/objetos/${name}.png`, (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        material.map = texture;
+        material.needsUpdate = true;
+      });
+    } else {
+      material.color.setHex(color);
+    }
+    return material;
+  }
+
+  // El muro de gelatina: atrás del que lo suelta, atravesado en el camino.
+  addJelly(owner) {
+    const mesh = new THREE.Mesh(this.jellyGeometry, this.jellyMaterial);
+    this.scene.add(mesh);
+    this.list.push({
+      kind: 'jelly',
+      owner,
+      mesh,
+      hits: JELLY.hits,
+      cooldown: new Map(),
+      wobbleMs: 0,
+      x: owner.x - Math.sin(owner.heading) * JELLY.behind,
+      z: owner.z - Math.cos(owner.heading) * JELLY.behind,
+      heading: owner.heading,
+      index: owner.index,
+      ageMs: 0,
+    });
+  }
+
+  // El tornado: sale adelante del que lo lanza.
+  addTornado(owner) {
+    const mesh = new THREE.Sprite(this.tornadoMaterial);
+    mesh.center.set(0.5, 0.1);
+    mesh.scale.setScalar(TORNADO.size);
+    this.scene.add(mesh);
+    this.list.push({
+      kind: 'tornado',
+      owner,
+      mesh,
+      stung: new Set(),
+      x: owner.x + Math.sin(owner.heading) * 4,
+      z: owner.z + Math.cos(owner.heading) * 4,
+      heading: owner.heading,
+      index: owner.index,
+      ageMs: 0,
+    });
+  }
+
+  // La bomba pegajosa: vuela hacia `target` (el de adelante; si no hay, derechito).
+  addSticky(owner, target) {
+    const mesh = new THREE.Sprite(this.stickyMaterial);
+    mesh.scale.setScalar(STICKY.size);
+    this.scene.add(mesh);
+    this.list.push({
+      kind: 'sticky',
+      owner,
+      target,
+      mesh,
+      stuck: null,
+      fuseMs: STICKY.fuseMs,
+      passMs: 0,
+      x: owner.x + Math.sin(owner.heading) * 3,
+      z: owner.z + Math.cos(owner.heading) * 3,
+      y: owner.y + 1.5,
+      heading: owner.heading,
+      index: owner.index,
+      ageMs: 0,
+    });
   }
 
   // La abeja: vuela por encima de todo hacia `target` (el primero).
@@ -234,6 +332,9 @@ export class Projectiles {
       p.ageMs += dtMs;
       if (p.kind === 'comet') return this.updateComet(p, dt, racers, track, onHit);
       if (p.kind === 'bee') return this.updateBee(p, dt, racers, track, onHit);
+      if (p.kind === 'jelly') return this.updateJelly(p, dtMs, racers, track, onHit);
+      if (p.kind === 'tornado') return this.updateTornado(p, dt, racers, track, onHit);
+      if (p.kind === 'sticky') return this.updateSticky(p, dtMs, racers, track, onHit);
       if (p.kind === 'rocket') {
         if (p.target && !p.target.finished) {
           const desired = Math.atan2(p.target.x - p.x, p.target.z - p.z);
@@ -254,7 +355,7 @@ export class Projectiles {
       // (En la carrera por equipos, lo de tu equipo no te hace nada.)
       const teammate = (r) => r !== p.owner && r.team !== undefined && r.team === p.owner.team;
       const canHit = (r) => !teammate(r) && (r !== p.owner || (p.kind === 'banana' && p.ageMs > OWNER_GRACE_MS));
-      const victim = racers.find((r) => canHit(r) && Math.hypot(r.x - p.x, r.z - p.z) < RACER_RADIUS + 0.8);
+      const victim = racers.find((r) => canHit(r) && r.y - r.floor < DODGE_HEIGHT && Math.hypot(r.x - p.x, r.z - p.z) < RACER_RADIUS + 0.8);
       if (victim) {
         onHit(victim, p);
         return this.remove(p);
@@ -310,6 +411,112 @@ export class Projectiles {
     return true;
   }
 
+  // El muro: el que lo toca rebota (el juego lo frena con onHit) y el muro tiembla; al tercer golpe se revienta.
+  updateJelly(p, dtMs, racers, track, onHit) {
+    if (p.ageMs > JELLY.lifeMs) return this.remove(p);
+    p.wobbleMs = Math.max(0, p.wobbleMs - dtMs);
+    const sin = Math.sin(p.heading);
+    const cos = Math.cos(p.heading);
+    for (const r of racers) {
+      const wait = p.cooldown.get(r) ?? 0;
+      if (wait > 0) {
+        p.cooldown.set(r, wait - dtMs);
+        continue;
+      }
+      if (r === p.owner && p.ageMs < OWNER_GRACE_MS) continue;
+      if (r.y - r.floor > JELLY.height) continue;
+      const dx = r.x - p.x;
+      const dz = r.z - p.z;
+      const along = dx * sin + dz * cos;
+      const side = dx * cos - dz * sin;
+      if (Math.abs(along) > JELLY.depth / 2 + RACER_RADIUS || Math.abs(side) > JELLY.width / 2 + RACER_RADIUS * 0.4) continue;
+      p.cooldown.set(r, JELLY.cooldownMs);
+      p.wobbleMs = JELLY.wobbleMs;
+      p.hits -= 1;
+      onHit(r, p);
+      if (p.hits <= 0) return this.remove(p);
+    }
+    const wobble = p.wobbleMs > 0 ? Math.sin(p.wobbleMs / 30) * 0.18 * (p.wobbleMs / JELLY.wobbleMs) : Math.sin(p.ageMs / 300) * 0.03;
+    p.mesh.scale.set(1 + wobble, 1 - wobble, 1 + wobble);
+    p.mesh.position.set(p.x, track.roadHeight(p.x, p.z, p.index) + (JELLY.height / 2) * (1 - wobble), p.z);
+    p.mesh.rotation.y = p.heading;
+    return true;
+  }
+
+  // El tornado sigue la pista zigzagueando de un lado al otro (en la arena va derecho).
+  updateTornado(p, dt, racers, track, onHit) {
+    if (p.ageMs > TORNADO.lifeMs) return this.remove(p);
+    if (!track.isArena) {
+      const aim = track.pointAt(p.index + TORNADO.lookahead, Math.sin(p.ageMs / 700) * TORNADO.weave);
+      p.heading = Math.atan2(aim.x - p.x, aim.z - p.z);
+    }
+    p.x += Math.sin(p.heading) * TORNADO.speed * dt;
+    p.z += Math.cos(p.heading) * TORNADO.speed * dt;
+    const near = track.closest(p.x, p.z, p.index);
+    p.index = near.index;
+    if (track.isArena && near.distance > track.wallDistance) return this.remove(p);
+    const teammate = (r) => r.team !== undefined && r.team === p.owner.team;
+    for (const r of racers) {
+      if (r === p.owner || teammate(r) || p.stung.has(r)) continue;
+      if (Math.hypot(r.x - p.x, r.z - p.z) < RACER_RADIUS + TORNADO.reach) {
+        p.stung.add(r);
+        onHit(r, p);
+      }
+    }
+    // Al salir y al acabarse se hace chiquito.
+    const grow = Math.min(1, p.ageMs / 300, (TORNADO.lifeMs - p.ageMs) / 400);
+    p.mesh.scale.set(TORNADO.size * grow * (1 + Math.sin(p.ageMs / 60) * 0.06), TORNADO.size * grow, 1);
+    p.mesh.material.rotation = Math.sin(p.ageMs / 90) * 0.12;
+    p.mesh.position.set(p.x, track.isArena ? 0 : track.roadHeight(p.x, p.z, p.index), p.z);
+    return true;
+  }
+
+  // La bomba: vuela al de adelante, se le pega encima y explota al acabarse la mecha. Si el que la trae choca con
+  // otro kart, se la pasa.
+  updateSticky(p, dtMs, racers, track, onHit) {
+    const dt = dtMs / 1000;
+    if (!p.stuck) {
+      if (p.ageMs > STICKY.lifeMs) return this.remove(p);
+      if (p.target && !p.target.finished) {
+        p.heading = Math.atan2(p.target.x - p.x, p.target.z - p.z);
+        p.y += (p.target.y + 1.5 - p.y) * Math.min(1, dt * 4);
+      }
+      p.x += Math.sin(p.heading) * STICKY.speed * dt;
+      p.z += Math.cos(p.heading) * STICKY.speed * dt;
+      p.index = track.closest(p.x, p.z, p.index).index;
+      const teammate = (r) => r.team !== undefined && r.team === p.owner.team;
+      const victim = racers.find((r) => r !== p.owner && !teammate(r) && Math.hypot(r.x - p.x, r.z - p.z) < RACER_RADIUS + 1);
+      if (victim) {
+        p.stuck = victim;
+        if (!victim.isCpu) victim.say('¡Se te pegó una bomba! 💣 ¡Chócala con otro!', 1600);
+      }
+      p.mesh.position.set(p.x, p.y + Math.abs(Math.sin(p.ageMs / 120)) * 0.6, p.z);
+      return true;
+    }
+    p.fuseMs -= dtMs;
+    p.passMs = Math.max(0, p.passMs - dtMs);
+    // Chocando con otro, se la pasa.
+    if (p.passMs === 0) {
+      const other = racers.find((r) => r !== p.stuck && Math.hypot(r.x - p.stuck.x, r.z - p.stuck.z) < RACER_RADIUS * 2.1);
+      if (other) {
+        if (!p.stuck.isCpu) p.stuck.say('¡Se la pasaste! 😜', 1100);
+        if (!other.isCpu) other.say('¡Te pasaron la bomba! 💣', 1300);
+        p.stuck = other;
+        p.passMs = STICKY.passMs;
+      }
+    }
+    const holder = p.stuck;
+    if (p.fuseMs <= 0) {
+      for (const r of racers) if (Math.hypot(r.x - holder.x, r.z - holder.z) < STICKY.blast) onHit(r, p);
+      return this.remove(p);
+    }
+    // Encima del kart, latiendo cada vez más rápido.
+    const beat = 1 + Math.abs(Math.sin(p.ageMs / (p.fuseMs > 1000 ? 140 : 60))) * 0.35;
+    p.mesh.scale.setScalar(STICKY.size * beat);
+    p.mesh.position.set(holder.x, holder.y + 3.6, holder.z);
+    return true;
+  }
+
   remove(p) {
     this.scene.remove(p.mesh);
     return false;
@@ -323,8 +530,21 @@ export class Projectiles {
   // Las piezas compartidas no siempre están en la escena al salir, así que se liberan aparte.
   dispose() {
     this.clear();
-    const shared = [this.rocketGeometry, this.rocketMaterial, this.bananaGeometry, this.bananaMaterial, this.cometGeometry, this.cometMaterial, this.cometGlow, this.beeMaterial];
-    this.beeMaterial.map?.dispose();
+    const shared = [
+      this.rocketGeometry,
+      this.rocketMaterial,
+      this.bananaGeometry,
+      this.bananaMaterial,
+      this.cometGeometry,
+      this.cometMaterial,
+      this.cometGlow,
+      this.beeMaterial,
+      this.jellyGeometry,
+      this.jellyMaterial,
+      this.tornadoMaterial,
+      this.stickyMaterial,
+    ];
+    for (const material of [this.beeMaterial, this.tornadoMaterial, this.stickyMaterial]) material.map?.dispose();
     for (const resource of shared) resource.dispose();
   }
 }

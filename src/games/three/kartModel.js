@@ -125,6 +125,73 @@ const BODIES = {
   },
 };
 
+// Los karts especiales (de la tienda), cada uno con su truco.
+Object.assign(BODIES, {
+  // Una moto: delgada, con dos llantas grandes, manubrio, tanque y escape.
+  moto(add) {
+    add(new RoundedBoxGeometry(0.8, 0.6, 2.4, 3, 0.22), 'paint', 0, 1.05, 0.15);
+    add(new RoundedBoxGeometry(0.72, 0.3, 1.0, 2, 0.12), DARK, 0, 1.4, -0.6);
+    add(new THREE.CylinderGeometry(0.07, 0.07, 1.1, 6).rotateX(-0.45), METAL, 0, 1.2, 1.3);
+    add(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6).rotateZ(Math.PI / 2), METAL, 0, 1.75, 1.05);
+    add(new THREE.SphereGeometry(0.22, 8, 6), LIGHT, 0, 1.45, 1.55);
+    add(new THREE.CylinderGeometry(0.11, 0.14, 0.8, 8).rotateX(Math.PI / 2), METAL, 0.36, 0.75, -1.15);
+    return {
+      wheels: [
+        { x: 0, z: 1.4, radius: 0.62 },
+        { x: 0, z: -1.25, radius: 0.62 },
+      ],
+      top: 1.45,
+      back: -1.6,
+      front: 1.85,
+      seat: [0, 1.35, -0.45],
+      side: [0.42, 1.05, 0.15, 1.7, 0.45],
+    };
+  },
+  // Un tanquecito: orugas a los lados y una torreta con cañón adelante; el piloto va atrás de la torreta.
+  tanque(add) {
+    for (const side of [-1, 1]) add(new RoundedBoxGeometry(0.75, 0.8, 3.5, 3, 0.32), DARK, side * 1.22, 0.42, 0);
+    add(new RoundedBoxGeometry(2.0, 0.6, 3.0, 3, 0.2), 'paint', 0, 0.95, 0);
+    add(new THREE.CylinderGeometry(0.72, 0.82, 0.55, 14), 'paint', 0, 1.5, 0.75);
+    add(new THREE.CylinderGeometry(0.17, 0.17, 1.8, 10).rotateX(Math.PI / 2), METAL, 0, 1.55, 1.95);
+    for (const side of [-1, 1]) add(new THREE.SphereGeometry(0.16, 8, 6), LIGHT, side * 0.6, 1.05, 1.5);
+    const wheels = [-1.22, 1.22].flatMap((x) => [1.2, 0.4, -0.4, -1.2].map((z) => ({ x, z, radius: 0.34 })));
+    return { wheels, top: 1.3, back: -1.75, front: 2.85, seat: [0, 1.22, -0.65], side: [1.6, 0.45, 0, 2.6, 0.5] };
+  },
+  // Una nave flotante: platillo con lucecitas y un brillo abajo; no tiene llantas (flota: el pasto no la frena).
+  nave(add) {
+    add(new THREE.CylinderGeometry(1.75, 1.15, 0.45, 20), 'paint', 0, 0.85, 0);
+    add(new THREE.CylinderGeometry(1.8, 1.8, 0.12, 20), METAL, 0, 1.05, 0);
+    for (let k = 0; k < 10; k += 1) {
+      const a = (k / 10) * Math.PI * 2;
+      add(new THREE.SphereGeometry(0.15, 8, 6), k % 2 ? 0x3fe0ff : 0xffe14d, Math.cos(a) * 1.78, 1.05, Math.sin(a) * 1.78);
+    }
+    add(new THREE.ConeGeometry(0.95, 0.5, 16).rotateX(Math.PI), 0x3fe0ff, 0, 0.42, 0);
+    cockpit(add, 1.15, 0.05);
+    return { wheels: [], top: 1.15, back: -1.75, front: 1.75, seat: [0, 1.05, -0.15], side: [1.62, 0.85, 0, 1.6, 0.3] };
+  },
+  // Un carrito de bebé: canasta con su capota doblada atrás, agarradera y llantotas atrás (chiquitas adelante).
+  bebe(add) {
+    add(new RoundedBoxGeometry(1.75, 0.95, 2.3, 4, 0.42), 'paint', 0, 1.25, 0);
+    add(new THREE.SphereGeometry(0.85, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.55, 0.8), 0xffffff, 0, 1.68, -1.0);
+    add(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 6).rotateX(0.55), METAL, 0, 2.0, -1.6);
+    add(new THREE.CylinderGeometry(0.06, 0.06, 1.3, 6).rotateZ(Math.PI / 2), METAL, 0, 2.55, -1.95);
+    for (const side of [-1, 1]) add(new THREE.SphereGeometry(0.12, 8, 6), 0xffc93c, side * 0.5, 1.7, 1.12);
+    return {
+      wheels: [
+        { x: -0.95, z: 0.85, radius: 0.32 },
+        { x: 0.95, z: 0.85, radius: 0.32 },
+        { x: -0.95, z: -0.8, radius: 0.58 },
+        { x: 0.95, z: -0.8, radius: 0.58 },
+      ],
+      top: 1.7,
+      back: -1.3,
+      front: 1.3,
+      seat: [0, 1.35, 0.05],
+      side: [0.89, 1.25, 0, 1.8, 0.6],
+    };
+  },
+});
+
 // Asiento bajito (atrás del piloto, para no taparlo desde atrás) y volante (adelante).
 function cockpit(add, top, z) {
   add(new RoundedBoxGeometry(1.1, 0.45, 0.28, 2, 0.1), DARK, 0, top + 0.12, z - 0.5);
@@ -136,7 +203,7 @@ function corners(x, z, radius) {
 }
 
 // Un carrito que mira hacia +z. Opciones (todas tienen valor de siempre):
-//   type: clasico | bolido | mini | monstruo | cohete | tina | pato
+//   type: clasico | bolido | mini | monstruo | cohete | tina | pato | moto | tanque | nave | bebe
 //   wheels: normales | doradas | colores | blancas | fuego | neon
 //   extra: aleron | bandera | cuernos | antena | corona | cohetes | globo | nada
 //   decal: textura de la calcomanía de los lados (o null)

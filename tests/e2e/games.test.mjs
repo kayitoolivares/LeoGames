@@ -1460,6 +1460,8 @@ test('karts locos: tienda del taller', { timeout: ms(120000) }, async () => {
   await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'garage', ms(30000), 'ver el taller');
   await p.tap(0, BUTTON.X);
   await p.until(() => Boolean(document.querySelector('.kart-shop')), ms(5000), 'abrir la tienda');
+  // (Primero vienen las 3 mejoras; luego el Cohete.)
+  for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.A);
   const state = () => p.page.evaluate(() => import('/src/games/kart/karts.js').then((m) => ({ coins: m.wallet.get(), cohete: m.owns('type', 'cohete') })));
   assert.deepEqual(await state(), { coins: 10, cohete: true });
@@ -1706,6 +1708,126 @@ test('karts locos: aventura con retos y jefe', { timeout: ms(150000) }, async ()
   });
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'results', ms(5000), 'ganarle al jefe');
   assert.ok((await stickers(p.page)).includes('kart-jefe'), 'ganarle al jefe da su calcomanía');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Poderes nuevos: el resorte te avienta muy alto, el muro de gelatina rebota, el tornado levanta, la bomba pegajosa
+// se le pega al de adelante y explota, y el imán jala.
+test('karts locos: poderes nuevos (resorte, gelatina, tornado, bomba pegajosa e imán)', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(30000), 'empezar');
+  const kart = (fn, arg) => p.page.evaluate(fn, arg);
+  // Le da un poder al jugador y lo usa con X.
+  const use = async (item) => {
+    await kart((it) => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      k.racers.forEach((r) => (r.shieldMs = 0));
+      Object.assign(k.humans[0], { item: it, itemUses: 1, rollMs: 0, spinMs: 0 });
+    }, item);
+    await p.tap(0, BUTTON.X);
+  };
+  // Pone a un kart de la compu `ahead` unidades adelante del jugador, quieto.
+  const cpuAhead = (ahead) =>
+    kart((a) => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      const h = k.humans[0];
+      const cpu = k.racers[1];
+      Object.assign(cpu, { x: h.x + Math.sin(h.heading) * a, z: h.z + Math.cos(h.heading) * a, speed: 0, spinMs: 0, shieldMs: 0, starMs: 0, ghostMs: 0, bulletMs: 0 });
+      cpu.update = () => {};
+      window.__cpu = cpu;
+    }, ahead);
+
+  await use('spring');
+  await p.until(() => {
+    const h = window.leogames.scene.getScene('Kart').game3d.humans[0];
+    return h.y - h.floor > 2.5;
+  }, ms(3000), 'brincar muy alto con el resorte');
+
+  await use('jelly');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.projectiles.list.some((pr) => pr.kind === 'jelly'), ms(3000), 'soltar la gelatina');
+  await kart(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const wall = k.projectiles.list.find((pr) => pr.kind === 'jelly');
+    const cpu = k.racers[2];
+    Object.assign(cpu, { x: wall.x - Math.sin(wall.heading) * 3, z: wall.z - Math.cos(wall.heading) * 3, heading: wall.heading, speed: 25, spinMs: 0 });
+    window.__wall = wall;
+  });
+  // (El rebote dura un instante: se ve en que al muro le queda un golpe menos.)
+  await p.until(() => window.__wall.hits < 3, ms(3000), 'rebotar en la gelatina');
+
+  await cpuAhead(14);
+  await use('tornado');
+  await p.until(() => window.__cpu.spinMs > 0, ms(5000), 'que el tornado tumbe al de adelante');
+
+  await kart(() => (window.__cpu.spinMs = 0));
+  await cpuAhead(16);
+  await use('sticky');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.projectiles.list.some((pr) => pr.kind === 'sticky' && pr.stuck === window.__cpu), ms(5000), 'que se le pegue la bomba');
+  await kart(() => {
+    const bomb = window.leogames.scene.getScene('Kart').game3d.projectiles.list.find((pr) => pr.kind === 'sticky');
+    bomb.fuseMs = 50;
+  });
+  await p.until(() => window.__cpu.spinMs > 0, ms(3000), 'que explote la bomba');
+
+  await use('magnet');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].magnetMs > 0, ms(3000), 'prender el imán');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Karts especiales, mejoras y kart para dos: en la tienda se compra el motor y la moto; el Jugador 2 se sube de
+// copiloto (LB) y avienta los poderes; con Y la moto hace caballito.
+test('karts locos: tienda con mejoras, moto con caballito y kart para dos', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('kartWallet', 1000)));
+  await p.joinPlayers(2);
+  await p.openGameCard('Karts locos');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'garage', ms(30000), 'ver el taller');
+  // La tienda: lo primero es el motor; la moto es la séptima (3 mejoras, luego cohete, tina, pato y moto).
+  await p.tap(0, BUTTON.X);
+  await p.tap(0, BUTTON.A);
+  for (let i = 0; i < 6; i += 1) await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.tap(0, BUTTON.B);
+  const saved = await p.page.evaluate(() => ({
+    upgrades: JSON.parse(localStorage.getItem('leogames:kartMejoras')),
+    owned: JSON.parse(localStorage.getItem('leogames:kartOwned')),
+  }));
+  assert.equal(saved.upgrades.motor, 1, 'motor nivel 1');
+  assert.ok(saved.owned.includes('type:moto'), 'se compró la moto');
+  // El Jugador 1 escoge la moto (↓ al renglón del kart y ▶ hasta la moto); el Jugador 2 se sube de copiloto.
+  await p.tap(0, BUTTON.DOWN);
+  for (let i = 0; i < 4; i += 1) await p.tap(0, BUTTON.RIGHT);
+  await p.tap(1, BUTTON.LB);
+  await passGarage(p, 2);
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(30000), 'empezar');
+  const state = await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const h = k.humans[0];
+    return { humans: k.humans.length, type: h.setup.type, gunner: h.gunner?.label, passenger: Boolean(h.passenger), maxSpeed: h.stats.maxSpeed, cpu: k.racers[1].stats.maxSpeed };
+  });
+  assert.equal(state.humans, 1, 'los dos van en un kart');
+  assert.equal(state.type, 'moto');
+  assert.equal(state.gunner, 'J2');
+  assert.ok(state.passenger, 'el copiloto se ve en el kart');
+  // El motor: la moto (velocidad 3) con motor nivel 1 va más rápido que cualquier kart normal.
+  assert.ok(state.maxSpeed > 41.5, `con el motor va más rápido (${state.maxSpeed})`);
+  // El copiloto (control 2) avienta el plátano con X.
+  await p.page.evaluate(() => Object.assign(window.leogames.scene.getScene('Kart').game3d.humans[0], { item: 'banana', itemUses: 1, rollMs: 0 }));
+  await p.tap(1, BUTTON.X);
+  // (El de atrás lo puede pisar luego luego: se ve en que ya no trae el plátano.)
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].item === null, ms(3000), 'que el copiloto avienta el plátano');
+  // Y = caballito de la moto.
+  await p.tap(0, BUTTON.Y);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].wheelieMs > 0, ms(3000), 'hacer caballito');
   await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.deepEqual(p.errors, []);
   await p.context.close();
