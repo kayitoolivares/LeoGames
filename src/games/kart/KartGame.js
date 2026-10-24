@@ -18,7 +18,7 @@ import { Arena, Battle, BATTLE_KINDS, BATTLE_KIND_KEYS, BATTLE_RACERS } from './
 import { Ceremony } from './ceremony.js';
 import { Coins } from './coins.js';
 import { Particles } from './particles.js';
-import { DriverArt, driverView } from './drivers.js';
+import { DriverArt, characterImageUrl, driverView } from './drivers.js';
 import { TrackFeatures } from './features.js';
 import { Hazards } from './hazards.js';
 import { Garage } from './garage.js';
@@ -27,7 +27,8 @@ import { Snowfall, addScenery, addSnowmen } from './scenery.js';
 import { CUPS, CUP_KEYS, CUP_POINTS, TRACKS, TRACK_KEYS } from './tracks.js';
 import { Shortcut } from './shortcut.js';
 import { WEATHERS, WEATHER_KEYS, Weather } from './weather.js';
-import { GhostKart, GhostRecorder, TIME_TRIAL_LAPS, formatTime, loadRecord, recordKey, saveRecord } from './ghost.js';
+import { GhostKart, GhostRecorder, MEDAL_NAMES, TIME_TRIAL_LAPS, cupMedals, formatTime, loadRecord, recordKey, saveRecord, trackRecords } from './ghost.js';
+import { Crowd } from './crowd.js';
 import { FinishReplay } from './replay.js';
 import { LESSONS, LESSON_KEYS, Lesson, MEDALS, goalsText, schoolMedals } from './school.js';
 import { BOSSES, WORLDS, adventure, nextStage, stagePassed } from './adventure.js';
@@ -119,6 +120,8 @@ const ITEM_ART = {
 };
 // Imán: cuánto dura, de qué tan lejos jala y el turbito mientras jala. Resorte: qué tan alto brinca.
 const MAGNET = { ms: 6000, reach: 50, boost: 1.28 };
+// Turbo de equipo (kart para dos): los dos echan nitro con menos de `windowMs` de diferencia.
+const TEAM_TURBO = { windowMs: 400, factor: 1.75, ms: 2200 };
 const SPRING_JUMP = 21;
 const ITEM_ICONS = Object.fromEntries(
   Object.entries(ITEMS).map(([key, item]) => [
@@ -132,7 +135,15 @@ const EVENT_MESSAGES = {
   turbo1: '¡Mini turbo!',
   turbo2: '¡Súper turbo!',
   turbo3: '¡Ultra turbo!',
+  turbo4: '¡Turbo arcoíris! 🌈',
+  spark4: '¡Chispas de arcoíris! 🌈',
   trick: '¡Truco! 🤸',
+  'trick-flip': '¡Mortal! 🤸',
+  'trick-back': '¡Mortal para atrás! 🤸',
+  'trick-roll': '¡Vuelta de lado! 🌀',
+  'trick-rollLeft': '¡Vuelta de lado! 🌀',
+  'trick-spin': '¡Giro! 💫',
+  combo: '¡Combo de trucos! 🔥',
   glide: '¡A volar! 🪂',
   draft: '¡Rebufo! 💨',
 };
@@ -142,6 +153,13 @@ const CPU_TRICK = 0.06;
 const CPU_INK_WOBBLE = 0.6;
 // Encogido por el rayo, si te toca un kart normal te aplasta (si va a esta velocidad o más).
 const SQUASH_SPEED = 10;
+
+// La medalla de una copa (dibujo de Gemini o emoji) para su tarjeta.
+function medalHtml(medal) {
+  if (medal === null) return '';
+  const name = `medalla-${MEDAL_NAMES[medal]}`;
+  return manifest.extras?.includes(name) ? `<br><img src="kart/extras/${name}.png" alt="" style="height:44px">` : `<br>${['🥇', '🥈', '🥉'][medal]}`;
+}
 
 // La última pista que se escogió, para que salga seleccionada la próxima vez.
 let lastTrack = 'pradera';
@@ -431,8 +449,14 @@ export class KartGame {
     const custom = customLook();
     if (custom) TRACKS[CUSTOM_KEY] = custom;
     const keys = custom ? [...TRACK_KEYS, CUSTOM_KEY] : TRACK_KEYS;
+    // El récord de cada pista (con las vueltas que se van a correr).
+    const recordOf = (key) => {
+      const record = trackRecords.get(key, options.laps);
+      return record ? `⏱️ ${formatTime(record.ms)} · ${record.name}` : undefined;
+    };
     const cards = keys.map((key) => ({
       ...TRACKS[key],
+      info: recordOf(key),
       open: key === CUSTOM_KEY || this.openTracks.includes(key),
       lock: TRACKS[key].unlock ? UNLOCKS[TRACKS[key].unlock].label : '',
       outline: trackOutline(TRACKS[key]),
@@ -458,7 +482,7 @@ export class KartGame {
         emoji: manifest.copas?.includes(cup.image) ? `<img src="kart/copas/${cup.image}.png" alt="" style="height:64px">` : cup.emoji,
         open: rewards.unlocked(cup.unlock),
         lock: cup.unlock ? UNLOCKS[cup.unlock].label : '',
-        info: cup.tracks.map((track) => `${TRACKS[track].emoji} ${TRACKS[track].name}`).join('<br>'),
+        info: `${cup.tracks.map((track) => `${TRACKS[track].emoji} ${TRACKS[track].name}`).join('<br>')}${medalHtml(cupMedals.get(key))}`,
       };
     });
     this.choose(
@@ -565,6 +589,8 @@ export class KartGame {
     } else {
       this.scenery = addScenery(this.scene, this.track, look.scenery);
     }
+    // Las gradas con su público, el helicóptero de la tele, el dirigible y los globos (en la escuela no).
+    this.crowd = this.lessonKey ? null : new Crowd(this.scene, this.track);
     const pads = this.mirror ? look.pads.map(([at, lane]) => [at, -lane]) : look.pads;
     this.features = new TrackFeatures(this.scene, this.track, { pads, ramps: look.ramps, gliders: look.gliders, water: look.water });
     this.coins = new Coins(this.scene, this.track);
@@ -693,7 +719,7 @@ export class KartGame {
   // A = otra batalla, B = otra clase de batalla, X = taller.
   updateBattleResults() {
     if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
-    const pressed = (button) => this.humans.some((racer) => controls.justPressed(racer.deviceId, button));
+    const pressed = (button) => this.deviceIds.some((id) => controls.justPressed(id, button));
     if (pressed('a')) {
       this.startBattle();
     } else if (pressed('b')) {
@@ -901,6 +927,7 @@ export class KartGame {
     this.lapTimes = new Map(this.racers.map((racer) => [racer, []]));
     for (const racer of this.racers) racer.planShortcut = false;
     if (this.timeTrial) this.startTimeTrial();
+    else if (!this.lessonKey && !this.battle) this.startRecordGhost();
     if (this.elimination) this.startElimination();
     if (this.lessonKey) this.startLesson();
     if (this.stageData) this.startStage();
@@ -950,7 +977,7 @@ export class KartGame {
     const rows = this.lesson.results().map(({ racer, medal, text }) => ({
       label: racer.label,
       color: hexToCss(racer.color),
-      name: racer.driver.name,
+      name: racer.displayName,
       image: racer.driver.imageUrl,
       total: text,
       gainText: medal === null ? '😅' : MEDALS[medal].emoji,
@@ -1028,6 +1055,14 @@ export class KartGame {
   }
 
   // Contrarreloj: se graba la carrera de cada jugador y corre el fantasma del récord (si hay).
+  // En las carreras normales también corre (transparente) el fantasma del récord del contrarreloj, si hay.
+  startRecordGhost() {
+    this.ghost?.dispose(this.scene);
+    const record = loadRecord(recordKey(this.trackKey, this.mirror));
+    this.ghost = record ? new GhostKart(this.scene, record) : null;
+    this.ghost?.update(0);
+  }
+
   startTimeTrial() {
     this.recordKey = recordKey(this.trackKey, this.mirror);
     this.record = loadRecord(this.recordKey);
@@ -1058,6 +1093,7 @@ export class KartGame {
     }
     this.snow?.update(dtMs / 1000);
     this.scenery?.update(dtMs / 1000);
+    this.crowd?.update(dtMs, this.racers ?? [], this.lastFirst ?? this.racers?.[0]);
     if (this.phase === 'replay') {
       this.updateReplay(dtMs);
       this.particles?.update(dtMs);
@@ -1129,6 +1165,7 @@ export class KartGame {
       if (offroad) this.kickDust(racer);
       if (input.useItem) this.useItem(racer, ranking);
       if (input.special) this.useSpecial(racer, ranking);
+      if (input.teamTurbo) this.teamTurbo(racer);
       if (input.change) racer.driver.changeNumber(input.change);
       this.updateShortcut(racer);
       this.keepInside(racer);
@@ -1313,6 +1350,18 @@ export class KartGame {
     }
   }
 
+  // ¿El piloto y el copiloto apretaron RB casi al mismo tiempo? (para el turbo de equipo)
+  bothPressed(racer, id, gunner) {
+    const now = performance.now();
+    if (controls.justPressed(id, 'rb')) racer.driverRbAt = now;
+    if (controls.justPressed(gunner, 'rb')) racer.gunnerRbAt = now;
+    const together = Math.abs((racer.driverRbAt ?? -1e9) - (racer.gunnerRbAt ?? 1e9)) < TEAM_TURBO.windowMs;
+    if (!together) return false;
+    racer.driverRbAt = null;
+    racer.gunnerRbAt = null;
+    return true;
+  }
+
   humanInput(racer) {
     const id = racer.deviceId;
     // En el kart para dos el copiloto avienta los poderes (y también puede echar nitro).
@@ -1325,12 +1374,15 @@ export class KartGame {
       gas: (peque && !brake) || controls.isDown(id, 'a') || controls.isDown(id, 'rt') ? 1 : 0,
       brake,
       nitro: controls.justPressed(id, 'rb') || (gunner ? controls.justPressed(gunner, 'rb') : false),
+      teamTurbo: gunner ? this.bothPressed(racer, id, gunner) : false,
       useItem: controls.justPressed(gunner ?? id, 'x'),
       // Y: el truco de los karts especiales (Bloquecito usa la Y para cambiar de número).
       special: controls.justPressed(id, 'y') && Boolean(KART_TYPES[racer.setup.type]?.special) && !isBlockCharacter(racer.setup.character),
       // LB: derrapar (mantener en la curva) y truco (apretarlo en el aire).
       drift: controls.isDown(id, 'lb'),
       trick: controls.justPressed(id, 'lb'),
+      // ↑ mortal, ↓ mortal para atrás (en el aire).
+      trickY: controls.getStick(id).y,
       // Bloquecito cambia de número (Y sube, ↓ + Y baja).
       change: numberStep(id),
     };
@@ -1388,7 +1440,19 @@ export class KartGame {
     if (now - (first.firstSaidAt ?? -Infinity) < FIRST_PLACE_SAY_MS) return;
     first.firstSaidAt = now;
     first.say('¡Vas en primero! 🥇', 1500);
+    first.setMood('feliz', 1800);
+    this.crowd?.cheer(1500);
+    // ¡Rebasó al primero!: confeti.
+    this.particles.burst('confetti', first.x, first.y + 3, first.z, 30, CONFETTI_COLORS, { speed: 7, up: 9, lifeMs: 1400 });
     if (this.humans.length === 1) say('¡Vas en primer lugar!');
+  }
+
+  // La carita del piloto en su panel: le duele, festeja, feliz o enojado un ratito, o la de siempre.
+  faceHtml(racer) {
+    const character = racer.setup.character;
+    const pose = racer.spinMs > 0 ? 'dolor' : racer.finished ? 'gana' : racer.moodMs > 0 ? `frente_${racer.mood}` : 'frente';
+    const url = characterImageUrl(character, pose) ?? characterImageUrl(character, 'frente') ?? characterImageUrl(character, 'normal');
+    return url ? `<img src="${url}" alt="">` : '';
   }
 
   // Sonido y letrero de lo que le pasó a un jugador (a la compu no, para no llenar todo de ruido).
@@ -1401,10 +1465,12 @@ export class KartGame {
     if (event === 'pad' || event === 'draft' || event.startsWith('turbo')) sfx.boost();
     else if (event === 'glide') sfx.boing();
     else if (event === 'jump') sfx.jump();
-    else if (event === 'trick') sfx.special();
+    else if (event === 'trick' || event.startsWith('trick-') || event === 'combo') sfx.special();
     else if (event.startsWith('spark')) sfx.count(Number(event.slice(5)) * 3);
     const message = event === 'pad' ? '¡Turbo!' : EVENT_MESSAGES[event];
     if (message) racer.say(message, 800);
+    // Trucos y turbos grandes: cara de feliz.
+    if (event.startsWith('trick-') || event === 'combo' || event === 'turbo3' || event === 'turbo4') racer.setMood('feliz', 1300);
   }
 
   cpuWantsItem(racer, ranking) {
@@ -1572,6 +1638,15 @@ export class KartGame {
     sfx.throw();
   }
 
+  // Kart para dos: si el piloto y el copiloto echan nitro casi al mismo tiempo, ¡turbo de equipo! (más fuerte y largo).
+  teamTurbo(racer) {
+    racer.boost(TEAM_TURBO.factor, TEAM_TURBO.ms);
+    racer.setMood('feliz', 1500);
+    this.particles.burst('spark', racer.x, racer.y + 1.5, racer.z, 18, [0xffd02a, 0xff5a5f, 0x3fa7ff], { speed: 8, up: 6, lifeMs: 600 });
+    sfx.boost();
+    racer.say('¡Turbo de equipo! 🤝🔥', 1300);
+  }
+
   // El truco de los karts especiales (Y): la moto hace caballito (turbo), el tanquecito echa un cañonazo derechito,
   // la nave da un salto y el carrito de bebé llora tan fuerte que avienta a los que tiene cerca.
   useSpecial(racer, ranking) {
@@ -1637,6 +1712,9 @@ export class KartGame {
     // El tornado además lo levanta por los aires.
     if (projectile.kind === 'tornado' && !victim.invincible && victim.shieldMs === 0) victim.launch(11);
     const hurt = victim.hit();
+    // Caras: enojado el que recibió, feliz el que le pegó.
+    if (hurt) victim.setMood('enojado', 2800);
+    if (hurt && projectile.owner !== victim) projectile.owner.setMood?.('feliz', 1800);
     if (hurt) this.particles.burst('spark', victim.x, victim.y + 1.5, victim.z, 22, HIT_COLORS, { speed: 10, up: 9 });
     // Si le pegan a un jugador (o un jugador le pega a alguien), el golpe se siente: todo se congela un instante.
     if (hurt && (!victim.isCpu || !projectile.owner.isCpu)) setTimeScale(0, 70);
@@ -1655,6 +1733,7 @@ export class KartGame {
     if (!this.hazards) return;
     const events = this.hazards.update(dtMs, now, this.racers, (racer, hazards) => {
       const hurt = racer.hit();
+      if (hurt) racer.setMood('enojado', 2500);
       if (hurt) this.particles.burst('spark', racer.x, racer.y + 1.5, racer.z, 12, HIT_COLORS);
       if (racer.isCpu || (!hurt && racer.invincible)) return;
       if (hurt) sfx.hit(0.7);
@@ -1740,6 +1819,8 @@ export class KartGame {
       }
       if (this.finishOrder.length === 1 && !this.timeTrial) this.talk.line(`¡${nameOf(racer)} cruza la meta en primer lugar!`, { important: true });
       if (!racer.isCpu && this.finishOrder.length === 1 && !this.timeTrial) rewards.earn('kart-gana');
+      // ¡Porras en las gradas!
+      this.crowd?.cheer(2500);
       if (!racer.isCpu) {
         if (this.firstHumanFinishMs === null) this.firstHumanFinishMs = this.raceMs;
         racer.say(`¡Meta! ${this.finishOrder.length}° lugar`, 5000);
@@ -1845,7 +1926,7 @@ export class KartGame {
       this.showTimeTrial();
       return;
     }
-    const note = this.payout(ranking);
+    let note = this.payout(ranking);
     this.talk?.finish(ranking);
     if (this.gp) {
       this.showStandings(ranking, note);
@@ -1858,9 +1939,15 @@ export class KartGame {
     const rows = ranking.map((racer) => ({
       label: racer.label,
       color: hexToCss(racer.color),
-      name: `${racer.driver.name}${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}`,
+      name: `${racer.displayName}${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}`,
       image: racer.driver.imageUrl,
     }));
+    // ¿Récord de la pista? (el mejor tiempo de un jugador, en una carrera normal completa)
+    const best = this.elimination ? null : ranking.filter((racer) => !racer.isCpu && racer.finished).sort((a, b) => a.finishMs - b.finishMs)[0];
+    if (best && trackRecords.save(this.trackKey, this.laps, this.mirror, { ms: best.finishMs, name: best.displayName, character: best.setup.character })) {
+      note = `🏆 ¡Récord de la pista! ${formatTime(best.finishMs)} · ${note}`;
+      best.say('¡Récord de la pista! 🏆', 3000);
+    }
     if (this.teams) {
       // Puntos de cada equipo (como en el Gran Premio: 10, 8, 6, 4, 2, 1).
       const points = [0, 0];
@@ -1882,7 +1969,7 @@ export class KartGame {
     this.stageWon = stagePassed(stage, ranking, this.humans, this.rivalRacer);
     if (this.stageWon) adventure.complete(this.stage.world, this.stage.stage);
     const next = this.stageWon ? nextStage(this.stage) : null;
-    const rows = ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color), name: racer.driver.name, image: racer.driver.imageUrl }));
+    const rows = ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color), name: racer.displayName, image: racer.driver.imageUrl }));
     const footer = `${next ? 'A = siguiente reto' : 'A = otra vez'}  ·  B = mapa de la aventura  ·  X = taller`;
     this.hud.showResults(rows, {
       title: this.stageWon ? `✅ ¡Reto superado! ${stage.emoji}` : `❌ ¡Casi! ${stage.emoji}`,
@@ -1911,7 +1998,7 @@ export class KartGame {
     const rows = runs.map(({ racer, ms, lap }) => ({
       label: racer.label,
       color: hexToCss(racer.color),
-      name: racer.driver.name,
+      name: racer.displayName,
       image: racer.driver.imageUrl,
       total: ms === null ? '—' : formatTime(ms),
       gainText: Number.isFinite(lap) ? `mejor vuelta ${formatTime(lap)}` : '',
@@ -1946,7 +2033,7 @@ export class KartGame {
       .map((racer, i) => ({
         label: racer.label,
         color: hexToCss(racer.color),
-        name: racer.driver.name,
+        name: racer.displayName,
         image: racer.driver.imageUrl,
         total: this.gp.points[i],
         gained: gained.get(racer),
@@ -1961,6 +2048,12 @@ export class KartGame {
     }
     const winner = rows[0];
     if (winner.human) rewards.earn('kart-copa');
+    // La medalla de la copa: según el mejor lugar de un jugador (1° oro, 2° plata, 3° bronce).
+    const place = rows.findIndex((row) => row.human);
+    if (place >= 0 && place < 3) {
+      const better = cupMedals.save(this.gp.cup, place);
+      note = `${['🥇', '🥈', '🥉'][place]} Medalla de ${MEDAL_NAMES[place]}${better ? ' ¡nueva!' : ''} · ${note}`;
+    }
     const trophy = manifest.copas?.includes(cup.image) ? `kart/copas/${cup.image}.png` : null;
     const byPoints = this.racers.map((racer, i) => [racer, this.gp.points[i]]).sort((a, b) => b[1] - a[1]).map(([racer]) => racer);
     this.startCeremony(byPoints, trophy);
@@ -1978,7 +2071,8 @@ export class KartGame {
   // En el Gran Premio: A = siguiente carrera (y al final, otra copa; X = taller).
   updateResults() {
     if (this.phaseMs < RESULTS_INPUT_DELAY_MS) return;
-    const pressed = (button) => this.humans.some((racer) => controls.justPressed(racer.deviceId, button));
+    // (Cualquier jugador, también el copiloto del kart para dos.)
+    const pressed = (button) => this.deviceIds.some((id) => controls.justPressed(id, button));
     if (this.gp) {
       if (pressed('a')) {
         resume = this.gp.last ? { to: 'cups' } : { gp: { ...this.gp, race: this.gp.race + 1 } };
@@ -2034,6 +2128,7 @@ export class KartGame {
         who: `<span style="color:${hexToCss(racer.color)}">${racer.label}${racer.gunner ? `+${racer.gunner.label}` : ''}</span>${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
         lap: lesson?.lap ?? battle?.lap ?? elimination ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
         coins: this.battle ? '' : `🪙 ${racer.coins}`,
+        face: this.faceHtml(racer),
         item,
         rolling,
         nitro: Array.from({ length: NITRO_CHARGES }, (_, k) => `<span class="${k < racer.nitro ? '' : 'off'}">🔥</span>`).join(''),
@@ -2180,6 +2275,7 @@ export class KartGame {
     music.setTempo(1);
     this.lesson?.dispose();
     this.living?.dispose();
+    this.crowd?.dispose();
     this.editor?.destroy();
     this.projectiles?.dispose();
     this.features?.dispose();

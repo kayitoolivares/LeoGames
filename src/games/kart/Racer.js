@@ -17,19 +17,21 @@ const NITRO_REFILL_MS = 4000;
 const SPIN_MS = 1100;
 export const SHIELD_MS = 8000;
 export const RACER_RADIUS = 1.7;
-// Derrape: con LB apretado en una curva se desliza de lado y junta chispas (azules, naranjas y moradas);
-// al soltarlo da un turbito más largo entre más chispas juntó.
+// Derrape: con LB apretado en una curva se desliza de lado y junta chispas (azules, naranjas, moradas y, si
+// aguantas mucho, de arcoíris); al soltarlo da un turbito más largo entre más chispas juntó.
 const DRIFT_MIN_SPEED = 16;
 const DRIFT_TURN = { min: 0.55, max: 1.25 };
 const DRIFT_YAW = 0.38;
-const DRIFT_LEVEL_MS = [700, 1500, 2400];
-const MINI_TURBOS = [null, { factor: 1.2, ms: 600 }, { factor: 1.3, ms: 900 }, { factor: 1.4, ms: 1300 }];
-export const SPARK_COLORS = [null, 0x5ab8ff, 0xff9a3c, 0xd36bff];
-// En el aire (al saltar una rampa): gravedad y qué tanto se puede girar. Con LB en el aire hace un truco
-// (una vuelta de lado) y al caer le da un turbito.
+const DRIFT_LEVEL_MS = [700, 1500, 2400, 3400];
+const MINI_TURBOS = [null, { factor: 1.2, ms: 600 }, { factor: 1.3, ms: 900 }, { factor: 1.4, ms: 1300 }, { factor: 1.55, ms: 1900 }];
+// (El arcoíris va cambiando de color: ver rainbow().)
+export const SPARK_COLORS = [null, 0x5ab8ff, 0xff9a3c, 0xd36bff, 0xff5af0];
+// En el aire (al saltar una rampa): gravedad y qué tanto se puede girar. Con LB en el aire hace un truco según
+// hacia dónde apunte el stick: ↑ mortal, ↓ mortal para atrás, ◀ ▶ vuelta de lado y nada, un giro. Si alcanza,
+// otro truco más (combo). Al caer le da un turbito, más grande con cada truco.
 const GRAVITY = 28;
 const AIR_STEER = 0.4;
-const TRICK_BOOST = { factor: 1.3, ms: 800 };
+const TRICK_BOOST = { factor: 1.3, ms: 800, perTrick: { factor: 0.08, ms: 350 } };
 const TRICK_SPIN_MS = 420;
 // En las bajadas el kart se queda pegado al camino si la diferencia es poca (si no, iría "volando" todo el tiempo).
 const STICK = 0.6;
@@ -294,6 +296,12 @@ export class Racer {
 
   // input: { steer: -1..1, gas: 0..1, brake: 0..1, nitro: bool, drift: LB apretado, trick: LB recién apretado }.
   // `topFactor` ayuda a los que van atrás.
+  // Cara del piloto un ratito: 'feliz' (le pegó a alguien, rebasó, hizo truco) o 'enojado' (le pegaron).
+  setMood(mood, ms) {
+    this.mood = mood;
+    this.moodMs = ms;
+  }
+
   // El nombre para los resultados (con el copiloto, si es kart para dos).
   get displayName() {
     return this.passenger ? `${this.driver.name} y ${this.passenger.name}` : this.driver.name;
@@ -302,6 +310,7 @@ export class Racer {
   update(dtMs, input, offroad, topFactor = 1) {
     this.specialMs = Math.max(0, this.specialMs - dtMs);
     this.wheelieMs = Math.max(0, this.wheelieMs - dtMs);
+    this.moodMs = Math.max(0, (this.moodMs ?? 0) - dtMs);
     const dt = dtMs / 1000;
     this.boostMs = Math.max(0, this.boostMs - dtMs);
     this.landMs = Math.max(0, (this.landMs ?? 0) - dtMs);
@@ -388,10 +397,15 @@ export class Racer {
 
     // Altura: arriba de una rampa sigue el piso; en el aire cae. Un truco en el aire da turbito al caer.
     if (air) {
-      if (input.trick && !this.trick) {
+      // Un truco (y otro, si ya acabó el anterior): hacia dónde apunta el stick dice cuál.
+      const now = performance.now();
+      if (input.trick && (!this.trick || now - this.trickAt > TRICK_SPIN_MS)) {
+        const up = input.trickY ?? 0;
+        this.trickKind = up < -0.5 ? 'flip' : up > 0.5 ? 'back' : Math.abs(steer) > 0.5 ? (steer > 0 ? 'roll' : 'rollLeft') : 'spin';
+        this.tricks = this.trick ? this.tricks + 1 : 1;
         this.trick = true;
-        this.trickAt = performance.now();
-        this.events.push('trick');
+        this.trickAt = now;
+        this.events.push(this.tricks > 1 ? 'combo' : `trick-${this.trickKind}`);
       }
       this.vy -= GRAVITY * (this.gliding ? GLIDE_GRAVITY : 1) * (this.underwater ? WATER_GRAVITY : 1) * dt;
       if (this.gliding) this.vy = Math.max(this.vy, -GLIDE_MAX_FALL);
@@ -401,8 +415,12 @@ export class Racer {
         this.vy = 0;
         this.flying = false;
         this.gliding = false;
-        if (this.trick) this.boost(TRICK_BOOST.factor, TRICK_BOOST.ms);
+        if (this.trick) {
+          const extra = this.tricks - 1;
+          this.boost(TRICK_BOOST.factor + extra * TRICK_BOOST.perTrick.factor, TRICK_BOOST.ms + extra * TRICK_BOOST.perTrick.ms);
+        }
         this.trick = false;
+        this.tricks = 0;
         this.landMs = LAND_MS;
         this.events.push('land');
       }
@@ -440,13 +458,19 @@ export class Racer {
     // Derrapando, la trompa apunta más hacia adentro de la curva (se ve de lado).
     this.visualYaw += ((this.drifting ? -this.driftDir * DRIFT_YAW : 0) - this.visualYaw) * 0.2;
     this.object.rotation.y = this.heading + spin + this.visualYaw;
-    // El truco: una vuelta de lado.
-    this.object.rotation.z = this.trick ? Math.min(1, (timeMs - this.trickAt) / TRICK_SPIN_MS) * Math.PI * 2 : 0;
+    // El truco: una vuelta de lado, un mortal (para adelante o para atrás) o un giro.
+    const turn = this.trick ? Math.min(1, (timeMs - this.trickAt) / TRICK_SPIN_MS) * Math.PI * 2 : 0;
+    const kind = this.trick ? this.trickKind : null;
+    this.object.rotation.z = kind === 'roll' ? -turn : kind === 'rollLeft' ? turn : 0;
+    if (kind === 'flip') this.object.rotation.x -= turn;
+    else if (kind === 'back') this.object.rotation.x += turn;
+    else if (kind === 'spin') this.object.rotation.y += turn;
     const level = this.drifting ? this.driftLevel : 0;
     for (const spark of this.sparks) {
       spark.visible = level > 0;
       if (!spark.visible) continue;
-      spark.material.color.setHex(SPARK_COLORS[level]);
+      if (level === 4) spark.material.color.setHSL((timeMs / 300) % 1, 1, 0.6);
+      else spark.material.color.setHex(SPARK_COLORS[level]);
       spark.scale.setScalar((0.7 + level * 0.25) * (0.75 + Math.random() * 0.5));
     }
     this.flame.visible = this.boostMs > 0;

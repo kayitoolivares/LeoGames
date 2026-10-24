@@ -33,6 +33,10 @@ const CSS = `
 .kart-panel .nitro { position: absolute; bottom: calc(20px * var(--s)); right: calc(20px * var(--s));
   font-size: calc(36px * var(--s)); }
 .kart-panel .nitro .off { opacity: 0.25; }
+.kart-panel .face { position: absolute; top: calc(78px * var(--s)); left: calc(14px * var(--s)); width: calc(62px * var(--s));
+  height: calc(62px * var(--s)); border-radius: 50%; background: rgba(27, 21, 48, 0.55); border: calc(3px * var(--s)) solid #fff;
+  display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.kart-panel .face img { height: 100%; }
 .kart-panel .coins { position: absolute; bottom: calc(66px * var(--s)); right: calc(22px * var(--s)); font-size: calc(30px * var(--s)); font-weight: 800; }
 .kart-panel .minimap { position: absolute; top: calc(58px * var(--s)); right: calc(14px * var(--s)); width: calc(190px * var(--s)); height: calc(130px * var(--s)); }
 .kart-panel .msg { position: absolute; top: 36%; left: 0; right: 0; text-align: center;
@@ -129,7 +133,7 @@ export class KartHud {
       panel.innerHTML =
         view.kind === 'map'
           ? '<div class="map-title">Mapa</div>'
-          : `${rain ? '<div class="rain"></div>' : ''}<div class="water"></div><div class="speed"></div><div class="ink"></div><canvas class="minimap" width="190" height="130"></canvas><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="coins"></div><div class="nitro"></div><div class="msg"></div>`;
+          : `${rain ? '<div class="rain"></div>' : ''}<div class="water"></div><div class="speed"></div><div class="ink"></div><canvas class="minimap" width="190" height="130"></canvas><div class="pos"></div><div class="who"></div><div class="lap"></div><div class="item"></div><div class="face"></div><div class="coins"></div><div class="nitro"></div><div class="msg"></div>`;
       this.el.append(panel);
       const part = (name) => panel.querySelector(`.${name}`);
       return {
@@ -140,6 +144,7 @@ export class KartHud {
         nitro: part('nitro'),
         msg: part('msg'),
         coins: part('coins'),
+        face: part('face'),
         inkEl: part('ink'),
         speedEl: part('speed'),
         waterEl: part('water'),

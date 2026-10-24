@@ -60,8 +60,10 @@ export function driverView(racer, camera) {
   if (racer.trick) return { pose: 'salto', flip };
   if (racer.throwMs > 0) return { pose: 'golpe', flip };
   if (facing < BEHIND) return Math.abs(racer.steerInput ?? 0) > TURNING ? { pose: 'giro', flip: racer.steerInput < 0 } : { pose: 'atras', flip: false };
-  if (facing > AHEAD) return { pose: 'frente', flip: false };
-  return { pose: 'lado', flip };
+  // Viéndole la cara: feliz o enojado un ratito (ver Racer.setMood).
+  const mood = racer.moodMs > 0 && racer.mood ? `_${racer.mood}` : '';
+  if (facing > AHEAD) return { pose: `frente${mood}`, flip: false };
+  return { pose: `lado${mood}`, flip };
 }
 
 // Guarda las imágenes ya cargadas (cada una se carga una sola vez; la volteada comparte la misma imagen).
@@ -135,6 +137,8 @@ class ImageDriver {
   // Cambia a la imagen de esa pose (o la más parecida que tenga).
   show({ pose, flip }) {
     let use = pose;
+    // (Si no tiene la cara feliz o enojada, la de siempre.)
+    if (!this.art.has(this.character, use) && use.includes('_')) use = use.split('_')[0];
     if (!this.art.has(this.character, use) && use === 'giro') [use, flip] = ['atras', false];
     if (!this.art.has(this.character, use)) {
       // La de siempre mira a la derecha: sirve de lado (volteada si va a la izquierda); de espaldas y de frente, tal cual.
@@ -148,7 +152,7 @@ class ImageDriver {
     const entry = this.art.texture(this.character, use, flip);
     this.sprite.material.map = entry.texture;
     this.sprite.material.needsUpdate = true;
-    const height = VIEWS.includes(use) ? HEIGHT.views : HEIGHT.poses;
+    const height = VIEWS.includes(use.split('_')[0]) ? HEIGHT.views : HEIGHT.poses;
     const fit = () => {
       if (this.sprite.material.map === entry.texture) this.sprite.scale.set(height * entry.aspect, height, 1);
     };
@@ -188,7 +192,9 @@ class BlockDriver {
     return blockImageUrl(this.number);
   }
 
-  show({ pose, flip }) {
+  show({ pose: shown, flip }) {
+    // (Bloquecito no pone caras: frente_feliz = frente.)
+    const pose = shown.split('_')[0];
     const view = pose === 'atras' || pose === 'giro' ? 'back' : pose === 'lado' ? 'side' : 'front';
     const bodyPose = ['dolor', 'salto', 'gana', 'golpe'].includes(pose) ? pose : 'normal';
     const facing = flip ? -1 : 1;

@@ -24,6 +24,42 @@ export function saveRecord(key, record) {
 }
 
 // "1:23.4"
+// Récords de cada pista en las carreras normales (el mejor tiempo según las vueltas y si es espejo), para toda la
+// familia: { ms, name, character }.
+const TRACK_RECORDS = 'kartRecordsPista';
+export const trackRecords = {
+  key(track, laps, mirror) {
+    return `${track}:${laps}${mirror ? ':espejo' : ''}`;
+  },
+  get(track, laps, mirror = false) {
+    return settings.get(TRACK_RECORDS, {})[this.key(track, laps, mirror)] ?? null;
+  },
+  // Devuelve true si es récord nuevo.
+  save(track, laps, mirror, entry) {
+    const all = settings.get(TRACK_RECORDS, {});
+    const key = this.key(track, laps, mirror);
+    if (all[key] && all[key].ms <= entry.ms) return false;
+    settings.set(TRACK_RECORDS, { ...all, [key]: entry });
+    return true;
+  },
+};
+
+// Medallas de cada copa del Gran Premio (la mejor que ha sacado la familia): 0 oro, 1 plata, 2 bronce.
+const CUP_MEDALS = 'kartMedallasCopa';
+export const MEDAL_NAMES = ['oro', 'plata', 'bronce'];
+export const cupMedals = {
+  get(cup) {
+    return settings.get(CUP_MEDALS, {})[cup] ?? null;
+  },
+  // Devuelve true si es mejor que la que tenía.
+  save(cup, medal) {
+    const all = settings.get(CUP_MEDALS, {});
+    if (all[cup] !== undefined && all[cup] <= medal) return false;
+    settings.set(CUP_MEDALS, { ...all, [cup]: medal });
+    return true;
+  },
+};
+
 export function formatTime(ms) {
   const tenths = Math.floor(ms / 100);
   const minutes = Math.floor(tenths / 600);

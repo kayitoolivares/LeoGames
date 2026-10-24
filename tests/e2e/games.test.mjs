@@ -1304,6 +1304,7 @@ test('karts locos: gran premio de tres carreras con puntos y copa', { timeout: m
     await p.tap(0, BUTTON.A);
   }
   assert.ok((await stickers(p.page)).includes('kart-copa'), 'ganar la copa da su calcomanía');
+  assert.equal(await p.page.evaluate(() => JSON.parse(localStorage.getItem('leogames:kartMedallasCopa')).hoja), 0, 'medalla de oro en la copa');
   await p.until(() => document.querySelector('.kart-choose h1')?.textContent.includes('Gran Premio'), ms(30000), 'regresar a las copas');
   await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.deepEqual(p.errors, []);
@@ -1828,6 +1829,71 @@ test('karts locos: tienda con mejoras, moto con caballito y kart para dos', { ti
   // Y = caballito de la moto.
   await p.tap(0, BUTTON.Y);
   await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].wheelieMs > 0, ms(3000), 'hacer caballito');
+  // Los dos echan nitro al mismo tiempo: ¡turbo de equipo!
+  await p.page.evaluate(() => {
+    window.__button(0, 5, true);
+    window.__button(1, 5, true);
+  });
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].boostFactor >= 1.75, ms(3000), 'turbo de equipo');
+  await p.page.evaluate(() => {
+    window.__button(0, 5, false);
+    window.__button(1, 5, false);
+  });
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Extras: mortal con ↑ + LB en el aire, derrape de arcoíris, la carita del piloto en su panel, el público en las
+// gradas con la tele y el récord de la pista al llegar.
+test('karts locos: trucos, derrape arcoíris, caras, público y récord de la pista', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await pickTrack(p);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(30000), 'empezar');
+  const kart = (fn) => p.page.evaluate(fn);
+  // En el aire, ↑ + LB: mortal.
+  await kart(() => {
+    const h = window.leogames.scene.getScene('Kart').game3d.humans[0];
+    h.launch(16);
+    window.__pads[0].axes = [0, -1, 0, 0];
+  });
+  await p.tap(0, BUTTON.LB);
+  assert.equal(await kart(() => window.leogames.scene.getScene('Kart').game3d.humans[0].trickKind), 'flip');
+  await kart(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  // Derrape de arcoíris: el turbo más grande.
+  const rainbow = await kart(() => {
+    const h = window.leogames.scene.getScene('Kart').game3d.humans[0];
+    Object.assign(h, { drifting: true, driftDir: 1, driftMs: 3500, boostMs: 0 });
+    const level = h.driftLevel;
+    h.endDrift(false);
+    return { level, factor: h.boostFactor };
+  });
+  assert.deepEqual(rainbow, { level: 4, factor: 1.55 });
+  // La carita del piloto: feliz.
+  await kart(() => window.leogames.scene.getScene('Kart').game3d.humans[0].setMood('feliz', 5000));
+  await p.until(() => document.querySelector('.kart-panel .face img')?.src.includes('frente_feliz'), ms(3000), 'la carita feliz');
+  // El público y la tele.
+  const crowd = await kart(() => {
+    const c = window.leogames.scene.getScene('Kart').game3d.crowd;
+    return { fans: c.fans.length > 10, heli: Boolean(c.heli), blimp: Boolean(c.blimp) };
+  });
+  assert.deepEqual(crowd, { fans: true, heli: true, blimp: true });
+  // Llega: récord de la pista, y se ve en su tarjeta.
+  await kart(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const h = k.humans[0];
+    h.lap = k.laps;
+    k.onLap(h);
+    k.showResults();
+  });
+  assert.ok(await kart(() => Boolean(JSON.parse(localStorage.getItem('leogames:kartRecordsPista'))['pradera:3'])), 'se guardó el récord');
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda cambiar');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(30000), 'ver las pistas');
+  assert.match(await kart(() => document.querySelector('.kart-choose .card .info')?.textContent ?? ''), /⏱️/, 'el récord en la tarjeta');
   await p.holdToMenu(0, EXIT, 'salir de Karts locos');
   assert.deepEqual(p.errors, []);
   await p.context.close();

@@ -274,7 +274,18 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Mejoras** (en la tienda, para toda la familia, 3 niveles cada una): **motor** (más rápido), **llantas** (gira
   mejor y el pasto frena menos) y **turbo** (nitro más fuerte y más largo). En el taller se ven junto al kart.
   **Kart para dos**: en el taller, **LB** = ir de copiloto de otro jugador: él maneja y tú avientas los poderes con
-  **X** (y también echas nitro con RB). Los dos se ven en el kart.
+  **X** (y también echas nitro con RB). Los dos se ven en el kart. Si los dos echan nitro casi al mismo tiempo:
+  **¡turbo de equipo!**
+  **Trucos y derrapes**: en el aire, **LB** con el stick hacia **↑** = mortal, **↓** = mortal para atrás, **◀ ▶** =
+  vuelta de lado, nada = giro; si alcanza, otro más (combo: turbito más grande al caer). Derrapando mucho rato salen
+  chispas de **arcoíris** (el turbo más grande).
+  **Pilotos con caras** (Gemini): manejando ponen cara de feliz (al pegarle a alguien, rebasar al primero o hacer
+  trucos) o de enojado (si les pegan), y en la esquina de su pantalla está su carita.
+  **Público y tele**: gradas con aficionados (los del Duelo) junto a la meta que echan porras, el helicóptero de la
+  tele siguiendo al primero, un dirigible, globos aerostáticos y un camarógrafo; confeti al rebasar al primero.
+  **Récords y medallas**: cada pista guarda su récord (según las vueltas) y se ve en su tarjeta; cada copa guarda
+  su mejor medalla (oro, plata o bronce, según el lugar en la copa); en las carreras normales también corre el
+  fantasma del récord del contrarreloj.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
@@ -493,7 +504,8 @@ antes de cada publicación, y si alguna falla no se publica.
 - `src/games/kart/`: Karts locos: además de lo de siempre, atajos (`shortcut.js`), clima (`weather.js`), contrarreloj y
   fantasma (`ghost.js`), repetición de la llegada (`replay.js`), pilotos con personalidad y narrador (`rivals.js`),
   batallas (`battle.js`), escuela de manejo (`school.js`), aventura con jefes (`adventure.js`), pistas vivas
-  (`living.js`), paisajes de la Copa Tesoro (`scenery2.js`) y el editor de pistas (`editor.js`).
+  (`living.js`), paisajes de la Copa Tesoro (`scenery2.js`), el editor de pistas (`editor.js`) y el público y la tele
+  (`crowd.js`).
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha y uniformes (`field.js`), balón (`Ball.js`), jugadores
   (`FutbolPlayer.js`), la compu (`cpu.js`), canchas (`pitches.js`), poderes (`powers.js`), penales
   (`penalties.js`), público y narrador (`crowd.js`) y las pantallas de la Copa y del final (`screens.js`).
