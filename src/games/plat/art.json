@@ -44,10 +44,14 @@
     "rey-dragon-mareado",
     "rey-dragon-paso",
     "rey-dragon",
+    "rey-hongo-ataque",
+    "rey-hongo-burla",
     "rey-hongo-cargando",
     "rey-hongo-derrotado",
+    "rey-hongo-dolor",
     "rey-hongo-furioso",
     "rey-hongo-mareado",
+    "rey-hongo-paso",
     "rey-hongo",
     "rey-nube-ataque",
     "rey-nube-burla",
@@ -309,6 +313,16 @@
       0.461,
       285
     ],
+    "rey-hongo-ataque": [
+      63204,
+      0.498,
+      320
+    ],
+    "rey-hongo-burla": [
+      60742,
+      0.495,
+      320
+    ],
     "rey-hongo-cargando": [
       61064,
       0.548,
@@ -319,6 +333,11 @@
       0.527,
       127
     ],
+    "rey-hongo-dolor": [
+      65451,
+      0.492,
+      320
+    ],
     "rey-hongo-furioso": [
       62111,
       0.503,
@@ -327,6 +346,11 @@
     "rey-hongo-mareado": [
       54349,
       0.494,
+      320
+    ],
+    "rey-hongo-paso": [
+      60298,
+      0.497,
       320
     ],
     "rey-hongo": [

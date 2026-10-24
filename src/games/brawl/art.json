@@ -3,9 +3,25 @@
     "almeja",
     "calabaza",
     "cangrejo",
+    "capitan-pulpo-ataque",
+    "capitan-pulpo-burla",
+    "capitan-pulpo-cargando",
+    "capitan-pulpo-derrotado",
+    "capitan-pulpo-dolor",
+    "capitan-pulpo-furioso",
+    "capitan-pulpo-mareado",
+    "capitan-pulpo-paso",
     "capitan-pulpo",
     "caramelo",
     "cupcake",
+    "dragon-lava-ataque",
+    "dragon-lava-burla",
+    "dragon-lava-cargando",
+    "dragon-lava-derrotado",
+    "dragon-lava-dolor",
+    "dragon-lava-furioso",
+    "dragon-lava-mareado",
+    "dragon-lava-paso",
     "dragon-lava",
     "gomita",
     "gran-hongo-ataque",
@@ -17,6 +33,14 @@
     "gran-hongo-mareado",
     "gran-hongo-paso",
     "gran-hongo",
+    "gran-yeti-ataque",
+    "gran-yeti-burla",
+    "gran-yeti-cargando",
+    "gran-yeti-derrotado",
+    "gran-yeti-dolor",
+    "gran-yeti-furioso",
+    "gran-yeti-mareado",
+    "gran-yeti-paso",
     "gran-yeti",
     "hongo",
     "marcianito",
@@ -91,6 +115,46 @@
       0.502,
       183
     ],
+    "capitan-pulpo-ataque": [
+      22786,
+      0.486,
+      171
+    ],
+    "capitan-pulpo-burla": [
+      33825,
+      0.506,
+      208
+    ],
+    "capitan-pulpo-cargando": [
+      41093,
+      0.479,
+      241
+    ],
+    "capitan-pulpo-derrotado": [
+      17036,
+      0.428,
+      141
+    ],
+    "capitan-pulpo-dolor": [
+      34964,
+      0.553,
+      209
+    ],
+    "capitan-pulpo-furioso": [
+      34485,
+      0.51,
+      212
+    ],
+    "capitan-pulpo-mareado": [
+      34709,
+      0.533,
+      213
+    ],
+    "capitan-pulpo-paso": [
+      23224,
+      0.502,
+      179
+    ],
     "capitan-pulpo": [
       34412,
       0.506,
@@ -104,6 +168,46 @@
     "cupcake": [
       36601,
       0.505,
+      256
+    ],
+    "dragon-lava-ataque": [
+      40945,
+      0.514,
+      251
+    ],
+    "dragon-lava-burla": [
+      40231,
+      0.517,
+      256
+    ],
+    "dragon-lava-cargando": [
+      44256,
+      0.533,
+      256
+    ],
+    "dragon-lava-derrotado": [
+      20468,
+      0.568,
+      115
+    ],
+    "dragon-lava-dolor": [
+      39056,
+      0.512,
+      256
+    ],
+    "dragon-lava-furioso": [
+      38031,
+      0.538,
+      256
+    ],
+    "dragon-lava-mareado": [
+      37862,
+      0.538,
+      256
+    ],
+    "dragon-lava-paso": [
+      38833,
+      0.542,
       256
     ],
     "dragon-lava": [
@@ -159,6 +263,46 @@
     "gran-hongo": [
       46207,
       0.502,
+      256
+    ],
+    "gran-yeti-ataque": [
+      26551,
+      0.455,
+      182
+    ],
+    "gran-yeti-burla": [
+      36551,
+      0.503,
+      256
+    ],
+    "gran-yeti-cargando": [
+      43287,
+      0.58,
+      256
+    ],
+    "gran-yeti-derrotado": [
+      15606,
+      0.51,
+      99
+    ],
+    "gran-yeti-dolor": [
+      31680,
+      0.525,
+      207
+    ],
+    "gran-yeti-furioso": [
+      40252,
+      0.506,
+      225
+    ],
+    "gran-yeti-mareado": [
+      45300,
+      0.525,
+      256
+    ],
+    "gran-yeti-paso": [
+      36470,
+      0.466,
       256
     ],
     "gran-yeti": [
