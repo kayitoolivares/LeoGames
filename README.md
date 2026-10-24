@@ -250,6 +250,20 @@ Abre http://localhost:5173 en Edge o Chrome.
   ganar en una tormenta de nieve; el último de cada mundo es una carrera contra un **jefe en su kart** (Rey Bolón,
   Dragonzote y Robotote, dibujados manejando por Gemini): es más grande, más rápido y avienta cohetes, plátanos o rayos.
   Al pasar un reto, **A** = el que sigue y **B** = el mapa de la aventura.
+  **Copa Tesoro** (4 pistas con paisaje de Gemini): **Desierto** (cactus, pirámides, rodadoras que ruedan y el cruce
+  del tren; en la última vuelta se hace de noche), **Ciudad de noche** (edificios con ventanas encendidas, letreros
+  de neón, plumas que suben y bajan y taxis que cruzan), **Casa gigante** (los karts chiquititos por el piso de la
+  cocina, entre libros, crayolas y patas de mesa; un puente levadizo y pantuflas que pisan) y **Barco pirata** (muelles
+  de madera sobre el mar, cañones de agua, puente levadizo y balas del barco; en la última vuelta llega la tormenta).
+  **Pistas vivas** (`living.js`): un **tren** que cruza (bajan las plumas y parpadean los focos; si te alcanza das
+  vueltas), **plumas** que se turnan para bajar (la de abajo te rebota; siempre hay un lado libre), **cañones de agua**
+  que te empujan de lado y **puentes levadizos** que, subidos, son rampa. También en la Playa (cañones), la Selva
+  (puente) y la Ciudad de juguete (trenecito).
+  **Clima que cambia**: con **Y** = "Cambia" el clima cambia en cada vuelta (soleado, lluvia, noche, nieve); con el
+  clima de la pista, el Desierto y el Barco pirata cambian en la última vuelta.
+  **Arma tu pista** (el noveno modo): el Jugador 1 dibuja su pista moviendo puntos en un mapa (A agarra o pone un
+  punto, X lo quita, LB/RB hacen lomas, Y cambia el paisaje, LT empieza otra vez, RT ¡a correr!). Se guarda sola,
+  se pone en rojo si se encima y sale al final de las pistas como "Mi pista" (con flechas y rampa en sus rectas).
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
@@ -467,7 +481,8 @@ antes de cada publicación, y si alguna falla no se publica.
   (`adventure.js`), repetición del K.O. (`replay.js`) y narrador (`talk.js`).
 - `src/games/kart/`: Karts locos: además de lo de siempre, atajos (`shortcut.js`), clima (`weather.js`), contrarreloj y
   fantasma (`ghost.js`), repetición de la llegada (`replay.js`), pilotos con personalidad y narrador (`rivals.js`),
-  batallas (`battle.js`), escuela de manejo (`school.js`) y aventura con jefes (`adventure.js`).
+  batallas (`battle.js`), escuela de manejo (`school.js`), aventura con jefes (`adventure.js`), pistas vivas
+  (`living.js`), paisajes de la Copa Tesoro (`scenery2.js`) y el editor de pistas (`editor.js`).
 - `src/games/futbol/`: Fútbol de bolitas (Phaser): cancha y uniformes (`field.js`), balón (`Ball.js`), jugadores
   (`FutbolPlayer.js`), la compu (`cpu.js`), canchas (`pitches.js`), poderes (`powers.js`), penales
   (`penalties.js`), público y narrador (`crowd.js`) y las pantallas de la Copa y del final (`screens.js`).

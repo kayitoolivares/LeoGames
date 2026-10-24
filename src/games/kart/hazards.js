@@ -6,8 +6,8 @@ import manifest from './art.json';
 //          que nadan flotando y se inflan de vez en cuando).
 //   roll:  una bola rueda por la pista en sentido contrario, de bajada (donas, troncos, bolas de nieve que van
 //          creciendo y pelotas que botan: cuando va arriba se puede pasar por abajo).
-//   slam:  bloques de piedra flotan arriba del camino y caen de golpe; su sombra avisa antes (de dos en dos:
-//          siempre queda un lado libre).
+//   slam:  bloques de piedra (o pantuflas gigantes) flotan arriba del camino y caen de golpe; su sombra avisa antes
+//          (de dos en dos: siempre queda un lado libre).
 //   fall:  meteoritos (o bolas de lava del volcán) que caen adelante de los karts; un círculo rojo avisa dónde.
 // Si al kart le pega uno, da vueltas como con un plátano (la burbuja lo protege). Saltando se esquivan.
 // Se dibujan con su imagen de Gemini (kart/peligros/<nombre>.png) o, mientras no haya, con un emoji.
@@ -27,12 +27,35 @@ const EMOJI = {
   fresa: '🍓',
   dino: '🦖',
   relampago: '⚡',
+  rodadora: '🌾',
+  taxi: '🚕',
+  pantufla: '🥿',
+  'bala-canon': '💣',
 };
 // Tamaño de cada uno (alto, en unidades del mundo) y qué tan cerca hay que pasar para que pegue.
-const SIZES = { oveja: 3.2, cangrejo: 2.6, dona: 3.6, 'bola-nieve': 2.4, meteorito: 3.4, lava: 3.6, tronco: 3.4, 'pez-globo': 2.8, pelota: 3.2, espectro: 3, fresa: 3.4, dino: 3.6, relampago: 3.6 };
+const SIZES = {
+  oveja: 3.2,
+  cangrejo: 2.6,
+  dona: 3.6,
+  'bola-nieve': 2.4,
+  meteorito: 3.4,
+  lava: 3.6,
+  tronco: 3.4,
+  'pez-globo': 2.8,
+  pelota: 3.2,
+  espectro: 3,
+  fresa: 3.4,
+  dino: 3.6,
+  relampago: 3.6,
+  rodadora: 3,
+  taxi: 3.8,
+  'bala-canon': 2.6,
+};
 // Los que van flotando (qué tan alto) y los que botan (qué tan alto brincan).
 const FLOAT = { 'pez-globo': 1.6, espectro: 1.8 };
-const BOUNCE = { pelota: 4.5 };
+const BOUNCE = { pelota: 4.5, rodadora: 1.6 };
+// Los que cruzan más rápido (el taxi no se espera tanto).
+const CROSS_SPEED = { taxi: 9 };
 const REACH = 1.8;
 // Después de que le pega a alguien, no le vuelve a pegar a ese mismo en un rato.
 const COOLDOWN_MS = 1800;
@@ -116,16 +139,22 @@ export class Hazards {
   // caen por turnos, así que siempre hay por dónde pasar.
   block(at, side, i) {
     const spot = this.track.pointAt(Math.round(at * this.track.count), side * (this.track.roadWidth / 4));
-    if (!this.blockGeometry) {
-      this.blockGeometry = this.own(new THREE.BoxGeometry(SLAM.width, SLAM.height, SLAM.width));
-      const stone = this.own(new THREE.MeshLambertMaterial({ color: 0x8a8698 }));
-      const face = this.own(new THREE.MeshLambertMaterial({ map: this.texture }));
-      // Caras de la caja: derecha, izquierda, arriba, abajo, frente, atrás.
-      this.blockMaterials = [face, face, stone, stone, face, face];
+    // (Lo que no es el bloque de piedra, como la pantufla, es su dibujo.)
+    let mesh;
+    if (this.kind === 'bloque') {
+      if (!this.blockGeometry) {
+        this.blockGeometry = this.own(new THREE.BoxGeometry(SLAM.width, SLAM.height, SLAM.width));
+        const stone = this.own(new THREE.MeshLambertMaterial({ color: 0x8a8698 }));
+        const face = this.own(new THREE.MeshLambertMaterial({ map: this.texture }));
+        // Caras de la caja: derecha, izquierda, arriba, abajo, frente, atrás.
+        this.blockMaterials = [face, face, stone, stone, face, face];
+      }
+      mesh = new THREE.Mesh(this.blockGeometry, this.blockMaterials);
+      mesh.rotation.y = spot.heading;
+      this.scene.add(mesh);
+    } else {
+      mesh = this.sprite(SLAM.width * 1.15, 0.25);
     }
-    const mesh = new THREE.Mesh(this.blockGeometry, this.blockMaterials);
-    mesh.rotation.y = spot.heading;
-    this.scene.add(mesh);
     const cycle = SLAM.upMs + SLAM.shakeMs + SLAM.dropMs + SLAM.downMs + SLAM.riseMs;
     // Los dos de un lugar, a media vuelta uno del otro; cada lugar empieza en otro momento.
     const clock = (side > 0 ? cycle / 2 : 0) + i * 700;
@@ -162,8 +191,9 @@ export class Hazards {
     if (c.waitMs > 0) {
       c.waitMs -= dtMs;
     } else {
-      c.lateral -= c.side * CROSS.speed * dt;
-      c.walked += CROSS.speed * dt;
+      const speed = CROSS_SPEED[this.kind] ?? CROSS.speed;
+      c.lateral -= c.side * speed * dt;
+      c.walked += speed * dt;
       // Llegó al otro lado: se voltea y se espera.
       if (Math.abs(c.lateral) >= c.edge && Math.sign(c.lateral) === -c.side) {
         c.lateral = -c.side * c.edge;
@@ -324,6 +354,10 @@ const OUCH = {
   fresa: '¡Te aplastó una fresa! 🍓',
   dino: '¡Pisotón de dino! 🦖',
   relampago: '¡Te cayó un rayo! ⚡',
+  rodadora: '¡Te revolcó una rodadora! 🌾',
+  taxi: '¡Cuidado con el taxi! 🚕',
+  pantufla: '¡Pantuflazo! 🥿',
+  'bala-canon': '¡Bala de cañón! 💣',
 };
 
 // La imagen de Gemini si ya está; si no, el emoji en un cuadrito transparente. El bloque es la cara de una

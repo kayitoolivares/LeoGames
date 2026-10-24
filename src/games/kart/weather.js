@@ -5,6 +5,8 @@ import { Snowfall } from './scenery.js';
 // (copos) o noche (todo oscuro, faros en los karts y lámparas junto al camino). Todo con pocas piezas para el Xbox.
 export const WEATHERS = {
   auto: { name: 'De la pista' },
+  // Empieza con el de la pista y cambia en cada vuelta.
+  cambia: { name: 'Cambia 🔄' },
   sol: { name: 'Soleado ☀️' },
   lluvia: { name: 'Lluvia 🌧️', light: 0.7, sky: 0.55 },
   nieve: { name: 'Nieve ❄️', light: 0.9, sky: 0.85 },
@@ -21,15 +23,21 @@ export class Weather {
   constructor(scene, track, kind, racers) {
     this.kind = kind;
     this.track = track;
+    this.scene = scene;
     this.puddles = [];
     this.lamps = [];
     this.lights = [];
+    // Lo que se agregó a la escena y a los karts (para quitarlo si el clima cambia).
+    this.objects = [];
+    this.headlights = [];
     if (kind === 'lluvia') {
       this.fall = new Snowfall(scene, track, { count: RAIN_DROPS, speed: 34, size: 0.9, color: 0xbfd8ff });
       this.fall.points.material.map = dropTexture();
+      this.objects.push(this.fall.points);
       this.addPuddles(scene);
     } else if (kind === 'nieve') {
       this.fall = new Snowfall(scene, track);
+      this.objects.push(this.fall.points);
     } else if (kind === 'noche') {
       this.addLamps(scene);
       for (const racer of racers) this.addHeadlights(racer);
@@ -58,6 +66,7 @@ export class Weather {
       mesh.rotation.y = spot.heading;
       mesh.position.set(spot.x, spot.y + 0.05, spot.z);
       scene.add(mesh);
+      this.objects.push(mesh);
       this.puddles.push({ x: spot.x, z: spot.z });
     }
   }
@@ -79,12 +88,15 @@ export class Weather {
       light.position.set(x, y + 6.3, z);
       light.scale.setScalar(4);
       scene.add(light);
+      this.objects.push(light);
       // La luz en el piso, para que se vea el camino.
       const pool = new THREE.Mesh(new THREE.CircleGeometry(6, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
       pool.position.set(x, y + 0.06, z);
       scene.add(pool);
+      this.objects.push(pool);
     });
     scene.add(poles);
+    this.objects.push(poles);
   }
 
   // Faros: dos lucecitas enfrente del kart y un rayo de luz en el piso hacia adelante.
@@ -106,6 +118,17 @@ export class Weather {
     beam.position.set(0, 0.12, 9);
     group.add(beam);
     racer.object.add(group);
+    this.headlights.push([racer, group]);
+  }
+
+  // Quita la lluvia, la nieve, los charcos, las lámparas y los faros (el clima cambió).
+  dispose() {
+    for (const object of this.objects) this.scene.remove(object);
+    for (const [racer, group] of this.headlights) racer.object.remove(group);
+    this.objects = [];
+    this.headlights = [];
+    this.puddles = [];
+    this.fall = null;
   }
 
   // Lluvia y nieve caen; los charcos hacen resbalar al que los pisa.

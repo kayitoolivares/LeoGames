@@ -1711,6 +1711,189 @@ test('karts locos: aventura con retos y jefe', { timeout: ms(150000) }, async ()
   await p.context.close();
 });
 
+// Copa Tesoro: en el Desierto el tren te tumba, en la Ciudad de noche las plumas te rebotan, en la Casa gigante el
+// puente levadizo te avienta y en el Barco pirata los cañones de agua te empujan.
+test('karts locos: copa tesoro con tren, plumas, puente y cañones de agua', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await chooseKartMode(p, 1, 'Gran Premio');
+  for (let i = 0; i < 4; i += 1) await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  const race = (n) =>
+    p.page.waitForFunction((k) => window.leogames.scene.getScene('Kart').game3d?.gp?.race === k && window.leogames.scene.getScene('Kart').game3d.phase === 'race', n, {
+      timeout: ms(30000),
+    });
+  // Pone al jugador en un lugar de la pista (`at` de 0 a 1, `ahead` muestras antes, `lateral` de lado) con esa velocidad.
+  const place = (at, ahead, speed, lateral = 0) =>
+    p.page.evaluate(
+      ([a, back, v, side]) => {
+        const k = window.leogames.scene.getScene('Kart').game3d;
+        const r = k.humans[0];
+        const spot = k.track.pointAt(Math.round(a * k.track.count) - back, side);
+        Object.assign(r, { x: spot.x, z: spot.z, heading: spot.heading, index: spot.index, speed: v, shieldMs: 0, spinMs: 0, y: spot.y, vy: 0 });
+      },
+      [at, ahead, speed, lateral],
+    );
+  const next = async () => {
+    await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.showResults());
+    await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda seguir');
+    await p.tap(0, BUTTON.A);
+  };
+
+  await race(0);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'desierto');
+  // El tren pasa justo cuando el jugador está en las vías.
+  await p.page.evaluate(() => {
+    const living = window.leogames.scene.getScene('Kart').game3d.living;
+    const train = living.items[0];
+    living.timeMs = 15000 - train.offset + 2600 + ((train.span - 2) / 34) * 1000;
+  });
+  await place(0.91, 0, 0);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].spinMs > 0, ms(5000), 'que lo alcance el tren');
+  await next();
+
+  await race(1);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'neon');
+  // La pluma de ese lado está abajo: al llegar rebota para atrás.
+  await p.page.evaluate(() => {
+    const living = window.leogames.scene.getScene('Kart').game3d.living;
+    living.timeMs = 6400 * 10 + 900 - living.items[0].offset;
+  });
+  await place(0.22, 1, 20, 4);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.humans[0].speed < 0, ms(3000), 'rebotar en la pluma');
+  await next();
+
+  await race(2);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'casa');
+  // El puente subido: al pasar por él sale volando.
+  await p.page.evaluate(() => {
+    const living = window.leogames.scene.getScene('Kart').game3d.living;
+    living.timeMs = 3600 + 900 + 400 - living.items[0].offset;
+    window.__flew = false;
+    window.__fly = setInterval(() => {
+      const r = window.leogames.scene.getScene('Kart').game3d.humans[0];
+      if (r.airborne) window.__flew = true;
+    }, 20);
+  });
+  await place(0.15, 8, 26);
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  await p.until(() => window.__flew, ms(4000), 'salir volando del puente');
+  await p.page.evaluate(() => {
+    window.__button(0, 0, false);
+    clearInterval(window.__fly);
+  });
+  await next();
+
+  await race(3);
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'pirata');
+  // El chorro del cañón lo empuja de lado.
+  const before = await p.page.evaluate(() => {
+    const living = window.leogames.scene.getScene('Kart').game3d.living;
+    living.timeMs = 5200 - living.items[0].offset + 800;
+    return true;
+  });
+  assert.ok(before);
+  await place(0.1, 0, 0);
+  const lateral = () =>
+    p.page.evaluate(() => {
+      const k = window.leogames.scene.getScene('Kart').game3d;
+      const r = k.humans[0];
+      return k.track.lateral(r.x, r.z, r.index);
+    });
+  const start = await lateral();
+  await p.wait(500);
+  assert.ok(Math.abs((await lateral()) - start) > 1, 'el chorro lo empuja de lado');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Clima que cambia (Y en las pantallas de escoger): en cada vuelta otro clima; otra carrera empieza como al principio.
+test('karts locos: clima que cambia', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await chooseKartMode(p, 0, 'Escoge pista');
+  // Y: de "De la pista" a "Cambia".
+  await p.tap(0, BUTTON.Y);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'race', ms(30000), 'empezar');
+  const weather = () => p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.weatherKey);
+  assert.equal(await weather(), 'sol');
+  // El primero empieza la vuelta 2: llueve (y se ve la lluvia en la pantalla).
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const r = k.racers[1];
+    r.lap = 1;
+    k.onLap(r);
+  });
+  assert.equal(await weather(), 'lluvia');
+  assert.ok(await p.page.evaluate(() => Boolean(document.querySelector('.kart-panel .rain'))), 'se ve la lluvia');
+  await p.page.evaluate(() => {
+    const k = window.leogames.scene.getScene('Kart').game3d;
+    const r = k.racers[1];
+    r.lap = 2;
+    k.onLap(r);
+  });
+  assert.equal(await weather(), 'noche');
+  assert.equal(await p.page.evaluate(() => document.querySelector('.kart-panel .rain')), null, 'ya no llueve');
+  // Otra carrera: otra vez soleado.
+  await p.page.evaluate(() => window.leogames.scene.getScene('Kart').game3d.showResults());
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda pedir otra');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown', ms(5000), 'otra carrera');
+  assert.equal(await weather(), 'sol');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+// Arma tu pista: mover un punto hasta que se encime no deja correr; acomodado, RT corre en "Mi pista", que luego
+// aparece al final de las pistas.
+test('karts locos: arma tu pista', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Karts locos');
+  await passGarage(p, 1);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'choose', ms(30000), 'ver los modos');
+  for (let i = 0; i < 8; i += 1) await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d?.phase === 'editor', ms(5000), 'abrir el editor');
+  const editor = (fn) => p.page.evaluate(fn);
+  // Agarra el punto de la derecha y lo jala hasta el otro lado: se encima.
+  await editor(() => (window.leogames.scene.getScene('Kart').game3d.editor.cursor = { x: 100, z: 0 }));
+  await p.tap(0, BUTTON.A);
+  await editor(() => (window.leogames.scene.getScene('Kart').game3d.editor.cursor = { x: -60, z: 10 }));
+  await p.wait(200);
+  assert.ok(await editor(() => Boolean(window.leogames.scene.getScene('Kart').game3d.editor.problem)), 'se encima');
+  await p.tap(0, BUTTON.RT);
+  assert.equal(await editor(() => window.leogames.scene.getScene('Kart').game3d.phase), 'editor', 'encimada no se puede correr');
+  // Lo deja en un buen lugar, le sube una loma y cambia el paisaje.
+  await editor(() => (window.leogames.scene.getScene('Kart').game3d.editor.cursor = { x: 60, z: 10 }));
+  await p.wait(200);
+  await p.tap(0, BUTTON.A);
+  await p.tap(0, BUTTON.RB);
+  await p.tap(0, BUTTON.Y);
+  const saved = await editor(() => JSON.parse(localStorage.getItem('leogames:kartMiPista')));
+  assert.equal(saved.theme, 'playa');
+  assert.deepEqual(saved.points[3], [60, 10, 10]);
+  await p.tap(0, BUTTON.RT);
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phase === 'countdown' || window.leogames.scene.getScene('Kart').game3d.phase === 'race', ms(15000), 'correr en mi pista');
+  assert.equal(await editor(() => window.leogames.scene.getScene('Kart').game3d.trackKey), 'mipista');
+  // B en los resultados: "Mi pista" está al final de las pistas.
+  await editor(() => window.leogames.scene.getScene('Kart').game3d.showResults());
+  await p.until(() => window.leogames.scene.getScene('Kart').game3d.phaseMs > 1300, ms(10000), 'que se pueda cambiar');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => document.querySelector('.kart-choose h1')?.textContent === 'Escoge pista', ms(30000), 'ver las pistas');
+  assert.ok(await editor(() => [...document.querySelectorAll('.kart-choose .card b')].at(-1).textContent === 'Mi pista'), 'Mi pista al final');
+  await p.holdToMenu(0, EXIT, 'salir de Karts locos');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('karts locos: escoger la pista de nieve y cambiar de pista', { timeout: ms(180000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['kart-gana'])));
@@ -1748,7 +1931,8 @@ test('karts locos: atajo, planeador, agua, lluvia y poderes nuevos', { timeout: 
   await p.openGameCard('Karts locos');
   await passGarage(p, 1);
   await pickRaceMode(p);
-  // Y = clima: "De la pista" → "Soleado" → "Lluvia".
+  // Y = clima: "De la pista" → "Cambia" → "Soleado" → "Lluvia".
+  await p.tap(0, BUTTON.Y);
   await p.tap(0, BUTTON.Y);
   await p.tap(0, BUTTON.Y);
   assert.match(await p.page.evaluate(() => document.querySelector('.kart-choose .options').textContent), /Lluvia/);

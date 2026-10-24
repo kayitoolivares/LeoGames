@@ -109,7 +109,7 @@ const CSS = `
 
 export class KartHud {
   // `views`: [{ x, y, w, h, scale, kind: 'player' | 'map' }] en pixeles del escenario de 1280x720.
-  // `rain`: lluvia encima de la pantalla de cada jugador.
+  // `rain`: lluvia encima de la pantalla de cada jugador (setRain la prende o la apaga si el clima cambia).
   constructor(stage, views, { rain = false } = {}) {
     if (!document.getElementById(STYLE_ID)) {
       const style = document.createElement('style');
@@ -145,6 +145,8 @@ export class KartHud {
         waterEl: part('water'),
         map: part('minimap')?.getContext('2d'),
         last: {},
+        panel,
+        kind: view.kind,
       };
     });
 
@@ -245,6 +247,16 @@ export class KartHud {
   // La repetición de la llegada: franjas de cine y se esconden los paneles.
   setReplay(on) {
     this.el.classList.toggle('replay', on);
+  }
+
+  // Lluvia encima de la pantalla de cada jugador (prendida o apagada).
+  setRain(on) {
+    for (const p of this.panels) {
+      if (p.kind === 'map') continue;
+      const rain = p.panel.querySelector('.rain');
+      if (on && !rain) p.panel.insertAdjacentHTML('afterbegin', '<div class="rain"></div>');
+      else if (!on) rain?.remove();
+    }
   }
 
   setCenter(text) {

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { addTreasureScenery } from './scenery2.js';
 
 const FLAKES = 900;
 const SNOW_TOP = 45;
@@ -122,6 +123,7 @@ export function addScenery(scene, track, kind) {
   else if (kind === 'party') return addParty(scene, track);
   else if (kind === 'dinos') addDinos(scene, track);
   else if (kind === 'clouds') addClouds(scene, track);
+  else return addTreasureScenery(scene, track, kind);
   return null;
 }
 
@@ -623,7 +625,7 @@ function addClouds(scene, track) {
 
 // Lugares a los lados del camino (afuera de las llantas), cada `every` muestras y alternando de lado (con la altura
 // del piso ahí, por las lomas).
-function roadside(track, every, gap) {
+export function roadside(track, every, gap) {
   const spots = [];
   for (let i = 10, side = 1; i < track.count; i += every, side = -side) {
     const spot = track.pointAt(i, side * (track.wallDistance + gap));
@@ -658,7 +660,7 @@ function bubbleTexture() {
 
 // Bolita de luz difuminada (fuego de las antorchas).
 let glow = null;
-function glowTexture() {
+export function glowTexture() {
   if (glow) return glow;
   const canvas = document.createElement('canvas');
   canvas.width = 32;

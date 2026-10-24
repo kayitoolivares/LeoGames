@@ -11,6 +11,9 @@
 // `shortcut`: el atajo secreto [desde, hasta] (ver shortcut.js). `gliders`: rampas azules que abren el planeador.
 // `water`: un túnel de agua [desde, hasta]; `underwater`: toda la pista va bajo el agua (hélice y saltos que flotan).
 // `weather`: el clima de siempre de la pista (si no se escoge otro): rain | snow | night.
+// `weatherShift`: el clima cambia en la última vuelta ({ to, say }), si se corre con el clima de la pista.
+// `living`: cosas que se mueven solas [{ kind: train | gates | cannons | bridge, at }] (ver living.js).
+// `roadTexture`: la textura del camino (si no, asfalto).
 export const TRACKS = {
   pradera: {
     name: 'Pradera',
@@ -37,6 +40,10 @@ export const TRACKS = {
     ramps: [0.13],
     shortcut: [0.398, 0.588],
     water: [0.66, 0.74],
+    living: [
+      { kind: 'cannons', at: 0.88 },
+      { kind: 'cannons', at: 0.91, side: -1 },
+    ],
     hazards: { kind: 'cangrejo', pattern: 'cross', spots: [0.22, 0.45, 0.86] },
     sky: 0x7fd6ff,
     ground: 0xf2d48a,
@@ -162,6 +169,7 @@ export const TRACKS = {
     gliders: [0.645],
     shortcut: [0.412, 0.568],
     water: [0.29, 0.37],
+    living: [{ kind: 'bridge', at: 0.93 }],
     hazards: { kind: 'tronco', pattern: 'roll', spots: [0.25, 0.68] },
     sky: 0x9be3c4,
     ground: 0x3f8a3a,
@@ -207,6 +215,8 @@ export const TRACKS = {
     ramps: [],
     gliders: [0.15],
     shortcut: [0.642, 0.823],
+    // Un trenecito de juguete cruza el camino.
+    living: [{ kind: 'train', at: 0.26 }],
     hazards: { kind: 'pelota', pattern: 'roll', spots: [0.47, 0.98] },
     sky: 0xbfe3ff,
     ground: 0x5b8fd9,
@@ -333,6 +343,103 @@ export const TRACKS = {
     theme: { decor: 'none', road: 0xbfe6ff, curbs: [0xffd02a, 0xffffff], barrierColors: [0xffffff, 0xffb3dc], glow: true },
     scenery: 'clouds',
   },
+  // Copa Tesoro.
+  desierto: {
+    name: 'Desierto',
+    emoji: '🌵',
+    unlock: null,
+    mapColor: 0xe0a050,
+    // Dunas, cactus y el cruce del tren en la recta de la meta; en la última vuelta se hace de noche.
+    points: [[-100, -40, 0], [-50, -72, 2], [20, -66, 6], [80, -78, 4], [106, -30, 2], [86, 14, 6], [40, 26, 10], [0, 8, 6], [-34, 36, 2], [-12, 76, 4], [-68, 82, 2], [-106, 32, 0]],
+    pads: [[0.04, 0], [0.32, -3], [0.56, 3], [0.84, 0]],
+    ramps: [0.17],
+    gliders: [0.75],
+    living: [{ kind: 'train', at: 0.91 }],
+    hazards: { kind: 'rodadora', pattern: 'roll', spots: [0.25, 0.62] },
+    weatherShift: { to: 'noche', say: '¡Ya se está haciendo de noche en el desierto!' },
+    sky: 0xffd9a0,
+    ground: 0xe8c07a,
+    groundLight: 0xc0905a,
+    mountains: 0xd0905a,
+    texture: 'arena',
+    textureTint: 0xffd29a,
+    dust: 0xf0d0a0,
+    theme: { decor: 'none', road: 0xb0865a, curbs: [0xffffff, 0xd9542a], barrierColors: [0xd9542a, 0xffd02a] },
+    scenery: 'desert',
+  },
+  neon: {
+    name: 'Ciudad de noche',
+    emoji: '🌃',
+    unlock: null,
+    mapColor: 0xff3bd2,
+    // Calles entre edificios con letreros de neón, plumas que suben y bajan y taxis que cruzan.
+    points: [[-100, -60, 0], [-20, -66, 0], [10, -40, 4], [60, -42, 4], [100, -66, 0], [104, 0, 2], [70, 30, 6], [96, 66, 4], [30, 74, 0], [-10, 46, 4], [-60, 70, 2], [-104, 30, 0]],
+    pads: [[0.04, 0], [0.33, 3], [0.6, -3], [0.86, 0]],
+    ramps: [0.93],
+    living: [
+      { kind: 'gates', at: 0.22 },
+      { kind: 'gates', at: 0.7 },
+    ],
+    hazards: { kind: 'taxi', pattern: 'cross', spots: [0.4, 0.8] },
+    weather: 'noche',
+    sky: 0x1a1240,
+    ground: 0x3a2a6a,
+    groundLight: 0x15102a,
+    mountains: null,
+    texture: 'neon',
+    dust: 0xb07cff,
+    light: 0.8,
+    theme: { decor: 'none', road: 0x4a4a5a, curbs: [0xff3bd2, 0x3fe0ff], barrierColors: [0xff3bd2, 0x3fe0ff], glow: true },
+    scenery: 'city',
+  },
+  casa: {
+    name: 'Casa gigante',
+    emoji: '🏠',
+    unlock: null,
+    mapColor: 0xc98a5a,
+    // Por el piso de la cocina (los karts son chiquititos): un puente de libros que se levanta y pantuflas que pisan.
+    points: [[-96, -50, 0], [-40, -76, 0], [30, -70, 4], [96, -60, 8], [104, -6, 4], [60, 14, 0], [24, -14, 2], [-14, 10, 6], [20, 44, 6], [70, 60, 2], [40, 84, 0], [-40, 78, 2], [-104, 30, 0]],
+    pads: [[0.04, 0], [0.28, -3], [0.55, 3], [0.9, 0]],
+    ramps: [],
+    gliders: [0.8],
+    living: [{ kind: 'bridge', at: 0.15 }],
+    hazards: { kind: 'pantufla', pattern: 'slam', spots: [0.36, 0.66] },
+    sky: 0xfff1d6,
+    ground: 0xd9e8f2,
+    groundLight: 0x8a7a6a,
+    mountains: null,
+    texture: 'azulejo',
+    roadTexture: 'madera',
+    dust: 0xe8d0b0,
+    theme: { decor: 'none', road: 0xffe2b8, curbs: [0xff5a5f, 0xffffff], barrierColors: [0x3fa7ff, 0xffd02a] },
+    scenery: 'house',
+  },
+  pirata: {
+    name: 'Barco pirata',
+    emoji: '🏴‍☠️',
+    unlock: null,
+    mapColor: 0x1f8ad0,
+    // Muelles de madera sobre el mar: cañones de agua, un puente levadizo y las balas del barco pirata. En la última
+    // vuelta llega la tormenta.
+    points: [[-104, 0, 0], [-80, -60, 2], [-16, -80, 4], [46, -62, 0], [96, -76, 2], [108, -20, 4], [70, 16, 0], [96, 56, 2], [46, 82, 4], [-10, 56, 0], [-56, 80, 2], [-100, 52, 0]],
+    pads: [[0.04, 0], [0.36, 3], [0.66, -3], [0.9, 0]],
+    ramps: [],
+    living: [
+      { kind: 'cannons', at: 0.1 },
+      { kind: 'cannons', at: 0.13, side: -1 },
+      { kind: 'bridge', at: 0.26 },
+    ],
+    hazards: { kind: 'bala-canon', pattern: 'fall' },
+    weatherShift: { to: 'lluvia', say: '¡Se viene la tormenta!' },
+    sky: 0x8fd3ff,
+    ground: 0x1f8ad0,
+    groundLight: 0x2a5a8a,
+    mountains: null,
+    roadTexture: 'madera',
+    dust: 0xd0e8ff,
+    theme: { decor: 'none', road: 0xffe2b8, curbs: [0x6a4a2a, 0xfff6e0], barrierColors: [0x6a4a2a, 0xffd02a] },
+    scenery: 'pirate',
+  },
 };
 
 export const TRACK_KEYS = Object.keys(TRACKS);
@@ -343,6 +450,7 @@ export const CUPS = {
   estrella: { name: 'Copa Estrella', emoji: '⭐', image: 'copa-estrella', tracks: ['nieve', 'castillo', 'espacio'], unlock: 'kart-espacio' },
   aventura: { name: 'Copa Aventura', emoji: '🧭', image: 'copa-aventura', tracks: ['selva', 'mar', 'juguetes', 'volcan'], unlock: null },
   sorpresa: { name: 'Copa Sorpresa', emoji: '🎁', image: 'copa-sorpresa', tracks: ['embrujada', 'pastel', 'dinos', 'nubes'], unlock: null },
+  tesoro: { name: 'Copa Tesoro', emoji: '💰', image: 'copa-tesoro', tracks: ['desierto', 'neon', 'casa', 'pirata'], unlock: null },
 };
 export const CUP_KEYS = Object.keys(CUPS);
 

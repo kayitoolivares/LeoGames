@@ -31,6 +31,8 @@ import { GhostKart, GhostRecorder, TIME_TRIAL_LAPS, formatTime, loadRecord, reco
 import { FinishReplay } from './replay.js';
 import { LESSONS, LESSON_KEYS, Lesson, MEDALS, goalsText, schoolMedals } from './school.js';
 import { BOSSES, WORLDS, adventure, nextStage, stagePassed } from './adventure.js';
+import { LivingTrack } from './living.js';
+import { CUSTOM_KEY, TrackEditor, customLook } from './editor.js';
 import { RaceTalk, assignPersonalities, nameOf, personalityOf, rivalPush } from './rivals.js';
 import { numberStep } from '../smash/bloquecito.js';
 import { CHARACTER_KEYS } from '../smash/characters.js';
@@ -152,7 +154,10 @@ const MODES = [
   { key: 'elimination', emoji: '💥', name: 'Eliminación', info: 'Cada ratito sale el que va al último: gana el que quede' },
   { key: 'school', emoji: '🎓', name: 'Escuela de manejo', info: 'Retos cortitos con medallas de oro, plata y bronce' },
   { key: 'adventure', emoji: '🗺️', name: 'Aventura', info: 'Retos uno tras otro y un jefe en su kart al final de cada mundo' },
+  { key: 'editor', emoji: '🛠️', name: 'Arma tu pista', info: 'Dibuja tu propia pista moviendo puntos y córrela' },
 ];
+// "Clima que cambia": en cada vuelta, el que sigue.
+const WEATHER_CYCLE = ['sol', 'lluvia', 'noche', 'nieve'];
 // Aventura: cada cuánto avienta algo el jefe (y lo que dice).
 const BOSS_ATTACK_MS = [5500, 8500];
 const BOSS_TAUNTS = ['¡Jo, jo, jo! ¡Nadie me gana!', '¡Ahí les va uno!', '¡Atrápenme si pueden!', '¡Soy el más rápido!'];
@@ -293,8 +298,30 @@ export class KartGame {
       else if (key === 'battle') this.showBattles();
       else if (key === 'school') this.showSchool();
       else if (key === 'adventure') this.showAdventure();
+      else if (key === 'editor') this.showEditor();
       else this.showTracks();
     });
+  }
+
+  // Arma tu pista (ver editor.js): RT la corre y B regresa a los modos.
+  showEditor() {
+    this.phase = 'editor';
+    this.editor = new TrackEditor(this.view.stage);
+  }
+
+  updateEditor(dtMs) {
+    const id = players.host()?.deviceId;
+    if (!id) return;
+    const result = this.editor.update(dtMs, id);
+    if (!result) return;
+    this.editor.destroy();
+    this.editor = null;
+    if (result === 'back') {
+      this.showModes();
+      return;
+    }
+    TRACKS[CUSTOM_KEY] = customLook();
+    this.build(CUSTOM_KEY);
   }
 
   // La Aventura: primero el mundo (con cuántos retos lleva) y luego el reto.
@@ -392,20 +419,24 @@ export class KartGame {
   }
 
   showTracks() {
-    const cards = TRACK_KEYS.map((key) => ({
+    // Al final, la pista que armó la familia (si ya hicieron una).
+    const custom = customLook();
+    if (custom) TRACKS[CUSTOM_KEY] = custom;
+    const keys = custom ? [...TRACK_KEYS, CUSTOM_KEY] : TRACK_KEYS;
+    const cards = keys.map((key) => ({
       ...TRACKS[key],
-      open: this.openTracks.includes(key),
+      open: key === CUSTOM_KEY || this.openTracks.includes(key),
       lock: TRACKS[key].unlock ? UNLOCKS[TRACKS[key].unlock].label : '',
       outline: trackOutline(TRACKS[key]),
       color: hexToCss(TRACKS[key].mapColor ?? TRACKS[key].ground),
     }));
     this.choose(
       cards,
-      Math.max(0, TRACK_KEYS.indexOf(lastTrack)),
+      Math.max(0, keys.indexOf(lastTrack)),
       'Escoge pista',
       (i) => {
         this.closeChooser();
-        this.build(TRACK_KEYS[i]);
+        this.build(keys[i]);
       },
       () => this.showModes(),
     );
@@ -483,6 +514,8 @@ export class KartGame {
   // Arma la pista escogida con su cielo, su piso y sus adornos, y empieza la carrera.
   build(key) {
     lastTrack = key;
+    // (La pista armada por la familia, como quedó guardada.)
+    if (key === CUSTOM_KEY) TRACKS[CUSTOM_KEY] = customLook() ?? TRACKS.pradera;
     const look = TRACKS[key];
     this.trackKey = key;
     this.trackLook = look;
@@ -490,7 +523,11 @@ export class KartGame {
     const speed = SPEEDS[options.speed];
     this.speedFactor = speed.factor;
     this.mirror = Boolean(speed.mirror);
-    this.weatherKey = this.stageData?.weather ?? (options.weather === 'auto' ? (look.weather ?? 'sol') : options.weather);
+    const trackWeather = options.weather === 'auto' || options.weather === 'cambia';
+    this.weatherKey = this.stageData?.weather ?? (trackWeather ? (look.weather ?? 'sol') : options.weather);
+    // Clima que cambia: en cada vuelta ("Cambia") o el de la pista en la última vuelta (weatherShift).
+    this.weatherPlan = this.stageData ? null : options.weather === 'cambia' ? 'cycle' : options.weather === 'auto' ? (look.weatherShift ?? null) : null;
+    this.leaderLap = 0;
     const weather = WEATHERS[this.weatherKey];
     this.skyTint = weather.sky ?? 1;
     this.setSky(dim(look.sky, this.skyTint), look.groundLight, (look.light ?? 1) * (weather.light ?? 1), look.fog);
@@ -505,7 +542,7 @@ export class KartGame {
       glow: look.theme?.glow || this.weatherKey === 'noche',
       groundMap: this.artTexture('texturas', look.texture),
       groundTint: look.textureTint,
-      roadMap: this.artTexture('texturas', 'asfalto'),
+      roadMap: this.artTexture('texturas', look.roadTexture ?? 'asfalto'),
     };
     this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points, ground: look.ground, snowy: look.snowy, theme });
     // El atajo: antes de dibujar la pista, para dejar el hueco en las llantas y no poner árboles en el caminito.
@@ -523,8 +560,9 @@ export class KartGame {
     const pads = this.mirror ? look.pads.map(([at, lane]) => [at, -lane]) : look.pads;
     this.features = new TrackFeatures(this.scene, this.track, { pads, ramps: look.ramps, gliders: look.gliders, water: look.water });
     this.coins = new Coins(this.scene, this.track);
-    // (En la escuela no hay peligros.)
+    // (En la escuela no hay peligros ni cosas que se mueven.)
     this.hazards = look.hazards && !this.lessonKey ? new Hazards(this.scene, this.track, look.hazards) : null;
+    this.living = look.living?.length && !this.lessonKey ? new LivingTrack(this.scene, this.track, look.living, { onHit: (racer, text) => this.onLivingHit(racer, text) }) : null;
     // En el contrarreloj y en la escuela no hay cajitas (ni compu).
     const alone = this.timeTrial || Boolean(this.lessonKey);
     this.boxes = new ItemBoxes(this.scene, this.track, alone ? [] : null);
@@ -533,6 +571,7 @@ export class KartGame {
     this.projectiles = new Projectiles(this.scene);
     this.createRacers(alone ? 0 : TOTAL_RACERS);
     this.weather = new Weather(this.scene, this.track, this.weatherKey, this.racers);
+    this.startWeather = this.weatherKey;
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views, { rain: this.weatherKey === 'lluvia' });
     this.hud.setMapOutline(this.track.points);
@@ -549,10 +588,58 @@ export class KartGame {
     this.scene.background = new THREE.Color(sky);
     this.fog = new THREE.Fog(sky, ...fog);
     this.scene.fog = this.fog;
-    this.scene.add(new THREE.HemisphereLight(0xffffff, groundLight, 1.2 * light));
+    this.hemi = new THREE.HemisphereLight(0xffffff, groundLight, 1.2 * light);
+    this.scene.add(this.hemi);
     const sun = new THREE.DirectionalLight(0xffffff, 1.6 * light);
     sun.position.set(50, 100, 30);
     this.scene.add(sun);
+    this.sun = sun;
+  }
+
+  // El clima cambia a media carrera: se quita el de antes, se pone el nuevo y el cielo y la luz se ajustan.
+  changeWeather(key, text) {
+    if (key === this.weatherKey) return;
+    this.weather?.dispose();
+    this.weatherKey = key;
+    this.weather = new Weather(this.scene, this.track, key, this.racers);
+    const weather = WEATHERS[key];
+    const look = this.trackLook;
+    const tint = weather.sky ?? 1;
+    const light = (look.light ?? 1) * (weather.light ?? 1);
+    this.hemi.intensity = 1.2 * light;
+    this.sun.intensity = 1.6 * light;
+    if (this.panoramaColors) {
+      const [sky, horizon] = this.panoramaColors;
+      this.scene.background = sky.clone().multiplyScalar(tint);
+      this.fog.color.copy(horizon).multiplyScalar(tint);
+      this.panorama.material.color.setScalar(Math.max(0.35, tint));
+    } else {
+      this.scene.background = new THREE.Color(dim(look.sky, tint));
+      this.fog.color.setHex(dim(look.sky, tint));
+    }
+    this.hud.setRain(key === 'lluvia');
+    if (text) this.talk.line(text, { important: true, voice: text });
+  }
+
+  // El que va primero empezó otra vuelta: con "Cambia" cambia el clima; si la pista lo trae, en la última vuelta.
+  shiftWeather(lap) {
+    const plan = this.weatherPlan;
+    if (!plan || this.phase !== 'race') return;
+    if (plan === 'cycle') {
+      const next = WEATHER_CYCLE[(WEATHER_CYCLE.indexOf(this.weatherKey) + 1) % WEATHER_CYCLE.length];
+      this.changeWeather(next, `¡Cambió el clima! ${WEATHERS[next].name}`);
+    } else if (lap === this.laps - 1 && this.laps > 1) {
+      this.changeWeather(plan.to, plan.say ?? `¡Cambió el clima! ${WEATHERS[plan.to].name}`);
+    }
+  }
+
+  // Le pegó algo de la pista (el tren): da vueltas como con un peligro.
+  onLivingHit(racer, text) {
+    const hurt = racer.hit();
+    if (hurt) this.particles.burst('spark', racer.x, racer.y + 1.5, racer.z, 12, HIT_COLORS);
+    if (racer.isCpu || (!hurt && racer.invincible)) return;
+    if (hurt) sfx.hit(0.7);
+    racer.say(hurt ? text : '¡La burbuja te salvó!');
   }
 
   // Batalla: la arena en vez de pista, con 4 karts. `kind`: globos, estrella o monedas.
@@ -627,6 +714,8 @@ export class KartGame {
     const tint = this.skyTint ?? 1;
     const texture = new THREE.TextureLoader().load(`kart/fondos/${key}.jpg`, (loaded) => {
       const [sky, horizon] = sampleColors(loaded.image);
+      // (Se guardan sin oscurecer, por si el clima cambia a media carrera.)
+      this.panoramaColors = [sky.clone(), horizon.clone()];
       this.scene.background = sky.multiplyScalar(tint);
       this.fog.color.copy(horizon.multiplyScalar(tint));
     });
@@ -756,6 +845,9 @@ export class KartGame {
     this.endCeremony();
     this.laps = this.timeTrial ? TIME_TRIAL_LAPS : options.laps;
     this.level = LEVELS[options.level];
+    // Otra carrera: con el clima del principio.
+    this.leaderLap = 0;
+    if (this.startWeather && this.weatherKey !== this.startWeather) this.changeWeather(this.startWeather, null);
     music.setTempo(1);
     this.projectiles.clear();
     this.phase = 'countdown';
@@ -926,6 +1018,10 @@ export class KartGame {
       this.updateChooser();
       return;
     }
+    if (this.phase === 'editor') {
+      this.updateEditor(dtMs);
+      return;
+    }
     this.snow?.update(dtMs / 1000);
     this.scenery?.update(dtMs / 1000);
     if (this.phase === 'replay') {
@@ -1008,6 +1104,8 @@ export class KartGame {
     this.features.update(dtMs, this.racers, {
       onBoost: (racer) => this.announce(racer, 'pad'),
     });
+    // Tren, plumas, cañones de agua y puentes (el puente sube el piso: después de las rampas).
+    this.living?.update(dtMs, this.racers);
     // En el atajo el piso es el del caminito.
     for (const racer of this.racers) {
       if (!racer.shortcut) continue;
@@ -1214,7 +1312,8 @@ export class KartGame {
   // Cada piloto de la compu maneja según su personalidad (ver rivals.js) y le echa más ganas con su rival cerca.
   cpuInput(racer, ranking) {
     const style = personalityOf(racer);
-    let target = this.track.pointAt(racer.index + CPU_LOOKAHEAD, racer.lane);
+    // (Si hay plumas adelante, por el lado que está abierto.)
+    let target = this.track.pointAt(racer.index + CPU_LOOKAHEAD, this.living?.cpuLane(racer) ?? racer.lane);
     // El atajo: si decidió tomarlo, se pega a la orilla junto a la entrada y se mete; adentro sigue el caminito.
     const sc = this.shortcut;
     if (sc && !racer.finished) {
@@ -1495,6 +1594,11 @@ export class KartGame {
 
   onLap(racer) {
     const laps = this.laps;
+    // El primero que empieza otra vuelta: quizá cambia el clima.
+    if (racer.lap > this.leaderLap && racer.lap < laps) {
+      this.leaderLap = racer.lap;
+      this.shiftWeather(racer.lap);
+    }
     // La compu decide en cada vuelta si toma el atajo (según su nivel y su personalidad).
     if (racer.isCpu && this.shortcut) racer.planShortcut = Math.random() < (CPU_SHORTCUT[options.level] + personalityOf(racer).shortcut) / 2;
     // Contrarreloj: el tiempo de cada vuelta.
@@ -1951,6 +2055,8 @@ export class KartGame {
     for (const racer of this.humans ?? []) racer.engine?.stop();
     music.setTempo(1);
     this.lesson?.dispose();
+    this.living?.dispose();
+    this.editor?.destroy();
     this.projectiles?.dispose();
     this.features?.dispose();
     this.hazards?.dispose();
