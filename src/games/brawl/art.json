@@ -8,6 +8,14 @@
     "cupcake",
     "dragon-lava",
     "gomita",
+    "gran-hongo-ataque",
+    "gran-hongo-burla",
+    "gran-hongo-cargando",
+    "gran-hongo-derrotado",
+    "gran-hongo-dolor",
+    "gran-hongo-furioso",
+    "gran-hongo-mareado",
+    "gran-hongo-paso",
     "gran-hongo",
     "gran-yeti",
     "hongo",
@@ -18,6 +26,14 @@
     "ovni",
     "rey-calabaza",
     "rey-pastel",
+    "rey-slime-ataque",
+    "rey-slime-burla",
+    "rey-slime-cargando",
+    "rey-slime-derrotado",
+    "rey-slime-dolor",
+    "rey-slime-furioso",
+    "rey-slime-mareado",
+    "rey-slime-paso",
     "rey-slime",
     "robotito",
     "slime-grande",
@@ -58,5 +74,207 @@
     "sombrero-mago",
     "sombrero-pirata",
     "sombrero-vaquero"
-  ]
+  ],
+  "metrics": {
+    "almeja": [
+      49085,
+      0.514,
+      245
+    ],
+    "calabaza": [
+      48997,
+      0.502,
+      256
+    ],
+    "cangrejo": [
+      31234,
+      0.502,
+      183
+    ],
+    "capitan-pulpo": [
+      34412,
+      0.506,
+      212
+    ],
+    "caramelo": [
+      36105,
+      0.404,
+      226
+    ],
+    "cupcake": [
+      36601,
+      0.505,
+      256
+    ],
+    "dragon-lava": [
+      38626,
+      0.538,
+      256
+    ],
+    "gomita": [
+      38862,
+      0.461,
+      256
+    ],
+    "gran-hongo-ataque": [
+      38623,
+      0.537,
+      218
+    ],
+    "gran-hongo-burla": [
+      41986,
+      0.462,
+      256
+    ],
+    "gran-hongo-cargando": [
+      46658,
+      0.498,
+      256
+    ],
+    "gran-hongo-derrotado": [
+      34893,
+      0.439,
+      187
+    ],
+    "gran-hongo-dolor": [
+      40718,
+      0.518,
+      242
+    ],
+    "gran-hongo-furioso": [
+      45301,
+      0.5,
+      256
+    ],
+    "gran-hongo-mareado": [
+      43909,
+      0.52,
+      256
+    ],
+    "gran-hongo-paso": [
+      45130,
+      0.502,
+      239
+    ],
+    "gran-hongo": [
+      46207,
+      0.502,
+      256
+    ],
+    "gran-yeti": [
+      46347,
+      0.443,
+      256
+    ],
+    "hongo": [
+      43715,
+      0.502,
+      256
+    ],
+    "marcianito": [
+      29690,
+      0.421,
+      256
+    ],
+    "mega-robot": [
+      32256,
+      0.549,
+      205
+    ],
+    "muneco-nieve": [
+      37517,
+      0.506,
+      256
+    ],
+    "murcielago": [
+      20433,
+      0.498,
+      148
+    ],
+    "ovni": [
+      31006,
+      0.502,
+      186
+    ],
+    "rey-calabaza": [
+      41591,
+      0.537,
+      256
+    ],
+    "rey-pastel": [
+      45267,
+      0.502,
+      256
+    ],
+    "rey-slime-ataque": [
+      26737,
+      0.541,
+      174
+    ],
+    "rey-slime-burla": [
+      37697,
+      0.557,
+      228
+    ],
+    "rey-slime-cargando": [
+      30330,
+      0.576,
+      190
+    ],
+    "rey-slime-derrotado": [
+      20163,
+      0.518,
+      137
+    ],
+    "rey-slime-dolor": [
+      35982,
+      0.541,
+      216
+    ],
+    "rey-slime-furioso": [
+      35750,
+      0.553,
+      219
+    ],
+    "rey-slime-mareado": [
+      37305,
+      0.518,
+      235
+    ],
+    "rey-slime-paso": [
+      37248,
+      0.557,
+      229
+    ],
+    "rey-slime": [
+      35140,
+      0.553,
+      216
+    ],
+    "robotito": [
+      36924,
+      0.439,
+      256
+    ],
+    "slime-grande": [
+      51813,
+      0.498,
+      248
+    ],
+    "slime-lava": [
+      51798,
+      0.498,
+      248
+    ],
+    "slime": [
+      51816,
+      0.498,
+      248
+    ],
+    "yeti-bebe": [
+      38286,
+      0.528,
+      256
+    ]
+  }
 }

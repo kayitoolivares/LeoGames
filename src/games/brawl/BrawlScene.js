@@ -600,7 +600,7 @@ export class BrawlScene extends Phaser.Scene {
           this.add.circle(0, 0, FIREBALL.radius, core).setStrokeStyle(4, edge),
         ]);
         sprite.setDepth(request.y + 1);
-        this.fireballs.push({ x: request.x, y: request.y, dir: request.dir, look: request.look, sprite });
+        this.fireballs.push({ x: request.x, y: request.y, dir: request.dir, look: request.look, sprite, owner: request.owner });
         sfx.special();
       } else if (request.kind === 'angry') {
         // A la mitad de su vida el jefe se enoja: se pone rojo, va más rápido y usa sus poderes más seguido.
@@ -619,6 +619,7 @@ export class BrawlScene extends Phaser.Scene {
       ball.sprite.setPosition(ball.x, ball.y - 30).setAngle(ball.x);
       const victim = this.fighters.find((f) => !f.down && Math.abs(f.x - ball.x) < f.radius + FIREBALL.radius && Math.abs(f.y - ball.y) < FIREBALL.lane);
       if (victim && victim.hurt(ball.x)) {
+        ball.owner?.taunt();
         popText(this, victim.x, victim.y - 90, FIREBALL_WORDS[ball.look] ?? '¡Auch!', '#ff9a3c');
         burst(this, ball.x, ball.y - 30, FIREBALL_LOOKS[ball.look]?.[0] ?? 0xff9a3c, 10);
         ball.sprite.destroy();
@@ -707,7 +708,10 @@ export class BrawlScene extends Phaser.Scene {
       for (const fighter of this.fighters) {
         if (monster.hitDuringLunge.has(fighter) || !monster.touches(fighter)) continue;
         monster.hitDuringLunge.add(fighter);
-        if (fighter.hurt(monster.x)) popText(this, fighter.x, fighter.y - 90, '¡Auch!', '#ff5a7a');
+        if (fighter.hurt(monster.x)) {
+          popText(this, fighter.x, fighter.y - 90, '¡Auch!', '#ff5a7a');
+          monster.taunt();
+        }
       }
     }
   }
@@ -1048,6 +1052,7 @@ export class BrawlScene extends Phaser.Scene {
     }
     this.coins.drop(monster.x, monster.y, coinsFor(monster));
     if (!monster.type.small || Math.random() < HEART_DROP_CHANCE) this.dropHeart(monster.x, monster.y);
+    monster.leaveBody();
     monster.destroy();
   }
 
@@ -1255,6 +1260,8 @@ export class BrawlScene extends Phaser.Scene {
 
   lose() {
     this.endMs = 0;
+    // Los monstruos se carcajean.
+    for (const monster of this.monsters) monster.taunt(6000);
     if (this.endless || this.bossRush) {
       const extra = this.saveRecords();
       this.phase = 'results';

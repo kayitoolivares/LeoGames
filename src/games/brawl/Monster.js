@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Blob } from '../../ui/Blob.js';
 import { COLORS, textStyle } from '../../ui/style.js';
-import { monsterTexture } from './art.js';
+import { brawlCreature, monsterTexture } from './art.js';
 import { ARENA } from './arena.js';
 
 // Los monstruos de los mundos. `art` es su imagen (npm run arte); sin ella se dibuja una bolita enojada.
@@ -172,6 +172,8 @@ export class Monster {
       this.image = scene.add.image(0, this.radius, key).setOrigin(0.5, 1);
       this.image.setScale((this.radius * 2.6) / Math.max(this.image.width, this.image.height));
       this.sprite.figure.addAt(this.image, 0);
+      // Camina, se agacha antes de lanzarse, ataca, le duele, se burla y (los jefes) se enoja y se marea.
+      this.creature = brawlCreature(scene, this.image, this.type.art, this.radius * 2.6);
     } else if (this.type.crown) {
       this.sprite.figure.add(drawCrown(scene, this.radius));
     }
@@ -202,6 +204,7 @@ export class Monster {
     this.stateMs -= dtMs;
     this.retargetMs -= dtMs;
     this.hopMs += dtMs;
+    this.dizzyMs = Math.max(0, (this.dizzyMs ?? 0) - dtMs);
     this.slowMs = Math.max(0, this.slowMs - dtMs);
     // El jefe se enoja a la mitad de su vida (la escena pone el letrero).
     if (this.type.boss && !this.angry && this.hp <= this.maxHp / 2 && !this.dead) {
@@ -221,7 +224,7 @@ export class Monster {
     if (this.state === 'chase') this.chase(dt);
     else if (this.state === 'windup' && this.stateMs <= 0) this.setState('lunge', LUNGE_MS);
     else if (this.state === 'aim' && this.stateMs <= 0) {
-      this.request = { kind: 'fireball', x: this.x + this.facing * this.radius, y: this.y, dir: this.facing, look: this.type.fireball.look ?? 'fire' };
+      this.request = { kind: 'fireball', x: this.x + this.facing * this.radius, y: this.y, dir: this.facing, look: this.type.fireball.look ?? 'fire', owner: this };
       this.setState('rest', REST_MS);
     } else if (this.state === 'lunge') {
       this.x += this.facing * LUNGE_SPEED * dt;
@@ -329,6 +332,39 @@ export class Monster {
     }
     if (this.type.stagger && !this.mini && this.state !== 'thrown') this.setState('hurt', HURT_MS);
     if (this.hp <= 0) this.dead = true;
+    this.creature?.hurt(350);
+    // A los grandes, un remate o un especial los marea un ratito.
+    if (this.isBig && power >= 2) this.dizzyMs = 900;
+  }
+
+  // Le pegó a un jugador (o ganaron los monstruos): se carcajea.
+  taunt(ms) {
+    this.creature?.taunt(ms);
+  }
+
+  // Qué está haciendo, para su pose (ver ui/creature.js).
+  creaturePose() {
+    if (this.grabbedBy || this.state === 'thrown' || this.state === 'hurt') return 'dolor';
+    if (this.dizzyMs > 0) return 'mareado';
+    if (this.state === 'windup' || this.state === 'aim') return 'cargando';
+    if (this.state === 'lunge') return 'ataque';
+    return this.state === 'chase' ? 'caminar' : 'normal';
+  }
+
+  // Al vencerlo queda tirado con su pose de derrotado (o de dolor) y se desvanece.
+  leaveBody() {
+    const image = this.image;
+    if (!this.creature || !image) return;
+    this.creature.hurtMs = 0;
+    this.creature.set('derrotado');
+    this.creature.update(16);
+    const body = this.scene.add
+      .image(this.x, this.y + this.radius, image.texture.key)
+      .setOrigin(image.originX, 1)
+      .setScale(image.scaleX, image.scaleY)
+      .setFlipX(image.flipX)
+      .setDepth(this.y - 1);
+    this.scene.tweens.add({ targets: body, scaleY: image.scaleY * 0.55, alpha: 0, delay: 650, duration: 450, onComplete: () => body.destroy() });
   }
 
   render() {
@@ -345,10 +381,19 @@ export class Monster {
     let lift = 0;
     if (this.type.hop && this.state === 'chase') lift = Math.abs(Math.sin(this.hopMs / 180)) * HOP_HEIGHT;
     if (this.type.fly) lift = 40 + Math.sin(this.hopMs / 160) * 10;
+    // Cada saltito, al caer, se aplasta.
+    const hop = Math.floor(this.hopMs / (180 * Math.PI));
+    if (this.type.hop && this.state === 'chase' && hop !== this.hopCount) this.creature?.land(0.45);
+    this.hopCount = hop;
     if (this.grabbedBy) lift = this.grabbedBy.z + 46;
     if (this.state === 'thrown') lift = THROWN.height;
     this.sprite.figure.y = -lift;
     this.sprite.figure.angle = this.state === 'thrown' ? (this.sprite.figure.angle + 25 * this.thrownDir) % 360 : this.grabbedBy ? 180 : 0;
+    if (this.creature) {
+      this.creature.angry = this.angry;
+      this.creature.set(this.creaturePose());
+      this.creature.update();
+    }
   }
 
   destroy() {

@@ -1,5 +1,5 @@
 import { sfx } from '../../shared/sound.js';
-import { artImage } from './art.js';
+import { artImage, platCreature } from './art.js';
 import { moveBody } from './physics.js';
 import { T } from './tiles.js';
 
@@ -51,6 +51,8 @@ export class Boss {
     this.dead = false;
     this.look = artImage(scene, this.type.art, this.type.size, { color: this.type.color });
     this.sprite = scene.add.container(x, y, [this.look]).setDepth(42);
+    // Sus poses: camina, se agacha a cargar su ataque, se enoja con poca vida, se marea y queda aplastado.
+    this.creature = platCreature(scene, this.look, this.type.art, this.type.size);
     this.hazards = [];
     if (this.flying) {
       this.y = FLY_Y;
@@ -101,6 +103,7 @@ export class Boss {
       this.vy = Math.min(1000, this.vy + GRAVITY * dt);
       const wasAir = !this.onGround;
       moveBody(scene.level, this, dt);
+      if (this.onGround && wasAir) this.creature?.land(this.landShake ? 1.2 : 0.6);
       if (this.onGround && wasAir && this.landShake) {
         this.landShake = false;
         if (this.type.quake) scene.quake();
@@ -220,7 +223,7 @@ export class Boss {
           sfx.laser();
           scene.cameras.main.flash(80, 255, 255, 200);
         }
-        if (striking) for (const p of scene.players) if (p.active && Math.abs(p.x - hz.x) < 26 + p.w / 2) p.hurt();
+        if (striking) for (const p of scene.players) if (p.active && Math.abs(p.x - hz.x) < 26 + p.w / 2 && p.hurt()) this.taunt();
         if (hz.ms > 1500) {
           hz.sprite.destroy();
           return false;
@@ -231,7 +234,7 @@ export class Boss {
       if (!hz.sprite) hz.sprite = scene.add.circle(hz.x, hz.y, 18, core).setStrokeStyle(5, edge).setDepth(44);
       hz.x += hz.vx * dt;
       hz.sprite.setPosition(hz.x, hz.y + Math.sin(hz.ms / 60) * 3);
-      for (const p of scene.players) if (p.active && Math.abs(p.x - hz.x) < 18 + p.w / 2 && hz.y > p.y - p.h && hz.y < p.y) p.hurt();
+      for (const p of scene.players) if (p.active && Math.abs(p.x - hz.x) < 18 + p.w / 2 && hz.y > p.y - p.h && hz.y < p.y && p.hurt()) this.taunt();
       if (hz.x < this.arena.left - 40 || hz.x > this.arena.right + 40) {
         hz.sprite.destroy();
         return false;
@@ -250,9 +253,32 @@ export class Boss {
     return this.damage(CHIP);
   }
 
+  // Le pegó a un jugador: se carcajea.
+  taunt(ms = 1100) {
+    this.creature?.taunt(ms);
+  }
+
+  // Qué está haciendo, para su pose (ver ui/creature.js): antes de cada ataque se agacha a cargarlo.
+  creaturePose() {
+    if (this.dead) return 'derrotado';
+    if (this.stunMs > 0) return 'mareado';
+    const { behavior } = this.type;
+    const state = this.state;
+    if (behavior === 'jumper') return state === 'jump' ? 'ataque' : this.stateMs > 1800 ? 'cargando' : 'caminar';
+    if (behavior === 'charger') return state === 'charge' ? 'ataque' : this.stateMs > 1500 ? 'cargando' : 'caminar';
+    if (behavior === 'flyer') {
+      if (state === 'rest') return 'mareado';
+      if (this.hazards.some((hz) => hz.kind === 'bolt' && hz.ms < 1100)) return 'cargando';
+      return state === 'float' ? 'caminar' : 'normal';
+    }
+    if (state === 'shoot') return this.stateMs < 350 ? 'cargando' : 'ataque';
+    return state === 'jump' ? 'ataque' : 'caminar';
+  }
+
   damage(amount) {
     if (this.dead || this.stunMs > 0) return false;
     this.hp -= amount;
+    this.creature?.hurt(amount >= 1 ? 450 : 250);
     this.look.setTint?.(0xff8a8a);
     this.scene.time.delayedCall(160, () => this.look.clearTint?.());
     if (amount >= 1) {
@@ -275,6 +301,12 @@ export class Boss {
     const stunned = this.stunMs > 0 && Math.floor(this.stunMs / 100) % 2 === 0;
     this.sprite.setAlpha(stunned ? 0.5 : 1);
     if (!this.dead) this.look.setAngle(this.state === 'charge' ? Math.sin(this.t * 30) * 4 : Math.sin(this.t * 6) * 2);
+    if (this.creature) {
+      // Con poca vida, enojado.
+      this.creature.angry = this.hp <= this.maxHp / 2;
+      this.creature.set(this.creaturePose());
+      this.creature.update();
+    }
   }
 
   destroy() {

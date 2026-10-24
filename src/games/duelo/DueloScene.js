@@ -1124,6 +1124,8 @@ export class DueloScene extends Phaser.Scene {
     }
     spark(this, x, y);
     burst(this, x, y, 0xffffff, data.launch ? 10 : 5);
+    // El jefe se carcajea cuando te pega.
+    if (attacker.boss) attacker.look.express?.('burla', 900);
     const big = data.grab || finisher || dealt >= 10;
     const word = data.grab ? '¡Agarrado!' : finisher ? '¡Remate!' : data.hammer ? '¡Martillazo!' : randomPow();
     comicHit(this, x, y - 50, word, { big, red: big });

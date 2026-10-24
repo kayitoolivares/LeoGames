@@ -1,5 +1,5 @@
 import { sfx } from '../../shared/sound.js';
-import { artImage } from './art.js';
+import { artImage, platCreature } from './art.js';
 import { moveBody } from './physics.js';
 import { T } from './tiles.js';
 
@@ -61,6 +61,8 @@ export class Enemy {
     this.awake = false;
     this.look = artImage(scene, this.type.art, this.type.size, { color: this.type.color });
     this.sprite = scene.add.container(x, y, [this.look]).setDepth(this.type.kind === 'plant' ? 5 : 40);
+    // Camina, ataca, le duele y se burla con sus poses (el fantasma ya cambia de cara solo; caparazones y balas no).
+    this.creature = ['boo', 'shell', 'bullet'].includes(this.type.kind) ? null : platCreature(scene, this.look, this.type.art, this.type.size);
     if (this.type.kind === 'podoboo') this.base = lavaBelow(scene.level, x, y);
     if (this.type.kind === 'plant') {
       // Sale del tubo que tiene abajo: escondida, la boca del tubo la tapa.
@@ -199,7 +201,10 @@ export class Enemy {
     const wasAir = !this.onGround;
     moveBody(scene.level, this, dt);
     if (this.onGround) {
-      if (wasAir) this.vx = 0;
+      if (wasAir) {
+        this.vx = 0;
+        this.creature?.land(0.7);
+      }
       if (this.stateMs > 1500) {
         this.stateMs = 0;
         this.vy = this.type.chase ? -560 : -760;
@@ -365,6 +370,7 @@ export class Enemy {
         this.state = 'land';
         this.stateMs = 0;
         this.vy = 0;
+        this.creature?.land(1);
         scene.cameras.main.shake(160, 0.008);
         sfx.boom();
       }
@@ -410,11 +416,31 @@ export class Enemy {
     sfx.throw();
   }
 
+  // Le pegó a un jugador: se carcajea.
+  taunt() {
+    this.creature?.taunt();
+  }
+
+  // Qué está haciendo, para su pose (ver ui/creature.js).
+  creaturePose() {
+    if (this.dead || this.state === 'pile') return 'dolor';
+    const kind = this.type.kind;
+    if (kind === 'walker' || kind === 'flyer' || kind === 'fish' || kind === 'cloud' || kind === 'jelly' || kind === 'floater') return 'caminar';
+    if (kind === 'bat') return this.state === 'swoop' ? 'ataque' : this.state === 'start' ? 'normal' : 'caminar';
+    if (kind === 'hopper') return this.onGround ? 'normal' : this.type.chase ? 'ataque' : 'paso';
+    if (kind === 'podoboo') return this.vy < 0 ? 'ataque' : 'paso';
+    if (kind === 'thwomp') return this.state === 'fall' ? 'ataque' : this.state === 'land' ? 'burla' : 'normal';
+    if (kind === 'plant') return this.state === 'up' ? 'ataque' : 'normal';
+    if (kind === 'icicle') return this.state === 'shake' || this.state === 'fall' ? 'ataque' : 'normal';
+    return 'normal';
+  }
+
   // how: 'stomp' | 'fire' | 'shell' | 'star' | 'tongue' | 'bump'
   kill(how, dir = 1) {
     if (this.dead) return;
     this.dead = true;
     this.stateMs = 0;
+    this.creature?.hurt(2000);
     if (how === 'stomp' && this.type.stomp === 'squash') {
       this.deathKind = 'squash';
       this.scene.tweens.add({ targets: this.sprite, scaleY: 0.3, alpha: 0.4, duration: 300 });
@@ -450,6 +476,11 @@ export class Enemy {
     if (this.type.kind === 'shell' && this.state === 'slide') this.look.setAngle?.(this.look.angle + this.vx * 0.05);
     if (this.type.kind === 'walker' && !this.dead && !this.frozen) this.look.setAngle?.(Math.sin(this.t * 12) * 5);
     if (this.type.kind === 'thwomp' && this.state === 'land') this.look.setAngle?.(Math.sin(this.stateMs / 30) * 2);
+    // Congelado se queda tieso en su pose.
+    if (this.creature && !this.frozen) {
+      this.creature.set(this.creaturePose());
+      this.creature.update();
+    }
   }
 }
 

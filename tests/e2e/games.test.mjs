@@ -2943,6 +2943,75 @@ test('súper bolitas: mapa por mundos, casita de hongo, enemigo del mapa, batall
   await p.context.close();
 });
 
+// Monstruos y jefes con poses (ui/creature.js): el Rey Cangrejo camina, carga su ataque, se marea, se enoja y se
+// burla; los monstruos de Pelea en equipo se agachan antes de lanzarse y quedan tirados al vencerlos.
+test('monstruos y jefes con poses en Súper Bolitas y Pelea en equipo', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 1, null);
+  await plat(p.page, () =>
+    import('/src/games/plat/levels.js').then(({ LEVELS }) => window.leogames.scene.getScene('Plat').startLevel(LEVELS.findIndex((l) => l.spec.boss === 'reyCangrejo'))),
+  );
+  await p.wait(1000);
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    const a = s.level.arena;
+    Object.assign(s.players[0], { x: (a.left + 3) * 48, y: (a.boss.row + 1) * 48, vy: 0, invulnMs: 1e9 });
+  });
+  await p.until(() => Boolean(window.leogames.scene.getScene('Plat').boss?.creature), ms(5000), 'que llegue el Rey Cangrejo con sus poses');
+  // Las poses se bajan cuando aparece.
+  await p.until(() => window.leogames.scene.getScene('Plat').textures.exists('plat:rey-cangrejo-mareado'), ms(10000), 'que se bajen sus poses');
+  const shown = (fn) =>
+    p.page.evaluate(async (code) => {
+      const b = window.leogames.scene.getScene('Plat').boss;
+      new Function('b', code)(b);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return b.creature.shown;
+    }, fn);
+  assert.ok(['normal', 'paso'].includes(await shown('b.setState("walk"); b.stateMs = 0;')), 'caminando');
+  assert.equal(await shown('b.stateMs = 1550;'), 'cargando');
+  assert.equal(await shown('b.stunMs = 1300; b.creature.hurtMs = 0;'), 'mareado');
+  assert.equal(await shown('b.stunMs = 0; b.hp = 1; b.update = () => {}; b.creaturePose = () => "normal";'), 'furioso');
+  assert.equal(await shown('b.taunt(3000);'), 'burla');
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+
+  await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'map', ms(8000), 'ver el mapa');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'fight', ms(8000), 'empezar en la Pradera');
+  await p.page.evaluate(() =>
+    import('/src/games/brawl/Monster.js').then(({ Monster }) => {
+      const s = window.leogames.scene.getScene('Brawl');
+      const m = new Monster(s, 'reySlime', 640, 470);
+      m.entered = true;
+      m.update = () => {};
+      s.monsters.push(m);
+      window.__slime = m;
+    }),
+  );
+  await p.until(() => window.leogames.scene.getScene('Brawl').textures.exists('brawl:rey-slime-cargando'), ms(10000), 'que se bajen las poses del Rey Slime');
+  const slime = (code) =>
+    p.page.evaluate(async (c) => {
+      new Function('m', c)(window.__slime);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      return window.__slime.creature.shown;
+    }, code);
+  assert.equal(await slime('m.setState("windup", 9999);'), 'cargando');
+  assert.equal(await slime('m.setState("lunge", 9999);'), 'ataque');
+  assert.equal(await slime('m.setState("rest", 9999); m.creature.hurt(2000);'), 'dolor');
+  // Al vencerlo queda tirado un ratito.
+  const bodies = await p.page.evaluate(async () => {
+    const s = window.leogames.scene.getScene('Brawl');
+    const before = s.children.list.length;
+    window.__slime.leaveBody();
+    return s.children.list.length - before;
+  });
+  assert.equal(bodies, 1, 'queda tirado al vencerlo');
+  await p.holdToMenu(0, EXIT, 'salir de Pelea en equipo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('música, voz y premios', { timeout: ms(60000) }, async () => {
   const p = await openPage(game);
   await p.page.evaluate(() => {

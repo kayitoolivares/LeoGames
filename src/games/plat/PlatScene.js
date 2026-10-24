@@ -1048,6 +1048,8 @@ export class PlatScene extends Phaser.Scene {
 
   playerDied(player) {
     this.deathAt = this.time.now;
+    // El jefe se carcajea un buen rato.
+    if (this.boss && !this.boss.dead) this.boss.taunt(2200);
     if (this.run?.mode === 'battle') {
       // En la batalla no hay vidas: pierde unas monedas y regresa.
       player.battleCoins = Math.max(0, player.battleCoins - BATTLE.drop);
@@ -1219,7 +1221,7 @@ export class PlatScene extends Phaser.Scene {
         if (!e.harmful) continue;
         // El caparazón que acabas de patear no te pega luego luego.
         if (e.type.kind === 'shell' && e.kickedBy === p && this.time.now - e.kickMs < 300) continue;
-        p.hurt();
+        if (p.hurt()) e.taunt();
       }
     }
   }
@@ -1367,6 +1369,7 @@ export class PlatScene extends Phaser.Scene {
         p.vx = Math.sign(p.x - boss.x) * 400;
       } else if (p.hurt()) {
         p.vx = Math.sign(p.x - boss.x) * 380;
+        boss.taunt();
       }
     }
   }

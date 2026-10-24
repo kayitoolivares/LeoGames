@@ -415,6 +415,14 @@ Iguales en todos los juegos (`src/ui/motion.js`, `src/ui/epic.js`, `src/ui/ambie
   respiran, parpadean y, si nadie los mueve, festejan o bailan; cayendo usan su pose de caída; corriendo se
   inclinan y echan polvito. Ponen caras (enojados al empezar la pelea, asustados si les pegan, mareados) y bailan
   al ganar.
+- **Monstruos y jefes con vida** (`src/ui/creature.js`, en Súper Bolitas, Pelea en equipo y el Duelo): cambian de
+  dibujo según lo que hacen —caminan alternando su paso, se agachan a cargar su ataque, atacan, les duele y se
+  carcajean cuando te pegan— y se estiran y aplastan como gelatina (rebotan en cada paso y al caer). Los jefes además
+  se ponen **furiosos** con poca vida (tiemblan de coraje), se **marean** y quedan **derrotados** (aplastados con ojos
+  de X). Las poses son dibujos de Gemini `<monstruo>-<pose>` (paso, ataque, dolor, burla; los jefes también furioso,
+  cargando, mareado y derrotado) en `arte/plat/enemigos`, `arte/plat/jefes`, `arte/brawl/monstruos` y
+  `arte/duelo/jefe` (este además paso, burla, gana y bloqueo); se bajan cuando el monstruo aparece y, si falta una,
+  se usa la que se parece.
 - **Golpes que se sienten**: el juego se congela un instante al pegar (más en los golpes fuertes), con destello,
   rayitas de cómic y onda de choque.
 - **Momentos épicos**: cámara lenta con acercamiento al vencer a un jefe, al llegar a la bandera, al meter gol y

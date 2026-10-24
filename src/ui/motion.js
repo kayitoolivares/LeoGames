@@ -16,7 +16,7 @@ const HIT = new Set(['golpe', 'patada', 'especial', 'agarre']);
 const CHAIN = {
   parpadeo: ['parpadeo'],
   feliz: ['feliz', 'gana'],
-  enojado: ['enojado'],
+  enojado: ['enojado', 'furioso'],
   asustado: ['asustado'],
   caer: ['caer'],
   mareado: ['mareado', 'dolor'],

@@ -69,7 +69,7 @@ const POSE_CHAIN = {
   golpe: ['golpe'],
   patada: ['patada', 'golpe'],
   especial: ['especial', 'golpe'],
-  cubrirse: ['cubrirse', 'normal'],
+  cubrirse: ['cubrirse', 'bloqueo', 'normal'],
   salto: ['salto'],
   dolor: ['dolor'],
   gana: ['gana', 'salto'],
@@ -77,7 +77,14 @@ const POSE_CHAIN = {
   agachado: ['agachado', 'cubrirse', 'normal'],
   agarre: ['agarre', 'golpe'],
   entrada: ['entrada', 'gana', 'normal'],
+  // Las de los jefes.
+  furioso: ['furioso', 'normal'],
+  cargando: ['cargando', 'golpe'],
+  mareado: ['mareado', 'dolor'],
+  derrotado: ['derrotado', 'dolor'],
 };
+// Al jefe, con poca vida, se le ve furioso.
+const BOSS_ANGRY = 0.35;
 // Bloquecito se dibuja con bloques: las poses nuevas usan las suyas más parecidas.
 const BLOCK_POSES = { aire: 'patada', agachado: 'patada', agarre: 'golpe', entrada: 'gana' };
 
@@ -219,6 +226,7 @@ export class DueloFighter {
     this.dash = null;
     this.vx = 0;
     this.hurtMs = Math.max(this.hurtMs, ms);
+    this.dizzyUntil = this.scene.time.now + ms;
   }
 
   // Agarró un objeto (ver items.js).
@@ -701,16 +709,25 @@ export class DueloFighter {
   // Qué pose mostrar según lo que está haciendo.
   pose() {
     if (this.celebrating && !this.defeated && !this.koed) return 'gana';
+    // Los jefes: vencidos quedan aplastados y, después de que les rebotan el golpe, mareados.
+    if (this.boss && (this.defeated || this.koed)) return 'derrotado';
+    if (this.boss && this.scene.time.now < (this.dizzyUntil ?? 0)) return 'mareado';
     if (this.defeated || this.koed || this.launched || this.downMs > 0 || this.hurtMs > 0) return 'dolor';
     if (this.cinematic) return this.cinematic;
     if (this.posing) return 'entrada';
     if (this.blocking) return this.crouching ? 'agachado' : 'cubrirse';
     if (this.attack) return ATTACK_POSES[this.attack.type] ?? 'golpe';
+    if (this.special && this.boss && this.special.t < this.special.startup) return 'cargando';
     if (this.special) return this.special.kind === 'teleport' && !this.special.fired ? 'normal' : 'especial';
     if (this.dash) return this.dash.back ? 'salto' : 'caminar';
     if (!this.grounded) return 'salto';
     if (this.crouching) return 'agachado';
-    return Math.abs(this.vx) > 20 ? 'caminar' : 'normal';
+    if (Math.abs(this.vx) > 20) return 'caminar';
+    return this.angryBoss ? 'furioso' : 'normal';
+  }
+
+  get angryBoss() {
+    return this.boss && this.health <= this.maxHealth * BOSS_ANGRY;
   }
 
   render(dtMs) {
@@ -721,6 +738,10 @@ export class DueloFighter {
     const art = this.look.character;
     const ground = this.look.groundPose(pose === 'caminar');
     let shown = pose === 'caminar' ? ground : (POSE_CHAIN[pose].find((p) => hasPose(this.scene, art, p)) ?? 'normal');
+    // Los jefes caminan alternando su paso (y enojados, con la cara de furioso).
+    if (pose === 'caminar' && this.boss && hasPose(this.scene, art, 'paso')) {
+      shown = Math.floor(this.look.walkStep / 2) % 2 ? 'paso' : this.angryBoss && hasPose(this.scene, art, 'furioso') ? 'furioso' : 'normal';
+    }
     // Bloquecito tiene todas las poses (se dibuja con bloques), y su especial se ve distinto en cada número.
     if (this.blocks && pose !== 'caminar') shown = BLOCK_POSES[pose] ?? pose;
     const walkFrames = shown.startsWith('caminar');

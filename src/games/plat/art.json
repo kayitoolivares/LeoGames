@@ -26,9 +26,37 @@
     "vela"
   ],
   "jefes": [
+    "rey-cangrejo-ataque",
+    "rey-cangrejo-burla",
+    "rey-cangrejo-cargando",
+    "rey-cangrejo-derrotado",
+    "rey-cangrejo-dolor",
+    "rey-cangrejo-furioso",
+    "rey-cangrejo-mareado",
+    "rey-cangrejo-paso",
     "rey-cangrejo",
+    "rey-dragon-ataque",
+    "rey-dragon-burla",
+    "rey-dragon-cargando",
+    "rey-dragon-derrotado",
+    "rey-dragon-dolor",
+    "rey-dragon-furioso",
+    "rey-dragon-mareado",
+    "rey-dragon-paso",
     "rey-dragon",
+    "rey-hongo-cargando",
+    "rey-hongo-derrotado",
+    "rey-hongo-furioso",
+    "rey-hongo-mareado",
     "rey-hongo",
+    "rey-nube-ataque",
+    "rey-nube-burla",
+    "rey-nube-cargando",
+    "rey-nube-derrotado",
+    "rey-nube-dolor",
+    "rey-nube-furioso",
+    "rey-nube-mareado",
+    "rey-nube-paso",
     "rey-nube"
   ],
   "objetos": [
@@ -69,5 +97,287 @@
     "murcielago2",
     "pajaro1",
     "pajaro2"
-  ]
+  ],
+  "metrics": {
+    "aplastador": [
+      23431,
+      0.503,
+      156
+    ],
+    "bola-fuego": [
+      14134,
+      0.541,
+      132
+    ],
+    "bola-nieve": [
+      19744,
+      0.497,
+      157
+    ],
+    "caparazon": [
+      14137,
+      0.497,
+      122
+    ],
+    "carambano": [
+      9593,
+      0.511,
+      160
+    ],
+    "chicle": [
+      19352,
+      0.5,
+      160
+    ],
+    "dona": [
+      11589,
+      0.484,
+      119
+    ],
+    "erizo": [
+      15597,
+      0.478,
+      133
+    ],
+    "esqueleto": [
+      12679,
+      0.484,
+      160
+    ],
+    "fantasma-boca": [
+      15520,
+      0.509,
+      146
+    ],
+    "fantasma": [
+      17058,
+      0.524,
+      160
+    ],
+    "galleta": [
+      15493,
+      0.486,
+      160
+    ],
+    "hongo-malo": [
+      17808,
+      0.507,
+      160
+    ],
+    "medusa": [
+      9893,
+      0.553,
+      104
+    ],
+    "murcielago": [
+      7316,
+      0.509,
+      82
+    ],
+    "nube-mala": [
+      13361,
+      0.484,
+      157
+    ],
+    "pajaro": [
+      11851,
+      0.447,
+      115
+    ],
+    "paleta": [
+      11523,
+      0.446,
+      160
+    ],
+    "pez": [
+      14132,
+      0.509,
+      128
+    ],
+    "pinguino-panza": [
+      14704,
+      0.547,
+      126
+    ],
+    "pinguino": [
+      15672,
+      0.528,
+      160
+    ],
+    "planta": [
+      12206,
+      0.513,
+      160
+    ],
+    "tortuga": [
+      15762,
+      0.523,
+      160
+    ],
+    "vela": [
+      10483,
+      0.5,
+      160
+    ],
+    "rey-cangrejo-ataque": [
+      32174,
+      0.411,
+      184
+    ],
+    "rey-cangrejo-burla": [
+      41993,
+      0.473,
+      201
+    ],
+    "rey-cangrejo-cargando": [
+      34269,
+      0.439,
+      179
+    ],
+    "rey-cangrejo-derrotado": [
+      20264,
+      0.489,
+      121
+    ],
+    "rey-cangrejo-dolor": [
+      37621,
+      0.473,
+      217
+    ],
+    "rey-cangrejo-furioso": [
+      35362,
+      0.442,
+      183
+    ],
+    "rey-cangrejo-mareado": [
+      30814,
+      0.486,
+      175
+    ],
+    "rey-cangrejo-paso": [
+      35009,
+      0.436,
+      183
+    ],
+    "rey-cangrejo": [
+      33995,
+      0.439,
+      178
+    ],
+    "rey-dragon-ataque": [
+      58073,
+      0.47,
+      268
+    ],
+    "rey-dragon-burla": [
+      63411,
+      0.461,
+      293
+    ],
+    "rey-dragon-cargando": [
+      62533,
+      0.461,
+      286
+    ],
+    "rey-dragon-derrotado": [
+      36054,
+      0.489,
+      173
+    ],
+    "rey-dragon-dolor": [
+      64095,
+      0.464,
+      294
+    ],
+    "rey-dragon-furioso": [
+      66888,
+      0.452,
+      293
+    ],
+    "rey-dragon-mareado": [
+      59530,
+      0.461,
+      272
+    ],
+    "rey-dragon-paso": [
+      64208,
+      0.461,
+      293
+    ],
+    "rey-dragon": [
+      61899,
+      0.461,
+      285
+    ],
+    "rey-hongo-cargando": [
+      61064,
+      0.548,
+      277
+    ],
+    "rey-hongo-derrotado": [
+      28512,
+      0.527,
+      127
+    ],
+    "rey-hongo-furioso": [
+      62111,
+      0.503,
+      320
+    ],
+    "rey-hongo-mareado": [
+      54349,
+      0.494,
+      320
+    ],
+    "rey-hongo": [
+      63448,
+      0.502,
+      320
+    ],
+    "rey-nube-ataque": [
+      41198,
+      0.48,
+      215
+    ],
+    "rey-nube-burla": [
+      41342,
+      0.483,
+      220
+    ],
+    "rey-nube-cargando": [
+      71472,
+      0.479,
+      320
+    ],
+    "rey-nube-derrotado": [
+      24833,
+      0.492,
+      130
+    ],
+    "rey-nube-dolor": [
+      43631,
+      0.48,
+      236
+    ],
+    "rey-nube-furioso": [
+      53009,
+      0.486,
+      240
+    ],
+    "rey-nube-mareado": [
+      57460,
+      0.486,
+      289
+    ],
+    "rey-nube-paso": [
+      42022,
+      0.483,
+      220
+    ],
+    "rey-nube": [
+      40074,
+      0.486,
+      214
+    ]
+  }
 }

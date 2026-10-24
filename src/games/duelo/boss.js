@@ -52,7 +52,8 @@ export const BOSS_KEYS = Object.keys(BOSSES);
 // El jefe del torneo.
 export const BOSS = 'rey';
 export const BOSS_STATS = BOSSES.rey;
-const POSES = ['normal', 'golpe', 'salto', 'dolor'];
+// (Las de pelea y las de jefe: camina, se burla, festeja, se cubre, se enoja, carga su especial, se marea y cae.)
+const POSES = ['normal', 'golpe', 'salto', 'dolor', 'paso', 'burla', 'gana', 'bloqueo', 'furioso', 'cargando', 'mareado', 'derrotado'];
 
 export function isBoss(character) {
   return Object.hasOwn(BOSSES, character);

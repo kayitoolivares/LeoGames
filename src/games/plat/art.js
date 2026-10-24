@@ -1,3 +1,5 @@
+import { Creature, isPoseName, requestCreaturePoses } from '../../ui/creature.js';
+import brawlManifest from '../brawl/art.json';
 import manifest from './art.json';
 
 // Arte de Súper Bolitas (Gemini), preparado con `npm run arte`. Si falta algo se dibuja con figuras. Del arte de
@@ -6,13 +8,27 @@ export function loadPlatArt(scene) {
   const load = (key, url) => {
     if (!scene.textures.exists(key)) scene.load.image(key, url);
   };
-  for (const name of manifest.enemigos ?? []) load(`plat:${name}`, `plat/enemigos/${name}.png`);
-  for (const name of manifest.jefes ?? []) load(`plat:${name}`, `plat/jefes/${name}.png`);
+  // (Las poses de cada uno se bajan cuando aparece: ver platCreature.)
+  for (const name of (manifest.enemigos ?? []).filter((n) => !isPoseName(n))) load(`plat:${name}`, `plat/enemigos/${name}.png`);
+  for (const name of (manifest.jefes ?? []).filter((n) => !isPoseName(n))) load(`plat:${name}`, `plat/jefes/${name}.png`);
   for (const name of manifest.objetos ?? []) load(`plat:objeto-${name}`, `plat/objetos/${name}.png`);
   for (const name of manifest.fondos ?? []) load(`plat:fondo-${name}`, `plat/fondos/${name}.jpg`);
   load('plat:dinosaurio', 'brawl/objetos/dinosaurio.png');
   // Del arte de Pelea en equipo: el cangrejo, el pulpo (mini jefe) y los jefes de nieve, dulces y la casa embrujada.
   for (const name of ['cangrejo', 'capitan-pulpo', 'gran-yeti', 'rey-pastel', 'rey-calabaza']) load(`plat:${name}`, `brawl/monstruos/${name}.png`);
+}
+
+// Un enemigo o jefe con vida (ui/creature.js): sus poses se bajan cuando aparece. null si se dibuja con figuras.
+export function platCreature(scene, image, key, size) {
+  if (!image.setTexture) return null;
+  const art = key.slice('plat:'.length);
+  const [dir, list] = (manifest.enemigos ?? []).includes(art)
+    ? ['plat/enemigos', manifest.enemigos]
+    : (manifest.jefes ?? []).includes(art)
+      ? ['plat/jefes', manifest.jefes]
+      : ['brawl/monstruos', brawlManifest.monstruos ?? []];
+  requestCreaturePoses(scene, key, (pose) => `${dir}/${art}-${pose}.png`, list);
+  return new Creature(scene, image, key, { size, metrics: { ...brawlManifest.metrics, ...manifest.metrics } });
 }
 
 export function platTexture(scene, key) {
