@@ -1006,6 +1006,7 @@
   ],
   "backgrounds": [
     "barco",
+    "cancha",
     "castillo",
     "ciudad",
     "embrujada",
@@ -1015,6 +1016,7 @@
     "mar",
     "nubes",
     "pastel",
+    "ring",
     "selva",
     "volcan"
   ],

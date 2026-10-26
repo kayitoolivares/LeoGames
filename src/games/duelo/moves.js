@@ -45,6 +45,8 @@ export const SPECIALS = {
   astronauta: { kind: 'rise', name: 'Mochila cohete', startup: 100, speed: 620, lift: 760, damage: 10, push: 380, launch: true },
   abeja: { kind: 'rush', name: 'Aguijonazo', startup: 70, ms: 260, speed: 820, damage: 9, push: 360 },
   bombero: { kind: 'shot', name: 'Chorro de agua', shape: 'water', startup: 120, speed: 760, damage: 7, push: 560 },
+  luchador: { kind: 'rise', name: 'Plancha', startup: 120, speed: 680, lift: 720, damage: 12, push: 460, launch: true },
+  unicornio: { kind: 'shot', name: 'Rayo arcoíris', shape: 'rainbow', startup: 150, speed: 820, damage: 10, push: 300 },
 };
 
 // Bloquecito: su especial depende del número que traiga (y Octobloque tiene el suyo).

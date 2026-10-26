@@ -10,6 +10,7 @@ import { settings } from '../../shared/settings.js';
 //   monedas: 2 minutos; los golpes sacan monedas y gana el que junte más (si te caes pierdes la mitad).
 //   colina:  rey de la colina: quédate solo en la zona de la corona; gana el primero en juntar 30 segundos.
 //   aventura: 6 niveles seguidos (ver adventure.js).
+//   bomba:   bomba caliente: la bomba con reloj se pasa pegándole a otro; al que le explota sale volando (ver hotbomb.js).
 export const MODES = {
   vidas: { name: 'Vidas', info: '3 vidas y gana el último que quede' },
   tiempo: { name: 'Tiempo', info: '2 minutos: +1 por cada rival que saques y -1 si te caes' },
@@ -20,6 +21,7 @@ export const MODES = {
   monedas: { name: 'Monedas 💰', info: 'Los golpes sacan monedas: gana el que junte más (si te caes pierdes la mitad)' },
   colina: { name: 'Colina ⛰️', info: 'Quédate solo en la zona de la corona: gana el primero en juntar 30 segundos' },
   aventura: { name: 'Aventura 🗺️', info: '6 niveles seguidos: peleas, dianas, una torre y el jefe final' },
+  bomba: { name: 'Bomba caliente 💣', info: 'Pégale a otro para pasarle la bomba: ¡al que le explota sale volando!' },
 };
 export const MODE_KEYS = Object.keys(MODES);
 

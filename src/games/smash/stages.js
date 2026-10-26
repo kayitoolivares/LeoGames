@@ -171,6 +171,38 @@ export const STAGES = {
     drawBackground: drawSky,
     events: 'wind',
   },
+  // El ring: las cuerdas rebotan al que llega a la orilla caminando o brincando bajito (ver events.js).
+  ring: {
+    name: 'Ring de lucha libre',
+    sky: 0x2a1e4a,
+    platforms: [
+      { left: 500, right: 1500, top: 800, main: true, look: 'ring' },
+      { left: 560, right: 820, top: 610, soft: true, look: 'plank' },
+      { left: 1180, right: 1440, top: 610, soft: true, look: 'plank' },
+      { left: 860, right: 1140, top: 430, soft: true, look: 'plank', move: { y: 40, periodMs: 3000, phase: 0 } },
+    ],
+    blast: { left: -300, right: 2300, top: -450, bottom: 1300 },
+    respawn: { x: 1000, y: 260 },
+    spawns: [650, 1350, 850, 1150],
+    drawBackground: drawNight,
+    events: 'ropes',
+  },
+  // La cancha de fútbol: los travesaños de las porterías son plataformas y de vez en cuando cruza un balón gigante.
+  cancha: {
+    name: 'Cancha de fútbol',
+    sky: 0x8fd3ff,
+    platforms: [
+      { left: 330, right: 1670, top: 820, main: true, look: 'grass' },
+      { left: 330, right: 520, top: 610, soft: true, look: 'goal' },
+      { left: 1480, right: 1670, top: 610, soft: true, look: 'goal' },
+      { left: 860, right: 1140, top: 470, soft: true, look: 'plank' },
+    ],
+    blast: { left: -300, right: 2300, top: -450, bottom: 1300 },
+    respawn: { x: 1000, y: 260 },
+    spawns: [650, 1350, 850, 1150],
+    drawBackground: drawSky,
+    events: 'soccer',
+  },
   espacio: {
     name: 'Espacio',
     sky: 0x14112b,
@@ -290,6 +322,25 @@ function drawPlatform(scene, p) {
     parts.push(scene.add.triangle(0, 40, 0, 0, width, 0, width / 2, 260, 0x8b5a2b).setOrigin(0.5, 0));
     parts.push(scene.add.rectangle(0, 40, width, 80, 0x9c6b3c).setRounded(20));
     parts.push(scene.add.rectangle(0, 10, width + 10, 26, 0x4cd97b).setRounded(13));
+  } else if (p.look === 'ring') {
+    // La lona azul del ring, con su faldón blanco y rojo.
+    parts.push(scene.add.rectangle(0, 70, width, 100, 0xe53935).setStrokeStyle(4, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 26, width, 20, 0xffffff).setStrokeStyle(3, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 8, width + 16, 20, 0x3a5bd6).setRounded(6).setStrokeStyle(4, 0x1b1530));
+  } else if (p.look === 'grass') {
+    // El pasto de la cancha con su línea blanca y el círculo de en medio.
+    parts.push(scene.add.rectangle(0, 60, width, 120, 0x3f8f3a).setStrokeStyle(4, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 12, width, 24, 0x5cb85c).setStrokeStyle(4, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 2, width - 40, 4, 0xffffff));
+    parts.push(scene.add.rectangle(0, 12, 6, 24, 0xffffff));
+  } else if (p.look === 'goal') {
+    // El travesaño de una portería con su red colgando.
+    const net = scene.add.graphics();
+    net.lineStyle(2, 0xffffff, 0.6);
+    for (let x = -width / 2; x <= width / 2; x += 18) net.lineBetween(x, 10, x, 210);
+    for (let y = 10; y <= 210; y += 18) net.lineBetween(-width / 2, y, width / 2, y);
+    parts.push(net);
+    parts.push(scene.add.rectangle(0, 6, width, 14, 0xffffff).setStrokeStyle(3, 0x1b1530));
   } else if (p.look === 'plank') {
     parts.push(scene.add.rectangle(0, 12, width, 24, 0xc98b4f).setRounded(12).setStrokeStyle(4, 0x8b5a2b));
   } else if (p.look === 'cloud') {

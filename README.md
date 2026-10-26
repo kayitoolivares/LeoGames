@@ -119,7 +119,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Robot** (B = láser), **Dragoncito** (flota, B = fuego), **Fantasma** (B = invisible), **Dino** (B = coletazo a
   los dos lados), **Gatito** (salta 3 veces, B = arañazos), **Pingüino** (B = se desliza de panza), **Pirata**
   (B = bala de cañón), **Hada** (flota, B = polvo mágico), **Astronauta** (B = mochila cohete), **Abeja** (salta 4 veces,
-  B = aguijonazo), **Bombero** (B = chorro de agua que empuja) y **Bloquecito** (ver abajo). Con la barra llena,
+  B = aguijonazo), **Bombero** (B = chorro de agua que empuja), **Luchador** (lucha libre: B = plancha, brinca y cae
+  aplastando), **Unicornio** (B = rayo arcoíris) y **Bloquecito** (ver abajo). Con la barra llena,
   **LB + RB** = súper forma por 10 segundos.
   **A** = saltar, **X** = golpe (con ↑ hacia arriba, con ↓ barrida o pisotón), **B + ↑** = salto de rescate,
   **RB / LB** (o gatillos) = escudo (si se rompe quedas mareado), **↓** = bajar de plataforma, **mantén LB + RB + Y** = salir.
@@ -170,6 +171,11 @@ Abre http://localhost:5173 en Edge o Chrome.
     (A la brinca).
   - **Trajes**: en la selección, **X** cambia el color de tu traje (si dos traen el mismo personaje, el segundo sale de
     otro color).
+  - **Ronda 4**: dos personajes nuevos, **Luchador** y **Unicornio** (también en el Duelo, Pelea en equipo, Fútbol,
+    Karts y Súper Bolitas); el modo **Bomba caliente** 💣 (una bomba con su reloj anda arriba de la cabeza de alguien;
+    pegándole a otro se la pasas y al que le explota sale volando lejísimos) y dos escenarios: **Ring de lucha libre**
+    (las cuerdas rebotan al que llega a la orilla) y **Cancha de fútbol** (los travesaños son plataformas y cruza
+    rodando un balón gigante).
   - **Narrador y premios**: comenta el primer golpe, los golpazos, quién sale volando, las paradas perfectas, los
     golpes cargados, los objetos y los últimos 10 segundos; al final salen los premios: más golpes, golpe más fuerte,
     más caídas, paradas perfectas y más objetos.
@@ -393,6 +399,11 @@ Abre http://localhost:5173 en Edge o Chrome.
     (si dos traen el mismo personaje, el segundo sale de otro color).
   - **Narrador**: comenta el primer golpe, los combos, las paradas, los secretos, el ayudante, los objetos y quién
     tiene poquita vida (con voz y letrero).
+  - **Locura** 🎲 (opción en el duelo y en 2 contra 2): cada round trae una sorpresa distinta: gravedad de luna,
+    gravedad doble, piso de hielo, barra llena para todos o todos con media vida.
+  - **Escenarios nuevos** (con los dibujos de las canchas nuevas del fútbol): **Estadio de noche**, **Dulcelandia**
+    (se salta más alto) y **Selva con lluvia** (el piso resbala). Luchador y Unicornio también pelean aquí (plancha y
+    rayo arcoíris; agachados, azotón y lluvia de estrellitas; en el aire, plancha voladora y cuernazo).
 - **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, con dibujos de
   Gemini para cada número y su súper forma (`bloque1` a `bloque10` y `octobloque`, con sus poses y su caminata). Para
   que Gemini no se equivoque contando cubos, cada hoja se pide con una referencia que dibuja el juego (la cantidad

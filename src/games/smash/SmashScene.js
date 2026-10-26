@@ -23,6 +23,7 @@ import { CAPSULE_ITEMS, SmashItems, drawItem } from './items.js';
 import { ADVENTURE, showAdventureMap } from './adventure.js';
 import { Coins } from './coins.js';
 import { HILL_GOAL, Hill } from './hill.js';
+import { HotBomb } from './hotbomb.js';
 import { JonronContest } from './jonron.js';
 import { SmashReplay } from './replay.js';
 import { SmashTalk } from './talk.js';
@@ -73,6 +74,7 @@ const ENDLESS_MODES = ['tiempo', 'blancos', 'monedas', 'colina', 'subida', 'jonr
 const TIMED_MODES = ['tiempo', 'monedas', 'colina'];
 // Lo que dice el letrero al empezar, en los modos que no son de pelea normal.
 const MODE_INTROS = {
+  bomba: '¡Pégale a otro para pasarle la bomba!',
   jonron: '¡Pégale al saco 10 segundos!',
   monedas: 'Pega para sacar monedas y agárralas',
   colina: 'Quédate solo en la zona de la corona',
@@ -212,6 +214,7 @@ export class SmashScene extends Phaser.Scene {
     this.players = [...this.fighters];
     this.boss = this.fighters.find((f) => f.isBoss) ?? null;
     this.coins = this.mode === 'monedas' ? new Coins(this, this.world, this.platforms, this.stage.blast.bottom) : null;
+    this.hotBomb = this.mode === 'bomba' ? new HotBomb(this, this.world) : null;
     this.tornadoes = new Tornadoes(this, this.world, this.main, (owner, victim, result) => this.noteHit(owner, victim, result.dealt, result.speed));
     this.timeMs = TIMED_MODES.includes(this.mode) ? TIME_MS : 0;
     this.targets = this.mode === 'blancos' ? this.createTargets() : [];
@@ -527,6 +530,7 @@ export class SmashScene extends Phaser.Scene {
       this.updateHelpers(dt);
       this.tornadoes.update(dt, this.fighters);
       this.coins?.update(dt, this.fighters, (fighter) => this.pickCoin(fighter));
+      if (this.phase === 'fight') this.hotBomb?.update(dt, this.fighters);
       if (this.hill?.update(dt, this.fighters, this.phase === 'fight')) this.talk.line('¡La corona se cambió de lugar!');
       if (this.jonron && this.phase === 'fight') this.timerText.setText(this.jonron.update(dt, this.bag, this.players.find((f) => !f.isDummy)));
       this.resolveHits();
@@ -1052,8 +1056,9 @@ export class SmashScene extends Phaser.Scene {
     victim.lastHitBy = credit;
     victim.lastHitAt = this.time.now;
     if (victim.isBoss) this.lastBossHitAt = this.time.now;
-    // Monedas: cada golpe saca monedas del que lo recibió.
+    // Monedas: cada golpe saca monedas del que lo recibió. Bomba caliente: el que la trae se la pasa al que le pegó.
     this.coins?.fromHit(victim.x, victim.y - victim.radius, dealt);
+    this.hotBomb?.onHit(credit, victim);
     this.talk?.hit(credit, victim, speed);
   }
 

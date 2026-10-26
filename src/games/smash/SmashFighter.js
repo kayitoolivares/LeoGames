@@ -50,6 +50,8 @@ const SPECIAL_COOLDOWN_MS = {
   astronauta: 1500,
   abeja: 700,
   bombero: 900,
+  luchador: 1100,
+  unicornio: 900,
   rey: 1300,
   dragonzote: 900,
   robotote: 1100,
@@ -1024,6 +1026,19 @@ export class SmashFighter {
     } else if (key === 'bombero') {
       attack('water');
       sound = sfx.fire;
+    } else if (key === 'luchador') {
+      // La plancha: brinca y cae aplastando (como el Rey Bolón, pero de su tamaño).
+      if (this.grounded) {
+        this.vy = -this.stats.jump * 0.8;
+        this.grounded = false;
+        this.platform = null;
+      }
+      attack('square');
+      sound = sfx.jump;
+    } else if (key === 'unicornio') {
+      // Un rayo de arcoíris que sale de su cuerno.
+      attack('rainbow');
+      sound = null;
     } else if (key === 'dragonzote') {
       attack('blaze');
       sound = sfx.fire;

@@ -236,6 +236,35 @@ export const CHARACTERS = {
     airJumps: 1,
     stats: { Fuerza: 2, Velocidad: 2, Salto: 1 },
   },
+  luchador: {
+    name: 'Luchador',
+    superName: 'Gran Campeón',
+    blurb: 'Lucha libre: ¡plancha!',
+    special: 'Plancha',
+    radius: 37,
+    weight: 1.2,
+    power: 1.2,
+    run: 330,
+    air: 300,
+    jump: 760,
+    airJumps: 1,
+    stats: { Fuerza: 3, Velocidad: 2, Salto: 1 },
+  },
+  unicornio: {
+    name: 'Unicornio',
+    superName: 'Unicornio Estelar',
+    blurb: 'Rayos de arcoíris',
+    special: 'Rayo arcoíris',
+    radius: 33,
+    weight: 0.9,
+    power: 0.95,
+    run: 380,
+    air: 360,
+    jump: 800,
+    airJumps: 2,
+    gravity: 0.9,
+    stats: { Fuerza: 1, Velocidad: 2, Salto: 3 },
+  },
   // Hecho de bloques: con Y cambia de número del 1 al 10, y cada número tiene su tamaño y su truco
   // (ver bloquecito.js). Los valores de aquí son los del 1; el juego los cambia según el número.
   bloquecito: {
@@ -317,7 +346,7 @@ export function characterInfo(key) {
 // Le pone a la bolita el accesorio de su personaje (cuando no hay imagen de Gemini):
 // casco, pelos de rayo, orejas, estrella, cinta ninja, antena, cuernitos, colita de fantasma, picos de dino,
 // orejas de gato, pancita y pico de pingüino, sombrero y parche de pirata, alitas de hada, casco de astronauta,
-// rayas de abeja o casco de bombero.
+// rayas de abeja, casco de bombero, máscara de luchador o cuerno y melena de arcoíris del unicornio.
 export function addAccessory(scene, blob, key) {
   const r = blob.radius;
   const figure = blob.figure;
@@ -325,11 +354,16 @@ export function addAccessory(scene, blob, key) {
     figure.add(scene.add.arc(0, -r * 0.45, r * 0.85, 180, 360, false, 0x5a5a6e));
     figure.add(scene.add.rectangle(0, -r * 0.5, r * 1.75, r * 0.16, 0x3a3a4a));
   } else if (key === 'rayo') {
-    figure.addAt(spikes(scene, r, 0xffe14d, [
-      [[-0.55, -0.75], [-0.35, -1.45], [-0.1, -0.85]],
-      [[-0.15, -0.9], [0.1, -1.6], [0.3, -0.9]],
-      [[0.2, -0.85], [0.55, -1.4], [0.6, -0.7]],
-    ]), 0);
+    // Un mechón en forma de rayo y sus goggles de carreras en la frente.
+    const bolt = scene.add.graphics();
+    const points = [[-0.05, -0.8], [0.3, -1.3], [0.08, -1.18], [0.32, -1.62], [-0.12, -1.1], [0.08, -1.12]].map(([x, y]) => ({ x: x * r, y: y * r }));
+    bolt.fillStyle(0xffe14d, 1);
+    bolt.fillPoints(points, true);
+    bolt.lineStyle(3, COLORS.ink, 1);
+    bolt.strokePoints(points, true);
+    figure.addAt(bolt, 0);
+    figure.add(scene.add.rectangle(0, -r * 0.55, r * 1.9, r * 0.14, 0xff8a1e).setStrokeStyle(2, COLORS.ink));
+    for (const side of [-1, 1]) figure.add(scene.add.circle(side * r * 0.32, -r * 0.6, r * 0.2, 0x9fe3ff).setStrokeStyle(3, 0xff8a1e));
   } else if (key === 'resorte') {
     for (const side of [-1, 1]) {
       const ear = scene.add.ellipse(side * r * 0.42, -r * 1.1, r * 0.4, r * 0.95, 0xffffff).setStrokeStyle(3, COLORS.ink);
@@ -353,10 +387,8 @@ export function addAccessory(scene, blob, key) {
     figure.add(scene.add.circle(0, -r * 1.35, r * 0.15, 0xff5a5f).setStrokeStyle(3, COLORS.ink));
     for (const side of [-1, 1]) figure.add(scene.add.circle(side * r * 0.98, 0, r * 0.2, 0x9a9aa8).setStrokeStyle(3, COLORS.ink));
   } else if (key === 'dragon') {
-    figure.addAt(spikes(scene, r, 0xffc93c, [
-      [[-0.55, -0.7], [-0.45, -1.25], [-0.25, -0.85]],
-      [[0.25, -0.85], [0.45, -1.25], [0.55, -0.7]],
-    ]), 0);
+    // Cuernitos blancos redondos y alitas anaranjadas.
+    for (const side of [-1, 1]) figure.addAt(scene.add.circle(side * r * 0.42, -r * 0.95, r * 0.16, 0xffffff).setStrokeStyle(3, COLORS.ink), 0);
     for (const side of [-1, 1]) {
       figure.addAt(scene.add.ellipse(side * r * 1.05, -r * 0.2, r * 0.6, r * 0.9, 0xff9a3c).setStrokeStyle(3, COLORS.ink).setRotation(side * 0.5), 0);
     }
@@ -403,6 +435,17 @@ export function addAccessory(scene, blob, key) {
     figure.add(scene.add.arc(0, -r * 0.5, r * 0.85, 180, 360, false, 0xe53935).setStrokeStyle(3, COLORS.ink));
     figure.add(scene.add.ellipse(0, -r * 0.52, r * 2.1, r * 0.3, 0xe53935).setStrokeStyle(3, COLORS.ink));
     figure.add(scene.add.rectangle(0, -r * 0.9, r * 0.3, r * 0.3, COLORS.accent).setStrokeStyle(2, COLORS.ink));
+  } else if (key === 'luchador') {
+    // La máscara morada (la mitad de arriba) con su estrella dorada en la frente.
+    figure.add(scene.add.arc(0, 0, r * 1.02, 180, 360, false, 0x8e5cf0).setStrokeStyle(3, COLORS.ink));
+    figure.add(scene.add.rectangle(0, -r * 0.02, r * 2, r * 0.12, 0xffd84d));
+    figure.add(scene.add.star(0, -r * 0.62, 5, r * 0.12, r * 0.26, 0xffd84d).setStrokeStyle(2, COLORS.ink));
+  } else if (key === 'unicornio') {
+    // La melena de arcoíris atrás de la cabeza y el cuerno dorado.
+    [0xff5a5f, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff].forEach((color, i) => {
+      figure.addAt(scene.add.circle(-r * (0.55 + i * 0.12), -r * (0.75 - i * 0.28), r * 0.3, color).setStrokeStyle(2, COLORS.ink), 0);
+    });
+    figure.add(spikes(scene, r, 0xffd84d, [[[-0.15, -0.85], [0.05, -1.65], [0.22, -0.85]]]));
   }
 }
 

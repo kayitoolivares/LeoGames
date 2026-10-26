@@ -39,6 +39,13 @@ export const ARENAS = {
   guarida: { name: 'Guarida del dragón', texture: 'duelo:fondo-guarida', url: 'duelo/fondos/guarida.jpg', has: dueloArt.fondos.includes('guarida'), sky: 0x4a1a14, ground: 0x4a3030, ambient: 'embers', boss: true },
   fabrica: { name: 'Fábrica del robot', texture: 'duelo:fondo-fabrica', url: 'duelo/fondos/fabrica.jpg', has: dueloArt.fondos.includes('fabrica'), sky: 0x2a3a4a, ground: 0x6a7080, ambient: 'sparkles', lights: true, boss: true },
 };
+// Los de las canchas nuevas del fútbol: de noche con luces, Dulcelandia (piso de gelatina: se salta más alto) y la
+// selva con lluvia (el piso mojado resbala). `needsArt`: no se escogen hasta que esté su dibujo.
+Object.assign(ARENAS, {
+  noche: { name: 'Estadio de noche', texture: 'futbol:fondo-noche', url: 'futbol/fondos/noche.jpg', has: futbolArt.fondos.includes('noche'), needsArt: true, sky: 0x14183a, ground: 0x2f6b3a, ambient: 'sparkles', crowd: true, lights: true },
+  dulces: { name: 'Dulcelandia', texture: 'futbol:fondo-dulces', url: 'futbol/fondos/dulces.jpg', has: futbolArt.fondos.includes('dulces'), needsArt: true, sky: 0xffd6f5, ground: 0x9be36a, ambient: 'confetti', gravity: 0.8 },
+  selva: { name: 'Selva con lluvia', texture: 'futbol:fondo-selva', url: 'futbol/fondos/selva.jpg', has: futbolArt.fondos.includes('selva'), needsArt: true, sky: 0x9be3c4, ground: 0x3f8a3a, ambient: 'leaves', friction: 0.5 },
+});
 export const ARENA_KEYS = Object.keys(ARENAS);
 
 // Se llama en preload(): carga las imágenes de los escenarios que todavía no estén cargadas.

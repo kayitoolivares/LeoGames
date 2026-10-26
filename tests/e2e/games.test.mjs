@@ -743,18 +743,18 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
     return choices;
   };
 
-  // Sin calcomanías solo están los 10 que no hay que ganar (y luego da la vuelta).
-  const open = ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos'];
+  // Sin calcomanías solo están los 12 que no hay que ganar (y luego da la vuelta).
+  const open = ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos', 'ring', 'cancha'];
   await openSelect();
-  assert.deepEqual(await stageChoices(11), [...open, 'castillo']);
+  assert.deepEqual(await stageChoices(13), [...open, 'castillo']);
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'regresar al menú');
 
   // Con "Campeón" y "¡Súper!" aparecen el Espacio (gravedad baja) y el Volcán.
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['smash-gana', 'smash-super'])));
   await openSelect();
-  assert.deepEqual(await stageChoices(12), [...open, 'espacio', 'volcan']);
-  // Después de 12 toques regresa al Castillo: LB una vez es el Volcán y otra el Espacio.
+  assert.deepEqual(await stageChoices(14), [...open, 'espacio', 'volcan']);
+  // Después de 14 toques regresa al Castillo: LB una vez es el Volcán y otra el Espacio.
   await p.tap(0, BUTTON.LB);
   await p.tap(0, BUTTON.LB);
   await p.tap(0, BUTTON.A);
@@ -881,6 +881,101 @@ test('bolitas bros: golpe cargado, escudo perfecto y objetos nuevos', { timeout:
   await p.until(() => window.leogames.scene.getScene('Smash').phase === 'end', ms(5000), 'terminar la pelea');
   assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').results.list.some((o) => o.text?.includes('Más golpes'))), 'sin premios');
   await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('bolitas bros: luchador y unicornio, bomba caliente, ring con cuerdas y cancha con balonazo', { timeout: ms(180000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.page.evaluate(() => import('/src/shared/picks.js').then((m) => m.characterPicks.set('pad0', 'luchador')));
+  await startSmash(p, { mode: 'bomba', stage: 'ring' });
+  await quietSmashCpu(p);
+  // Los especiales nuevos: la plancha del Luchador y el rayo arcoíris del Unicornio le pegan al rival.
+  for (const character of ['luchador', 'unicornio']) {
+    await p.page.evaluate((key) => {
+      const s = window.leogames.scene.getScene('Smash');
+      const [me, rival] = s.fighters;
+      me.characterKey = key;
+      const place = (f, x, facing) =>
+        Object.assign(f, { x, y: s.main.top - f.radius, vx: 0, vy: 0, facing, grounded: true, platform: s.main, attack: null, hitstunMs: 0, stunMs: 0, dashMs: 0, cooldownMs: 0, invulnerableMs: 0, damage: 0 });
+      place(me, 900, 1);
+      place(rival, 980, -1);
+      s.projectiles.forEach((shot) => shot.sprite.destroy());
+      s.projectiles = [];
+      me.startSpecial({ x: 0, y: 0 });
+    }, character);
+    await p.until(() => window.leogames.scene.getScene('Smash').fighters[1].damage > 0, ms(4000), `que pegue el especial de ${character}`);
+  }
+
+  // Bomba caliente: aparece arriba de alguien; si ese le pega al otro, se la pasa; al explotar sale volando.
+  await p.until(() => Boolean(window.leogames.scene.getScene('Smash').hotBomb.holder), ms(6000), 'que aparezca la bomba');
+  const passed = await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const [me, rival] = s.fighters;
+    s.hotBomb.holder = me;
+    s.hotBomb.fuseMs = 9000;
+    s.noteHit(me, rival, 5, 100);
+    return s.hotBomb.holder === rival;
+  });
+  assert.ok(passed, 'la bomba no se pasó con el golpe');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Smash');
+    const rival = s.fighters[1];
+    Object.assign(rival, { invulnerableMs: 0, shielding: false });
+    s.hotBomb.fuseMs = 1;
+  });
+  await p.until(() => window.leogames.scene.getScene('Smash').hotBomb.exploded === 1, ms(3000), 'que explote la bomba');
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Smash').fighters[1].damage >= 25), 'al que le explotó no le pegó');
+
+  // Las cuerdas del ring: el que llega caminando a la orilla rebota hacia adentro.
+  const bounce = await p.page.evaluate(async () => {
+    const s = window.leogames.scene.getScene('Smash');
+    const me = s.fighters[0];
+    Object.assign(me, { x: s.main.left + 20, y: s.main.top - me.radius, vx: -300, vy: 0, grounded: true, platform: s.main, hitstunMs: 0 });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    return me.vx;
+  });
+  assert.ok(bounce > 0, `las cuerdas no lo rebotaron (vx ${bounce})`);
+  await p.holdToMenu(0, EXIT, 'salir de Bolitas Bros');
+
+  // La cancha: cruza el balón gigante (la sorpresa) y no truena nada.
+  await startSmash(p, { mode: 'vidas', stage: 'cancha' });
+  await p.page.evaluate(() => (window.leogames.scene.getScene('Smash').events.waitMs = 0));
+  await p.until(() => Boolean(window.leogames.scene.getScene('Smash').events.active), ms(4000), 'que cruce el balón');
+  await p.wait(ms(2500));
+  await p.holdToMenu(0, EXIT, 'salir de la cancha');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('duelo de bolitas: locura (una sorpresa cada round), luchador y unicornio', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.page.evaluate(() => import('/src/shared/picks.js').then((m) => m.characterPicks.set('pad0', 'unicornio')));
+  await p.openGameCard('Duelo de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Duelo')?.phase === 'setup', ms(8000), 'ver la pantalla del duelo');
+  await p.page.evaluate(() => {
+    const s = window.leogames.scene.getScene('Duelo');
+    s.setup.twists = true;
+    s.refreshSetup();
+  });
+  assert.ok(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').setupKeys().includes('twists')));
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Duelo').phase === 'fight', ms(10000), 'empezar a pelear');
+  const first = await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').lastTwist);
+  assert.ok(first, 'no hubo sorpresa en el round');
+  // El especial del Unicornio (X) lanza su rayo arcoíris.
+  assert.equal(await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').fighters[0].character), 'unicornio');
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Duelo').shots.length > 0, ms(3000), 'que salga el rayo arcoíris');
+  // Al siguiente round, otra sorpresa distinta.
+  await p.page.evaluate(() => { const s = window.leogames.scene.getScene('Duelo'); s.endRound(s.fighters[0], 'ko'); });
+  await p.until(() => window.leogames.scene.getScene('Duelo').round === 2 && window.leogames.scene.getScene('Duelo').phase === 'fight', ms(30000), 'el segundo round');
+  const second = await p.page.evaluate(() => window.leogames.scene.getScene('Duelo').lastTwist);
+  assert.notEqual(second, first);
+  await p.holdToMenu(0, EXIT, 'salir del duelo');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

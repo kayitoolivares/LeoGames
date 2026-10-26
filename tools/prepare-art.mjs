@@ -3,6 +3,7 @@
 // Bolitas Bros:
 //   arte/smash/personajes/<personaje>-<pose>.png   personaje: tanque | rayo | resorte | estrella | ninja | robot | dragon | fantasma |
 //                                                  dino | gatito | pinguino | pirata | hada | astronauta | abeja | bombero |
+//                                                  luchador | unicornio |
 //                                                  bloque1 a bloque10 | octobloque (Bloquecito, un dibujo por número)
 //                                                  (con _super, p. ej. tanque_super, es su súper forma)
 //                                                  pose: normal | golpe | salto | dolor  (sin pose = normal)
@@ -32,13 +33,13 @@ const MANIFEST = path.join(ROOT, 'src', 'games', 'smash', 'art.json');
 
 const CHARACTERS = [
   'tanque', 'rayo', 'resorte', 'estrella', 'ninja', 'robot', 'dragon', 'fantasma',
-  'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero',
+  'dino', 'gatito', 'pinguino', 'pirata', 'hada', 'astronauta', 'abeja', 'bombero', 'luchador', 'unicornio',
   // Bloquecito: un dibujo por número (bloque1 a bloque10) y su súper forma, Octobloque.
   ...Array.from({ length: 10 }, (_, i) => `bloque${i + 1}`), 'octobloque',
 ];
 const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente', 'parpadeo', 'feliz', 'enojado', 'asustado', 'caer', 'mareado', 'baile1', 'baile2', 'frente_feliz', 'frente_enojado', 'lado_feliz', 'lado_enojado'];
 const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella', 'bate', 'pistola', 'patineta', 'huevo', 'bola-super', 'diana', 'bumeran', 'flor-fuego', 'resorte', 'capsula', 'tornado', 'saco'];
-const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos'];
+const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos', 'ring', 'cancha'];
 
 // Poses de los monstruos y los jefes (ver src/ui/creature.js): <monstruo>-<pose>.
 const MONSTER_POSES = ['paso', 'ataque', 'dolor', 'burla'];

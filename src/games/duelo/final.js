@@ -26,6 +26,8 @@ export const FINAL_NAMES = {
   astronauta: 'Cohete galáctico',
   abeja: 'Enjambre furioso',
   bombero: 'Manguerazo máximo',
+  luchador: 'Llave del campeón',
+  unicornio: 'Tormenta de arcoíris',
   bloquecito: 'Torre de bloques',
   rey: 'Aplastón real',
 };

@@ -67,6 +67,8 @@ const SPECIAL_SHOTS = {
   astronauta: ['rocket', 0xffffff],
   abeja: ['zigzag', 0xffc93c],
   bombero: ['fire', 0x3fa7ff],
+  luchador: ['fire', 0x8e5cf0],
+  unicornio: ['zigzag', 0xff7ad9],
   bloquecito: ['rocket', 0xb07cff],
 };
 export const SHOT_NAMES = { fire: '¡Tiro de fuego!', zigzag: '¡Tiro relámpago!', rocket: '¡Tiro cohete!' };

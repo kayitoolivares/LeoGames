@@ -28,6 +28,8 @@ export const SPECIALS = {
   astronauta: { kind: 'slam', name: 'Mochila cohete', damage: 3, radius: 150 },
   abeja: { kind: 'dash', name: 'Aguijonazo', damage: 2, speed: 880, ms: 260 },
   bombero: { kind: 'breath', name: 'Chorro de agua', damage: 1, ms: 700, reach: 170, tickMs: 140, look: 'water', push: true },
+  luchador: { kind: 'slam', name: 'Plancha', damage: 4, radius: 150 },
+  unicornio: { kind: 'beam', name: 'Rayo arcoíris', damage: 2, length: 520 },
 };
 export const SPECIAL_COOLDOWN_MS = 2600;
 

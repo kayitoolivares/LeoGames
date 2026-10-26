@@ -64,7 +64,7 @@ const TEAM_BAR = { width: 420, height: 18, y: 34, gap: 46 };
 // Entrenamiento: con menos de esto de vida se rellena sola; la barra de poder se llena sola (por milisegundo).
 const TRAINING_REFILL = 0.3;
 const TRAINING_METER_PER_MS = 0.03;
-const ARENA_CHOICES = ['azar', ...ARENA_KEYS];
+const ARENA_CHOICES = ['azar', ...ARENA_KEYS.filter((key) => ARENAS[key].has || !ARENAS[key].needsArt)];
 const IDLE = { x: 0, up: false, down: false, dash: 0, punch: false, kick: false, special: false, block: false, transform: false, change: 0, assist: false };
 // Doble toque al stick (para el arrancón o la rodada): el segundo toque tiene que llegar antes de esto.
 const DOUBLE_TAP_MS = 260;
@@ -73,7 +73,15 @@ const COMBO_GAP_MS = 1000;
 const LOW_HEALTH = 25;
 
 // Lo último que se escogió, para no escogerlo otra vez.
-const lastSetup = { mode: 'duelo', rival: 'versus', rounds: 2, level: 'facil', arena: 'azar', items: true, cupSize: 4 };
+const lastSetup = { mode: 'duelo', rival: 'versus', rounds: 2, level: 'facil', arena: 'azar', items: true, cupSize: 4, twists: false };
+// Locura 🎲 (en el duelo y en 2 contra 2): cada round trae una sorpresa distinta a la anterior.
+const TWISTS = [
+  { key: 'luna', name: '¡Gravedad de luna!', apply: (f) => (f.gravity *= 0.5) },
+  { key: 'pesado', name: '¡Gravedad doble!', apply: (f) => (f.gravity *= 1.6) },
+  { key: 'hielo', name: '¡Piso de hielo!', apply: (f) => (f.friction = 0.25) },
+  { key: 'poder', name: '¡Barra llena para todos!', apply: (f) => (f.meter = METER_MAX) },
+  { key: 'media', name: '¡Todos con media vida!', apply: (f) => (f.health = Math.ceil(MAX_HEALTH / 2)) },
+];
 // El traje que escogió cada quien (X en la pantalla de antes de pelear), mientras la página esté abierta.
 const costumeChoice = new Map();
 // Lo que cuenta como golpe con la mano o como especial (para los retos).
@@ -138,6 +146,7 @@ export class DueloScene extends Phaser.Scene {
       keys.push('cupSize', 'rounds', 'level');
     }
     if (ITEM_MODES.includes(mode)) keys.push('items');
+    if (mode === 'duelo' || mode === 'equipos') keys.push('twists');
     // En el torneo y con los jefes los escenarios van tocando solos (cada jefe pelea en su guarida).
     if (!NO_ARENA_MODES.includes(mode)) keys.push('arena');
     return keys;
@@ -178,6 +187,7 @@ export class DueloScene extends Phaser.Scene {
       level: `Nivel de la compu: ${CPU_LEVELS[this.setup.level].name}`,
       arena: `Escenario: ${this.setup.arena === 'azar' ? 'Al azar' : ARENAS[this.setup.arena].name}`,
       items: `Objetos que caen: ${this.setup.items ? 'Sí' : 'No'}`,
+      twists: `Locura 🎲 (una sorpresa cada round): ${this.setup.twists ? 'Sí' : 'No'}`,
       cupSize: `Llaves de ${this.setup.cupSize} peleadores`,
     };
     // Los trajes: cada quien cambia el suyo con X en su control.
@@ -239,6 +249,7 @@ export class DueloScene extends Phaser.Scene {
       else if (key === 'rounds') this.setup.rounds = cycle(ROUND_CHOICES, this.setup.rounds);
       else if (key === 'level') this.setup.level = cycle(Object.keys(CPU_LEVELS), this.setup.level);
       else if (key === 'items') this.setup.items = !this.setup.items;
+      else if (key === 'twists') this.setup.twists = !this.setup.twists;
       else if (key === 'cupSize') this.setup.cupSize = cycle(CUP_SIZES, this.setup.cupSize);
       else {
         this.setup.arena = cycle(ARENA_CHOICES, this.setup.arena);
@@ -747,7 +758,11 @@ export class DueloScene extends Phaser.Scene {
     for (const fighter of this.fighters) {
       fighter.gravity *= look.gravity ?? 1;
       fighter.friction = look.friction ?? 1;
+      // (Lo del escenario, para regresar a eso en cada round de Locura.)
+      fighter.baseGravity = fighter.gravity;
+      fighter.baseFriction = fighter.friction;
     }
+    this.lastTwist = null;
     this.items = this.setup.items && ITEM_MODES.includes(mode) ? new FightItems(this) : null;
     this.koReplay = new KoReplay();
     this.challengeStats = this.challenge ? newChallengeStats() : null;
@@ -764,6 +779,20 @@ export class DueloScene extends Phaser.Scene {
     this.placeFighters();
     const sides = [0, 1].map((team) => this.fighters.filter((f) => f.team === team));
     showVersus(this, sides[0], sides[1], () => this.startRound(), this.teamsMode ? TEAMS : null);
+  }
+
+  // Locura 🎲: la sorpresa de este round (o null si no se escogió Locura).
+  applyTwist() {
+    const { mode, twists } = this.setup;
+    if (!twists || (mode !== 'duelo' && mode !== 'equipos')) return null;
+    for (const fighter of this.fighters) {
+      fighter.gravity = fighter.baseGravity ?? fighter.gravity;
+      fighter.friction = fighter.baseFriction ?? fighter.friction;
+    }
+    const twist = Phaser.Utils.Array.GetRandom(TWISTS.filter((t) => t.key !== this.lastTwist));
+    this.lastTwist = twist.key;
+    for (const fighter of this.fighters) twist.apply(fighter);
+    return twist;
   }
 
   startRound() {
@@ -789,6 +818,7 @@ export class DueloScene extends Phaser.Scene {
     // Supervivencia: sigue con la vida que le quedó; entrenamiento: con la barra de poder llena.
     if (this.survival) this.fighters[0].health = this.survival.health;
     if (this.training) this.fighters[0].meter = METER_MAX;
+    const twist = this.applyTwist();
     const last = this.fighters.every((fighter) => fighter.roundWins === this.roundsToWin - 1) && this.roundsToWin > 1;
     const [a, b] = this.teamsMode ? [] : this.fighters;
     let title = last ? '¡Round final!' : `Round ${this.round}`;
@@ -796,7 +826,9 @@ export class DueloScene extends Phaser.Scene {
     else if (this.challenge) title = this.challenge.name;
     else if (this.survival) title = `Rival ${this.survival.wins + 1}`;
     else if (this.tour) title = this.tour.current.boss ? '¡El jefe!' : `Pelea ${this.tour.index + 1}`;
-    this.showBanner(title, this.teamsMode ? `${TEAMS[0].name}  vs  ${TEAMS[1].name}` : `${a.label} ${a.name}  vs  ${b.label} ${b.name}`, ROUND_INTRO_MS);
+    const versus = this.teamsMode ? `${TEAMS[0].name}  vs  ${TEAMS[1].name}` : `${a.label} ${a.name}  vs  ${b.label} ${b.name}`;
+    this.showBanner(title, twist ? `🎲 ${twist.name}` : versus, ROUND_INTRO_MS);
+    if (twist) say(twist.name);
     sfx.countdown();
   }
 

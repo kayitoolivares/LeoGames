@@ -73,6 +73,14 @@ export const SECRETS = {
     low: { kind: 'shot', name: 'Manguerazo', shape: 'water', startup: 160, speed: 820, damage: 9, push: 760, big: 1.5 },
     air: { kind: 'shot', name: 'Regadera', shape: 'water', startup: 80, speed: 640, vy: 520, damage: 7, push: 400 },
   },
+  luchador: {
+    low: { kind: 'quake', name: 'Azotón', startup: 180, ms: 220, reach: 2.1, damage: 10, push: 400, launch: true },
+    air: { kind: 'dive', name: 'Plancha voladora', startup: 60, speed: 700, fall: 1500, damage: 13, push: 440, launch: true },
+  },
+  unicornio: {
+    low: { kind: 'shot', name: 'Lluvia de estrellitas', shape: 'star', startup: 120, speed: 460, damage: 6, push: 200, count: 3, spread: [-260, 0, 260] },
+    air: { kind: 'dive', name: 'Cuernazo', startup: 50, speed: 850, fall: 1200, damage: 10, push: 380 },
+  },
   bloquecito: {
     low: { kind: 'quake', name: '¡Bloque gigante!', startup: 200, ms: 220, reach: 2.3, damage: 11, push: 420, launch: true },
     air: { kind: 'dive', name: 'Bloque que cae', startup: 60, speed: 300, fall: 1600, damage: 12, push: 420, launch: true },

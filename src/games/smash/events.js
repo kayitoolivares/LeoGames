@@ -13,9 +13,33 @@ import { burst, popText } from '../brawl/effects.js';
 //   ghosts (Casa embrujada): un fantasma cruza flotando en ondas y avienta al que toca.
 //   cherries (Pastel):    caen cerezas gigantes; su sombra avisa dónde.
 //   plane (Ciudad):       una flecha avisa y cruza un avión de papel gigante.
+//   ropes (Ring):         las cuerdas del ring rebotan al que llega a la orilla caminando o brincando bajito.
+//   soccer (Cancha):      una flecha avisa y cruza rodando un balón de fútbol gigante.
 const EVERY_MS = { first: 9000, min: 11000, extra: 7000 };
 // Lo que cruza la pantalla: cómo se ve, qué tan rápido va, qué dice el letrero y cómo pega.
 const CROSSERS = {
+  ball: {
+    label: '¡Balonazo! ⚽',
+    color: '#ffffff',
+    speed: 1000,
+    ground: true,
+    roll: true,
+    hit: { damage: 12, base: 500, scale: 8, angle: 40 },
+    draw: (scene) => {
+      const g = scene.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(0, 0, 62);
+      g.fillStyle(0x1b1530, 1);
+      g.fillCircle(0, 0, 20);
+      for (let k = 0; k < 5; k += 1) {
+        const angle = (k / 5) * Math.PI * 2 - Math.PI / 2;
+        g.fillCircle(Math.cos(angle) * 50, Math.sin(angle) * 50, 12);
+      }
+      g.lineStyle(5, 0x1b1530, 1);
+      g.strokeCircle(0, 0, 62);
+      return [g];
+    },
+  },
   rocket: {
     label: '¡Cohete!',
     color: '#ff9a3c',
@@ -66,11 +90,17 @@ export class StageEvents {
     this.active = null;
     this.count = 0;
     if (this.kind === 'bubbles') this.vents = [main.left + 200, (main.left + main.right) / 2, main.right - 200].map((x) => this.vent(x));
+    if (this.kind === 'ropes') this.drawRopes();
   }
 
   // `fighting`: si se está peleando (al terminar, lo que iba termina pero no empieza otra cosa).
   update(dtMs, fighters, fighting) {
     if (!this.kind) return;
+    // Las cuerdas no son una sorpresa: siempre están.
+    if (this.kind === 'ropes') {
+      this.ropes(dtMs, fighters);
+      return;
+    }
     if (this.active) {
       this.active.t += dtMs;
       if (this[this.kind](this.active, dtMs, fighters) === false) {
@@ -181,11 +211,16 @@ export class StageEvents {
     return this.crosser(event, dtMs, fighters, CROSSERS.plane);
   }
 
+  soccer(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.ball);
+  }
+
   crosser(event, dtMs, fighters, kind) {
     const WARN = 1500;
     if (!event.dir) {
       event.dir = Math.random() < 0.5 ? -1 : 1;
-      event.y = this.main.top - 60 - Math.random() * 320;
+      // (El balón va rodando por el piso; lo demás, a cualquier altura.)
+      event.y = kind.ground ? this.main.top - 62 : this.main.top - 60 - Math.random() * 320;
       const edgeX = event.dir > 0 ? this.main.left - 120 : this.main.right + 120;
       event.arrow = this.add(this.scene.add.text(edgeX, event.y, event.dir > 0 ? '➡️' : '⬅️', { fontSize: '64px' }).setOrigin(0.5));
       event.thing = this.add(this.scene.add.container(event.dir > 0 ? this.blast.left : this.blast.right, event.y));
@@ -197,6 +232,7 @@ export class StageEvents {
     if (event.t < WARN) return true;
     event.arrow.setVisible(false);
     event.thing.x += event.dir * kind.speed * (dtMs / 1000);
+    if (kind.roll) event.thing.angle += event.dir * kind.speed * (dtMs / 1000) * 0.9;
     // (El fantasma va flotando en ondas.)
     const y = event.y + (kind.wave ? Math.sin(event.t / 260) * kind.wave : 0);
     event.thing.y = y;
@@ -281,6 +317,36 @@ export class StageEvents {
       }
     }
     return false;
+  }
+
+  // --- Ring: las cuerdas ---
+  // Los postes en las esquinas y tres cuerdas (roja, blanca y azul) de poste a poste.
+  drawRopes() {
+    const { left, right, top } = this.main;
+    const RED = 0xe53935;
+    for (const x of [left + 8, right - 8]) this.layer.add(this.scene.add.rectangle(x, top - 85, 16, 170, 0xc0c0d0).setStrokeStyle(3, 0x1b1530));
+    [[50, RED], [95, 0xffffff], [140, 0x3a5bd6]].forEach(([y, color]) => {
+      this.layer.add(this.scene.add.rectangle((left + right) / 2, top - y, right - left - 16, 6, color, 0.9).setStrokeStyle(1, 0x1b1530));
+    });
+    this.bounced = new Map();
+  }
+
+  // El que llega a la orilla del ring hacia afuera (caminando o brincando bajito) rebota hacia adentro.
+  ropes(dtMs, fighters) {
+    const { left, right, top } = this.main;
+    const now = this.scene.time.now;
+    for (const f of fighters) {
+      if (!f.isAlive() || f.y < top - 170 || f.y > top + 10) continue;
+      const out = (f.x < left + 30 && f.vx < -60) || (f.x > right - 30 && f.vx > 60);
+      if (!out || now - (this.bounced.get(f) ?? -Infinity) < 400) continue;
+      this.bounced.set(f, now);
+      f.vx = -Math.sign(f.vx) * Math.max(520, Math.abs(f.vx) * 1.1);
+      f.vy = Math.min(f.vy, -380);
+      f.grounded = false;
+      f.platform = null;
+      popText(this.scene, f.x, f.y - 70, '¡Rebote!', '#ffd84d', this.layer);
+      sfx.boing();
+    }
   }
 
   // --- Mar: burbujas que suben ---

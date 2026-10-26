@@ -30,6 +30,8 @@ export const QUOTES = {
   astronauta: '¡Esto estuvo espacial!',
   abeja: '¡Bzzz! ¡Picadito!',
   bombero: '¡Apagué tu fuego!',
+  luchador: '¡El campeón del ring soy yo!',
+  unicornio: '¡Magia de arcoíris!',
   bloquecito: '¡Uno, dos, tres... gané!',
   rey: '¡Jo, jo, jo! ¡Soy el rey!',
   dragonzote: '¡GRRR! ¡Mi tesoro es mío!',

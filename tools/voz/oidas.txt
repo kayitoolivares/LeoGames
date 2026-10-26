@@ -835,3 +835,28 @@ Final: el jugador 1 · Tanque contra la compu · Gatito
 Jornada 2. Contra las Ranas
 Jornada 3. Contra las Abejas
 ¡Cerdito!
+Luchador, Abeja
+¡Primer golpe de Luchador!
+Luchador, Astronauta
+¡Unicornio contra Astronauta!
+¡Piso de hielo!
+¡Gravedad doble!
+Luchador, Unicornio
+¡Rescataron a Hada! Ahora pelea con ustedes
+Tanque, Luchador
+¡Luchador pega primero!
+¡Unicornio contra Gatito!
+¡Hasta la vista, Gatito!
+Resorte dice: ¡Me voy, el jugador 2!
+Resorte dice: ¡Ay, el jugador 2!
+Ninja dice: ¡Toma eso, el jugador 1!
+Resorte dice: ¡Nos vemos, el jugador 2!
+Luchador dice: ¡Ay, el jugador 1!
+Luchador dice: ¡Oye, el jugador 1, no se vale!
+Dragoncito dice: ¡Oye, el jugador 1, no se vale!
+Va ganando la compu, Resorte
+¡Manguerazo!
+¡Bola de fuego gigante!
+Final: el jugador 1 · Tanque contra la compu · Unicornio
+¡Tanque contra Unicornio!
+¡Vaquita!
