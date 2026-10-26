@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { lazyImage } from '../../shared/lazyArt.js';
 import { FIELD } from './field.js';
 import manifest from './art.json';
 
@@ -20,10 +21,10 @@ export const PITCH_KEYS = Object.keys(PITCHES);
 const SNOWFLAKES = 36;
 const RAINDROPS = 40;
 
-export function loadPitchArt(scene) {
-  for (const name of manifest.fondos) {
-    if (!scene.textures.exists(`futbol:fondo-${name}`)) scene.load.image(`futbol:fondo-${name}`, `futbol/fondos/${name}.jpg`);
-  }
+// El fondo de una cancha, solo cuando se va a ver (ver shared/lazyArt.js); `onReady` cuando llega.
+export function loadPitchArt(scene, name, onReady) {
+  if (!manifest.fondos.includes(name)) return true;
+  return lazyImage(scene, `futbol:fondo-${name}`, `futbol/fondos/${name}.jpg`, onReady);
 }
 
 // Dibuja el fondo de la cancha (y, en la nieve, copos que caen). Devuelve lo dibujado y una función para

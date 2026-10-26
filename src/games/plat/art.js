@@ -1,3 +1,4 @@
+import { lazyImage } from '../../shared/lazyArt.js';
 import { Creature, isPoseName, requestCreaturePoses } from '../../ui/creature.js';
 import brawlManifest from '../brawl/art.json';
 import manifest from './art.json';
@@ -12,10 +13,15 @@ export function loadPlatArt(scene) {
   for (const name of (manifest.enemigos ?? []).filter((n) => !isPoseName(n))) load(`plat:${name}`, `plat/enemigos/${name}.png`);
   for (const name of (manifest.jefes ?? []).filter((n) => !isPoseName(n))) load(`plat:${name}`, `plat/jefes/${name}.png`);
   for (const name of manifest.objetos ?? []) load(`plat:objeto-${name}`, `plat/objetos/${name}.png`);
-  for (const name of manifest.fondos ?? []) load(`plat:fondo-${name}`, `plat/fondos/${name}.jpg`);
   load('plat:dinosaurio', 'brawl/objetos/dinosaurio.png');
   // Del arte de Pelea en equipo: el cangrejo, el pulpo (mini jefe) y los jefes de nieve, dulces y la casa embrujada.
   for (const name of ['cangrejo', 'capitan-pulpo', 'gran-yeti', 'rey-pastel', 'rey-calabaza']) load(`plat:${name}`, `brawl/monstruos/${name}.png`);
+}
+
+// El fondo lejano de un nivel, solo cuando se va a jugar (ver shared/lazyArt.js); `onReady` cuando llega.
+export function loadLevelBackground(scene, name, onReady) {
+  if (!(manifest.fondos ?? []).includes(name)) return true;
+  return lazyImage(scene, `plat:fondo-${name}`, `plat/fondos/${name}.jpg`, onReady);
 }
 
 // Un enemigo o jefe con vida (ui/creature.js): sus poses se bajan cuando aparece. null si se dibuja con figuras.

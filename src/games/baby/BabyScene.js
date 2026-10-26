@@ -11,6 +11,7 @@ import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
 import { go } from '../../shared/transition.js';
 import { ANIMALS, ANIMAL_KEYS, animalTexture, loadAnimalArt } from './animals.js';
+import { BUBBLE_RADIUS, SHAPE_RADIUS, bubbleTexture, shapeOrigin, shapeTexture } from './drawings.js';
 import { SONGS } from './songs.js';
 
 // Botones con los colores del control de Xbox, para ir nombrando los colores con el bebé (con su forma para las
@@ -24,14 +25,14 @@ const FACE_BUTTONS = {
 const FACE_KEYS = Object.keys(FACE_BUTTONS);
 const DIRECTIONS = ['up', 'down', 'left', 'right'];
 const FIREWORK_BUTTONS = ['lb', 'rb', 'lt', 'rt'];
-// Las figuras: su nombre y qué tan grande va la carita (en la estrella cabe menos).
+// Las figuras y su nombre (cómo se dibujan: ver drawings.js).
 const SHAPES = {
-  circle: { name: 'Círculo', face: 1 },
-  star: { name: 'Estrella', feminine: true, face: 0.6 },
-  square: { name: 'Cuadrado', face: 0.9 },
-  flower: { name: 'Flor', feminine: true, face: 0.62 },
-  heart: { name: 'Corazón', face: 0.62 },
-  triangle: { name: 'Triángulo', face: 0.55 },
+  circle: { name: 'Círculo' },
+  star: { name: 'Estrella', feminine: true },
+  square: { name: 'Cuadrado' },
+  flower: { name: 'Flor', feminine: true },
+  heart: { name: 'Corazón' },
+  triangle: { name: 'Triángulo' },
 };
 const SHAPE_KEYS = Object.keys(SHAPES);
 const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff, 0xff7ad9];
@@ -269,13 +270,10 @@ export class BabyScene extends Phaser.Scene {
   }
 
   spawnShape(x, y, kind, color, name) {
-    const r = Phaser.Math.Between(70, 100);
-    const label = this.add
-      .text(0, r + 34, name, textStyle(40, TEXT.normal, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 8 }))
-      .setOrigin(0.5);
-    const shape = this.add.container(x, y, [...this.drawShape(kind, r, color), ...this.drawFace(r * SHAPES[kind].face, kind === 'triangle' ? r * 0.25 : 0), label]);
+    const size = Phaser.Math.Between(70, 100) / SHAPE_RADIUS;
+    const shape = this.add.image(x, y, shapeTexture(this, kind, color, name)).setOrigin(shapeOrigin.x, shapeOrigin.y);
     shape.setDepth(DEPTH.shape).setScale(0);
-    this.tweens.add({ targets: shape, scale: 1, duration: 380, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: shape, scale: size, duration: 380, ease: 'Back.easeOut' });
     this.tweens.add({ targets: shape, angle: { from: -8, to: 8 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     burst(this, x, y, color, 10);
     this.time.delayedCall(SHAPE_LIFE_MS, () => this.fadeShape(shape));
@@ -283,60 +281,6 @@ export class BabyScene extends Phaser.Scene {
     this.shapes.push(shape);
     // Para no llenar la memoria del Xbox: si hay demasiadas, la más vieja se va rápido.
     if (this.shapes.length > MAX_SHAPES) this.fadeShape(this.shapes[0], 200);
-  }
-
-  drawShape(kind, r, color) {
-    const ink = COLORS.ink;
-    if (kind === 'star') return [this.add.star(0, 0, 5, r * 0.55, r * 1.1, color).setStrokeStyle(6, ink)];
-    if (kind === 'square') return [this.add.rectangle(0, 0, r * 1.8, r * 1.8, color).setRounded(r * 0.35).setStrokeStyle(6, ink)];
-    if (kind === 'triangle') {
-      const h = r * 1.9;
-      const w = h * 1.15;
-      return [this.add.triangle(0, 0, w / 2, 0, 0, h, w, h, color).setStrokeStyle(6, ink)];
-    }
-    if (kind === 'heart') {
-      // La curva del corazón, rellena y con contorno.
-      const points = [];
-      for (let t = 0; t < Math.PI * 2; t += 0.1) {
-        const hx = 16 * Math.sin(t) ** 3;
-        const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-        points.push({ x: (hx / 17) * r * 1.05, y: (hy / 17) * r * 1.05 + r * 0.1 });
-      }
-      const heart = this.add.graphics();
-      heart.fillStyle(color, 1);
-      heart.fillPoints(points, true);
-      heart.lineStyle(6, ink, 1);
-      heart.strokePoints(points, true);
-      return [heart];
-    }
-    if (kind === 'flower') {
-      const petals = [];
-      for (let i = 0; i < 6; i += 1) {
-        const angle = (i / 6) * Math.PI * 2;
-        petals.push(this.add.circle(Math.cos(angle) * r * 0.62, Math.sin(angle) * r * 0.62, r * 0.45, color).setStrokeStyle(6, ink));
-      }
-      return [...petals, this.add.circle(0, 0, r * 0.62, 0xfff4c2).setStrokeStyle(6, ink)];
-    }
-    return [this.add.circle(0, 0, r, color).setStrokeStyle(6, ink)];
-  }
-
-  // Ojitos y sonrisa; `s` es el tamaño de la cara (`dy`: un poco más abajo, para el triángulo).
-  drawFace(s, dy = 0) {
-    const eyeX = s * 0.3;
-    const eyeY = -s * 0.12 + dy;
-    const eyeR = s * 0.16;
-    const parts = [];
-    for (const side of [-1, 1]) {
-      parts.push(this.add.circle(side * eyeX, eyeY, eyeR, 0xffffff).setStrokeStyle(3, COLORS.ink));
-      parts.push(this.add.circle(side * eyeX, eyeY + eyeR * 0.15, eyeR * 0.55, COLORS.ink));
-    }
-    const mouth = this.add.graphics();
-    mouth.lineStyle(Math.max(4, s * 0.07), COLORS.ink, 1);
-    mouth.beginPath();
-    mouth.arc(0, s * 0.15 + dy, s * 0.28, Phaser.Math.DegToRad(20), Phaser.Math.DegToRad(160), false);
-    mouth.strokePath();
-    parts.push(mouth);
-    return parts;
   }
 
   fadeShape(shape, duration = 700) {
@@ -433,13 +377,7 @@ export class BabyScene extends Phaser.Scene {
   addBubble(x, y) {
     const r = Phaser.Math.Between(28, 58);
     const tint = Phaser.Utils.Array.GetRandom(PASTEL);
-    const bubble = this.add
-      .container(x, y, [
-        this.add.circle(0, 0, r, tint, 0.35).setStrokeStyle(4, 0xffffff, 0.9),
-        this.add.ellipse(-r * 0.38, -r * 0.4, r * 0.5, r * 0.3, 0xffffff, 0.75).setAngle(-35),
-        this.add.circle(r * 0.35, r * 0.4, r * 0.08, 0xffffff, 0.6),
-      ])
-      .setDepth(DEPTH.bubble);
+    const bubble = this.add.image(x, y, bubbleTexture(this, tint)).setScale(r / BUBBLE_RADIUS).setDepth(DEPTH.bubble);
     bubble.setData({ r, tint, drift: { speed: Phaser.Math.Between(45, 95), wobble: Phaser.Math.Between(20, 50), phase: Math.random() * 6 } });
     this.bubbles.push(bubble);
     return bubble;

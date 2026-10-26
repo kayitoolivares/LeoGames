@@ -3,9 +3,12 @@
 const ORDINALS = { 1: 'primer', 2: 'segundo', 3: 'tercer', 4: 'cuarto', 5: 'quinto', 6: 'sexto' };
 
 // "J1" → "el jugador 1", "CPU 2" → "la compu 2", "1°" → "primer" (así suena natural) y sin emojis.
+// "a el" y "de el" se juntan: "¡Gol del jugador 1!", "Ayuden al jugador 2".
 export function spokenText(text) {
   return String(text ?? '')
     .replace(/\bJ(\d)\b/g, 'el jugador $1')
+    .replace(/\b([Aa]) el\b/g, '$1l')
+    .replace(/\b([Dd]e) el\b/g, '$1l')
     .replace(/\bCPU\b/g, 'la compu')
     .replace(/(\d)°/g, (_, n) => ORDINALS[n] ?? `${n}`)
     .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}]/gu, '')

@@ -1,3 +1,4 @@
+import { lazyImage } from '../../shared/lazyArt.js';
 import { Creature, isPoseName, requestCreaturePoses } from '../../ui/creature.js';
 import manifest from './art.json';
 
@@ -10,9 +11,12 @@ export function loadBrawlArt(scene) {
   for (const name of manifest.objetos ?? []) {
     if (!scene.textures.exists(`brawl:objeto-${name}`)) scene.load.image(`brawl:objeto-${name}`, `brawl/objetos/${name}.png`);
   }
-  for (const name of manifest.fondos ?? []) {
-    if (!scene.textures.exists(`brawl:fondo-${name}`)) scene.load.image(`brawl:fondo-${name}`, `brawl/fondos/${name}.jpg`);
-  }
+}
+
+// El fondo de un mundo, solo cuando se va a jugar (ver shared/lazyArt.js); `onReady` cuando llega.
+export function loadWorldBackground(scene, name, onReady) {
+  if (!(manifest.fondos ?? []).includes(name)) return true;
+  return lazyImage(scene, `brawl:fondo-${name}`, `brawl/fondos/${name}.jpg`, onReady);
 }
 
 // Un monstruo con vida (ui/creature.js): su imagen `image` cabe en `size` (lo más largo); sus poses se bajan al aparecer.

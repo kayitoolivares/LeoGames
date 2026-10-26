@@ -13,6 +13,7 @@ import { defaultCharacter } from './CharacterSelectScene.js';
 import { requestPoses } from '../games/smash/art.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
 import { go } from '../shared/transition.js';
+import { releaseBackgrounds } from '../shared/lazyArt.js';
 
 const COLUMNS = 6;
 const CARD_W = 198;
@@ -44,6 +45,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    // Al regresar de un juego se sueltan sus fondos (cada uno pesa más de 5 MB en la memoria del Xbox).
+    releaseBackgrounds(this.game);
     const { width, height } = this.scale;
     this.ambience = new Ambience(this, 'menu', { depth: -10 });
     const title = this.add.text(width / 2, 50, '¿A qué jugamos?', textStyle(52, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);

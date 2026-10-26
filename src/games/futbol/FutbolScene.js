@@ -96,7 +96,7 @@ export class FutbolScene extends Phaser.Scene {
 
   preload() {
     loadSmashArt(this);
-    loadPitchArt(this);
+
     loadPowerArt(this);
     loadScreenArt(this);
     loadFxArt(this);
@@ -153,6 +153,9 @@ export class FutbolScene extends Phaser.Scene {
 
   // El fondo y la física de la cancha.
   usePitch(key) {
+    this.pitchKey = key;
+    // Si su fondo no se ha bajado, se pide y la cancha se vuelve a dibujar en cuanto llega.
+    if (!this.textures.exists(`futbol:fondo-${key}`)) loadPitchArt(this, key, () => this.pitchKey === key && this.usePitch(key));
     for (const part of this.pitchParts) part.destroy();
     const { parts, update } = drawPitch(this, key);
     this.pitchParts = parts;

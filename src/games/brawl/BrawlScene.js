@@ -14,7 +14,7 @@ import { say } from '../../shared/voice.js';
 import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { comicHit, loadFxArt, shockwave } from '../duelo/fx.js';
 import { ARENA, SECTION_W, setSection } from './arena.js';
-import { backgroundTexture, loadBrawlArt } from './art.js';
+import { backgroundTexture, loadBrawlArt, loadWorldBackground } from './art.js';
 import { Ambience } from '../../ui/ambient.js';
 import { CpuBuddy, buddyCount } from './buddies.js';
 import { Coins, coinBank, coinsFor } from './coins.js';
@@ -137,7 +137,10 @@ export class BrawlScene extends Phaser.Scene {
   // ---------- El fondo: la imagen del mundo repetida a lo largo del nivel (en espejo, para que no se noten las uniones) ----------
 
   drawBackground(world, sections) {
+    this.backgroundWorld = world;
     this.backgroundLayer.removeAll(true);
+    // Si el fondo del mundo no se ha bajado, se pide y se vuelve a dibujar en cuanto llega.
+    if (!backgroundTexture(this, world.background)) loadWorldBackground(this, world.background, () => this.backgroundWorld === world && this.drawBackground(world, sections));
     // Lo que se mueve en el fondo (pájaros, chispas, nieve...).
     this.ambience?.destroy();
     this.ambience = new Ambience(this, world.background, { depth: -90 });

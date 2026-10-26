@@ -15,7 +15,7 @@
   "text": "¡106.9 metros!",
   "name": "97cc65a1",
   "from": "oida",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡136.7 metros!",
@@ -27,7 +27,7 @@
   "text": "¡15 monedas!",
   "name": "afa0aaf0",
   "from": "oida",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡20 golpes seguidos!",
@@ -120,6 +120,12 @@
   "recorded": true
  },
  {
+  "text": "¡A Luchador le queda una vida!",
+  "name": "ecbbc721",
+  "from": "lista",
+  "recorded": true
+ },
+ {
   "text": "¡A Ninja le queda una vida!",
   "name": "658132bf",
   "from": "lista",
@@ -129,79 +135,97 @@
   "text": "¡A pelear!",
   "name": "2d30377d",
   "from": "oida",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Pingüino le queda una vida!",
   "name": "552c6319",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Pirata le queda una vida!",
   "name": "bd6fb1ba",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A practicar!",
   "name": "2c441641",
   "from": "oida",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Rayo le queda una vida!",
   "name": "6cac03fe",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Resorte le queda una vida!",
   "name": "a318fd7f",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Rey Bolón le queda una vida!",
   "name": "730be293",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Robot le queda una vida!",
   "name": "3aff6053",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Robotote le queda una vida!",
   "name": "eaf4b8ff",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡A Tanque le queda una vida!",
   "name": "7a2e0c65",
   "from": "lista",
-  "recorded": false
+  "recorded": true
+ },
+ {
+  "text": "¡A Unicornio le queda una vida!",
+  "name": "c7ea4343",
+  "from": "lista",
+  "recorded": true
+ },
+ {
+  "text": "¡A ver qué sale de la cápsula!",
+  "name": "936a38e2",
+  "from": "oida",
+  "recorded": true
+ },
+ {
+  "text": "¡Abeja cruza la meta en primer lugar!",
+  "name": "73c0c3aa",
+  "from": "oida",
+  "recorded": true
  },
  {
   "text": "¡Abeja pega primero!",
   "name": "5657fce9",
   "from": "oida",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡Abeja sale disparado!",
   "name": "c2564d00",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡Abeja salió volando!",
   "name": "4307c0db",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡Adelante!",
@@ -219,12 +243,12 @@
   "text": "¡Adiós, Abeja!",
   "name": "e2fa8188",
   "from": "lista",
-  "recorded": false
+  "recorded": true
  },
  {
   "text": "¡Adiós, Astronauta!",
   "name": "f4d658f7",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -248,7 +272,7 @@
  {
   "text": "¡Adiós, Dragoncito!",
   "name": "e5c41823",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -272,13 +296,19 @@
  {
   "text": "¡Adiós, Gatito!",
   "name": "f446649b",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "¡Adiós, Hada!",
   "name": "a84e35fd",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Luchador!",
+  "name": "db05e4f9",
+  "from": "lista",
   "recorded": false
  },
  {
@@ -296,7 +326,7 @@
  {
   "text": "¡Adiós, Pirata!",
   "name": "1d155796",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -332,7 +362,19 @@
  {
   "text": "¡Adiós, Tanque!",
   "name": "c805da31",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Adiós, Unicornio!",
+  "name": "92b15761",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Ahí se cruza o queda muy pegadito! Aleja esos puntos",
+  "name": "77d7481b",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -420,9 +462,15 @@
   "recorded": false
  },
  {
+  "text": "¡Atajadón del portero!",
+  "name": "da8344c1",
+  "from": "código",
+  "recorded": false
+ },
+ {
   "text": "¡Atajadón!",
   "name": "aab93cd1",
-  "from": "código",
+  "from": "oida",
   "recorded": true
  },
  {
@@ -432,14 +480,26 @@
   "recorded": true
  },
  {
-  "text": "¡Ayuden a el jugador 1! ¡Toquen su burbuja!",
-  "name": "ee33bba7",
+  "text": "¡Atrapa la estrella! Gana el que la tenga más tiempo",
+  "name": "e627b697",
   "from": "oida",
   "recorded": false
  },
  {
-  "text": "¡Ayuden a el jugador 2! ¡Toquen su burbuja!",
-  "name": "92a4c0d8",
+  "text": "¡Ay, qué llorón!",
+  "name": "e8075fb4",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Ayuden al jugador 1! ¡Toquen su burbuja!",
+  "name": "91720100",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ayuden al jugador 2! ¡Toquen su burbuja!",
+  "name": "7015ba2f",
   "from": "oida",
   "recorded": false
  },
@@ -480,6 +540,12 @@
   "recorded": false
  },
  {
+  "text": "¡Batalla de monedas! Junta todas las que puedas",
+  "name": "813dc7a8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Batalla!",
   "name": "159e1430",
   "from": "oida",
@@ -510,6 +576,12 @@
   "recorded": false
  },
  {
+  "text": "¡Bloquecito cruza la meta en primer lugar!",
+  "name": "5fb63768",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Bloquecito pega primero!",
   "name": "942a2beb",
   "from": "oida",
@@ -525,6 +597,18 @@
   "text": "¡Bloquecito salió volando!",
   "name": "5549b029",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Boing! Gelatina",
+  "name": "62801b51",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Bola de fuego gigante!",
+  "name": "06e509e3",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -558,6 +642,24 @@
   "recorded": false
  },
  {
+  "text": "¡Bravo! ¡Tocaste Estrellita, ¿dónde estás?!",
+  "name": "79b7c4cd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Cambió el clima! Lluvia",
+  "name": "1d670834",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Cambió el clima! Noche",
+  "name": "1cfabac8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Campeón del torneo!",
   "name": "e16a5fe0",
   "from": "oida",
@@ -582,6 +684,18 @@
   "recorded": true
  },
  {
+  "text": "¡Casi! Inténtalo otra vez",
+  "name": "9eab94ca",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Cerdito!",
+  "name": "d8e780ef",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Charco!",
   "name": "c028ec81",
   "from": "código",
@@ -590,6 +704,12 @@
  {
   "text": "¡Chiquitito! Cabes por todos lados",
   "name": "b6d01cd9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Círculo verde!",
+  "name": "67853f08",
   "from": "oida",
   "recorded": false
  },
@@ -618,8 +738,44 @@
   "recorded": true
  },
  {
+  "text": "¡Cometazo para Abeja!",
+  "name": "444d4374",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Cometazo para Gatito!",
+  "name": "b4fa19e7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Cometazo para Hada!",
+  "name": "2b77a101",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Cometazo para Ninja!",
+  "name": "ef2f1639",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Compraste Cohete!",
   "name": "b52bdf49",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Compraste Moto!",
+  "name": "e8a4c5ac",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Compraste Motor nivel 1!",
+  "name": "c305db85",
   "from": "oida",
   "recorded": false
  },
@@ -702,6 +858,12 @@
   "recorded": false
  },
  {
+  "text": "¡Corazón verde!",
+  "name": "fd1e28bb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Creció!",
   "name": "ddd22720",
   "from": "oida",
@@ -756,15 +918,27 @@
   "recorded": false
  },
  {
+  "text": "¡Dos vidas!",
+  "name": "a0a6612c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Dragón de lava se enojó!",
   "name": "7de90566",
   "from": "oida",
   "recorded": false
  },
  {
+  "text": "¡Dragoncito cruza la meta en primer lugar!",
+  "name": "02679f45",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Dragoncito pega primero!",
   "name": "525a584c",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -800,7 +974,7 @@
  {
   "text": "¡El Capitán Pulpo!",
   "name": "601c858a",
-  "from": "lista",
+  "from": "oida",
   "recorded": true
  },
  {
@@ -810,10 +984,28 @@
   "recorded": true
  },
  {
+  "text": "¡El Gran Fantasma!",
+  "name": "90990569",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡El Gran Hongo!",
   "name": "fb1a4dd9",
   "from": "oida",
   "recorded": true
+ },
+ {
+  "text": "¡El Gran Pájaro!",
+  "name": "d55c9025",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡El Gran Pingüino!",
+  "name": "298c49ea",
+  "from": "oida",
+  "recorded": false
  },
  {
   "text": "¡El Gran Yeti!",
@@ -840,8 +1032,20 @@
   "recorded": false
  },
  {
+  "text": "¡el jugador 1 cruza la meta en primer lugar!",
+  "name": "eb1f7767",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡el jugador 1 encontró el atajo secreto!",
   "name": "702f3ee6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 es el último en pie!",
+  "name": "cacf951a",
   "from": "oida",
   "recorded": false
  },
@@ -858,8 +1062,38 @@
   "recorded": false
  },
  {
+  "text": "¡el jugador 1 ganó la Copa Sol!",
+  "name": "59db8e98",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 listo con Bólido!",
+  "name": "a5307f35",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 listo con Mini!",
+  "name": "1f306853",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 salió volando con la estrella!",
+  "name": "bdfcbc21",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡el jugador 1 se cayó!",
   "name": "8313309f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 tiene la estrella!",
+  "name": "60e6c649",
   "from": "oida",
   "recorded": false
  },
@@ -906,8 +1140,20 @@
   "recorded": false
  },
  {
+  "text": "¡el jugador 2 listo con Cohete!",
+  "name": "ee4f25ad",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡el jugador 2 se cayó!",
   "name": "381aedf0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 2 trae la estrella!",
+  "name": "dfff3575",
   "from": "oida",
   "recorded": false
  },
@@ -920,7 +1166,7 @@
  {
   "text": "¡el jugador 2 va montado en el dinosaurio!",
   "name": "d48f828c",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -986,7 +1232,7 @@
  {
   "text": "¡El Rey Calabaza!",
   "name": "fee4b4df",
-  "from": "lista",
+  "from": "oida",
   "recorded": true
  },
  {
@@ -1016,7 +1262,7 @@
  {
   "text": "¡El Rey Pastel!",
   "name": "453fa949",
-  "from": "lista",
+  "from": "oida",
   "recorded": true
  },
  {
@@ -1026,10 +1272,34 @@
   "recorded": true
  },
  {
+  "text": "¡El Rey Yeti!",
+  "name": "e736c835",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Eliminación! Cada ratito sale el que va al último",
+  "name": "edf908c5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Embestida de acero!",
+  "name": "e85391e6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Empate!",
   "name": "c8248109",
   "from": "oida",
   "recorded": true
+ },
+ {
+  "text": "¡Escojan su carro!",
+  "name": "de03e413",
+  "from": "oida",
+  "recorded": false
  },
  {
   "text": "¡Escudo perfecto!",
@@ -1046,13 +1316,13 @@
  {
   "text": "¡Eso es trabajo en equipo!",
   "name": "41158e5b",
-  "from": "código",
+  "from": "oida",
   "recorded": true
  },
  {
   "text": "¡Eso!",
   "name": "d16443ac",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -1086,6 +1356,12 @@
   "recorded": false
  },
  {
+  "text": "¡Fantasma cruza la meta en primer lugar!",
+  "name": "30860670",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Fantasma pega primero!",
   "name": "6f70c3a3",
   "from": "oida",
@@ -1104,10 +1380,22 @@
   "recorded": false
  },
  {
+  "text": "¡Flor de fuego!",
+  "name": "ae8f8043",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Foto del podio!",
   "name": "15a12cff",
   "from": "código",
   "recorded": true
+ },
+ {
+  "text": "¡Fuego desde el cielo!",
+  "name": "31f3cc97",
+  "from": "oida",
+  "recorded": false
  },
  {
   "text": "¡Fuego! Aprieta X",
@@ -1116,10 +1404,22 @@
   "recorded": false
  },
  {
+  "text": "¡Fuera la compu!",
+  "name": "ab5363e9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Fuera!",
   "name": "c2b522f0",
   "from": "código",
   "recorded": true
+ },
+ {
+  "text": "¡Fuera! Ahora ves al que va en primero",
+  "name": "21b73063",
+  "from": "código",
+  "recorded": false
  },
  {
   "text": "¡Gánale a tu fantasma!",
@@ -1152,6 +1452,36 @@
   "recorded": false
  },
  {
+  "text": "¡Ganaron la jornada 1!",
+  "name": "24e9a8f4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganaron la jornada 2!",
+  "name": "74e1d81f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganaron la jornada 3!",
+  "name": "98e44f62",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganaron la jornada 4!",
+  "name": "28dce34d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganaron la jornada 5!",
+  "name": "8cdfbf50",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Ganaron los Rojos!",
   "name": "4d34ff1e",
   "from": "oida",
@@ -1176,8 +1506,26 @@
   "recorded": false
  },
  {
+  "text": "¡Ganó el jugador 1, Tanque!",
+  "name": "6936de54",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Ganó el jugador 1!",
   "name": "cba848e0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó el jugador 1! Va ganando el jugador 1",
+  "name": "a3b659bb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó el jugador 2, Rayo!",
+  "name": "5f258bb4",
   "from": "oida",
   "recorded": false
  },
@@ -1202,6 +1550,12 @@
  {
   "text": "¡Ganó la batalla el jugador 1, Tanque!",
   "name": "4a52fefc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Abeja!",
+  "name": "77605c82",
   "from": "oida",
   "recorded": false
  },
@@ -1278,8 +1632,20 @@
   "recorded": false
  },
  {
+  "text": "¡Ganó la compu, Rayo!",
+  "name": "93115e3c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Ganó la compu, Resorte!",
   "name": "351fc10f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Robot!",
+  "name": "cc07e99f",
   "from": "oida",
   "recorded": false
  },
@@ -1310,18 +1676,18 @@
  {
   "text": "¡Gatito salió volando!",
   "name": "aed8b094",
-  "from": "lista",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Gatito!",
+  "name": "bc47a9a1",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "¡GIGANTE! ¡Rompe todo!",
   "name": "039aebd7",
-  "from": "oida",
-  "recorded": false
- },
- {
-  "text": "¡Gol de el jugador 1!",
-  "name": "922eeba6",
   "from": "oida",
   "recorded": false
  },
@@ -1332,14 +1698,32 @@
   "recorded": true
  },
  {
+  "text": "¡Gol del jugador 1!",
+  "name": "238f58b1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Gol para los Dragones!",
+  "name": "23deaf38",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Gol para los Tiburones!",
   "name": "fd7fc7ce",
   "from": "oida",
   "recorded": false
  },
  {
-  "text": "¡Gol, gol, gol de el jugador 1!",
-  "name": "45afb296",
+  "text": "¡Gol, gol, gol de la compu!",
+  "name": "f052fa51",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Gol, gol, gol del jugador 1!",
+  "name": "38598721",
   "from": "oida",
   "recorded": false
  },
@@ -1380,20 +1764,26 @@
   "recorded": true
  },
  {
-  "text": "¡Gooool de el jugador 1!",
-  "name": "82d319a5",
+  "text": "¡Gooool del jugador 1!",
+  "name": "cf55b18a",
   "from": "oida",
   "recorded": false
  },
  {
-  "text": "¡Gooool de el jugador 2!",
-  "name": "1ad03756",
+  "text": "¡Gooool del jugador 2!",
+  "name": "375893d9",
   "from": "oida",
   "recorded": false
  },
  {
   "text": "¡Gran Hongo se enojó!",
   "name": "9288425f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Gravedad doble!",
+  "name": "217c08e7",
   "from": "oida",
   "recorded": false
  },
@@ -1424,7 +1814,7 @@
  {
   "text": "¡Hasta la vista, Astronauta!",
   "name": "0b39edfc",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -1448,7 +1838,7 @@
  {
   "text": "¡Hasta la vista, Dragoncito!",
   "name": "cd945724",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -1472,12 +1862,18 @@
  {
   "text": "¡Hasta la vista, Gatito!",
   "name": "e785ca50",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "¡Hasta la vista, Hada!",
   "name": "92453daa",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Hasta la vista, Luchador!",
+  "name": "c67f91ce",
   "from": "lista",
   "recorded": false
  },
@@ -1490,7 +1886,7 @@
  {
   "text": "¡Hasta la vista, Pingüino!",
   "name": "2523877a",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -1536,6 +1932,12 @@
   "recorded": false
  },
  {
+  "text": "¡Hasta la vista, Unicornio!",
+  "name": "14503d10",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "¡Haz el primer récord de esta pista!",
   "name": "de62d99c",
   "from": "oida",
@@ -1552,6 +1954,12 @@
   "name": "3e562189",
   "from": "lista",
   "recorded": true
+ },
+ {
+  "text": "¡Imán!",
+  "name": "894b4bc0",
+  "from": "oida",
+  "recorded": false
  },
  {
   "text": "¡Jonrón!. Manda el saco a más de 100 m en el Concurso de jonrón de Bolitas Bros",
@@ -1706,7 +2114,7 @@
  {
   "text": "¡Jugador 4, Amarillo!",
   "name": "3eee941a",
-  "from": "lista",
+  "from": "oida",
   "recorded": true
  },
  {
@@ -1764,6 +2172,24 @@
   "recorded": false
  },
  {
+  "text": "¡La bala atropelló a Resorte!",
+  "name": "78dce3a1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡La bala atropelló al jugador 1!",
+  "name": "49212d66",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡La bala atropelló al jugador 2!",
+  "name": "7123aaf5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡La burbuja te salvó!",
   "name": "bef3b63d",
   "from": "código",
@@ -1772,6 +2198,12 @@
  {
   "text": "¡la compu llamó a Astronauta!",
   "name": "f50a66dc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡la compu llamó a Bombero!",
+  "name": "19a1e3c4",
   "from": "oida",
   "recorded": false
  },
@@ -1788,6 +2220,18 @@
   "recorded": false
  },
  {
+  "text": "¡la compu llamó a Pirata!",
+  "name": "41677dcd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡la compu llamó a Rayo!",
+  "name": "d21a99cd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡la compu se quedó sin globos!",
   "name": "55699f8a",
   "from": "oida",
@@ -1800,9 +2244,21 @@
   "recorded": true
  },
  {
+  "text": "¡La Gran Bola de Fuego!",
+  "name": "06c060e1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡La Gran Tortuga!",
+  "name": "7cbbd874",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡La paró!",
   "name": "5ca6808c",
-  "from": "código",
+  "from": "oida",
   "recorded": true
  },
  {
@@ -1818,6 +2274,12 @@
   "recorded": false
  },
  {
+  "text": "¡Le atiné!. Pégale a otro carro con un cohete en Carreras vista desde arriba",
+  "name": "0037b079",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "¡Le diste!",
   "name": "726f2dd7",
   "from": "código",
@@ -1830,14 +2292,26 @@
   "recorded": true
  },
  {
-  "text": "¡Le duele a el Rey Cangrejo!",
-  "name": "85e63e6a",
+  "text": "¡Le duele al Gran Pájaro!",
+  "name": "0525d69f",
   "from": "oida",
   "recorded": false
  },
  {
-  "text": "¡Le duele a el Rey Nube!",
-  "name": "a14b87bd",
+  "text": "¡Le duele al Rey Calabaza!",
+  "name": "7fe8fb95",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Le duele al Rey Cangrejo!",
+  "name": "e73aae2f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Le duele al Rey Nube!",
+  "name": "e3e883c4",
   "from": "oida",
   "recorded": false
  },
@@ -1878,26 +2352,26 @@
   "recorded": false
  },
  {
-  "text": "¡Levanten a el jugador 1!",
-  "name": "6952718b",
+  "text": "¡Levanten al jugador 1!",
+  "name": "ce81dff8",
   "from": "lista",
   "recorded": false
  },
  {
-  "text": "¡Levanten a el jugador 2!",
-  "name": "d959dda0",
+  "text": "¡Levanten al jugador 2!",
+  "name": "5e7a73e3",
   "from": "lista",
   "recorded": false
  },
  {
-  "text": "¡Levanten a el jugador 3!",
-  "name": "7557019d",
+  "text": "¡Levanten al jugador 3!",
+  "name": "427c8666",
   "from": "lista",
   "recorded": false
  },
  {
-  "text": "¡Levanten a el jugador 4!",
-  "name": "e55e6db2",
+  "text": "¡Levanten al jugador 4!",
+  "name": "42895259",
   "from": "lista",
   "recorded": false
  },
@@ -1932,10 +2406,34 @@
   "recorded": false
  },
  {
+  "text": "¡Luchador pega primero!",
+  "name": "8a35f01a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Luchador sale disparado!",
+  "name": "79cc08ef",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Luchador salió volando!",
+  "name": "f45fd91e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "¡Mándalo lejos con el bate (X)!",
   "name": "00f22380",
   "from": "código",
   "recorded": true
+ },
+ {
+  "text": "¡Manguerazo!",
+  "name": "bc87c2c4",
+  "from": "oida",
+  "recorded": false
  },
  {
   "text": "¡Meteoro de puños!",
@@ -1970,7 +2468,7 @@
  {
   "text": "¡Ninja pega primero!",
   "name": "e904de5a",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2000,7 +2498,7 @@
  {
   "text": "¡No falla!",
   "name": "7ae2df0a",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2025,6 +2523,12 @@
   "text": "¡Nueva calcomanía! ¡Jonrón!",
   "name": "d20702b2",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! ¡Le atiné!",
+  "name": "fdd1ebb2",
+  "from": "lista",
   "recorded": false
  },
  {
@@ -2142,6 +2646,12 @@
   "recorded": false
  },
  {
+  "text": "¡Nueva calcomanía! Alumno de oro",
+  "name": "1ee104a3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Nueva calcomanía! Arre, dinosaurio",
   "name": "63c70e23",
   "from": "oida",
@@ -2202,6 +2712,18 @@
   "recorded": false
  },
  {
+  "text": "¡Nueva calcomanía! Campeón de batalla",
+  "name": "f57a43b3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeón de Carreras",
+  "name": "729ff351",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Nueva calcomanía! Campeón de globos",
   "name": "8b67933e",
   "from": "oida",
@@ -2228,6 +2750,12 @@
  {
   "text": "¡Nueva calcomanía! Campeones",
   "name": "331e547b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Campeones de la Liga",
+  "name": "f9930de8",
   "from": "oida",
   "recorded": false
  },
@@ -2264,6 +2792,12 @@
  {
   "text": "¡Nueva calcomanía! Copa de karts",
   "name": "c1b0a71d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! El último en pie",
+  "name": "b769aa11",
   "from": "oida",
   "recorded": false
  },
@@ -2348,12 +2882,24 @@
  {
   "text": "¡Nueva calcomanía! Juegan todos",
   "name": "0472a4f9",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "¡Nueva calcomanía! Las tres grandes",
   "name": "5be8ce22",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Le ganaste al jefe",
+  "name": "dbe0dfbf",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Nueva calcomanía! Maestro del volante",
+  "name": "01f424c3",
   "from": "lista",
   "recorded": false
  },
@@ -2390,7 +2936,7 @@
  {
   "text": "¡Nueva calcomanía! Primer lugar",
   "name": "451b09f2",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2550,6 +3096,12 @@
   "recorded": false
  },
  {
+  "text": "¡Parada perfecta de Luchador!",
+  "name": "644a8a95",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "¡Parada perfecta de Ninja!",
   "name": "f338fc19",
   "from": "lista",
@@ -2604,9 +3156,15 @@
   "recorded": false
  },
  {
+  "text": "¡Parada perfecta de Unicornio!",
+  "name": "ad5cda8d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "¡Parada perfecta!",
   "name": "bc822d22",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2625,6 +3183,12 @@
   "text": "¡Perfecto!. Gana un round del duelo sin que te peguen",
   "name": "0ed2c17d",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Perrito!",
+  "name": "0dd180e6",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2652,6 +3216,12 @@
   "recorded": false
  },
  {
+  "text": "¡Pirata cruza la meta en primer lugar!",
+  "name": "191fe0a0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Pirata pega primero!",
   "name": "5411c053",
   "from": "oida",
@@ -2664,9 +3234,21 @@
   "recorded": false
  },
  {
+  "text": "¡Pirata salió volando con la estrella!",
+  "name": "6e3ad502",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Pirata salió volando!",
   "name": "32830af1",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Piso de hielo!",
+  "name": "ed1fe8a2",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2714,7 +3296,7 @@
  {
   "text": "¡Primer golpe de Dragoncito!",
   "name": "3e755dcc",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2724,33 +3306,9 @@
   "recorded": false
  },
  {
-  "text": "¡Primer golpe de el jugador 1!",
-  "name": "407f913e",
-  "from": "oida",
-  "recorded": false
- },
- {
-  "text": "¡Primer golpe de el jugador 2!",
-  "name": "68820ecd",
-  "from": "lista",
-  "recorded": false
- },
- {
-  "text": "¡Primer golpe de el jugador 3!",
-  "name": "cc84ead0",
-  "from": "lista",
-  "recorded": false
- },
- {
-  "text": "¡Primer golpe de el jugador 4!",
-  "name": "b487039f",
-  "from": "lista",
-  "recorded": false
- },
- {
   "text": "¡Primer golpe de Estrella!",
   "name": "5e20a7ee",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2778,9 +3336,15 @@
   "recorded": false
  },
  {
+  "text": "¡Primer golpe de Luchador!",
+  "name": "f1d87a06",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Primer golpe de Ninja!",
   "name": "ad2cf0b8",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2804,7 +3368,7 @@
  {
   "text": "¡Primer golpe de Resorte!",
   "name": "9a12f58c",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2832,9 +3396,57 @@
   "recorded": false
  },
  {
+  "text": "¡Primer golpe de Unicornio!",
+  "name": "f4005b08",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe del jugador 1!",
+  "name": "481b2d09",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe del jugador 2!",
+  "name": "e0184aba",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe del jugador 3!",
+  "name": "bc15d377",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Primer golpe del jugador 4!",
+  "name": "d413baa8",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Puente levadizo!",
+  "name": "78c195b6",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Pum! Pasa por el otro lado",
+  "name": "f1f13b6c",
+  "from": "código",
+  "recorded": false
+ },
+ {
   "text": "¡Qué atajada de la compu!",
   "name": "259a85fe",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué buen pase!",
+  "name": "5373eadb",
+  "from": "código",
   "recorded": false
  },
  {
@@ -2850,32 +3462,38 @@
   "recorded": false
  },
  {
-  "text": "¡Qué parada de el jugador 1!",
-  "name": "64cf799e",
-  "from": "oida",
-  "recorded": false
- },
- {
-  "text": "¡Qué parada de el jugador 2!",
-  "name": "8cd1f72d",
-  "from": "lista",
-  "recorded": false
- },
- {
-  "text": "¡Qué parada de el jugador 3!",
-  "name": "70d409b0",
-  "from": "lista",
-  "recorded": false
- },
- {
-  "text": "¡Qué parada de el jugador 4!",
-  "name": "d8d6ebff",
-  "from": "lista",
+  "text": "¡Qué manos!",
+  "name": "1a7ef9f6",
+  "from": "código",
   "recorded": false
  },
  {
   "text": "¡Qué parada de la compu!",
   "name": "b90d79d9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada del jugador 1!",
+  "name": "7f6ff9e9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada del jugador 2!",
+  "name": "976de11a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada del jugador 3!",
+  "name": "736b69d7",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Qué parada del jugador 4!",
+  "name": "0b688788",
   "from": "lista",
   "recorded": false
  },
@@ -2888,13 +3506,19 @@
  {
   "text": "¡Qué volea!",
   "name": "723a9df9",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "¡Quedan 10 segundos!",
   "name": "34bc167e",
   "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Ranita!",
+  "name": "8769ca0e",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2916,8 +3540,26 @@
   "recorded": false
  },
  {
+  "text": "¡Récord de la pista!",
+  "name": "0b362dab",
+  "from": "código",
+  "recorded": false
+ },
+ {
   "text": "¡Récord! 0:01",
   "name": "19d65915",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! combo de 1",
+  "name": "3a773186",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! combo de 19",
+  "name": "c8a34fad",
   "from": "oida",
   "recorded": false
  },
@@ -2934,14 +3576,32 @@
   "recorded": false
  },
  {
+  "text": "¡Récord! combo de 27",
+  "name": "3aa0318c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Récord! combo de 28",
   "name": "41a03c91",
   "from": "oida",
   "recorded": false
  },
  {
+  "text": "¡Récord! combo de 29",
+  "name": "40a03afe",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Récord! combo de 30",
   "name": "339de7f0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! combo de 31",
+  "name": "349de983",
   "from": "oida",
   "recorded": false
  },
@@ -2972,7 +3632,7 @@
  {
   "text": "¡Rescataron a Abeja! Ahora pelea con ustedes",
   "name": "4c5a3f6e",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3014,13 +3674,13 @@
  {
   "text": "¡Rescataron a Estrella! Ahora pelea con ustedes",
   "name": "ab945325",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "¡Rescataron a Fantasma! Ahora pelea con ustedes",
   "name": "9ca1ec5a",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3032,6 +3692,12 @@
  {
   "text": "¡Rescataron a Hada! Ahora pelea con ustedes",
   "name": "5e7556e1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Rescataron a Luchador! Ahora pelea con ustedes",
+  "name": "e3409e59",
   "from": "lista",
   "recorded": false
  },
@@ -3062,7 +3728,7 @@
  {
   "text": "¡Rescataron a Resorte! Ahora pelea con ustedes",
   "name": "a5208ec3",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3090,6 +3756,18 @@
   "recorded": false
  },
  {
+  "text": "¡Rescataron a Unicornio! Ahora pelea con ustedes",
+  "name": "3613e53f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Resorte cruza la meta en primer lugar!",
+  "name": "23d4cb3b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Resorte pega primero!",
   "name": "844ff6be",
   "from": "lista",
@@ -3110,6 +3788,12 @@
  {
   "text": "¡Reto cumplido!",
   "name": "0d7c423e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Reto superado!",
+  "name": "15965552",
   "from": "oida",
   "recorded": false
  },
@@ -3152,7 +3836,7 @@
  {
   "text": "¡Robot salió volando!",
   "name": "bfc5e35a",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3198,6 +3882,30 @@
   "recorded": false
  },
  {
+  "text": "¡Se la pasaste!",
+  "name": "ab700daf",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Se te cayó la estrella!",
+  "name": "bb0a828b",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Se te pegó una bomba! ¡Chócala con otro!",
+  "name": "6c0d87a1",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Se viene la tormenta!",
+  "name": "11ee100f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Sigue otro jefe!",
   "name": "90b8cd62",
   "from": "código",
@@ -3216,6 +3924,12 @@
   "recorded": false
  },
  {
+  "text": "¡Son los campeones de la Liga!",
+  "name": "152a2dd3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Sonrían!",
   "name": "b1fcf2b9",
   "from": "oida",
@@ -3225,6 +3939,12 @@
   "text": "¡Soy una muralla!",
   "name": "b026575c",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Splash!",
+  "name": "f0b06e26",
+  "from": "código",
   "recorded": false
  },
  {
@@ -3348,6 +4068,12 @@
   "recorded": false
  },
  {
+  "text": "¡Tanque contra Unicornio!",
+  "name": "d5cfd254",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Tanque pega primero!",
   "name": "6a1ef34a",
   "from": "oida",
@@ -3362,7 +4088,7 @@
  {
   "text": "¡Tanque salió volando!",
   "name": "75d7644e",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3390,8 +4116,20 @@
   "recorded": false
  },
  {
+  "text": "¡Te pasaron la bomba!",
+  "name": "391ed206",
+  "from": "código",
+  "recorded": false
+ },
+ {
   "text": "¡Te robaron el poder!",
   "name": "87a42ef6",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Te saltaste una puerta! +2 s",
+  "name": "b891b3b6",
   "from": "código",
   "recorded": false
  },
@@ -3414,9 +4152,45 @@
   "recorded": false
  },
  {
+  "text": "¡Tiburones contra Abejas! ¡Empieza el partido!",
+  "name": "d316bb4c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Tiburones contra Dragones! ¡Empieza el partido!",
   "name": "11a241fb",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tiburones contra Pulpos! ¡Empieza el partido!",
+  "name": "970e1db5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tiburones contra Ranas! ¡Empieza el partido!",
+  "name": "da82bb29",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tiburones contra Tigres! ¡Empieza el partido!",
+  "name": "fafef146",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tienes la estrella! ¡Que no te peguen!",
+  "name": "a5b05e3d",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Tiraste un cono! +2 s",
+  "name": "0a30cd61",
+  "from": "código",
   "recorded": false
  },
  {
@@ -3426,8 +4200,20 @@
   "recorded": false
  },
  {
+  "text": "¡Tiro relámpago!",
+  "name": "1eb50a9f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Tremendo trancazo!",
   "name": "2882530f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Turbo de equipo!",
+  "name": "07adcb83",
   "from": "código",
   "recorded": false
  },
@@ -3480,6 +4266,18 @@
   "recorded": false
  },
  {
+  "text": "¡Una abeja le picó a Bombero!",
+  "name": "995130e5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Una abeja le picó a Fantasma!",
+  "name": "2025ec4a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Una abeja le picó a Pingüino!",
   "name": "480aae89",
   "from": "oida",
@@ -3498,6 +4296,12 @@
   "recorded": false
  },
  {
+  "text": "¡Una mascota!",
+  "name": "3d18074f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Una moneda grande!",
   "name": "08f0d2a4",
   "from": "oida",
@@ -3510,9 +4314,39 @@
   "recorded": false
  },
  {
+  "text": "¡Unicornio contra Astronauta!",
+  "name": "440c3998",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Unicornio contra Gatito!",
+  "name": "8ca37924",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Unicornio pega primero!",
+  "name": "26159b5a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Unicornio sale disparado!",
+  "name": "db348d2f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Unicornio salió volando!",
+  "name": "cab1315e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "¡Uuuy, casi!",
   "name": "d430e10b",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3588,6 +4422,18 @@
   "recorded": false
  },
  {
+  "text": "¡Vaquita!",
+  "name": "6ba8e0e4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vas al último! ¡Rebasa a alguien!",
+  "name": "ea4bf753",
+  "from": "código",
+  "recorded": false
+ },
+ {
   "text": "¡Vas en primer lugar!",
   "name": "566d4162",
   "from": "oida",
@@ -3600,26 +4446,14 @@
   "recorded": false
  },
  {
-  "text": "¡Vencieron a el Rey Cangrejo!",
-  "name": "db5d8d21",
+  "text": "¡Vencieron a la Gran Bola de Fuego!",
+  "name": "13a9c785",
   "from": "oida",
   "recorded": false
  },
  {
-  "text": "¡Vencieron a el Rey Dragón!",
-  "name": "3842b673",
-  "from": "oida",
-  "recorded": false
- },
- {
-  "text": "¡Vencieron a el Rey Hongo!",
-  "name": "1efd5e99",
-  "from": "oida",
-  "recorded": false
- },
- {
-  "text": "¡Vencieron a el Rey Nube!",
-  "name": "4a27e626",
+  "text": "¡Vencieron a la Gran Tortuga!",
+  "name": "7e4a21c8",
   "from": "oida",
   "recorded": false
  },
@@ -3632,6 +4466,72 @@
  {
   "text": "¡Vencieron a todos los jefes!",
   "name": "59181329",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Capitán Pulpo!",
+  "name": "07a2f799",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Gran Fantasma!",
+  "name": "beb8316a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Gran Pájaro!",
+  "name": "401f8986",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Gran Pingüino!",
+  "name": "c12dd629",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Calabaza!",
+  "name": "e9c21aea",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Cangrejo!",
+  "name": "5e018cdc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Dragón!",
+  "name": "94e49b46",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Hongo!",
+  "name": "8b6d78c6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Nube!",
+  "name": "ed8edf3f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Pastel!",
+  "name": "4fc6e8f0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Vencieron al Rey Yeti!",
+  "name": "77327064",
   "from": "oida",
   "recorded": false
  },
@@ -3654,9 +4554,21 @@
   "recorded": false
  },
  {
+  "text": "¡Verde!",
+  "name": "6b9fbb45",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Ya sabes todos los golpes!",
   "name": "09253dbe",
   "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "¡Ya se está haciendo de noche en el desierto!",
+  "name": "982e13b6",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3692,6 +4604,12 @@
  {
   "text": "1-2 Fuerte de la Gran Tortuga",
   "name": "0c9418fa",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "1-3 Cueva",
+  "name": "cf0df64a",
   "from": "oida",
   "recorded": false
  },
@@ -3738,6 +4656,18 @@
   "recorded": false
  },
  {
+  "text": "2-3 Viento en el cielo",
+  "name": "1274890a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "2-4 El castillo del Rey Nube",
+  "name": "6d3e3623",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "3-1 Playa",
   "name": "182a4295",
   "from": "oida",
@@ -3756,8 +4686,20 @@
   "recorded": false
  },
  {
+  "text": "3-3 Bajo el mar",
+  "name": "5fb34471",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "3-3 La cueva del Rey Cangrejo",
   "name": "aa93a4c3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "3-4 La cueva del Rey Cangrejo",
+  "name": "61e8cc8a",
   "from": "oida",
   "recorded": false
  },
@@ -3780,8 +4722,20 @@
   "recorded": false
  },
  {
+  "text": "4-3 Castillo",
+  "name": "48464f9a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "4-3 El trono del Rey Dragón",
   "name": "5c94ef08",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "4-4 El trono del Rey Dragón",
+  "name": "4b3f4d3d",
   "from": "oida",
   "recorded": false
  },
@@ -3804,6 +4758,12 @@
   "recorded": false
  },
  {
+  "text": "5-4 El palacio del Rey Yeti",
+  "name": "4e16d0a7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "6-1 Dulcelandia",
   "name": "292b3fed",
   "from": "oida",
@@ -3818,6 +4778,12 @@
  {
   "text": "6-3 Fábrica de chicle",
   "name": "38229108",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "6-4 El pastel del Rey Pastel",
+  "name": "7830cd7c",
   "from": "oida",
   "recorded": false
  },
@@ -3840,6 +4806,12 @@
   "recorded": false
  },
  {
+  "text": "7-4 La torre del Rey Calabaza",
+  "name": "d7dccb56",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "A volar. Agarra la pluma y planea con la capa en Súper Bolitas",
   "name": "96f24365",
   "from": "oida",
@@ -3852,8 +4824,44 @@
   "recorded": false
  },
  {
+  "text": "Abeja dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "568c42a2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Abeja dice: ¡La próxima te gano, el jugador 1!",
+  "name": "63b6d4da",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Abeja dice: ¡Me voy, el jugador 1!",
+  "name": "b5f83517",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Abeja dice: ¡Oye, el jugador 1, no se vale!",
   "name": "5c5b62fd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Abeja dice: ¡Soy el más rápido!",
+  "name": "2d21e28f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Abeja dice: ¡Te gané, el jugador 1!",
+  "name": "641deba3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Abeja dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "23f8fef6",
   "from": "oida",
   "recorded": false
  },
@@ -3978,6 +4986,36 @@
   "recorded": false
  },
  {
+  "text": "Alumno de oro. Saca medalla de oro en la Escuela de manejo de Karts locos",
+  "name": "ed410aea",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Arma tu pista",
+  "name": "1c9056a4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Arma tu pista. Mueve los puntos con A",
+  "name": "d73afc78",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Aros",
+  "name": "2f9dedd4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Aros. Pasa por los 8 aros lo más rápido que puedas",
+  "name": "3ece92c7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Arre, dinosaurio. Súbete al dinosaurio en Súper Bolitas",
   "name": "5db63b30",
   "from": "lista",
@@ -4002,8 +5040,20 @@
   "recorded": false
  },
  {
+  "text": "Astronauta dice: ¡Bye bye, el jugador 1!",
+  "name": "52ad5bc8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Astronauta dice: ¡La próxima te gano, el jugador 1!",
   "name": "25ea8f13",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta dice: ¡Me voy, el jugador 1!",
+  "name": "32b157a2",
   "from": "oida",
   "recorded": false
  },
@@ -4020,8 +5070,26 @@
   "recorded": false
  },
  {
+  "text": "Astronauta dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "76373c0a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Astronauta dice: ¡Soy el más rápido!",
   "name": "889f1570",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta dice: ¡Te gané, el jugador 1!",
+  "name": "7ae4a7d4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta dice: ¡Upsi, perdón el jugador 2!",
+  "name": "c1345f6e",
   "from": "oida",
   "recorded": false
  },
@@ -4046,6 +5114,24 @@
  {
   "text": "Atajo secreto. Encuentra un atajo secreto en Karts locos (busca el letrero)",
   "name": "fb8f1d6a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Atrapa la estrella",
+  "name": "8a136237",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Aventura",
+  "name": "6af6062b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Aventurero. Pasa todos los retos de la Aventura de Karts locos",
+  "name": "4a75f5d7",
   "from": "lista",
   "recorded": false
  },
@@ -4080,14 +5166,32 @@
   "recorded": false
  },
  {
+  "text": "Batallas",
+  "name": "5fea70b7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Bloquecito",
   "name": "42455294",
   "from": "lista",
   "recorded": false
  },
  {
+  "text": "Bloquecito dice: ¡Bye bye, el jugador 1!",
+  "name": "f82a4647",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Bloquecito dice: ¡La próxima te gano, el jugador 1!",
   "name": "f21366a2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bloquecito dice: ¡Nos vemos, el jugador 1!",
+  "name": "50843299",
   "from": "oida",
   "recorded": false
  },
@@ -4146,6 +5250,24 @@
   "recorded": false
  },
  {
+  "text": "Bombero dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "fc5aa4dd",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bombero dice: ¡Ay, el jugador 1!",
+  "name": "5b90fc34",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bombero dice: ¡Soy el más rápido!",
+  "name": "c61b8878",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Bombero dice: ¡Te gané, el jugador 1!",
   "name": "7ceaa0fc",
   "from": "oida",
@@ -4170,6 +5292,18 @@
   "recorded": false
  },
  {
+  "text": "Cada quien en su kart",
+  "name": "77cab651",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Cambia",
+  "name": "01beec08",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Caminar. Mueve el stick para caminar hacia el muñeco",
   "name": "882dd03b",
   "from": "oida",
@@ -4188,8 +5322,14 @@
   "recorded": false
  },
  {
-  "text": "Campeón de globos. Gana una batalla de globos en Karts locos",
-  "name": "bc59c946",
+  "text": "Campeón de batalla. Gana una batalla en Karts locos (globos, estrella o monedas)",
+  "name": "e720db6d",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Campeón de Carreras. Gana un campeonato de Carreras vista desde arriba",
+  "name": "241ed8c2",
   "from": "lista",
   "recorded": false
  },
@@ -4212,6 +5352,18 @@
   "recorded": false
  },
  {
+  "text": "Campeonato",
+  "name": "22f896dc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Campeones de la Liga. Gana la Liga del Fútbol de bolitas",
+  "name": "0ead71d3",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "Campeones. Gana un partido de Fútbol de bolitas",
   "name": "e6c940b4",
   "from": "lista",
@@ -4226,6 +5378,12 @@
  {
   "text": "Carrera",
   "name": "0f4f7519",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Carrera rápida",
+  "name": "9180e8d2",
   "from": "oida",
   "recorded": false
  },
@@ -4248,6 +5406,18 @@
   "recorded": false
  },
  {
+  "text": "Casita de regalos",
+  "name": "d0ec1750",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Casita de regalos. Fíjate dónde está cada premio",
+  "name": "7c04d24f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Castillo de lava. El trono del Rey Dragón",
   "name": "b2efea46",
   "from": "oida",
@@ -4257,6 +5427,12 @@
   "text": "Castillo embrujado",
   "name": "96eb687b",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Caza monedas. Llega a la meta con 10 monedas",
+  "name": "b23c2b5b",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -4274,6 +5450,12 @@
  {
   "text": "Cohete",
   "name": "f5d744a3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Cohete, 60 monedas",
+  "name": "d06e1e46",
   "from": "oida",
   "recorded": false
  },
@@ -4314,6 +5496,18 @@
   "recorded": false
  },
  {
+  "text": "Conos",
+  "name": "12d9b1ad",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Conos. Pasa por en medio de cada puerta de conos sin tirarlos",
+  "name": "dafeda1c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Contrarreloj",
   "name": "7837ab78",
   "from": "oida",
@@ -4322,6 +5516,12 @@
  {
   "text": "Contrarreloj con fantasma (el nivel escogido)",
   "name": "30dc6a32",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Aventura",
+  "name": "b0fce17a",
   "from": "oida",
   "recorded": false
  },
@@ -4335,6 +5535,12 @@
   "text": "Copa de karts. Gana una copa del Gran Premio en Karts locos",
   "name": "24e4dd53",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Copa Estrella. Todavía no: Gana una copa del Gran Premio",
+  "name": "7c682b04",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -4362,6 +5568,42 @@
   "recorded": false
  },
  {
+  "text": "Copa Sorpresa",
+  "name": "dafa7c91",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Tesoro",
+  "name": "84cd79c2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Tesoro. Carrera 1 de 4: Desierto",
+  "name": "ac6ef307",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Tesoro. Carrera 2 de 4: Ciudad de noche",
+  "name": "be81dc0b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Tesoro. Carrera 3 de 4: Casa gigante",
+  "name": "81623da1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Copa Tesoro. Carrera 4 de 4: Barco pirata",
+  "name": "6e5d1933",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Cuartos de final: contra los Dragones",
   "name": "c09e59dd",
   "from": "oida",
@@ -4376,6 +5618,36 @@
  {
   "text": "Cueva",
   "name": "2deec339",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "De copiloto con el jugador 1: tú avientas los poderes",
+  "name": "91ed6256",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Derrapes",
+  "name": "e2fe3a57",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Derrapes. Haz 3 turbos de derrape naranjas o morados (mantén LB en las curvas)",
+  "name": "e289055d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Derrapes. Haz 3 turbos de derrape: mantén LB en las curvas y suéltalo cuando salgan chispas",
+  "name": "7fac6957",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Desierto",
+  "name": "288c5378",
   "from": "oida",
   "recorded": false
  },
@@ -4404,6 +5676,12 @@
   "recorded": false
  },
  {
+  "text": "Dino dice: ¡Con permiso, el jugador 1!",
+  "name": "75c5d7af",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Dino dice: ¡La próxima te gano, el jugador 1!",
   "name": "06b6f331",
   "from": "oida",
@@ -4412,6 +5690,18 @@
  {
   "text": "Dino dice: ¡Me voy, el jugador 1!",
   "name": "ef9a4944",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡Nos vemos, el jugador 1!",
+  "name": "db988074",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡Nos vemos, el jugador 2!",
+  "name": "2b90af9f",
   "from": "oida",
   "recorded": false
  },
@@ -4460,6 +5750,18 @@
  {
   "text": "Dragoncito dice: ¡La próxima te gano, el jugador 1!",
   "name": "2beeafdb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dragoncito dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "ecf7be62",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dragoncito dice: ¡Soy el más rápido!",
+  "name": "ae90cca8",
   "from": "oida",
   "recorded": false
  },
@@ -4524,6 +5826,30 @@
   "recorded": false
  },
  {
+  "text": "El reto de Rayo. Gánale a Rayo, uno contra uno",
+  "name": "b31a52b9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "El Rey Bolón. ¡Gánale al Rey Bolón en su kart!",
+  "name": "575eeec4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "El último en pie. Gana una carrera de eliminación en Karts locos",
+  "name": "70defa7e",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Eliminación",
+  "name": "7a31b405",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Escoge tu kart",
   "name": "31c384d8",
   "from": "oida",
@@ -4542,6 +5868,12 @@
   "recorded": false
  },
  {
+  "text": "Escuela de manejo",
+  "name": "2954797a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Espacio",
   "name": "1cebfdcf",
   "from": "lista",
@@ -4556,6 +5888,18 @@
  {
   "text": "Estrella dice: ¡Ay, el jugador 1!",
   "name": "7a1db75e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Estrella dice: ¡Ay, el jugador 2!",
+  "name": "a22034ed",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Estrella dice: ¡Con permiso, el jugador 1!",
+  "name": "c8e201cf",
   "from": "oida",
   "recorded": false
  },
@@ -4590,6 +5934,12 @@
   "recorded": false
  },
  {
+  "text": "Estrella dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "76d3b4e3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Estrella. Tumba a alguien con la estrella en Karts locos",
   "name": "f5c906e5",
   "from": "lista",
@@ -4602,8 +5952,56 @@
   "recorded": false
  },
  {
+  "text": "Fantasma dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "7ffb3b86",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Ay, el jugador 1!",
+  "name": "73f78e5d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Bye bye, el jugador 1!",
+  "name": "681437d3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡La próxima te gano, el jugador 1!",
+  "name": "7e0d819e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Me voy, el jugador 1!",
+  "name": "19897d03",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "38b1b8c9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Fantasma dice: ¡Soy el más rápido!",
   "name": "f5437f2b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Te gané, el jugador 1!",
+  "name": "e74a1ce7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Fantasma dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "07ef0d82",
   "from": "oida",
   "recorded": false
  },
@@ -4620,8 +6018,32 @@
   "recorded": false
  },
  {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Fantasma",
+  "name": "620eb984",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Gatito",
+  "name": "f9b41b8f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Final: el jugador 1 · Tanque contra la compu · Ninja",
   "name": "e9a38b0f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Pingüino",
+  "name": "9d39b1d5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Pirata",
+  "name": "9e12aaf0",
   "from": "oida",
   "recorded": false
  },
@@ -4634,6 +6056,12 @@
  {
   "text": "Final: el jugador 1 · Tanque contra la compu · Robot",
   "name": "038fe95b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Unicornio",
+  "name": "bedd4dbb",
   "from": "oida",
   "recorded": false
  },
@@ -4662,8 +6090,56 @@
   "recorded": false
  },
  {
+  "text": "Gatito dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "1426f5a9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Ay, el jugador 1!",
+  "name": "6ac5acd8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Bye bye, el jugador 2!",
+  "name": "274e6457",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Gatito dice: ¡La próxima te gano, el jugador 1!",
   "name": "5a388777",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Me voy, el jugador 1!",
+  "name": "edc6852e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Me voy, el jugador 2!",
+  "name": "55c9677d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Nos vemos, el jugador 1!",
+  "name": "c6825c6a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "39d59c26",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Soy el más rápido!",
+  "name": "91da629c",
   "from": "oida",
   "recorded": false
  },
@@ -4698,6 +6174,12 @@
   "recorded": false
  },
  {
+  "text": "Globos",
+  "name": "4f2bf7a5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Golpe cargado. Pega con un golpe cargado al máximo en Bolitas Bros (mantén X)",
   "name": "3ec2f1da",
   "from": "lista",
@@ -4728,6 +6210,12 @@
   "recorded": false
  },
  {
+  "text": "Gran Campeón",
+  "name": "32450966",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "Gran Dragón",
   "name": "75f7290e",
   "from": "lista",
@@ -4746,8 +6234,32 @@
   "recorded": false
  },
  {
+  "text": "Hada dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "e1da79b7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Hada dice: ¡Con permiso, el jugador 2!",
   "name": "120ac630",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Hada dice: ¡La próxima te gano, el jugador 1!",
+  "name": "33524425",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Hada dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "27d642a0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Hada dice: ¡Soy el más rápido!",
+  "name": "803adb1e",
   "from": "oida",
   "recorded": false
  },
@@ -4830,6 +6342,48 @@
   "recorded": false
  },
  {
+  "text": "Jornada 1. Contra los Dragones",
+  "name": "e3703ea7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jornada 2. Contra las Ranas",
+  "name": "862b342e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jornada 2. Contra los Ranas",
+  "name": "63ce1ff0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jornada 3. Contra las Abejas",
+  "name": "8bef48d8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jornada 3. Contra los Abejas",
+  "name": "05e69af2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jornada 4. Contra los Pulpos",
+  "name": "598b927c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Jornada 5. Contra los Tigres",
+  "name": "7c6c167e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Juegan todos. Jueguen 4 al mismo tiempo",
   "name": "b4783231",
   "from": "lista",
@@ -4854,9 +6408,63 @@
   "recorded": false
  },
  {
+  "text": "Le ganaste al jefe. Gánale a un jefe en la Aventura de Karts locos",
+  "name": "6da7598a",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Llantas ○○○, 25 monedas",
+  "name": "e569e893",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Lluvia",
   "name": "5980b740",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Luchador",
+  "name": "0bbd7ea9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Luchador dice: ¡Ay, el jugador 1!",
+  "name": "9f9b933a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Luchador dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "840a4ca0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Luchador, Abeja",
+  "name": "913368e4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Luchador, Astronauta",
+  "name": "7ab8251f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Luchador, Unicornio",
+  "name": "8e4f6487",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Maestro del volante. Saca oro en todos los retos de la Escuela de manejo",
+  "name": "9c4aae68",
+  "from": "lista",
   "recorded": false
  },
  {
@@ -4878,8 +6486,38 @@
   "recorded": false
  },
  {
+  "text": "Mejor jugador: la compu · Dragoncito",
+  "name": "07bd1a2c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mejor jugador: la compu · Gatito",
+  "name": "a7afdbc4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mejor jugador: la compu · Ninja",
+  "name": "36ec23da",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mejor jugador: la compu · Pingüino",
+  "name": "61ce152a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Mejor jugador: la compu · Pirata",
   "name": "f2117f57",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Mi pista",
+  "name": "8e737a40",
   "from": "oida",
   "recorded": false
  },
@@ -4908,14 +6546,44 @@
   "recorded": false
  },
  {
+  "text": "Monedas",
+  "name": "fe4d32f8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Monedas. Junta todas las monedas que puedas en 40 segundos",
+  "name": "dedc6694",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Monedero lleno. Gana el modo Monedas de Bolitas Bros",
   "name": "8275b139",
   "from": "lista",
   "recorded": false
  },
  {
+  "text": "Monstruo",
+  "name": "5ee3c22c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Montaña nevada",
   "name": "50328667",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Moto",
+  "name": "79261094",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Moto, 80 monedas",
+  "name": "aa30969f",
   "from": "oida",
   "recorded": false
  },
@@ -4944,6 +6612,12 @@
   "recorded": false
  },
  {
+  "text": "Mundo Pradera",
+  "name": "f8d428c9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Música apagada",
   "name": "9e86cddd",
   "from": "código",
@@ -4962,6 +6636,12 @@
   "recorded": false
  },
  {
+  "text": "Ninja dice: ¡Ay, el jugador 1!",
+  "name": "135a53a0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Ninja dice: ¡Bye bye, el jugador 1!",
   "name": "1c050514",
   "from": "oida",
@@ -4974,6 +6654,18 @@
   "recorded": false
  },
  {
+  "text": "Ninja dice: ¡La próxima te gano, el jugador 1!",
+  "name": "1f05190f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ninja dice: ¡Me voy, el jugador 2!",
+  "name": "810a1645",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Ninja dice: ¡Soy el más rápido!",
   "name": "f34d7844",
   "from": "oida",
@@ -4982,6 +6674,18 @@
  {
   "text": "Ninja dice: ¡Te gané, el jugador 1!",
   "name": "3263ad40",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ninja dice: ¡Toma eso, el jugador 1!",
+  "name": "05f0625c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ninja dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "8e549fa1",
   "from": "oida",
   "recorded": false
  },
@@ -5004,8 +6708,8 @@
   "recorded": false
  },
  {
-  "text": "Para ganarla: Abre un regalo en una casita de hongo de Súper Bolitas",
-  "name": "25b83c17",
+  "text": "Para ganarla: Abre un regalo en la casita de regalos de Súper Bolitas",
+  "name": "5b9ec51c",
   "from": "lista",
   "recorded": false
  },
@@ -5190,6 +6894,12 @@
   "recorded": false
  },
  {
+  "text": "Para ganarla: Gana la Liga del Fútbol de bolitas",
+  "name": "67892ba9",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "Para ganarla: Gana las montañas de nieve en Súper Bolitas",
   "name": "86f78d9b",
   "from": "lista",
@@ -5204,6 +6914,12 @@
  {
   "text": "Para ganarla: Gana los jefes en serie en Súper Bolitas",
   "name": "15dcf89f",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana un campeonato de Carreras vista desde arriba",
+  "name": "38128479",
   "from": "lista",
   "recorded": false
  },
@@ -5232,8 +6948,14 @@
   "recorded": false
  },
  {
-  "text": "Para ganarla: Gana una batalla de globos en Karts locos",
-  "name": "281c5a70",
+  "text": "Para ganarla: Gana una batalla en Karts locos (globos, estrella o monedas)",
+  "name": "0495aca0",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gana una carrera de eliminación en Karts locos",
+  "name": "ba7751b9",
   "from": "lista",
   "recorded": false
  },
@@ -5270,6 +6992,12 @@
  {
   "text": "Para ganarla: Gánale a tu fantasma en la contrarreloj de Súper Bolitas",
   "name": "2e4b72bc",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Gánale a un jefe en la Aventura de Karts locos",
+  "name": "64614edb",
   "from": "lista",
   "recorded": false
  },
@@ -5358,6 +7086,12 @@
   "recorded": false
  },
  {
+  "text": "Para ganarla: Pasa todos los retos de la Aventura de Karts locos",
+  "name": "506a98ee",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "Para ganarla: Pasa un nivel de Súper Bolitas",
   "name": "ac01fb92",
   "from": "lista",
@@ -5382,6 +7116,12 @@
   "recorded": false
  },
  {
+  "text": "Para ganarla: Pégale a otro carro con un cohete en Carreras vista desde arriba",
+  "name": "cb4577a5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "Para ganarla: Pégale al rival con tu ayudante (Y) en el Duelo",
   "name": "c932c78f",
   "from": "lista",
@@ -5402,6 +7142,18 @@
  {
   "text": "Para ganarla: Rompe una jaula y rescata a un amigo en Pelea en equipo",
   "name": "b3114890",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Saca medalla de oro en la Escuela de manejo de Karts locos",
+  "name": "244f7dd5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Para ganarla: Saca oro en todos los retos de la Escuela de manejo",
+  "name": "26d2af75",
   "from": "lista",
   "recorded": false
  },
@@ -5490,6 +7242,12 @@
   "recorded": false
  },
  {
+  "text": "Pato de hule, 50 monedas",
+  "name": "9c0d8e64",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Pelea 1",
   "name": "6839ed9b",
   "from": "oida",
@@ -5544,6 +7302,48 @@
   "recorded": false
  },
  {
+  "text": "Pingüino dice: ¡Ay, el jugador 1!",
+  "name": "bdeae812",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino dice: ¡Con permiso, el jugador 1!",
+  "name": "9ec69f43",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino dice: ¡La próxima te gano, el jugador 1!",
+  "name": "62adc62d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino dice: ¡Me voy, el jugador 1!",
+  "name": "ed3f2ed8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "5cd87e58",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino dice: ¡Soy el más rápido!",
+  "name": "e3cb1216",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pingüino dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "fa932207",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Pingüino Emperador",
   "name": "54788d00",
   "from": "lista",
@@ -5562,8 +7362,38 @@
   "recorded": false
  },
  {
+  "text": "Pirata dice: ¡Ay, el jugador 1!",
+  "name": "68e07e81",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pirata dice: ¡Ay, el jugador 2!",
+  "name": "40de00f2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pirata dice: ¡Bye bye, el jugador 1!",
+  "name": "c9448e3f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pirata dice: ¡Jajá, te di, el jugador 2!",
+  "name": "eea32cee",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Pirata dice: ¡Nos vemos, el jugador 1!",
   "name": "12e7f991",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pirata dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "6e90598d",
   "from": "oida",
   "recorded": false
  },
@@ -5574,9 +7404,27 @@
   "recorded": false
  },
  {
+  "text": "Pirata dice: ¡Te gané, el jugador 1!",
+  "name": "babeb973",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pirata dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "22476786",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Pirata, Tanque",
   "name": "0b8c812c",
   "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Pista nueva",
+  "name": "c4bfb0ad",
+  "from": "código",
   "recorded": false
  },
  {
@@ -5640,6 +7488,18 @@
   "recorded": false
  },
  {
+  "text": "Primera carrera",
+  "name": "f9a745af",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Primera carrera. Llega entre los 3 primeros",
+  "name": "7a0822bc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Primero escoge en el mapa un nivel que ya pasaron",
   "name": "21059492",
   "from": "código",
@@ -5664,14 +7524,44 @@
   "recorded": false
  },
  {
+  "text": "Rayo dice: ¡Ay, el jugador 1!",
+  "name": "6ec3b665",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Rayo dice: ¡Nos vemos, el jugador 1!",
+  "name": "34cf814d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Rayo dice: ¡Oye, el jugador 1, no se vale!",
+  "name": "e9d5dab1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Rayo dice: ¡Soy el más rápido!",
+  "name": "f431f8f3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Rayo dice: ¡Te gané, el jugador 1!",
+  "name": "e5a8f1af",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Récord. Haz un récord en el Contrarreloj de Karts locos",
   "name": "e5dd6fe6",
   "from": "lista",
   "recorded": false
  },
  {
-  "text": "Regalo sorpresa. Abre un regalo en una casita de hongo de Súper Bolitas",
-  "name": "ad4cff08",
+  "text": "Regalo sorpresa. Abre un regalo en la casita de regalos de Súper Bolitas",
+  "name": "18e5d521",
   "from": "lista",
   "recorded": false
  },
@@ -5688,6 +7578,12 @@
   "recorded": false
  },
  {
+  "text": "Resorte dice: ¡Ay, el jugador 2!",
+  "name": "533c810b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Resorte dice: ¡Bye bye, el jugador 1!",
   "name": "07077194",
   "from": "oida",
@@ -5700,8 +7596,32 @@
   "recorded": false
  },
  {
+  "text": "Resorte dice: ¡La próxima te gano, el jugador 2!",
+  "name": "5d710da4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Me voy, el jugador 2!",
+  "name": "0e53c7c5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Nos vemos, el jugador 2!",
+  "name": "abaf7361",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Resorte dice: ¡Oye, el jugador 1, no se vale!",
   "name": "538e9cae",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Soy el más rápido!",
+  "name": "91d0acc4",
   "from": "oida",
   "recorded": false
  },
@@ -5802,6 +7722,24 @@
   "recorded": false
  },
  {
+  "text": "Robot dice: ¡Soy el más rápido!",
+  "name": "4aa5d5b8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robot dice: ¡Te gané, el jugador 1!",
+  "name": "ea2aa3bc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robot dice: ¡Te gané, el jugador 2!",
+  "name": "7a2337a7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Robotote",
   "name": "17f6de4b",
   "from": "lista",
@@ -5814,8 +7752,20 @@
   "recorded": false
  },
  {
+  "text": "Robotote, Astronauta",
+  "name": "9e45d961",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Robotote, Estrella",
   "name": "c269083f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robotote, Gatito",
+  "name": "fcd878c5",
   "from": "oida",
   "recorded": false
  },
@@ -5832,8 +7782,20 @@
   "recorded": false
  },
  {
+  "text": "Robotote, Pingüino",
+  "name": "36dacf0b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Robotote, Pirata",
   "name": "e26b0c3a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robotote, Rayo",
+  "name": "c6f4bb6a",
   "from": "oida",
   "recorded": false
  },
@@ -5898,6 +7860,18 @@
   "recorded": false
  },
  {
+  "text": "Salto largo",
+  "name": "b1392f0b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Salto largo. Agarra vuelo, salta en la rampa y llega lo más lejos que puedas",
+  "name": "9100861c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Selva",
   "name": "9a9e7352",
   "from": "oida",
@@ -5916,6 +7890,24 @@
   "recorded": false
  },
  {
+  "text": "Semifinal: el jugador 1 · Tanque contra la compu · Estrella",
+  "name": "592b94b3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Semifinal: el jugador 1 · Tanque contra la compu · Fantasma",
+  "name": "0ef47952",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Semifinal: el jugador 1 · Tanque contra la compu · Hada",
+  "name": "67941b7f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Semifinal: el jugador 1 · Tanque contra la compu · Ninja",
   "name": "7e82d111",
   "from": "oida",
@@ -5930,6 +7922,12 @@
  {
   "text": "Semifinal: el jugador 1 · Tanque contra la compu · Rayo",
   "name": "5283ea0e",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Semifinal: el jugador 1 · Tanque contra la compu · Resorte",
+  "name": "fab155bd",
   "from": "oida",
   "recorded": false
  },
@@ -6090,6 +8088,12 @@
   "recorded": false
  },
  {
+  "text": "Tanque, Luchador",
+  "name": "e2871aad",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Tanque, Ninja",
   "name": "2b1a7c27",
   "from": "oida",
@@ -6156,8 +8160,26 @@
   "recorded": false
  },
  {
+  "text": "Tienda. Tienes 1000 monedas",
+  "name": "fddf4e02",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tienda. Tienes 500 monedas",
+  "name": "f05e746c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Tienda. Tienes 70 monedas",
   "name": "9da1bf1c",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tina de baño, 40 monedas",
+  "name": "1b5fe2ac",
   "from": "oida",
   "recorded": false
  },
@@ -6216,6 +8238,12 @@
   "recorded": false
  },
  {
+  "text": "Turbo ○○○, 25 monedas",
+  "name": "526c36f6",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Un amigo de la compu",
   "name": "9e9130d5",
   "from": "oida",
@@ -6228,6 +8256,18 @@
   "recorded": false
  },
  {
+  "text": "Unicornio",
+  "name": "6e2606cf",
+  "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Unicornio Estelar",
+  "name": "93b0a3a5",
+  "from": "lista",
+  "recorded": false
+ },
+ {
   "text": "Uno",
   "name": "b45f390f",
   "from": "oida",
@@ -6236,6 +8276,48 @@
  {
   "text": "Va ganando el jugador 1, Tanque",
   "name": "91ec99d4",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Bloquecito",
+  "name": "42e82a08",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Bombero",
+  "name": "c082d48b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Fantasma",
+  "name": "a85dbfac",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Hada",
+  "name": "0fa12fd5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Rayo",
+  "name": "f9296adc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Resorte",
+  "name": "3146b9a7",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Va ganando la compu, Robot",
+  "name": "89958373",
   "from": "oida",
   "recorded": false
  },
@@ -6260,6 +8342,12 @@
  {
   "text": "Ya abriste esta casita. Regresa después de jugar otro nivel",
   "name": "5968ce2f",
+  "from": "código",
+  "recorded": false
+ },
+ {
+  "text": "Ya no caben más puntos",
+  "name": "7e4e0703",
   "from": "código",
   "recorded": false
  }

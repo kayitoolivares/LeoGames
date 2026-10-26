@@ -1,3 +1,4 @@
+import { lazyImage } from '../../shared/lazyArt.js';
 import brawlArt from '../brawl/art.json';
 import futbolArt from '../futbol/art.json';
 import smashArt from '../smash/art.json';
@@ -48,11 +49,12 @@ Object.assign(ARENAS, {
 });
 export const ARENA_KEYS = Object.keys(ARENAS);
 
-// Se llama en preload(): carga las imágenes de los escenarios que todavía no estén cargadas.
-export function loadArenaArt(scene) {
-  for (const arena of Object.values(ARENAS)) {
-    if (arena.has && !scene.textures.exists(arena.texture)) scene.load.image(arena.texture, arena.url);
-  }
+// El fondo de un escenario, solo cuando se va a ver (ver shared/lazyArt.js); `onReady` cuando llega. Devuelve si ya
+// estaba (o si ese escenario no tiene imagen).
+export function loadArenaArt(scene, key, onReady) {
+  const arena = ARENAS[key];
+  if (!arena?.has) return true;
+  return lazyImage(scene, arena.texture, arena.url, onReady);
 }
 
 // Pinta el escenario en `layer`: la imagen cubriendo toda la pantalla, o cielo y piso si no hay.

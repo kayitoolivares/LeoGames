@@ -18,7 +18,7 @@ import { Ambience } from '../../ui/ambient.js';
 import { coinBank } from '../brawl/coins.js';
 import { Shop, dressFighter, wardrobe } from '../brawl/shop.js';
 import { loadSmashArt } from '../smash/art.js';
-import { loadPlatArt, platTexture } from './art.js';
+import { loadLevelBackground, loadPlatArt, platTexture } from './art.js';
 import { Boss, BOSSES } from './boss.js';
 import { Dino } from './dino.js';
 import { ENEMIES, Enemy } from './enemies.js';
@@ -483,14 +483,19 @@ export class PlatScene extends Phaser.Scene {
     const level = this.level;
     const key = platTexture(this, `plat:fondo-${level.background}`);
     this.background = this.add.container(0, 0).setDepth(-100).setScrollFactor(0.25, 0);
-    if (key) {
-      const probe = this.textures.get(key).getSourceImage();
-      const scale = this.scale.height / probe.height;
-      const w = probe.width * scale;
-      const count = Math.ceil((level.width * 0.25 + this.scale.width) / w) + 1;
-      for (let k = 0; k < count; k += 1) this.background.add(this.add.image(k * w, 0, key).setOrigin(0, 0).setScale(scale).setFlipX(k % 2 === 1));
-    }
+    if (key) this.tileBackground(key);
+    // Si no se ha bajado, se pide y se pone en cuanto llega (mientras, solo el cielo).
+    else loadLevelBackground(this, level.background, (loaded) => this.level === level && this.background?.active && this.tileBackground(loaded));
     if (level.water) this.water = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x1d6fb0, 0.22).setOrigin(0, 0).setScrollFactor(0).setDepth(70);
+  }
+
+  // La imagen del fondo repetida a lo largo del nivel (en espejo, para que no se noten las uniones).
+  tileBackground(key) {
+    const probe = this.textures.get(key).getSourceImage();
+    const scale = this.scale.height / probe.height;
+    const w = probe.width * scale;
+    const count = Math.ceil((this.level.width * 0.25 + this.scale.width) / w) + 1;
+    for (let k = 0; k < count; k += 1) this.background.add(this.add.image(k * w, 0, key).setOrigin(0, 0).setScale(scale).setFlipX(k % 2 === 1));
   }
 
   // Los cuadritos, en pedazos de 16 columnas (los que no se ven no se dibujan).

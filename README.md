@@ -525,6 +525,15 @@ se juega desde GitHub Pages:
 4. Abre la dirección en **Edge**, mantén **≡ (Menú)** → **"Use game controls"** → **A**.
 5. Si algo falla, en el menú **Cómo jugar** → **Y** abre la prueba de controles para ver qué detecta el navegador.
 
+Para que el Xbox One S aguante (poca memoria y un procesador lento):
+- Los **fondos** (dibujos de 1600 px que ya abiertos ocupan más de 5 MB cada uno) se bajan solo cuando se van a usar
+  y se sueltan al regresar al menú (`src/shared/lazyArt.js`); mientras llega, se ve el fondo dibujado con figuras.
+  Antes cada juego cargaba los de todos los juegos: después de jugar varios había ~380 MB de dibujos en memoria y
+  ahora ~130 MB.
+- En el Modo Bebé cada figura con su carita y su letrero (y cada burbuja) se dibuja una sola vez y se vuelve imagen
+  (`src/games/baby/drawings.js`), en vez de calcular sus círculos y trazos en cada cuadro.
+- Se midió con el procesador 4 veces más lento (como el del Xbox) contando cuadros por segundo de cada juego.
+
 ## Pruebas
 
 `npm test` levanta el juego y corre bots que lo juegan con controles simulados (menú, cada juego,

@@ -16,7 +16,7 @@ import { COSTUMES } from '../duelo/DueloFighter.js';
 import { GIANTS, SANDBAG, TARGETS, TEAMS, TIME_MS, jonronRecord, targetRecords, targetSpots } from './modes.js';
 import { BOSS_CHARACTERS, CHARACTERS, CHARACTER_KEYS, characterInfo } from './characters.js';
 import { METER_MAX, SUPER_MS, SmashFighter, STOCKS, THROW_HIT } from './SmashFighter.js';
-import { backgroundTexture, characterTexture, loadSmashArt } from './art.js';
+import { backgroundTexture, characterTexture, loadSmashArt, loadStageBackground } from './art.js';
 import { Ambience } from '../../ui/ambient.js';
 import { MAX_NUMBER, RAINBOW, numberStep } from './bloquecito.js';
 import { CAPSULE_ITEMS, SmashItems, drawItem } from './items.js';
@@ -158,6 +158,7 @@ export class SmashScene extends Phaser.Scene {
   preload() {
     const picks = [...Object.values(this.returnData.picks ?? {}), ...this.cpuPicks];
     loadSmashArt(this, { posesFor: picks });
+    loadStageBackground(this, this.settings.stage);
     loadFxArt(this);
     if (this.settings.mode === 'jefe' || picks.some((key) => BOSS_CHARACTERS[key])) loadBossArt(this);
   }

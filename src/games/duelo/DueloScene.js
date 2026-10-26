@@ -102,7 +102,7 @@ export class DueloScene extends Phaser.Scene {
 
   preload() {
     loadSmashArt(this, { allPoses: true });
-    loadArenaArt(this);
+
     loadFxArt(this);
     loadBossArt(this);
     loadStageArt(this);
@@ -725,8 +725,11 @@ export class DueloScene extends Phaser.Scene {
   }
 
   drawArenaFor(key) {
+    this.arenaShown = key;
     this.arenaLayer.removeAll(true);
     drawArena(this, key, FLOOR, this.arenaLayer);
+    // Si su fondo no se ha bajado, se pide y se vuelve a dibujar en cuanto llega (mientras, cielo y piso).
+    if (!this.textures.exists(ARENAS[key].texture)) loadArenaArt(this, key, () => this.arenaShown === key && this.drawArenaFor(key));
   }
 
   // ---------- La pelea ----------

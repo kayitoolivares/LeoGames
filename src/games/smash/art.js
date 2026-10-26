@@ -1,3 +1,4 @@
+import { queueImage } from '../../shared/lazyArt.js';
 import manifest from './art.json';
 
 // Arte opcional de Bolitas Bros (imágenes hechas con Gemini), preparado con `npm run arte`.
@@ -52,7 +53,11 @@ export function loadSmashArt(scene, { allPoses = false, posesFor = [] } = {}) {
     }
   }
   for (const item of manifest.items) queue(`smash:objeto-${item}`, `${BASE}objetos/${item}.png`);
-  for (const stage of manifest.backgrounds) queue(`smash:fondo-${stage}`, `${BASE}fondos/${stage}.jpg`);
+}
+
+// El fondo del escenario de la pelea, solo ese (ver shared/lazyArt.js).
+export function loadStageBackground(scene, stage) {
+  if (manifest.backgrounds.includes(stage)) queueImage(scene, `smash:fondo-${stage}`, `${BASE}fondos/${stage}.jpg`);
 }
 
 // Bloquecito empezó a jugar sin todos sus dibujos (la compu lo escogió al azar, o en el Duelo): se cargan ahorita y
