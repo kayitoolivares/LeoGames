@@ -1,10 +1,13 @@
 {
   "fondos": [
     "azotea",
+    "dulces",
     "estadio",
     "luna",
     "nieve",
-    "playa"
+    "noche",
+    "playa",
+    "selva"
   ],
   "poderes": [
     "balon-gigante",

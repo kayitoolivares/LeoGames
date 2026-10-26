@@ -1,11 +1,27 @@
 {
   "animales": [
+    "caballo-canta",
+    "caballo",
     "cerdito-canta",
     "cerdito",
+    "elefante-canta",
+    "elefante",
     "gato-canta",
     "gato",
+    "leon-canta",
+    "leon",
+    "mono-canta",
+    "mono",
+    "oveja-canta",
+    "oveja",
+    "pato-canta",
+    "pato",
     "perro-canta",
     "perro",
+    "pollito-canta",
+    "pollito",
+    "rana-canta",
+    "rana",
     "vaca-canta",
     "vaca"
   ]

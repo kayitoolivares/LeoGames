@@ -1,5 +1,9 @@
 {
   "enemigos": [
+    "aplastador-ataque",
+    "aplastador-burla",
+    "aplastador-dolor",
+    "aplastador-paso",
     "aplastador",
     "bola-fuego-ataque",
     "bola-fuego-burla",
@@ -41,13 +45,25 @@
     "esqueleto-dolor",
     "esqueleto-paso",
     "esqueleto",
+    "fantasma-ataque",
+    "fantasma-boca-ataque",
+    "fantasma-boca-burla",
+    "fantasma-boca-dolor",
+    "fantasma-boca-paso",
     "fantasma-boca",
+    "fantasma-burla",
+    "fantasma-dolor",
+    "fantasma-paso",
     "fantasma",
     "galleta-ataque",
     "galleta-burla",
     "galleta-dolor",
     "galleta-paso",
     "galleta",
+    "hongo-malo-ataque",
+    "hongo-malo-burla",
+    "hongo-malo-dolor",
+    "hongo-malo-paso",
     "hongo-malo",
     "medusa-ataque",
     "medusa-burla",
@@ -89,6 +105,10 @@
     "pinguino-panza",
     "pinguino-paso",
     "pinguino",
+    "planta-ataque",
+    "planta-burla",
+    "planta-dolor",
+    "planta-paso",
     "planta",
     "tortuga-ataque",
     "tortuga-burla",
@@ -111,7 +131,23 @@
     "rey-cangrejo-mareado",
     "rey-cangrejo-paso",
     "rey-cangrejo",
+    "rey-dragon-ataque",
+    "rey-dragon-burla",
+    "rey-dragon-cargando",
+    "rey-dragon-derrotado",
+    "rey-dragon-dolor",
+    "rey-dragon-furioso",
+    "rey-dragon-mareado",
+    "rey-dragon-paso",
     "rey-dragon",
+    "rey-hongo-ataque",
+    "rey-hongo-burla",
+    "rey-hongo-cargando",
+    "rey-hongo-derrotado",
+    "rey-hongo-dolor",
+    "rey-hongo-furioso",
+    "rey-hongo-mareado",
+    "rey-hongo-paso",
     "rey-hongo",
     "rey-nube-ataque",
     "rey-nube-burla",
@@ -163,6 +199,26 @@
     "pajaro2"
   ],
   "metrics": {
+    "aplastador-ataque": [
+      17685,
+      0.568,
+      160
+    ],
+    "aplastador-burla": [
+      17553,
+      0.449,
+      160
+    ],
+    "aplastador-dolor": [
+      16444,
+      0.443,
+      160
+    ],
+    "aplastador-paso": [
+      15799,
+      0.449,
+      160
+    ],
     "aplastador": [
       18170,
       0.507,
@@ -368,9 +424,49 @@
       0.484,
       160
     ],
+    "fantasma-ataque": [
+      15276,
+      0.459,
+      151
+    ],
+    "fantasma-boca-ataque": [
+      13768,
+      0.447,
+      151
+    ],
+    "fantasma-boca-burla": [
+      13577,
+      0.516,
+      160
+    ],
+    "fantasma-boca-dolor": [
+      15942,
+      0.566,
+      160
+    ],
+    "fantasma-boca-paso": [
+      14491,
+      0.446,
+      160
+    ],
     "fantasma-boca": [
       14032,
       0.444,
+      160
+    ],
+    "fantasma-burla": [
+      14399,
+      0.544,
+      160
+    ],
+    "fantasma-dolor": [
+      13761,
+      0.488,
+      160
+    ],
+    "fantasma-paso": [
+      15089,
+      0.493,
       160
     ],
     "fantasma": [
@@ -401,6 +497,26 @@
     "galleta": [
       15493,
       0.486,
+      160
+    ],
+    "hongo-malo-ataque": [
+      14086,
+      0.454,
+      160
+    ],
+    "hongo-malo-burla": [
+      14563,
+      0.49,
+      160
+    ],
+    "hongo-malo-dolor": [
+      14922,
+      0.522,
+      150
+    ],
+    "hongo-malo-paso": [
+      13167,
+      0.485,
       160
     ],
     "hongo-malo": [
@@ -608,6 +724,26 @@
       0.528,
       160
     ],
+    "planta-ataque": [
+      7951,
+      0.503,
+      94
+    ],
+    "planta-burla": [
+      14702,
+      0.525,
+      160
+    ],
+    "planta-dolor": [
+      10442,
+      0.553,
+      111
+    ],
+    "planta-paso": [
+      14209,
+      0.543,
+      160
+    ],
     "planta": [
       13047,
       0.538,
@@ -708,10 +844,90 @@
       0.439,
       178
     ],
+    "rey-dragon-ataque": [
+      35843,
+      0.42,
+      212
+    ],
+    "rey-dragon-burla": [
+      42112,
+      0.383,
+      242
+    ],
+    "rey-dragon-cargando": [
+      47281,
+      0.442,
+      234
+    ],
+    "rey-dragon-derrotado": [
+      26479,
+      0.448,
+      146
+    ],
+    "rey-dragon-dolor": [
+      42391,
+      0.477,
+      212
+    ],
+    "rey-dragon-furioso": [
+      40630,
+      0.38,
+      234
+    ],
+    "rey-dragon-mareado": [
+      42527,
+      0.398,
+      229
+    ],
+    "rey-dragon-paso": [
+      41412,
+      0.377,
+      236
+    ],
     "rey-dragon": [
       40881,
       0.38,
       235
+    ],
+    "rey-hongo-ataque": [
+      57523,
+      0.487,
+      320
+    ],
+    "rey-hongo-burla": [
+      61851,
+      0.493,
+      320
+    ],
+    "rey-hongo-cargando": [
+      64260,
+      0.539,
+      319
+    ],
+    "rey-hongo-derrotado": [
+      24928,
+      0.53,
+      137
+    ],
+    "rey-hongo-dolor": [
+      55138,
+      0.477,
+      293
+    ],
+    "rey-hongo-furioso": [
+      54709,
+      0.462,
+      320
+    ],
+    "rey-hongo-mareado": [
+      61762,
+      0.453,
+      320
+    ],
+    "rey-hongo-paso": [
+      54171,
+      0.454,
+      320
     ],
     "rey-hongo": [
       50818,
