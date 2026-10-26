@@ -11,7 +11,7 @@ import { PLAYER_COLORS, players } from '../../shared/players.js';
 import { rewards } from '../../shared/rewards.js';
 import { sfx } from '../../shared/sound.js';
 import { say } from '../../shared/voice.js';
-import { TEXT, hexToCss, textStyle } from '../../ui/style.js';
+import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { comicHit, loadFxArt, shockwave } from '../duelo/fx.js';
 import { ARENA, SECTION_W, setSection } from './arena.js';
 import { backgroundTexture, loadBrawlArt, loadWorldBackground } from './art.js';
@@ -30,7 +30,7 @@ import { STAR_TIME_MS, beatenWorlds, endlessRecord, showBossIntro, showMap, show
 import { Shop, dressFighter, wardrobe } from './shop.js';
 import { BrawlTalk } from './talk.js';
 import { Traps } from './traps.js';
-import { ENDLESS_BOSS_EVERY, MINI_WAVE, WORLDS, bossRushWaves, buildSpawnQueue, endlessWave } from './worlds.js';
+import { ENDLESS_BOSS_EVERY, MINI_WAVE, NEST_HP, NEST_ROUNDS, WORLDS, bossRushWaves, buildSpawnQueue, endlessWave, nestWave } from './worlds.js';
 import { burst, confetti, fireworks, popText, randomPow } from './effects.js';
 import { go } from '../../shared/transition.js';
 import { bounceIn } from '../../ui/bounce.js';
@@ -57,8 +57,9 @@ const FIREBALL_LOOKS = {
   magic: [0xd36bff, 0x8158d8, 0xffd84d],
   frosting: [0xffffff, 0xff7ad9, 0xffc4e6],
   laser: [0xffffff, 0xff4d6d, 0xff9aa8],
+  rock: [0xc9935a, 0x5c3a1a, 0x8b5a2b],
 };
-const FIREBALL_WORDS = { fire: '¡Quema!', ink: '¡Tinta!', snow: '¡Brrr!', magic: '¡Zas!', frosting: '¡Betún!', laser: '¡Láser!' };
+const FIREBALL_WORDS = { fire: '¡Quema!', ink: '¡Tinta!', snow: '¡Brrr!', magic: '¡Zas!', frosting: '¡Betún!', laser: '¡Láser!', rock: '¡Pum!' };
 // Lo que lanzan los especiales (estrella, bala de cañón).
 const SHOT = { radius: 22, lane: 40 };
 // Golpe en equipo: si dos (o más) se vuelven súper con menos de esto de diferencia.
@@ -270,6 +271,7 @@ export class BrawlScene extends Phaser.Scene {
       this.closeScreen();
       if (spot.endless) this.startEndless();
       else if (spot.bossRush) this.startBossRush();
+      else if (spot.nest) this.startNest();
       else this.startWorld(spot.world);
     } else if (controls.justPressed(id, 'x')) {
       sfx.confirm();
@@ -327,6 +329,7 @@ export class BrawlScene extends Phaser.Scene {
     this.anyoneFell = false;
     this.endlessOver = false;
     this.rushOver = false;
+    this.nestOver = false;
   }
 
   // Un peleador de la compu (amigo o rescatado), con el primer color que no use nadie.
@@ -352,6 +355,7 @@ export class BrawlScene extends Phaser.Scene {
   startWorld(index) {
     this.endless = false;
     this.bossRush = false;
+    this.nestMode = false;
     this.worldIndex = index;
     this.world = WORLDS[index];
     this.drawBackground(this.world, this.world.waves.length);
@@ -364,6 +368,7 @@ export class BrawlScene extends Phaser.Scene {
   startEndless() {
     this.endless = true;
     this.bossRush = false;
+    this.nestMode = false;
     this.endlessNumber = 0;
     const open = WORLDS.filter((world) => rewards.unlocked(world.unlock));
     this.endlessWorlds = open;
@@ -387,6 +392,7 @@ export class BrawlScene extends Phaser.Scene {
   startBossRush() {
     this.endless = false;
     this.bossRush = true;
+    this.nestMode = false;
     this.rushWaves = bossRushWaves(beatenWorlds(), MONSTER_TYPES);
     this.rushIndex = 0;
     this.world = this.rushWaves[0].world;
@@ -406,6 +412,87 @@ export class BrawlScene extends Phaser.Scene {
     }
     this.beginWave(wave, 0, `Jefes · ${this.rushIndex + 1} de ${this.rushWaves.length}`);
     this.props.place(ARENA.left + 100, ARENA.right - 100, ARENA.top, ARENA.bottom);
+  }
+
+  // Defiende el nido: en medio hay un nido con huevos y varios monstruos van por él en vez de por los jugadores.
+  // Son NEST_ROUNDS rondas (con los monstruos de los mundos ya abiertos; la última con jefe); si le pegan NEST_HP
+  // veces, se llevan los huevos.
+  startNest() {
+    this.endless = false;
+    this.bossRush = false;
+    this.nestMode = true;
+    this.nestNumber = 0;
+    const open = WORLDS.filter((world) => rewards.unlocked(world.unlock));
+    this.nestWorlds = open;
+    this.world = Phaser.Utils.Array.GetRandom(open);
+    this.worldIndex = WORLDS.indexOf(this.world);
+    this.drawBackground(this.world, 0);
+    this.beginRun();
+    this.placeFighters(0);
+    this.createNest();
+    this.nextNestWave();
+  }
+
+  nextNestWave() {
+    this.nestNumber += 1;
+    const wave = nestWave(this.nestNumber, this.nestWorlds, MONSTER_TYPES);
+    this.beginWave(wave, 0, `El nido · ${wave.title}`);
+    if (this.nestNumber % 2 === 1) this.props.place(ARENA.left + 100, ARENA.right - 100, ARENA.top, ARENA.bottom);
+  }
+
+  // El nido: ramitas, tres huevos (se van quitando conforme le pegan) y su barrita de vida.
+  createNest() {
+    const x = (ARENA.left + ARENA.right) / 2;
+    const y = (ARENA.top + ARENA.bottom) / 2 + 30;
+    this.nest = { x, y, radius: 46, hp: NEST_HP, maxHp: NEST_HP, down: false, isNest: true };
+    const twigs = this.add.ellipse(0, 0, 130, 46, 0x8b5a2b).setStrokeStyle(5, COLORS.ink);
+    this.nestEggs = [-30, 0, 30].map((dx, i) => this.add.ellipse(dx, -18 - (i === 1 ? 8 : 0), 32, 40, 0xfff4e0).setStrokeStyle(4, COLORS.ink));
+    const spots = this.nestEggs.map((egg) => this.add.circle(egg.x + 5, egg.y - 4, 5, 0x4cd97b));
+    this.nestBar = this.add.rectangle(-50, -66, 100, 10, 0x4cd97b).setOrigin(0, 0.5);
+    this.nestSprite = this.add.container(x, y, [twigs, ...this.nestEggs, ...spots, this.add.rectangle(0, -66, 106, 16, COLORS.ink), this.nestBar]);
+    this.nestSprite.setDepth(y - 1);
+    this.nestSpots = spots;
+  }
+
+  clearNest() {
+    this.nestSprite?.destroy();
+    this.nestSprite = null;
+    this.nest = null;
+  }
+
+  // Le pegaron al nido: se va un pedacito de su barra (y un huevo cada tercio).
+  nestHit(monster) {
+    const nest = this.nest;
+    nest.hp -= 1;
+    this.nestBar.setScale(Math.max(0, nest.hp / nest.maxHp), 1);
+    this.nestBar.setFillStyle(nest.hp > nest.maxHp / 3 ? 0x4cd97b : 0xff5a5f);
+    const eggs = Math.ceil((nest.hp / nest.maxHp) * 3);
+    this.nestEggs.forEach((egg, i) => egg.setVisible(i < eggs));
+    this.nestSpots.forEach((spot, i) => spot.setVisible(i < eggs));
+    popText(this, nest.x, nest.y - 90, '¡Los huevos!', '#ff5a7a');
+    this.cameras.main.shake(120, 0.004);
+    sfx.hit(0.5);
+    monster.taunt();
+    if (nest.hp === Math.floor(nest.maxHp / 3)) say('¡Cuiden el nido!');
+    if (nest.hp <= 0) {
+      nest.down = true;
+      this.lose('¡Se llevaron los huevos!');
+    }
+  }
+
+  winNest() {
+    rewards.earn('pelea-nido');
+    this.phase = 'results';
+    this.endMs = 0;
+    this.nextWorld = null;
+    this.nestOver = true;
+    confetti(this, this.fighters.map((f) => f.color));
+    this.celebrate();
+    // ¡Nacen los huevos!
+    for (const egg of this.nestEggs) if (egg.visible) burst(this, this.nest.x + egg.x, this.nest.y + egg.y, 0x4cd97b, 10);
+    say('¡El nido está a salvo! ¡Nacieron los dinos!');
+    const extra = this.saveRecords();
+    this.screen = showResults(this, this.fighters, { title: '¡El nido está a salvo! 🐣', hint: 'A = otra vez   ·   B = mapa', extra });
   }
 
   startWave(index) {
@@ -465,6 +552,7 @@ export class BrawlScene extends Phaser.Scene {
 
   clearLevel() {
     this.clearEnemies();
+    this.clearNest();
     this.props.clear();
     this.coins.clear();
     this.mounts.clear();
@@ -708,6 +796,14 @@ export class BrawlScene extends Phaser.Scene {
 
     for (const monster of this.monsters) {
       if (monster.state !== 'lunge' || monster.dead) continue;
+      // Defiende el nido: el que se lanza contra el nido le pega (una vez por embestida).
+      const nest = this.nest;
+      if (nest && !nest.down && monster.target === nest && !monster.hitDuringLunge.has(nest)) {
+        if (Math.hypot(monster.x - nest.x, (monster.y - nest.y) * 1.6) < nest.radius + monster.radius) {
+          monster.hitDuringLunge.add(nest);
+          this.nestHit(monster);
+        }
+      }
       for (const fighter of this.fighters) {
         if (monster.hitDuringLunge.has(fighter) || !monster.touches(fighter)) continue;
         monster.hitDuringLunge.add(fighter);
@@ -1165,6 +1261,16 @@ export class BrawlScene extends Phaser.Scene {
 
     rewards.earn('pelea-ronda');
     for (const fighter of this.fighters) if (!fighter.down) fighter.celebrate();
+    if (this.nestMode) {
+      if (this.nestNumber >= NEST_ROUNDS) {
+        this.winNest();
+        return;
+      }
+      this.phase = 'between';
+      this.showBanner('¡El nido sigue a salvo!', this.nestNumber === NEST_ROUNDS - 1 ? '¡Viene la última ronda!' : '', 900);
+      this.time.delayedCall(1500, () => this.phase === 'between' && this.nextNestWave());
+      return;
+    }
     if (this.endless) {
       if (this.endlessNumber >= ENDLESS_STICKER_AT) rewards.earn('pelea-sinfin');
       this.phase = 'between';
@@ -1261,16 +1367,22 @@ export class BrawlScene extends Phaser.Scene {
     for (const f of this.fighters) f.look.dance(5000);
   }
 
-  lose() {
+  // `why`: por qué se perdió (si no, porque todos cayeron).
+  lose(why = null) {
     this.endMs = 0;
     // Los monstruos se carcajean.
     for (const monster of this.monsters) monster.taunt(6000);
-    if (this.endless || this.bossRush) {
+    if (this.endless || this.bossRush || this.nestMode) {
       const extra = this.saveRecords();
       this.phase = 'results';
       this.nextWorld = null;
       let title;
-      if (this.endless) {
+      if (this.nestMode) {
+        this.nestOver = true;
+        const rounds = this.nestNumber - 1;
+        title = `${why ?? '¡Uy! Todos cayeron'} · Aguantaron ${rounds} de ${NEST_ROUNDS} rondas`;
+        say(why ?? '¡Uy! Todos cayeron');
+      } else if (this.endless) {
         const waves = this.endlessNumber - 1;
         const record = endlessRecord.save(waves);
         this.endlessOver = true;
@@ -1303,7 +1415,10 @@ export class BrawlScene extends Phaser.Scene {
       return;
     }
     if (pressed('a')) {
-      if (this.endlessOver) {
+      if (this.nestOver) {
+        this.closeScreen();
+        this.startNest();
+      } else if (this.endlessOver) {
         this.closeScreen();
         this.startEndless();
       } else if (this.rushOver) {

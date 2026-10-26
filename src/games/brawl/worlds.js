@@ -150,6 +150,24 @@ export const WORLDS = [
       { title: '¡El Mega Robot!', spawns: [{ type: 'marcianito', count: 2 }, { type: 'megaRobot', count: 1 }] },
     ],
   },
+  {
+    name: 'Valle de los dinos',
+    emoji: '🦖',
+    background: 'dinos',
+    unlock: 'pelea-mundo-9',
+    sticker: 'pelea-dinos',
+    colors: { sky: 0x5a2a1a, hill: 0x7a3f22, floor: 0x6b5a2a, stripe: 0x8a7434 },
+    trap: 'boulder',
+    mount: 'dinosaurio',
+    mini: 'trici',
+    cage: 2,
+    waves: [
+      { title: 'Ronda 1', spawns: [{ type: 'raptor', count: 4 }] },
+      { title: 'Ronda 2', spawns: [{ type: 'raptor', count: 3 }, { type: 'ptero', count: 2 }] },
+      { title: 'Ronda 3', spawns: [{ type: 'raptor', count: 3 }, { type: 'trici', count: 2 }] },
+      { title: '¡El Rey Rex!', spawns: [{ type: 'raptor', count: 2 }, { type: 'reyRex', count: 1 }] },
+    ],
+  },
 ];
 // En el segundo tramo de cada mundo sale el mini jefe (al final de la ronda).
 export const MINI_WAVE = 1;
@@ -176,6 +194,19 @@ export function buildSpawnQueue(wave, playerCount, types, mini = null) {
 // Modo sin fin: rondas que no se acaban, con los monstruos de los mundos que ya se abrieron; cada vez más y más
 // grandes, y cada 5 rondas un jefe.
 export const ENDLESS_BOSS_EVERY = 5;
+
+// Defiende el nido: NEST_ROUNDS rondas como las del modo sin fin (la última, con jefe). El nido aguanta NEST_HP golpes.
+export const NEST_ROUNDS = 5;
+export const NEST_HP = 9;
+export function nestWave(number, worlds, types) {
+  const wave = endlessWave(number, worlds, types);
+  const hasBoss = wave.spawns.some((s) => types[s.type].boss);
+  if (number === NEST_ROUNDS && !hasBoss) {
+    const bosses = [...new Set(worlds.flatMap((world) => world.waves.flatMap((w) => w.spawns.map((s) => s.type))))].filter((type) => types[type].boss);
+    if (bosses.length) wave.spawns.push({ type: bosses[Math.floor(Math.random() * bosses.length)], count: 1 });
+  }
+  return { ...wave, title: number === NEST_ROUNDS ? `Ronda ${number}: ¡la última!` : `Ronda ${number} de ${NEST_ROUNDS}` };
+}
 
 export function endlessWave(number, worlds, types) {
   const pool = worlds.flatMap((world) => world.waves.flatMap((wave) => wave.spawns.map((s) => s.type)));

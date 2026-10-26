@@ -36,17 +36,20 @@ Abre http://localhost:5173 en Edge o Chrome.
 - Antes de **Pelea en equipo**, **Fútbol de bolitas** y **Duelo de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
   lo que escojas se recuerda en los demás juegos mientras la página siga abierta.
 - **Pelea en equipo**: todos contra los monstruos, estilo arcade. Se escoge en el **mapa de mundos** (con candados y
-  hasta 3 estrellas por mundo: ganarlo, que nadie se caiga y hacerlo en menos de 4 minutos). 8 mundos de 4 rondas
+  hasta 3 estrellas por mundo: ganarlo, que nadie se caiga y hacerlo en menos de 4 minutos). 9 mundos de 4 rondas
   con su jefe: Pradera (Rey Slime), Bosque de hongos (Gran Hongo, llama ayudantes), Volcán (Dragón de lava, lanza
   fuego), **Playa** (cangrejos, almejas y el Capitán Pulpo que lanza tinta), **Montaña nevada** (muñecos de nieve,
   yetis bebé y el Gran Yeti con bolas de nieve) y **Castillo embrujado** (murciélagos, calabazas y el Rey Calabaza,
   que llama murciélagos y lanza magia), **Dulcelandia** (gomitas, caramelos voladores, cupcakes y el Rey Pastel que
-  lanza betún) y **Espacio** (marcianitos, ovnis, robotitos y el Mega Robot con su láser). Ganar un mundo desbloquea el
-  siguiente. Cada ronda es un tramo del nivel: al
+  lanza betún), **Espacio** (marcianitos, ovnis, robotitos y el Mega Robot con su láser) y **Valle de los dinos**
+  (raptorcitos, pterodáctilos, triceratops y el Rey Rex, que llama raptorcitos y avienta rocas). Ganar un mundo
+  desbloquea el siguiente. Cada ronda es un tramo del nivel: al
   limpiarla sale "¡Adelante!" y se camina a la derecha (la pantalla avanza) hasta el siguiente. Cuando llega el jefe,
   todo se detiene para presentarlo, con música de jefe. Al final del mundo, **resultados con premios** (más golpes,
   más monstruos, mejor compañero —el que levantó a más— y el que tumbó al jefe). **Modo sin fin**: rondas que no se
-  acaban, cada vez más difíciles y con jefe cada 5; se guarda el récord.
+  acaban, cada vez más difíciles y con jefe cada 5; se guarda el récord. **Defiende el nido** (siempre abierto): en
+  medio hay un nido con huevos y más de la mitad de los monstruos va por él en vez de por ustedes; aguántenlo 5 rondas
+  (la última con jefe) antes de que le peguen 9 veces y se lleven los huevos.
   En cada mundo: en el segundo tramo un **animal para montar** (dinosaurio o pollo gigante: corre más, muerde doble y
   aguanta los golpes por ti) y un **mini jefe**; desde ahí, las **trampas** del mundo (resortes que te avientan y
   aplastan al caer, rocas y bolas de nieve que ruedan, cañonazos, lava, fuego fantasma, chicle que hace ir lento y

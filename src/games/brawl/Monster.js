@@ -115,6 +115,23 @@ export const MONSTER_TYPES = {
     summon: { type: 'robotito', firstMs: 4000, everyMs: 8000, count: 1 },
     fireball: { firstMs: 1800, everyMs: 3400, aimMs: 650, look: 'laser' },
   },
+  // Valle de los dinos.
+  raptor: { name: 'Raptorcito', art: 'raptor', radius: 28, hp: 3, speed: 135, color: 0x8be04c, windupMs: 520, stagger: true, small: true },
+  ptero: { name: 'Pterodáctilo', art: 'ptero', radius: 28, hp: 2, speed: 145, color: 0xff9a3c, windupMs: 520, stagger: true, small: true, fly: true },
+  trici: { name: 'Triceratops', art: 'trici', radius: 44, hp: 8, speed: 78, color: 0x7fb8ff, windupMs: 700, stagger: true },
+  reyRex: {
+    name: 'Rey Rex',
+    art: 'rey-rex',
+    radius: 94,
+    hp: 40,
+    speed: 54,
+    color: 0xe53935,
+    windupMs: 880,
+    boss: true,
+    crown: true,
+    summon: { type: 'raptor', firstMs: 3000, everyMs: 7000, count: 2 },
+    fireball: { firstMs: 2200, everyMs: 3800, aimMs: 700, look: 'rock' },
+  },
 };
 // Mini jefe (a la mitad de cada mundo): un monstruo de ese mundo más grande y con mucha más vida, con su barra.
 export const MINI_BOSS = { hp: 3, size: 1.4 };
@@ -155,6 +172,8 @@ export class Monster {
     this.knockback = 0;
     this.target = null;
     this.retargetMs = 0;
+    // (En Defiende el nido, más de la mitad de los chicos va por los huevos.)
+    this.raidsNest = Boolean(scene.nest) && !this.type.boss && !mini && Math.random() < 0.6;
     this.entered = false;
     this.dead = false;
     this.hitDuringLunge = new Set();
@@ -217,7 +236,9 @@ export class Monster {
     this.knockback = Math.abs(next) < 5 ? 0 : next;
 
     if (this.retargetMs <= 0 || !this.target || this.target.down) {
-      this.target = nearest(this, fighters.filter((f) => !f.down));
+      // Defiende el nido: los que van por los huevos no les hacen caso a los jugadores.
+      const nest = this.scene.nest;
+      this.target = nest && !nest.down && this.raidsNest ? nest : nearest(this, fighters.filter((f) => !f.down));
       this.retargetMs = RETARGET_MS;
     }
     this.updatePowers(dtMs);

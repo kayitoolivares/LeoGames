@@ -427,6 +427,84 @@ test('pelea en equipo: amigos de la compu, tienda, montar, objetos, jaula y jefe
   await p.context.close();
 });
 
+// El Valle de los dinos (se abre al ganar el Espacio) y Defiende el nido (siempre abierto).
+test('pelea en equipo: el Valle de los dinos y defiende el nido', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['pelea-espacio'])));
+  await p.joinPlayers(1);
+  await p.openGameCard('Pelea en equipo');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'map', ms(8000), 'ver el mapa');
+  const brawl = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Brawl')), code);
+  // ◀ desde la Pradera da la vuelta: sin fin, jefes en serie, el nido y el Valle de los dinos.
+  for (let i = 0; i < 4; i += 1) await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.A);
+  await p.until(
+    () => window.leogames.scene.getScene('Brawl').world?.name === 'Valle de los dinos' && window.leogames.scene.getScene('Brawl').phase === 'fight',
+    ms(8000),
+    'entrar al Valle de los dinos',
+  );
+  await p.until(() => window.leogames.scene.getScene('Brawl').monsters.some((m) => m.typeKey === 'raptor'), ms(15000), 'que lleguen los raptorcitos');
+  // La ronda del Rey Rex: avienta rocas; al vencer a todos se gana el mundo.
+  await brawl('for (const f of s.fighters) f.invulnerableMs = 1e9; s.clearEnemies(); s.startWave(3);');
+  await p.until(() => window.leogames.scene.getScene('Brawl').boss?.typeKey === 'reyRex', ms(15000), 'que llegue el Rey Rex');
+  await p.until(() => window.leogames.scene.getScene('Brawl').fireballs.some((b) => b.look === 'rock'), ms(15000), 'que el Rey Rex avienta una roca');
+  await p.until(
+    () => {
+      const s = window.leogames.scene.getScene('Brawl');
+      s.spawnQueue = [];
+      if (s.phase === 'fight') for (const m of s.monsters) if (!m.dead) s.hitMonster(s.fighters[0], m, 999);
+      return s.phase === 'results';
+    },
+    ms(20000),
+    'ganar el Valle de los dinos',
+  );
+  assert.ok((await stickers(p.page)).includes('pelea-dinos'));
+
+  // Defiende el nido: B = mapa y ▶ = el nido.
+  await p.until(() => window.leogames.scene.getScene('Brawl').endMs > 1300, ms(10000), 'que los resultados acepten botones');
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'map', ms(6000), 'regresar al mapa');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Brawl').nestMode && window.leogames.scene.getScene('Brawl').phase === 'fight', ms(8000), 'defender el nido');
+  assert.deepEqual(await brawl('return [s.nest.hp, s.nestNumber]'), [9, 1]);
+  // Los que van por los huevos no les hacen caso a los jugadores y le pegan al nido.
+  await p.until(() => window.leogames.scene.getScene('Brawl').monsters.some((m) => m.entered), ms(15000), 'que llegue un monstruo');
+  await brawl('for (const f of s.fighters) f.invulnerableMs = 1e9; for (const m of s.monsters) { m.raidsNest = true; m.retargetMs = 0; }');
+  await p.until(() => window.leogames.scene.getScene('Brawl').nest.hp < 9, ms(15000), 'que le peguen al nido');
+  // Al limpiar una ronda sigue la otra; la quinta trae jefe y al ganarla se salva el nido.
+  await brawl('s.spawnQueue = []; s.clearEnemies();');
+  await p.until(() => window.leogames.scene.getScene('Brawl').nestNumber === 2 && window.leogames.scene.getScene('Brawl').phase === 'fight', ms(8000), 'la segunda ronda');
+  await brawl('s.nestNumber = 4; s.spawnQueue = []; s.clearEnemies();');
+  await p.until(() => window.leogames.scene.getScene('Brawl').nestNumber === 5, ms(8000), 'la última ronda');
+  const lastHasBoss = await p.page.evaluate(() =>
+    import('/src/games/brawl/Monster.js').then(({ MONSTER_TYPES }) => {
+      const s = window.leogames.scene.getScene('Brawl');
+      return s.spawnQueue.some((t) => MONSTER_TYPES[t]?.boss) || s.monsters.some((m) => m.type.boss) || s.phase === 'bossIntro';
+    }),
+  );
+  assert.ok(lastHasBoss, 'la última ronda no trae jefe');
+  await brawl('s.spawnQueue = []; s.clearEnemies();');
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'results' && window.leogames.scene.getScene('Brawl').nestOver, ms(10000), 'salvar el nido');
+  assert.ok((await stickers(p.page)).includes('pelea-nido'));
+  // A = otra vez; si le pegan hasta quitarle todo, se llevan los huevos.
+  await p.until(() => window.leogames.scene.getScene('Brawl').endMs > 1300, ms(10000), 'que los resultados acepten botones otra vez');
+  await p.tap(0, BUTTON.A);
+  await p.until(
+    () => window.leogames.scene.getScene('Brawl').phase === 'fight' && window.leogames.scene.getScene('Brawl').nest?.hp === 9,
+    ms(8000),
+    'el nido otra vez',
+  );
+  await p.until(() => window.leogames.scene.getScene('Brawl').monsters.length > 0, ms(15000), 'que llegue otro monstruo');
+  await brawl('s.nest.hp = 1; s.nestHit(s.monsters[0]);');
+  await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'results', ms(4000), 'perder el nido');
+  assert.ok(await brawl('return s.nest.down && s.nestOver'));
+  await p.holdToMenu(0, EXIT, 'salir de la pelea');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('personajes: lo que escoges se usa en la pelea, el fútbol y Bolitas Bros', { timeout: ms(90000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(2);

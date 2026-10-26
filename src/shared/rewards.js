@@ -19,6 +19,8 @@ export const STICKERS = [
   { id: 'pelea-sinfin', emoji: '♾️', name: 'Aguantadores', hint: 'Pasen 10 rondas en el modo sin fin de Pelea en equipo' },
   { id: 'pelea-dulces', emoji: '🍭', name: 'Adiós Rey Pastel', hint: 'Gana Dulcelandia en Pelea en equipo' },
   { id: 'pelea-espacio', emoji: '🚀', name: 'Adiós Mega Robot', hint: 'Gana el mundo del espacio en Pelea en equipo' },
+  { id: 'pelea-dinos', emoji: '🦖', name: 'Adiós Rey Rex', hint: 'Gana el Valle de los dinos en Pelea en equipo' },
+  { id: 'pelea-nido', emoji: '🐣', name: 'Nido a salvo', hint: 'Defiendan el nido las 5 rondas en Pelea en equipo' },
   { id: 'pelea-jefes', emoji: '🏆', name: 'Jefes en serie', hint: 'Venzan a todos los jefes seguidos en Pelea en equipo' },
   { id: 'pelea-rescate', emoji: '🔓', name: 'Al rescate', hint: 'Rompe una jaula y rescata a un amigo en Pelea en equipo' },
   { id: 'pelea-combo', emoji: '🔥', name: 'Combo de 20', hint: 'Hagan un combo de 20 golpes en equipo en Pelea en equipo' },
@@ -115,6 +117,7 @@ export const UNLOCKS = {
   'pelea-mundo-6': { sticker: 'pelea-nieve', label: 'Gana el mundo de la nieve' },
   'pelea-mundo-7': { sticker: 'pelea-castillo', label: 'Gana el castillo embrujado' },
   'pelea-mundo-8': { sticker: 'pelea-dulces', label: 'Gana Dulcelandia' },
+  'pelea-mundo-9': { sticker: 'pelea-espacio', label: 'Gana el mundo del espacio' },
 };
 
 const COLLECTOR_AT = 10;

@@ -5,7 +5,7 @@ import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { monsterTexture } from './art.js';
 import { coinBank } from './coins.js';
 import { brawlRecords, formatTime, medals, rescues } from './records.js';
-import { WORLDS } from './worlds.js';
+import { NEST_ROUNDS, WORLDS } from './worlds.js';
 
 // Las pantallas de Pelea en equipo: el mapa de mundos, la presentación de cada jefe y los resultados con medallas.
 // Todo va pegado a la pantalla (no se mueve con el nivel).
@@ -38,8 +38,9 @@ export const endlessRecord = {
   },
 };
 
-// Los lugares del mapa: los mundos en un caminito de zigzag y, al final, los jefes en serie y el modo sin fin.
-export const MAP_SPOTS = [...WORLDS.map((world, i) => ({ world: i })), { bossRush: true }, { endless: true }];
+// Los lugares del mapa: los mundos en un caminito de zigzag y, al final, Defiende el nido, los jefes en serie y el modo
+// sin fin.
+export const MAP_SPOTS = [...WORLDS.map((world, i) => ({ world: i })), { nest: true }, { bossRush: true }, { endless: true }];
 const POSITIONS = MAP_SPOTS.map((spot, i) => [95 + i * ((1280 - 190) / (MAP_SPOTS.length - 1)), i % 2 === 0 ? 470 : 330]);
 const NODE_R = 46;
 
@@ -49,7 +50,7 @@ export function beatenWorlds() {
 }
 
 function spotOpen(spot) {
-  if (spot.endless) return true;
+  if (spot.endless || spot.nest) return true;
   if (spot.bossRush) return beatenWorlds().length > 0;
   return rewards.unlocked(WORLDS[spot.world].unlock);
 }
@@ -57,6 +58,7 @@ function spotOpen(spot) {
 // Cómo se ve y qué se dice de cada lugar del mapa.
 function spotInfo(spot, open) {
   if (spot.endless) return { emoji: '♾️', name: 'Sin fin', text: 'Rondas sin fin, cada vez más difíciles. ¿Cuántas aguantan?' };
+  if (spot.nest) return { emoji: '🥚', name: 'El nido', text: `Defiendan el nido: ${NEST_ROUNDS} rondas sin que los monstruos se lleven los huevos` };
   if (spot.bossRush) {
     const best = brawlRecords.get().bossRush;
     const record = best ? `. Récord: ${formatTime(best)}` : '';
@@ -101,6 +103,7 @@ export function showMap(scene, selected, buddies = 0) {
     node.add(scene.add.text(0, NODE_R + 14, name, textStyle(16, '#ffffff', { ...outline, align: 'center', wordWrap: { width: 120 } })).setOrigin(0.5, 0));
     let stars = '';
     if (spot.endless) stars = `Récord: ${endlessRecord.get()}`;
+    else if (spot.nest) stars = '';
     else if (spot.bossRush) stars = r.bossRush ? formatTime(r.bossRush) : '';
     else stars = '★'.repeat(worldStars.get(spot.world)) + '☆'.repeat(3 - worldStars.get(spot.world));
     node.add(scene.add.text(0, -NODE_R - 20, stars, textStyle(spot.world === undefined ? 15 : 19, '#ffd84d', { ...outline, strokeThickness: 4 })).setOrigin(0.5));
