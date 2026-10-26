@@ -73,7 +73,8 @@ const SONGS = {
 
 const NOTE_INDEX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
-function frequency(note) {
+// La frecuencia de una nota ("E5", "F#3", "Bb4"). También la usan las canciones del Modo Bebé.
+export function noteFrequency(note) {
   const [, letter, accidental, octave] = /^([A-G])([#b]?)(\d)$/.exec(note);
   const semitone = NOTE_INDEX[letter] + (accidental === '#' ? 1 : accidental === 'b' ? -1 : 0);
   const midi = (Number(octave) + 1) * 12 + semitone;
@@ -91,7 +92,7 @@ function parseTrack(text) {
     if (token === '.' || token === '-') return null;
     let length = 1;
     while (tokens[i + length] === '-') length += 1;
-    return { freq: frequency(token), length };
+    return { freq: noteFrequency(token), length };
   });
 }
 

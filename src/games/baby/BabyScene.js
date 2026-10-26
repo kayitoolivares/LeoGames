@@ -10,23 +10,33 @@ import { Blob } from '../../ui/Blob.js';
 import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
 import { go } from '../../shared/transition.js';
+import { ANIMALS, ANIMAL_KEYS, animalTexture, loadAnimalArt } from './animals.js';
+import { SONGS } from './songs.js';
 
-// Botones con los colores del control de Xbox, para ir nombrando los colores con el bebé.
-// `note` es el paso de la escala pentatónica (sound.js), así cada botón tiene "su" nota.
+// Botones con los colores del control de Xbox, para ir nombrando los colores con el bebé (con su forma para las
+// figuras que son "la": estrella roja, flor amarilla).
 const FACE_BUTTONS = {
-  a: { color: 0x4cd97b, name: '¡Verde!', note: 0 },
-  b: { color: 0xff5a5f, name: '¡Rojo!', note: 2 },
-  x: { color: 0x3fa7ff, name: '¡Azul!', note: 3 },
-  y: { color: 0xffc93c, name: '¡Amarillo!', note: 4 },
+  a: { color: 0x4cd97b, name: 'Verde', feminine: 'verde' },
+  b: { color: 0xff5a5f, name: 'Rojo', feminine: 'roja' },
+  x: { color: 0x3fa7ff, name: 'Azul', feminine: 'azul' },
+  y: { color: 0xffc93c, name: 'Amarillo', feminine: 'amarilla' },
 };
 const FACE_KEYS = Object.keys(FACE_BUTTONS);
 const DIRECTIONS = ['up', 'down', 'left', 'right'];
 const FIREWORK_BUTTONS = ['lb', 'rb', 'lt', 'rt'];
-// Qué tan grande va la carita en cada figura (en la estrella cabe menos).
-const FACE_SIZE = { circle: 1, star: 0.6, square: 0.9, flower: 0.62 };
-const SHAPES = Object.keys(FACE_SIZE);
-const ANIMALS = ['🐶', '🐱', '🐮', '🐷', '🐸', '🐥', '🐵', '🐰', '🦁', '🐘', '🐻', '🐟'];
+// Las figuras: su nombre y qué tan grande va la carita (en la estrella cabe menos).
+const SHAPES = {
+  circle: { name: 'Círculo', face: 1 },
+  star: { name: 'Estrella', feminine: true, face: 0.6 },
+  square: { name: 'Cuadrado', face: 0.9 },
+  flower: { name: 'Flor', feminine: true, face: 0.62 },
+  heart: { name: 'Corazón', face: 0.62 },
+  triangle: { name: 'Triángulo', face: 0.55 },
+};
+const SHAPE_KEYS = Object.keys(SHAPES);
 const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff, 0xff7ad9];
+// Las burbujas, de colores pastel (sobre el fondo oscuro los colores fuertes se ven cafés).
+const PASTEL = [0xffb3c1, 0xffd6a5, 0xfdffb6, 0xcaffbf, 0x9bf6ff, 0xa0c4ff, 0xbdb2ff];
 // Fondos oscuros para que los colores resalten. Cambian despacito (nada de parpadeos).
 const BACKGROUNDS = [COLORS.bg, 0x0f2440, 0x2a1240, 0x0d3333, 0x3a1530];
 const BACKGROUND_EVERY_MS = 1500;
@@ -34,6 +44,13 @@ const BACKGROUND_EVERY_MS = 1500;
 const MAX_SHAPES = 24;
 const SHAPE_LIFE_MS = 2600;
 const ANIMAL_COOLDOWN_MS = 350;
+// El animalito se asoma, hace su sonido un ratito y se vuelve a esconder.
+const ANIMAL_SING_MS = 1300;
+// Burbujas que suben solas: la bolita amiga las revienta al tocarlas (y también el clic y los fuegos artificiales).
+const BUBBLE_EVERY_MS = 650;
+const MAX_BUBBLES = 14;
+// Al acabar una canción se festeja y, después de este rato, empieza la siguiente.
+const SONG_PAUSE_MS = 2200;
 const FRIEND_SPEED = 480;
 const TRAIL_EVERY_MS = 50;
 const IDLE_HINT_MS = 10000;
@@ -41,11 +58,12 @@ const IDLE_HINT_MS = 10000;
 // para que el bebé no lo haga sin querer.
 const EXIT_HOLD_MS = 3000;
 const VOICE_EVERY_MS = 1200;
-const DEPTH = { trail: 1, shape: 2, animal: 3, friend: 4, firework: 5, ui: 10 };
+const DEPTH = { bubble: 0.5, trail: 1, shape: 2, animal: 3, friend: 4, firework: 5, ui: 10 };
 
 // Modo Bebé: cualquier botón hace algo bonito. No se gana ni se pierde.
-//   A B X Y = figura con carita de ese color + nota   ·   cruceta / stick = se asoma un animalito
-//   LB RB LT RT = fuegos artificiales                  ·   stick = mueve a su bolita amiga
+//   A B X Y = figura con carita de ese color y la nota que sigue de la canción (machacando se toca la canción)
+//   cruceta = se asoma un animalito y hace su sonido   ·   LB RB LT RT = fuegos artificiales
+//   stick = mueve a su bolita amiga, que revienta las burbujas que suben
 // Todos los controles conectados cuentan (aunque no se hayan unido), y también el teclado y el clic.
 export class BabyScene extends Phaser.Scene {
   constructor() {
@@ -58,9 +76,20 @@ export class BabyScene extends Phaser.Scene {
     this.exitMs = 0;
     this.idleMs = IDLE_HINT_MS;
     this.shapes = [];
+    this.bubbles = [];
+    this.bubbleMs = 0;
     this.friends = new Map();
     this.backgroundIndex = 0;
     this.nextBackgroundAt = 0;
+    this.spoken = 0;
+    this.songIndex = 0;
+    this.songStep = 0;
+    this.songPausedUntil = 0;
+    this.popped = 0;
+  }
+
+  preload() {
+    loadAnimalArt(this);
   }
 
   create() {
@@ -76,6 +105,7 @@ export class BabyScene extends Phaser.Scene {
     this.add.text(width / 2, height - 22, 'Para salir: mantén LB + RB + Y juntos (o Esc)', textStyle(16, TEXT.muted)).setOrigin(0.5).setDepth(DEPTH.ui);
     this.exitBar = this.add.rectangle(width / 2 - 150, height - 46, 300, 8, 0xffffff).setOrigin(0, 0.5).setScale(0, 1).setDepth(DEPTH.ui);
     this.escKey = this.input.keyboard?.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.songBar = this.createSongBar(width / 2, 78);
 
     // Las teclas que no son de ningún control (a los bebés les encanta machacar el teclado) y el clic
     // también hacen figuras.
@@ -86,7 +116,8 @@ export class BabyScene extends Phaser.Scene {
     window.addEventListener('keydown', onKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('keydown', onKey));
     this.input.on('pointerdown', (pointer) => {
-      this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), { x: pointer.worldX, y: pointer.worldY });
+      const spot = { x: pointer.worldX, y: pointer.worldY };
+      if (!this.popBubblesAt(spot, 0)) this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), spot);
     });
     // En el celular toda la pantalla es para tocar: de los botones táctiles solo quedan LB y RB (para salir).
     touchPad.setMode('bumpers');
@@ -108,10 +139,54 @@ export class BabyScene extends Phaser.Scene {
     return hint;
   }
 
+  // Arriba: qué canción se está tocando y cuánto falta (una barrita que se va llenando con cada nota).
+  createSongBar(x, y) {
+    const bar = this.add.container(x, y).setDepth(DEPTH.ui);
+    this.songTitle = this.add.text(0, -16, '', textStyle(30, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    const track = this.add.rectangle(-220, 22, 440, 14, 0xffffff, 0.18).setOrigin(0, 0.5);
+    this.songFill = this.add.rectangle(-220, 22, 440, 14, 0xffc93c).setOrigin(0, 0.5).setScale(0, 1);
+    bar.add([this.songTitle, track, this.songFill]);
+    this.showSong();
+    return bar;
+  }
+
+  showSong() {
+    const song = SONGS[this.songIndex];
+    this.songTitle.setText(`🎵 ${song.title}`);
+    this.songFill.setScale(this.songStep / song.freqs.length, 1);
+  }
+
+  // Cada botón toca la nota que sigue de la canción; al acabarla se festeja y luego empieza otra.
+  playSongNote() {
+    const song = SONGS[this.songIndex];
+    if (this.time.now < this.songPausedUntil) {
+      sfx.songNote(song.freqs[song.freqs.length - 1]);
+      return;
+    }
+    sfx.songNote(song.freqs[this.songStep]);
+    this.songStep += 1;
+    this.showSong();
+    this.tweens.add({ targets: this.songTitle, scale: { from: 1.12, to: 1 }, duration: 160 });
+    if (this.songStep < song.freqs.length) return;
+    this.songPausedUntil = this.time.now + SONG_PAUSE_MS;
+    this.time.delayedCall(450, () => {
+      sfx.win();
+      say(`¡Bravo! ¡Tocaste ${song.title}!`);
+      const { width } = this.scale;
+      for (let i = 0; i < 3; i += 1) this.time.delayedCall(i * 250, () => this.sparkles({ x: width * (0.3 + 0.2 * i), y: 220 }));
+    });
+    this.time.delayedCall(SONG_PAUSE_MS, () => {
+      this.songIndex = (this.songIndex + 1) % SONGS.length;
+      this.songStep = 0;
+      this.showSong();
+    });
+  }
+
   update() {
     const dt = frameDelta();
     this.idleMs += dt;
     for (const device of controls.connectedDevices()) this.updateDevice(device.id, dt);
+    this.updateBubbles(dt);
 
     // El letrero de "¡Aprieta los botones!" se va al jugar y regresa si nadie hace nada un rato.
     const target = this.idleMs >= IDLE_HINT_MS ? 1 : 0;
@@ -176,25 +251,29 @@ export class BabyScene extends Phaser.Scene {
   }
 
   pressFace(key, { x, y }) {
-    const { color, name, note } = FACE_BUTTONS[key];
-    // La misma nota del botón, a veces una octava más arriba.
-    sfx.note(note + (Math.random() < 0.5 ? 0 : 5));
-    this.spawnShape(x, y, color, name);
+    const button = FACE_BUTTONS[key];
+    const kind = Phaser.Utils.Array.GetRandom(SHAPE_KEYS);
+    const shape = SHAPES[kind];
+    const name = `${shape.name} ${shape.feminine ? button.feminine : button.name.toLowerCase()}`;
+    this.playSongNote();
+    this.spawnShape(x, y, kind, button.color, name);
+    this.popBubblesAt({ x, y }, 60);
     this.idleMs = 0;
-    // La voz dice el color, pero sin amontonarse cuando el bebé machaca los botones.
+    // La voz dice el color (y una vez sí y otra no, también la figura), pero sin amontonarse cuando el bebé machaca
+    // los botones.
     if (this.time.now - (this.lastSpokenAt ?? -Infinity) > VOICE_EVERY_MS) {
       this.lastSpokenAt = this.time.now;
-      say(name);
+      this.spoken += 1;
+      say(`¡${this.spoken % 2 ? button.name : name}!`);
     }
   }
 
-  spawnShape(x, y, color, name) {
-    const kind = Phaser.Utils.Array.GetRandom(SHAPES);
+  spawnShape(x, y, kind, color, name) {
     const r = Phaser.Math.Between(70, 100);
     const label = this.add
       .text(0, r + 34, name, textStyle(40, TEXT.normal, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 8 }))
       .setOrigin(0.5);
-    const shape = this.add.container(x, y, [...this.drawShape(kind, r, color), ...this.drawFace(r * FACE_SIZE[kind]), label]);
+    const shape = this.add.container(x, y, [...this.drawShape(kind, r, color), ...this.drawFace(r * SHAPES[kind].face, kind === 'triangle' ? r * 0.25 : 0), label]);
     shape.setDepth(DEPTH.shape).setScale(0);
     this.tweens.add({ targets: shape, scale: 1, duration: 380, ease: 'Back.easeOut' });
     this.tweens.add({ targets: shape, angle: { from: -8, to: 8 }, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -210,6 +289,26 @@ export class BabyScene extends Phaser.Scene {
     const ink = COLORS.ink;
     if (kind === 'star') return [this.add.star(0, 0, 5, r * 0.55, r * 1.1, color).setStrokeStyle(6, ink)];
     if (kind === 'square') return [this.add.rectangle(0, 0, r * 1.8, r * 1.8, color).setRounded(r * 0.35).setStrokeStyle(6, ink)];
+    if (kind === 'triangle') {
+      const h = r * 1.9;
+      const w = h * 1.15;
+      return [this.add.triangle(0, 0, w / 2, 0, 0, h, w, h, color).setStrokeStyle(6, ink)];
+    }
+    if (kind === 'heart') {
+      // La curva del corazón, rellena y con contorno.
+      const points = [];
+      for (let t = 0; t < Math.PI * 2; t += 0.1) {
+        const hx = 16 * Math.sin(t) ** 3;
+        const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+        points.push({ x: (hx / 17) * r * 1.05, y: (hy / 17) * r * 1.05 + r * 0.1 });
+      }
+      const heart = this.add.graphics();
+      heart.fillStyle(color, 1);
+      heart.fillPoints(points, true);
+      heart.lineStyle(6, ink, 1);
+      heart.strokePoints(points, true);
+      return [heart];
+    }
     if (kind === 'flower') {
       const petals = [];
       for (let i = 0; i < 6; i += 1) {
@@ -221,10 +320,10 @@ export class BabyScene extends Phaser.Scene {
     return [this.add.circle(0, 0, r, color).setStrokeStyle(6, ink)];
   }
 
-  // Ojitos y sonrisa; `s` es el tamaño de la cara.
-  drawFace(s) {
+  // Ojitos y sonrisa; `s` es el tamaño de la cara (`dy`: un poco más abajo, para el triángulo).
+  drawFace(s, dy = 0) {
     const eyeX = s * 0.3;
-    const eyeY = -s * 0.12;
+    const eyeY = -s * 0.12 + dy;
     const eyeR = s * 0.16;
     const parts = [];
     for (const side of [-1, 1]) {
@@ -234,7 +333,7 @@ export class BabyScene extends Phaser.Scene {
     const mouth = this.add.graphics();
     mouth.lineStyle(Math.max(4, s * 0.07), COLORS.ink, 1);
     mouth.beginPath();
-    mouth.arc(0, s * 0.15, s * 0.28, Phaser.Math.DegToRad(20), Phaser.Math.DegToRad(160), false);
+    mouth.arc(0, s * 0.15 + dy, s * 0.28, Phaser.Math.DegToRad(20), Phaser.Math.DegToRad(160), false);
     mouth.strokePath();
     parts.push(mouth);
     return parts;
@@ -257,20 +356,32 @@ export class BabyScene extends Phaser.Scene {
     });
   }
 
-  // Un animalito se asoma por el lado de la flecha y se vuelve a esconder.
+  // Un animalito se asoma por el lado de la flecha, hace su sonido (con su letrero) y se vuelve a esconder.
   animal(direction) {
     const { width, height } = this.scale;
     const along = Phaser.Math.FloatBetween(0.25, 0.75);
     const path = {
-      left: { from: [-90, height * along], to: [170, height * along] },
-      right: { from: [width + 90, height * along], to: [width - 170, height * along] },
-      up: { from: [width * along, -90], to: [width * along, 160] },
-      down: { from: [width * along, height + 90], to: [width * along, height - 190] },
+      left: { from: [-120, height * along], to: [190, height * along] },
+      right: { from: [width + 120, height * along], to: [width - 190, height * along] },
+      up: { from: [width * along, -120], to: [width * along, 230] },
+      down: { from: [width * along, height + 120], to: [width * along, height - 210] },
     }[direction];
-    const animal = this.add
-      .text(path.from[0], path.from[1], Phaser.Utils.Array.GetRandom(ANIMALS), textStyle(120))
+    // Que no salga el mismo dos veces seguidas.
+    const key = Phaser.Utils.Array.GetRandom(ANIMAL_KEYS.filter((other) => other !== this.lastAnimal));
+    this.lastAnimal = key;
+    const info = ANIMALS[key];
+    const texture = animalTexture(this, key);
+    const SIZE = 210;
+    const body = texture
+      ? this.add.image(0, 0, texture).setScale(SIZE / Math.max(this.textures.get(texture).getSourceImage().height, 1))
+      : this.add.text(0, 0, info.emoji, textStyle(130)).setOrigin(0.5);
+    // El letrero va arriba del animalito; si se asoma por arriba, abajo (para no tapar la canción).
+    const bubble = this.add
+      .text(0, (direction === 'up' ? 1 : -1) * SIZE * 0.62, info.sound, textStyle(38, TEXT.ink, { fontStyle: 'bold', backgroundColor: '#ffffff', padding: { x: 14, y: 8 } }))
       .setOrigin(0.5)
-      .setDepth(DEPTH.animal);
+      .setScale(0);
+    const animal = this.add.container(path.from[0], path.from[1], [body, bubble]).setDepth(DEPTH.animal);
+    animal.setData('animal', key);
     sfx.boing();
     this.tweens.add({
       targets: animal,
@@ -278,14 +389,115 @@ export class BabyScene extends Phaser.Scene {
       y: path.to[1],
       duration: 450,
       ease: 'Back.easeOut',
-      hold: 900,
-      yoyo: true,
-      onComplete: () => animal.destroy(),
+      onComplete: () => {
+        // ¡Su sonido! Con la boca abierta, brinquitos y su letrero.
+        info.cry();
+        const singing = animalTexture(this, key, true);
+        if (singing && body.setTexture) body.setTexture(singing);
+        this.tweens.add({ targets: bubble, scale: 1, duration: 220, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: body, scaleY: body.scaleY * 1.08, scaleX: body.scaleX * 0.95, duration: 150, yoyo: true, repeat: 3 });
+        if (this.time.now - (this.lastSpokenAt ?? -Infinity) > VOICE_EVERY_MS) {
+          this.lastSpokenAt = this.time.now;
+          say(`¡${info.name}!`);
+        }
+        this.time.delayedCall(ANIMAL_SING_MS, () => {
+          if (texture && body.setTexture) body.setTexture(texture);
+          this.tweens.add({ targets: animal, x: path.from[0], y: path.from[1], duration: 400, ease: 'Back.easeIn', onComplete: () => animal.destroy() });
+        });
+      },
     });
+  }
+
+  // ---------- Burbujas ----------
+  updateBubbles(dt) {
+    const { width, height } = this.scale;
+    this.bubbleMs += dt;
+    if (this.bubbleMs >= BUBBLE_EVERY_MS && this.bubbles.length < MAX_BUBBLES) {
+      this.bubbleMs = 0;
+      this.addBubble(Phaser.Math.Between(80, width - 80), height + 60);
+    }
+    for (const bubble of [...this.bubbles]) {
+      const { speed, wobble, phase } = bubble.getData('drift');
+      bubble.y -= (speed * dt) / 1000;
+      bubble.x += Math.sin(this.time.now / 600 + phase) * wobble * (dt / 1000);
+      if (bubble.y < -80) this.removeBubble(bubble);
+    }
+    // La bolita amiga revienta las que toca.
+    for (const { blob } of this.friends.values()) {
+      for (const bubble of [...this.bubbles]) {
+        if (Phaser.Math.Distance.Between(blob.x, blob.y, bubble.x, bubble.y) < blob.radius + bubble.getData('r')) this.popBubble(bubble);
+      }
+    }
+  }
+
+  addBubble(x, y) {
+    const r = Phaser.Math.Between(28, 58);
+    const tint = Phaser.Utils.Array.GetRandom(PASTEL);
+    const bubble = this.add
+      .container(x, y, [
+        this.add.circle(0, 0, r, tint, 0.35).setStrokeStyle(4, 0xffffff, 0.9),
+        this.add.ellipse(-r * 0.38, -r * 0.4, r * 0.5, r * 0.3, 0xffffff, 0.75).setAngle(-35),
+        this.add.circle(r * 0.35, r * 0.4, r * 0.08, 0xffffff, 0.6),
+      ])
+      .setDepth(DEPTH.bubble);
+    bubble.setData({ r, tint, drift: { speed: Phaser.Math.Between(45, 95), wobble: Phaser.Math.Between(20, 50), phase: Math.random() * 6 } });
+    this.bubbles.push(bubble);
+    return bubble;
+  }
+
+  removeBubble(bubble) {
+    this.bubbles = this.bubbles.filter((other) => other !== bubble);
+    bubble.destroy();
+  }
+
+  popBubble(bubble) {
+    const r = bubble.getData('r');
+    const tint = bubble.getData('tint');
+    sfx.pop();
+    for (let i = 0; i < 8; i += 1) {
+      const angle = (i / 8) * Math.PI * 2;
+      const drop = this.add.circle(bubble.x + Math.cos(angle) * r, bubble.y + Math.sin(angle) * r, 6, i % 2 ? 0xffffff : tint).setDepth(DEPTH.firework);
+      this.tweens.add({
+        targets: drop,
+        x: drop.x + Math.cos(angle) * 40,
+        y: drop.y + Math.sin(angle) * 40,
+        alpha: 0,
+        duration: 380,
+        onComplete: () => drop.destroy(),
+      });
+    }
+    this.popped += 1;
+    this.removeBubble(bubble);
+  }
+
+  // Revienta las burbujas cerca de un punto (`reach` además de su tamaño); dice cuántas reventó.
+  popBubblesAt({ x, y }, reach) {
+    const hit = this.bubbles.filter((bubble) => Phaser.Math.Distance.Between(x, y, bubble.x, bubble.y) <= bubble.getData('r') + reach);
+    for (const bubble of hit) this.popBubble(bubble);
+    return hit.length;
+  }
+
+  // Chispitas de colores (al acabar una canción).
+  sparkles({ x, y }) {
+    for (let i = 0; i < 16; i += 1) {
+      const angle = (i / 16) * Math.PI * 2;
+      const spark = this.add.star(x, y, 5, 6, 13, RAINBOW[i % RAINBOW.length]).setDepth(DEPTH.firework);
+      this.tweens.add({
+        targets: spark,
+        x: x + Math.cos(angle) * 160,
+        y: y + Math.sin(angle) * 160,
+        angle: 180,
+        alpha: 0,
+        duration: 900,
+        ease: 'Cubic.easeOut',
+        onComplete: () => spark.destroy(),
+      });
+    }
   }
 
   firework({ x, y }) {
     sfx.sparkle();
+    this.popBubblesAt({ x, y }, 160);
     const count = 24;
     for (let i = 0; i < count; i += 1) {
       const angle = (i / count) * Math.PI * 2;

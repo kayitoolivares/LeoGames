@@ -128,6 +128,14 @@ const GAMES = {
     poderes: { kind: 'cutout', max: 128, names: ['balon-gigante', 'porteria-chica', 'iman', 'hielo', 'tenis'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-futbol'] },
   },
+  // Modo Bebé: los animalitos que se asoman (normal y haciendo su sonido).
+  baby: {
+    animales: {
+      kind: 'cutout',
+      max: 256,
+      names: ['perro', 'gato', 'vaca', 'cerdito', 'pollito', 'pato', 'rana', 'oveja', 'caballo', 'leon', 'elefante', 'mono'].flatMap((animal) => [animal, `${animal}-canta`]),
+    },
+  },
   duelo: {
     fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono', 'playa', 'nieve', 'espacio', 'cueva', 'guarida', 'fabrica'] },
     efectos: { kind: 'cutout', max: 256, names: ['pow', 'zas', 'chispa', 'polvo', 'onda', 'mareo'] },

@@ -386,6 +386,13 @@ Abre http://localhost:5173 en Edge o Chrome.
   aplasta, 5 estrella, 6 rueda como dado, 7 arcoíris, 8 ocho brazos, 9 golpazo y 10 despega como cohete.
   Su súper forma es **Octobloque** (el 8 superhéroe, con antifaz, capa y ocho brazos). Contar del 1 al 10 da
   la calcomanía "Hasta el 10".
+- **Modo Bebé**: cualquier botón hace algo bonito y no se gana ni se pierde. A B X Y sacan figuras con carita
+  (círculo, estrella, cuadrado, flor, corazón y triángulo) con su nombre y su color ("Estrella roja"), y cada botón
+  toca la nota que sigue de una **canción** (Estrellita, Martinillo, Witsi witsi araña, El viejo MacDonald, Cumpleaños
+  feliz y una canción de cuna): machacando botones el bebé la toca, y al terminarla se festeja y sigue otra. Las
+  flechas asoman un **animalito que hace su sonido** (perro, gato, vaca, cerdito, pollito, pato, rana, oveja, caballo,
+  león, elefante y changuito, dibujados por Gemini y con sonidos hechos con osciladores), el stick mueve a su bolita
+  amiga que revienta las **burbujas** que suben (también con el clic), y LB RB LT RT echan fuegos artificiales.
 - **Halcón de Acero**: abre https://hda.grupomegarey.mx (es otro proyecto; para volver, B en modo navegador).
 - **Cómo jugar**: qué tecla es cada botón en los dos teclados y qué hace cada botón en cada juego (una página
   por juego, ◀ ▶ para cambiar). Con **Y** abre la **prueba de controles**, que muestra lo que el navegador ve

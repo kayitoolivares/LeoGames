@@ -52,7 +52,7 @@ function tone({ freq, to = freq, ms = 120, type = 'square', volume = 0.3, delay 
 }
 
 // Ruido filtrado: golpes, explosiones, escudo que se rompe.
-function noise({ ms = 200, volume = 0.4, filter = 1200, delay = 0 }) {
+export function noise({ ms = 200, volume = 0.4, filter = 1200, delay = 0 }) {
   if (!audioReady()) return;
   if (!noiseBuffer) {
     noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -73,6 +73,53 @@ function noise({ ms = 200, volume = 0.4, filter = 1200, delay = 0 }) {
   source.connect(lowpass).connect(gain).connect(master);
   source.start(start);
   source.stop(end + 0.02);
+}
+
+// Una voz que sigue una curva de tonos (`points`: [ms, frecuencia], ...), con vibrato (el tono tiembla), trémolo (el
+// volumen tiembla) y filtro opcionales: con esto se hacen los sonidos de los animalitos del Modo Bebé.
+//   vibrato: { rate, depth } (Hz)   tremolo: { rate, depth } (0 a 1)   filter: { type, freq, q }
+export function voice({ points, type = 'sawtooth', volume = 0.2, delay = 0, vibrato = null, tremolo = null, filter = null }) {
+  if (!audioReady()) return;
+  const start = ctx.currentTime + delay / 1000;
+  const end = start + points[points.length - 1][0] / 1000;
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  osc.frequency.setValueAtTime(points[0][1], start);
+  for (const [ms, freq] of points.slice(1)) osc.frequency.linearRampToValueAtTime(freq, start + ms / 1000);
+  const lfos = [];
+  const lfo = ({ rate, depth }, target) => {
+    const wobble = ctx.createOscillator();
+    const amount = ctx.createGain();
+    wobble.frequency.value = rate;
+    amount.gain.value = depth;
+    wobble.connect(amount).connect(target);
+    lfos.push(wobble);
+  };
+  if (vibrato) lfo(vibrato, osc.frequency);
+  let node = osc;
+  if (filter) {
+    const biquad = ctx.createBiquadFilter();
+    biquad.type = filter.type ?? 'lowpass';
+    biquad.frequency.value = filter.freq;
+    biquad.Q.value = filter.q ?? 1;
+    node = node.connect(biquad);
+  }
+  if (tremolo) {
+    const am = ctx.createGain();
+    am.gain.value = 1 - tremolo.depth / 2;
+    lfo({ rate: tremolo.rate, depth: tremolo.depth / 2 }, am.gain);
+    node = node.connect(am);
+  }
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.linearRampToValueAtTime(volume, start + 0.02);
+  gain.gain.setValueAtTime(volume, Math.max(start + 0.02, end - 0.08));
+  gain.gain.linearRampToValueAtTime(0.0001, end);
+  node.connect(gain).connect(master);
+  for (const source of [osc, ...lfos]) {
+    source.start(start);
+    source.stop(end + 0.02);
+  }
 }
 
 function melody(notes, { ms = 120, gap = 80, type = 'square', volume = 0.12 } = {}) {
@@ -132,6 +179,16 @@ export const sfx = {
     tone({ freq: freq * 2, ms: 260, type: 'sine', volume: 0.06 });
   },
   boing: () => tone({ freq: 200, to: 620, ms: 240, type: 'sine', volume: 0.22 }),
+  // Una nota de canción (Modo Bebé: cada botón toca la que sigue), con su frecuencia.
+  songNote: (freq) => {
+    tone({ freq, ms: 520, type: 'triangle', volume: 0.26 });
+    tone({ freq: freq * 2, ms: 260, type: 'sine', volume: 0.06 });
+  },
+  // Se revienta una burbuja.
+  pop: () => {
+    tone({ freq: 420 + Math.random() * 200, to: 1300, ms: 70, type: 'sine', volume: 0.2 });
+    noise({ ms: 45, volume: 0.08, filter: 5000 });
+  },
   // Karts locos: moneda (dos notitas agudas), turbo (flechas del piso, mini turbo del derrape).
   coin: () => melody([988, 1319], { ms: 90, gap: 60, type: 'square', volume: 0.06 }),
   boost: () => {

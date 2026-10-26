@@ -2798,6 +2798,39 @@ test('carreras desde arriba: el carro avanza por la pista', { timeout: ms(90000)
   await p.context.close();
 });
 
+test('modo bebé: canción con los botones, animalitos con su sonido y burbujas', { timeout: ms(60000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Modo Bebé');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Baby'), null, { timeout: ms(8000) });
+  const baby = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Baby')), code);
+  // Cada botón de color toca la nota que sigue de la canción y saca una figura con su nombre.
+  for (const button of [BUTTON.A, BUTTON.B, BUTTON.X]) await p.tap(0, button);
+  assert.equal(await baby('return s.songStep'), 3);
+  assert.ok(await baby('return s.shapes.length >= 3'), 'no salieron las figuras');
+  // Al acabar la canción se festeja y sigue la otra.
+  await baby('s.songStep = 41;');
+  await p.tap(0, BUTTON.Y);
+  await p.until(() => window.leogames.scene.getScene('Baby').songIndex === 1, ms(6000), 'pasar a la siguiente canción');
+  // La flecha: se asoma un animalito (con su dibujo, si ya hay) y hace su sonido.
+  await p.tap(0, BUTTON.LEFT);
+  await p.wait(ms(700));
+  const animal = await baby("const a = s.children.list.find((o) => o.getData && o.getData('animal')); return a ? a.getData('animal') : null");
+  assert.ok(animal, 'no se asomó ningún animalito');
+  // Las burbujas: la bolita amiga las revienta al tocarlas, y el clic también.
+  await baby('const f = [...s.friends.values()][0].blob; s.addBubble(f.x, f.y);');
+  await p.until(() => window.leogames.scene.getScene('Baby').popped >= 1, ms(3000), 'reventar la burbuja con la bolita');
+  await baby('s.addBubble(640, 200);');
+  await p.page.mouse.click(...(await p.page.evaluate(() => {
+    const c = document.querySelector('canvas').getBoundingClientRect();
+    return [c.left + (640 / 1280) * c.width, c.top + (200 / 720) * c.height];
+  })));
+  await p.until(() => window.leogames.scene.getScene('Baby').popped >= 2, ms(3000), 'reventar la burbuja con el clic');
+  await p.holdToMenu(0, EXIT, 'salir del Modo Bebé');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('celular: con la pantalla táctil se une y se mueve por el menú', { timeout: ms(60000) }, async () => {
   const p = await openPage(game, { touch: true });
   const cdp = await p.context.newCDPSession(p.page);
