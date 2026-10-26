@@ -39,7 +39,7 @@ export const STICKERS = [
   { id: 'plat-capa', emoji: '🪶', name: 'A volar', hint: 'Agarra la pluma y planea con la capa en Súper Bolitas' },
   { id: 'plat-hielo', emoji: '🧊', name: 'Congelado', hint: 'Congela a un enemigo con la flor de hielo en Súper Bolitas' },
   { id: 'plat-gigante', emoji: '🍄', name: 'Gigantote', hint: 'Hazte gigante con el hongo gigante en Súper Bolitas' },
-  { id: 'plat-casita', emoji: '🎁', name: 'Regalo sorpresa', hint: 'Abre un regalo en una casita de hongo de Súper Bolitas' },
+  { id: 'plat-casita', emoji: '🎁', name: 'Regalo sorpresa', hint: 'Abre un regalo en la casita de regalos de Súper Bolitas' },
   { id: 'plat-mapa', emoji: '⚔️', name: 'Camino libre', hint: 'Gana una batalla contra un enemigo del mapa en Súper Bolitas' },
   { id: 'plat-batalla', emoji: '🪙', name: 'Rey de las monedas', hint: 'Juega una batalla de monedas en Súper Bolitas' },
   { id: 'plat-jefes', emoji: '👑', name: 'Todos los jefes', hint: 'Gana los jefes en serie en Súper Bolitas' },

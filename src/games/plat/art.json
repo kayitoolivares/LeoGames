@@ -1,28 +1,104 @@
 {
   "enemigos": [
     "aplastador",
+    "bola-fuego-ataque",
+    "bola-fuego-burla",
+    "bola-fuego-dolor",
+    "bola-fuego-paso",
     "bola-fuego",
+    "bola-nieve-ataque",
+    "bola-nieve-burla",
+    "bola-nieve-dolor",
+    "bola-nieve-paso",
     "bola-nieve",
+    "caparazon-ataque",
+    "caparazon-burla",
+    "caparazon-dolor",
+    "caparazon-paso",
     "caparazon",
+    "carambano-ataque",
+    "carambano-burla",
+    "carambano-dolor",
+    "carambano-paso",
     "carambano",
+    "chicle-ataque",
+    "chicle-burla",
+    "chicle-dolor",
+    "chicle-paso",
     "chicle",
+    "dona-ataque",
+    "dona-burla",
+    "dona-dolor",
+    "dona-paso",
     "dona",
+    "erizo-ataque",
+    "erizo-burla",
+    "erizo-dolor",
+    "erizo-paso",
     "erizo",
+    "esqueleto-ataque",
+    "esqueleto-burla",
+    "esqueleto-dolor",
+    "esqueleto-paso",
     "esqueleto",
     "fantasma-boca",
     "fantasma",
+    "galleta-ataque",
+    "galleta-burla",
+    "galleta-dolor",
+    "galleta-paso",
     "galleta",
     "hongo-malo",
+    "medusa-ataque",
+    "medusa-burla",
+    "medusa-dolor",
+    "medusa-paso",
     "medusa",
+    "murcielago-ataque",
+    "murcielago-burla",
+    "murcielago-dolor",
+    "murcielago-paso",
     "murcielago",
+    "nube-mala-ataque",
+    "nube-mala-burla",
+    "nube-mala-dolor",
+    "nube-mala-paso",
     "nube-mala",
+    "pajaro-ataque",
+    "pajaro-burla",
+    "pajaro-dolor",
+    "pajaro-paso",
     "pajaro",
+    "paleta-ataque",
+    "paleta-burla",
+    "paleta-dolor",
+    "paleta-paso",
     "paleta",
+    "pez-ataque",
+    "pez-burla",
+    "pez-dolor",
+    "pez-paso",
     "pez",
+    "pinguino-ataque",
+    "pinguino-burla",
+    "pinguino-dolor",
+    "pinguino-panza-ataque",
+    "pinguino-panza-burla",
+    "pinguino-panza-dolor",
+    "pinguino-panza-paso",
     "pinguino-panza",
+    "pinguino-paso",
     "pinguino",
     "planta",
+    "tortuga-ataque",
+    "tortuga-burla",
+    "tortuga-dolor",
+    "tortuga-paso",
     "tortuga",
+    "vela-ataque",
+    "vela-burla",
+    "vela-dolor",
+    "vela-paso",
     "vela"
   ],
   "jefes": [
@@ -35,23 +111,7 @@
     "rey-cangrejo-mareado",
     "rey-cangrejo-paso",
     "rey-cangrejo",
-    "rey-dragon-ataque",
-    "rey-dragon-burla",
-    "rey-dragon-cargando",
-    "rey-dragon-derrotado",
-    "rey-dragon-dolor",
-    "rey-dragon-furioso",
-    "rey-dragon-mareado",
-    "rey-dragon-paso",
     "rey-dragon",
-    "rey-hongo-ataque",
-    "rey-hongo-burla",
-    "rey-hongo-cargando",
-    "rey-hongo-derrotado",
-    "rey-hongo-dolor",
-    "rey-hongo-furioso",
-    "rey-hongo-mareado",
-    "rey-hongo-paso",
     "rey-hongo",
     "rey-nube-ataque",
     "rey-nube-burla",
@@ -104,28 +164,128 @@
   ],
   "metrics": {
     "aplastador": [
-      23431,
-      0.503,
-      156
+      18170,
+      0.507,
+      160
+    ],
+    "bola-fuego-ataque": [
+      14350,
+      0.553,
+      130
+    ],
+    "bola-fuego-burla": [
+      14303,
+      0.541,
+      133
+    ],
+    "bola-fuego-dolor": [
+      13911,
+      0.528,
+      116
+    ],
+    "bola-fuego-paso": [
+      13791,
+      0.541,
+      128
     ],
     "bola-fuego": [
       14134,
       0.541,
       132
     ],
+    "bola-nieve-ataque": [
+      18769,
+      0.497,
+      150
+    ],
+    "bola-nieve-burla": [
+      20085,
+      0.503,
+      160
+    ],
+    "bola-nieve-dolor": [
+      19312,
+      0.497,
+      154
+    ],
+    "bola-nieve-paso": [
+      19842,
+      0.497,
+      158
+    ],
     "bola-nieve": [
       19744,
       0.497,
       157
     ],
-    "caparazon": [
-      14137,
+    "caparazon-ataque": [
+      16072,
+      0.491,
+      131
+    ],
+    "caparazon-burla": [
+      16018,
       0.497,
-      122
+      136
+    ],
+    "caparazon-dolor": [
+      16586,
+      0.503,
+      137
+    ],
+    "caparazon-paso": [
+      15866,
+      0.497,
+      134
+    ],
+    "caparazon": [
+      13787,
+      0.503,
+      117
+    ],
+    "carambano-ataque": [
+      8699,
+      0.574,
+      160
+    ],
+    "carambano-burla": [
+      8165,
+      0.52,
+      160
+    ],
+    "carambano-dolor": [
+      8967,
+      0.392,
+      160
+    ],
+    "carambano-paso": [
+      9816,
+      0.511,
+      160
     ],
     "carambano": [
       9593,
       0.511,
+      160
+    ],
+    "chicle-ataque": [
+      20235,
+      0.478,
+      160
+    ],
+    "chicle-burla": [
+      19245,
+      0.5,
+      160
+    ],
+    "chicle-dolor": [
+      17306,
+      0.478,
+      146
+    ],
+    "chicle-paso": [
+      19362,
+      0.5,
       160
     ],
     "chicle": [
@@ -133,15 +293,75 @@
       0.5,
       160
     ],
+    "dona-ataque": [
+      9801,
+      0.528,
+      100
+    ],
+    "dona-burla": [
+      9100,
+      0.534,
+      98
+    ],
+    "dona-dolor": [
+      11233,
+      0.497,
+      118
+    ],
+    "dona-paso": [
+      11872,
+      0.484,
+      122
+    ],
     "dona": [
       11589,
       0.484,
       119
     ],
+    "erizo-ataque": [
+      14706,
+      0.478,
+      122
+    ],
+    "erizo-burla": [
+      14739,
+      0.472,
+      128
+    ],
+    "erizo-dolor": [
+      14666,
+      0.459,
+      130
+    ],
+    "erizo-paso": [
+      15250,
+      0.478,
+      130
+    ],
     "erizo": [
       15597,
       0.478,
       133
+    ],
+    "esqueleto-ataque": [
+      12687,
+      0.541,
+      156
+    ],
+    "esqueleto-burla": [
+      10797,
+      0.609,
+      160
+    ],
+    "esqueleto-dolor": [
+      11227,
+      0.522,
+      137
+    ],
+    "esqueleto-paso": [
+      13048,
+      0.488,
+      160
     ],
     "esqueleto": [
       12679,
@@ -149,13 +369,33 @@
       160
     ],
     "fantasma-boca": [
-      15520,
-      0.509,
-      146
+      14032,
+      0.444,
+      160
     ],
     "fantasma": [
-      17058,
-      0.524,
+      13792,
+      0.55,
+      160
+    ],
+    "galleta-ataque": [
+      15749,
+      0.458,
+      160
+    ],
+    "galleta-burla": [
+      13815,
+      0.442,
+      160
+    ],
+    "galleta-dolor": [
+      15242,
+      0.486,
+      160
+    ],
+    "galleta-paso": [
+      15666,
+      0.487,
       160
     ],
     "galleta": [
@@ -164,44 +404,204 @@
       160
     ],
     "hongo-malo": [
-      17808,
-      0.507,
+      11968,
+      0.508,
       160
+    ],
+    "medusa-ataque": [
+      10271,
+      0.466,
+      89
+    ],
+    "medusa-burla": [
+      9918,
+      0.553,
+      104
+    ],
+    "medusa-dolor": [
+      10503,
+      0.559,
+      96
+    ],
+    "medusa-paso": [
+      9961,
+      0.553,
+      105
     ],
     "medusa": [
       9893,
       0.553,
       104
     ],
+    "murcielago-ataque": [
+      8509,
+      0.503,
+      97
+    ],
+    "murcielago-burla": [
+      8095,
+      0.503,
+      91
+    ],
+    "murcielago-dolor": [
+      7580,
+      0.553,
+      84
+    ],
+    "murcielago-paso": [
+      7363,
+      0.509,
+      82
+    ],
     "murcielago": [
       7316,
       0.509,
       82
+    ],
+    "nube-mala-ataque": [
+      13391,
+      0.491,
+      155
+    ],
+    "nube-mala-burla": [
+      12741,
+      0.484,
+      147
+    ],
+    "nube-mala-dolor": [
+      13646,
+      0.484,
+      145
+    ],
+    "nube-mala-paso": [
+      13151,
+      0.484,
+      155
     ],
     "nube-mala": [
       13361,
       0.484,
       157
     ],
+    "pajaro-ataque": [
+      15218,
+      0.472,
+      136
+    ],
+    "pajaro-burla": [
+      12411,
+      0.522,
+      117
+    ],
+    "pajaro-dolor": [
+      17134,
+      0.522,
+      144
+    ],
+    "pajaro-paso": [
+      12593,
+      0.453,
+      126
+    ],
     "pajaro": [
       11851,
       0.447,
       115
+    ],
+    "paleta-ataque": [
+      13019,
+      0.409,
+      134
+    ],
+    "paleta-burla": [
+      14459,
+      0.504,
+      160
+    ],
+    "paleta-dolor": [
+      12005,
+      0.422,
+      122
+    ],
+    "paleta-paso": [
+      15441,
+      0.5,
+      160
     ],
     "paleta": [
       11523,
       0.446,
       160
     ],
+    "pez-ataque": [
+      13733,
+      0.509,
+      124
+    ],
+    "pez-burla": [
+      14603,
+      0.534,
+      129
+    ],
+    "pez-dolor": [
+      13644,
+      0.509,
+      123
+    ],
+    "pez-paso": [
+      13910,
+      0.509,
+      126
+    ],
     "pez": [
       14132,
       0.509,
       128
     ],
+    "pinguino-ataque": [
+      14310,
+      0.516,
+      126
+    ],
+    "pinguino-burla": [
+      16270,
+      0.566,
+      159
+    ],
+    "pinguino-dolor": [
+      17625,
+      0.522,
+      160
+    ],
+    "pinguino-panza-ataque": [
+      14446,
+      0.547,
+      125
+    ],
+    "pinguino-panza-burla": [
+      16893,
+      0.522,
+      140
+    ],
+    "pinguino-panza-dolor": [
+      13339,
+      0.541,
+      123
+    ],
+    "pinguino-panza-paso": [
+      18709,
+      0.531,
+      160
+    ],
     "pinguino-panza": [
       14704,
       0.547,
       126
+    ],
+    "pinguino-paso": [
+      15661,
+      0.528,
+      160
     ],
     "pinguino": [
       15672,
@@ -209,13 +609,53 @@
       160
     ],
     "planta": [
-      12206,
-      0.513,
+      13047,
+      0.538,
+      160
+    ],
+    "tortuga-ataque": [
+      12899,
+      0.491,
+      117
+    ],
+    "tortuga-burla": [
+      13125,
+      0.509,
+      128
+    ],
+    "tortuga-dolor": [
+      13070,
+      0.503,
+      126
+    ],
+    "tortuga-paso": [
+      15852,
+      0.52,
       160
     ],
     "tortuga": [
       15762,
       0.523,
+      160
+    ],
+    "vela-ataque": [
+      16258,
+      0.519,
+      160
+    ],
+    "vela-burla": [
+      11474,
+      0.495,
+      160
+    ],
+    "vela-dolor": [
+      14213,
+      0.539,
+      160
+    ],
+    "vela-paso": [
+      12311,
+      0.571,
       160
     ],
     "vela": [
@@ -268,94 +708,14 @@
       0.439,
       178
     ],
-    "rey-dragon-ataque": [
-      58073,
-      0.47,
-      268
-    ],
-    "rey-dragon-burla": [
-      63411,
-      0.461,
-      293
-    ],
-    "rey-dragon-cargando": [
-      62533,
-      0.461,
-      286
-    ],
-    "rey-dragon-derrotado": [
-      36054,
-      0.489,
-      173
-    ],
-    "rey-dragon-dolor": [
-      64095,
-      0.464,
-      294
-    ],
-    "rey-dragon-furioso": [
-      66888,
-      0.452,
-      293
-    ],
-    "rey-dragon-mareado": [
-      59530,
-      0.461,
-      272
-    ],
-    "rey-dragon-paso": [
-      64208,
-      0.461,
-      293
-    ],
     "rey-dragon": [
-      61899,
-      0.461,
-      285
-    ],
-    "rey-hongo-ataque": [
-      63204,
-      0.498,
-      320
-    ],
-    "rey-hongo-burla": [
-      60742,
-      0.495,
-      320
-    ],
-    "rey-hongo-cargando": [
-      61064,
-      0.548,
-      277
-    ],
-    "rey-hongo-derrotado": [
-      28512,
-      0.527,
-      127
-    ],
-    "rey-hongo-dolor": [
-      65451,
-      0.492,
-      320
-    ],
-    "rey-hongo-furioso": [
-      62111,
-      0.503,
-      320
-    ],
-    "rey-hongo-mareado": [
-      54349,
-      0.494,
-      320
-    ],
-    "rey-hongo-paso": [
-      60298,
-      0.497,
-      320
+      40881,
+      0.38,
+      235
     ],
     "rey-hongo": [
-      63448,
-      0.502,
+      50818,
+      0.464,
       320
     ],
     "rey-nube-ataque": [

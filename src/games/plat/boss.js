@@ -12,10 +12,10 @@ import { T } from './tiles.js';
 //   charger: se lanza corriendo de lado a lado; al chocar con la pared queda mareado.
 //   shooter: camina, salta y escupe bolas (de fuego, nieve o tinta), unas arriba y otras abajo.
 export const BOSSES = {
-  reyHongo: { name: 'el Rey Hongo', art: 'plat:rey-hongo', size: 150, w: 110, h: 130, speed: 90, behavior: 'jumper', quake: true, minion: 'g', color: 0x9c6b3c },
+  reyHongo: { name: 'el Rey Hongo', art: 'plat:rey-hongo', size: 150, w: 110, h: 130, speed: 90, behavior: 'jumper', quake: true, minion: 'g', color: 0x2ab7b0 },
   reyNube: { name: 'el Rey Nube', art: 'plat:rey-nube', size: 130, w: 150, h: 100, speed: 140, behavior: 'flyer', bolts: 0xffe14d, color: 0x9a9aae },
   reyCangrejo: { name: 'el Rey Cangrejo', art: 'plat:rey-cangrejo', size: 120, w: 160, h: 96, speed: 120, behavior: 'charger', color: 0xff5a5f },
-  reyDragon: { name: 'el Rey Dragón', art: 'plat:rey-dragon', size: 160, w: 120, h: 140, speed: 100, behavior: 'shooter', shot: 'fire', facesLeft: true, color: 0x4cd97b },
+  reyDragon: { name: 'el Rey Dragón', art: 'plat:rey-dragon', size: 160, w: 120, h: 140, speed: 100, behavior: 'shooter', shot: 'fire', facesLeft: true, color: 0x8e5cf0 },
   reyYeti: { name: 'el Rey Yeti', art: 'plat:gran-yeti', size: 170, w: 120, h: 150, speed: 95, behavior: 'shooter', shot: 'snow', quake: true, color: 0xffffff },
   reyPastel: { name: 'el Rey Pastel', art: 'plat:rey-pastel', size: 170, w: 130, h: 150, speed: 85, behavior: 'jumper', minion: 'W', color: 0xff9ec7 },
   reyCalabaza: { name: 'el Rey Calabaza', art: 'plat:rey-calabaza', size: 150, w: 140, h: 120, speed: 130, behavior: 'flyer', bolts: 0xb07cff, color: 0xff9a3c },

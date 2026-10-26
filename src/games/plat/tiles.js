@@ -1,10 +1,11 @@
 // Los cuadritos de los niveles de Súper Bolitas (cada uno de T x T pixeles). Los niveles se escriben con letras (ver
 // levels.js) y aquí está qué es cada letra y cómo se dibuja (con canvas, en el estilo de cada mundo).
 //   #  piso (con pasto/arena/nube arriba si no hay nada encima)    X  bloque de piedra (escaleras, paredes)
-//   B  ladrillo (grande lo rompe)   b  ladrillo con monedas   ?  bloque sorpresa con moneda
+//   B  ladrillo (grande lo rompe)   b  ladrillo con monedas   ?  bloque sorpresa (una caja de regalo) con moneda
 //   M  bloque sorpresa con poder (hongo o flor)   S  ...con estrella   Y  ...con huevo de dinosaurio
 //   H  bloque escondido (no se ve hasta que le pegas desde abajo: trae una vida)   U  bloque ya usado
-//   =  plataforma que se atraviesa desde abajo   [ ]  boca de tubo   ( )  tubo   ^  picos   L  lava (o chocolate)
+//   =  plataforma que se atraviesa desde abajo   [ ]  boca de tubo   ( )  tubo (un tronco hueco)   ^  picos
+//   L  lava (o chocolate)
 //   $  bloque sorpresa con hongo mini   %  ...con hongo gigante
 //   s  piso de chicle (pegajoso: vas despacito y saltas poquito)   Z  cañón (dispara balas)
 //   !  bloque de colores: al pegarle cambia cuáles bloques están: r  rojos (con el bloque en rojo)  i  azules
@@ -125,7 +126,7 @@ export function themeTextures(scene, theme) {
     ctx.strokeStyle = INK;
     ctx.strokeRect(1.5, 1.5, T - 3, T - 3);
   });
-  keys.question = canvasTile(scene, k('question'), (ctx) => questionBlock(ctx, '#ffc93c', '#c98a12'));
+  keys.question = canvasTile(scene, k('question'), (ctx) => giftBlock(ctx));
   keys.used = canvasTile(scene, k('used'), (ctx) => {
     bevel(ctx, '#a07850', '#6e4f30');
     ctx.fillStyle = '#6e4f30';
@@ -237,52 +238,73 @@ function dirt(ctx, c) {
   }
 }
 
-function questionBlock(ctx, fill, dark) {
-  bevel(ctx, fill, dark, 'rgba(255,255,255,0.5)');
-  ctx.fillStyle = dark;
-  for (const [x, y] of [[7, 7], [T - 7, 7], [7, T - 7], [T - 7, T - 7]]) {
-    ctx.beginPath();
-    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.font = 'bold 34px "Segoe UI", Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineWidth = 5;
+// El bloque sorpresa: una caja de regalo morada con listón dorado y una estrellita en medio.
+function giftBlock(ctx) {
+  bevel(ctx, '#9b5de5', '#6a35b8', 'rgba(255,255,255,0.4)');
+  const band = 10;
+  ctx.fillStyle = '#ffd84d';
   ctx.strokeStyle = INK;
-  ctx.strokeText('?', T / 2, T / 2 + 2);
+  ctx.lineWidth = 2;
+  ctx.fillRect((T - band) / 2, 3, band, T - 6);
+  ctx.fillRect(3, (T - band) / 2, T - 6, band);
+  ctx.strokeRect((T - band) / 2, 3, band, T - 6);
+  ctx.strokeRect(3, (T - band) / 2, T - 6, band);
+  ctx.beginPath();
+  for (let i = 0; i < 10; i += 1) {
+    const r = i % 2 ? 4.5 : 10;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    ctx.lineTo(T / 2 + Math.cos(a) * r, T / 2 + 1 + Math.sin(a) * r);
+  }
+  ctx.closePath();
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('?', T / 2, T / 2 + 2);
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
 }
 
+// El tubo: un tronco hueco. Arriba (la boca) se ve el corte del tronco con sus anillos y el hueco oscuro; los dos
+// cuadritos de arriba dibujan cada uno su mitad.
 function pipe(ctx, left, top) {
   const x0 = left ? (top ? 0 : 5) : 0;
   const x1 = left ? T : top ? T : T - 5;
-  ctx.fillStyle = '#3fbf4a';
-  ctx.fillRect(x0, 0, x1 - x0, T);
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  if (left) ctx.fillRect(x0 + 8, 0, 8, T);
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
-  if (!left) ctx.fillRect(x1 - 14, 0, 10, T);
+  const lip = top ? 12 : 0;
+  ctx.fillStyle = '#8a5a33';
+  ctx.fillRect(x0, lip, x1 - x0, T - lip);
+  // Las rayas de la corteza.
+  ctx.strokeStyle = '#5e3a1e';
+  ctx.lineWidth = 2;
+  for (const x of left ? [x0 + 12, x0 + 27, x0 + 40] : [x1 - 40, x1 - 27, x1 - 12]) {
+    ctx.beginPath();
+    ctx.moveTo(x, lip + 2);
+    ctx.bezierCurveTo(x - 3, lip + 14, x + 3, T - 14, x, T);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  if (left) ctx.fillRect(x0 + 4, lip, 6, T - lip);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  if (!left) ctx.fillRect(x1 - 12, lip, 9, T - lip);
   ctx.strokeStyle = INK;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  if (left) {
-    ctx.moveTo(x0 + 1.5, 0);
-    ctx.lineTo(x0 + 1.5, T);
-  } else {
-    ctx.moveTo(x1 - 1.5, 0);
-    ctx.lineTo(x1 - 1.5, T);
-  }
+  const edge = left ? x0 + 1.5 : x1 - 1.5;
+  ctx.moveTo(edge, lip);
+  ctx.lineTo(edge, T);
   ctx.stroke();
-  if (top) {
+  if (!top) return;
+  // El corte del tronco: media elipse de cada lado (el centro está en la orilla entre los dos cuadritos).
+  const cx = left ? T : 0;
+  const ring = (rx, ry, fill) => {
     ctx.beginPath();
-    ctx.moveTo(0, 1.5);
-    ctx.lineTo(T, 1.5);
-    ctx.moveTo(0, T - 6);
-    ctx.lineTo(T, T - 6);
-    ctx.stroke();
-  }
+    ctx.ellipse(cx, lip, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  };
+  ring(T - 1.5, lip - 1.5, '#e2b77a');
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ring(T - 10, lip - 4, '#c98f52');
+  ring(T - 18, lip - 6, '#3a2414');
 }
 
 function semi(ctx, look) {

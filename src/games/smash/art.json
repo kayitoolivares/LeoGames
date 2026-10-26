@@ -538,13 +538,21 @@
       "salto"
     ],
     "gatito_super": [
+      "asustado",
+      "baile1",
+      "baile2",
+      "caer",
       "caminar1",
       "caminar2",
       "caminar3",
       "caminar4",
       "dolor",
+      "enojado",
+      "feliz",
       "golpe",
+      "mareado",
       "normal",
+      "parpadeo",
       "salto"
     ],
     "hada": [
@@ -3446,6 +3454,26 @@
       0.532,
       256
     ],
+    "gatito_super-asustado": [
+      39798,
+      0.592,
+      256
+    ],
+    "gatito_super-baile1": [
+      35346,
+      0.537,
+      236
+    ],
+    "gatito_super-baile2": [
+      37259,
+      0.463,
+      249
+    ],
+    "gatito_super-caer": [
+      34121,
+      0.541,
+      216
+    ],
     "gatito_super-caminar1": [
       40754,
       0.576,
@@ -3471,15 +3499,35 @@
       0.577,
       256
     ],
+    "gatito_super-enojado": [
+      38976,
+      0.576,
+      253
+    ],
+    "gatito_super-feliz": [
+      39086,
+      0.545,
+      256
+    ],
     "gatito_super-golpe": [
       31781,
       0.51,
       218
     ],
+    "gatito_super-mareado": [
+      33601,
+      0.447,
+      216
+    ],
     "gatito_super-normal": [
       38713,
       0.576,
       251
+    ],
+    "gatito_super-parpadeo": [
+      39360,
+      0.589,
+      256
     ],
     "gatito_super-salto": [
       35222,
@@ -5466,9 +5514,39 @@
       0.49,
       227
     ],
+    "dragonzote-bloqueo": [
+      83746,
+      0.561,
+      374
+    ],
+    "dragonzote-burla": [
+      83477,
+      0.41,
+      384
+    ],
+    "dragonzote-cargando": [
+      74109,
+      0.566,
+      312
+    ],
+    "dragonzote-derrotado": [
+      42445,
+      0.538,
+      193
+    ],
     "dragonzote-dolor": [
       81957,
       0.52,
+      384
+    ],
+    "dragonzote-furioso": [
+      86291,
+      0.569,
+      364
+    ],
+    "dragonzote-gana": [
+      89473,
+      0.515,
       384
     ],
     "dragonzote-golpe": [
@@ -5476,19 +5554,59 @@
       0.457,
       313
     ],
+    "dragonzote-mareado": [
+      81359,
+      0.564,
+      339
+    ],
     "dragonzote-normal": [
       81593,
       0.576,
       384
+    ],
+    "dragonzote-paso": [
+      79780,
+      0.53,
+      368
     ],
     "dragonzote-salto": [
       87288,
       0.525,
       381
     ],
+    "rey-bloqueo": [
+      85447,
+      0.557,
+      384
+    ],
+    "rey-burla": [
+      81344,
+      0.463,
+      384
+    ],
+    "rey-cargando": [
+      92507,
+      0.401,
+      384
+    ],
+    "rey-derrotado": [
+      51478,
+      0.507,
+      197
+    ],
     "rey-dolor": [
       91263,
       0.521,
+      384
+    ],
+    "rey-furioso": [
+      91583,
+      0.489,
+      384
+    ],
+    "rey-gana": [
+      95563,
+      0.471,
       384
     ],
     "rey-golpe": [
@@ -5496,30 +5614,80 @@
       0.462,
       345
     ],
+    "rey-mareado": [
+      88296,
+      0.461,
+      384
+    ],
     "rey-normal": [
       77927,
       0.497,
       384
+    ],
+    "rey-paso": [
+      83999,
+      0.48,
+      379
     ],
     "rey-salto": [
       64358,
       0.504,
       384
     ],
+    "robotote-bloqueo": [
+      85952,
+      0.495,
+      384
+    ],
+    "robotote-burla": [
+      80491,
+      0.467,
+      384
+    ],
+    "robotote-cargando": [
+      84056,
+      0.52,
+      351
+    ],
+    "robotote-derrotado": [
+      41241,
+      0.478,
+      180
+    ],
     "robotote-dolor": [
       87314,
       0.546,
       359
+    ],
+    "robotote-furioso": [
+      68174,
+      0.499,
+      309
+    ],
+    "robotote-gana": [
+      76997,
+      0.507,
+      369
     ],
     "robotote-golpe": [
       80215,
       0.444,
       357
     ],
+    "robotote-mareado": [
+      85439,
+      0.449,
+      347
+    ],
     "robotote-normal": [
       83941,
       0.499,
       384
+    ],
+    "robotote-paso": [
+      66167,
+      0.454,
+      327
     ],
     "robotote-salto": [
       69771,

@@ -103,7 +103,7 @@ const ITEM_NAMES = {
   egg: '¡Huevo sorpresa!',
   boomerang: '¡Bumerán!',
   fireflower: '¡Flor de fuego!',
-  capsule: '¡Cápsula sorpresa!',
+  capsule: '¡Caja sorpresa!',
   tornado: '¡Tornado!',
 };
 

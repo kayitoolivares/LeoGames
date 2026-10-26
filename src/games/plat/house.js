@@ -4,7 +4,7 @@ import { say } from '../../shared/voice.js';
 import { textStyle } from '../../ui/style.js';
 import { artImage } from './art.js';
 
-// La casita de hongo del mapa: tres regalos; se ven los premios, se tapan, se revuelven y se escoge uno (◀ ▶ y A).
+// La casita de regalos del mapa: tres regalos; se ven los premios, se tapan, se revuelven y se escoge uno (◀ ▶ y A).
 // El premio: un poder para empezar el siguiente nivel (todos), vidas o monedas.
 const PRIZES = [
   { kind: 'power', power: 'hongo', label: '¡Un hongo!', art: 'plat:objeto-hongo' },
@@ -25,7 +25,7 @@ export class House {
     this.root = scene.add.container(0, 0).setDepth(DEPTH).setScrollFactor(0);
     this.root.add(scene.add.rectangle(width / 2, height / 2, width, height, 0xffe9c4));
     this.root.add(scene.add.rectangle(width / 2, height - 90, width, 180, 0xc98a4a));
-    this.root.add(scene.add.text(width / 2, 70, '🍄 Casita de hongo', textStyle(48, '#e53935', { fontStyle: 'bold', stroke: '#ffffff', strokeThickness: 8 })).setOrigin(0.5));
+    this.root.add(scene.add.text(width / 2, 70, '🎁 Casita de regalos', textStyle(48, '#e53935', { fontStyle: 'bold', stroke: '#ffffff', strokeThickness: 8 })).setOrigin(0.5));
     this.hint = scene.add.text(width / 2, height - 40, 'Fíjate dónde está cada premio…', textStyle(24, '#1b1530', { fontStyle: 'bold' })).setOrigin(0.5);
     this.root.add(this.hint);
     this.prizes = Phaser.Utils.Array.Shuffle([...PRIZES]).slice(0, 3);
@@ -42,7 +42,7 @@ export class House {
     this.ms = 0;
     this.cursor = scene.add.text(SPOTS[1], 540, '▲', textStyle(48, '#e53935', { fontStyle: 'bold', stroke: '#ffffff', strokeThickness: 6 })).setOrigin(0.5).setVisible(false);
     this.root.add(this.cursor);
-    say('Casita de hongo. Fíjate dónde está cada premio');
+    say('Casita de regalos. Fíjate dónde está cada premio');
   }
 
   // Devuelve el premio cuando ya se escogió y se vio (o null mientras tanto).

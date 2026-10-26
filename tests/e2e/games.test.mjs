@@ -3212,7 +3212,7 @@ test('súper bolitas: capa, hielo, gigante, mini, dinosaurios de colores, botón
   await p.context.close();
 });
 
-test('súper bolitas: mapa por mundos, casita de hongo, enemigo del mapa, batalla de monedas, jefes en serie, vida extra y contrarreloj', { timeout: ms(150000) }, async () => {
+test('súper bolitas: mapa por mundos, casita de regalos, enemigo del mapa, batalla de monedas, jefes en serie, vida extra y contrarreloj', { timeout: ms(150000) }, async () => {
   const p = await openPage(game);
   const done = { done: true, big: [false, false, false], bestMs: 90000 };
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('brawlCoins', 25)));
@@ -3223,7 +3223,7 @@ test('súper bolitas: mapa por mundos, casita de hongo, enemigo del mapa, batall
   await p.until(() => window.leogames.scene.getScene('Plat').mapState.world === 0, ms(3000), 'cambiar al mundo 1');
   assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').mapState.enemy), 3);
 
-  // La casita de hongo: se revuelven los regalos y se escoge uno.
+  // La casita de regalos: se revuelven los regalos y se escoge uno.
   await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Plat').house?.phase === 'pick', ms(12000), 'que se revuelvan los regalos');

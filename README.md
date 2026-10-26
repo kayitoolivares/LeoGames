@@ -77,7 +77,7 @@ Abre http://localhost:5173 en Edge o Chrome.
   que se deslizan de panza, bolas de nieve, carámbanos que caen; Rey Yeti), **Dulcelandia** (chicle que pega, ríos de
   chocolate, galletas, donas, paletas y chicles que brincan; Rey Pastel) y la **Casa embrujada** (fantasmas tímidos
   que solo se acercan si no los ves, esqueletos que se desarman, velas, **puertas** a otros cuartos; Rey Calabaza).
-  En el mapa los jugadores caminan por el caminito (◀ ▶, LB/RB = otro mundo), hay una **casita de hongo** por mundo
+  En el mapa los jugadores caminan por el caminito (◀ ▶, LB/RB = otro mundo), hay una **casita de regalos** por mundo
   (tres regalos que se revuelven: un poder para empezar, vidas o monedas) y un **enemigo que camina por el mapa**:
   si lo alcanzan, ¡batalla! **Salidas secretas**: algunos niveles tienen una bandera azul escondida que abre un
   **nivel secreto** en el mapa. Con X en el mapa, los **modos**: **contrarreloj con fantasma** (el nivel escogido, tú
@@ -95,13 +95,17 @@ Abre http://localhost:5173 en Edge o Chrome.
   (montado saltas más y con X te comes a los enemigos; si te pegan, se asusta y se va); bloques escondidos con vidas;
   **3 monedas grandes** escondidas por nivel y **tubos secretos** a cuartos con monedas. Enemigos para pisar (hongos,
   tortugas que dejan caparazón para patear, murciélagos, pájaros, cangrejos), otros que no (erizos con picos, peces,
-  medusas, bolas de fuego de la lava, el bloque aplastador, la nube que tira erizos), resortes, plataformas que se
+  medusas, bolas de fuego de la lava, la pesa aplastadora, la nube que tira erizos), resortes, plataformas que se
   mueven y que se caen, lava y picos. Los jefes se pisan 3 veces (cada uno con su truco: el Rey Hongo hace temblar
   el piso, el Rey Nube lanza rayos, el Rey Cangrejo se lanza corriendo y el Rey Dragón escupe fuego). Si alguien
   cae y quedan compañeros, regresa en una **burbuja** que se revienta tocándola; vidas para todo el equipo (cada 50
   monedas, una más) y **banderín** a la mitad. **Modo peque** (Y en el mapa, cada quien): si se cae a un hoyo o a la
   lava, regresa rebotando a donde estaba, y el equipo tiene más vidas. Narrador, calcomanías y mejor tiempo por
   nivel. Los dibujos (enemigos, jefes, objetos y fondos) son de Gemini; los bloques y el piso se dibujan con código.
+  **Dibujos 100% nuestros**: nada copiado de otros juegos. El bloque sorpresa es una caja de regalo morada, los tubos
+  son troncos huecos, el hongo malo trae gorrito de mago, la planta es una atrapamoscas, el fantasmita es de sábana
+  con moño, la pesa aplastadora, la bala con goggles, el Rey Dragón morado con capa, los hongos de poder (de remolinos,
+  mini y gigante con estrellas), la flor de fuego de llamas y la casita de regalos del mapa.
   Los niveles son largos (unos 200–260 cuadritos los normales y ~140 los fuertes y castillos) y `tools/plat-check.mjs`
   revisa que se puedan pasar saltando, que no haya bloques sobre hoyos y que a cada bloque se le pueda pegar por
   abajo (que quepa uno debajo: el jugador chiquito mide más que un cuadrito). Los jefes que vuelan bajan al piso a

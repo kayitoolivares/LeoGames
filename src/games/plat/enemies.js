@@ -9,7 +9,7 @@ import { T, isSolid } from './tiles.js';
 //   immune: ni el fuego ni el hielo le hacen nada.  fireproof: el fuego no (el hielo sí).
 //   shellAs: en qué se convierte al pisarlo (si stomp es 'shell').  facesLeft: el dibujo mira a la izquierda.
 export const ENEMIES = {
-  g: { art: 'plat:hongo-malo', size: 46, w: 38, h: 40, kind: 'walker', speed: 70, stomp: 'squash', color: 0x9c6b3c },
+  g: { art: 'plat:hongo-malo', size: 46, w: 38, h: 40, kind: 'walker', speed: 70, stomp: 'squash', color: 0x2ab7b0 },
   t: { art: 'plat:tortuga', size: 58, w: 36, h: 50, kind: 'walker', speed: 55, stomp: 'shell', color: 0x4cd97b },
   c: { art: 'plat:cangrejo', size: 46, w: 50, h: 40, kind: 'walker', speed: 85, stomp: 'squash', color: 0xff5a5f },
   e: { art: 'plat:erizo', size: 44, w: 40, h: 36, kind: 'walker', speed: 55, stomp: null, color: 0xe53935 },
@@ -19,7 +19,7 @@ export const ENEMIES = {
   f: { art: 'plat:pez', size: 42, w: 44, h: 32, kind: 'fish', stomp: null, color: 0xff9a3c },
   j: { art: 'plat:medusa', size: 56, w: 36, h: 44, kind: 'jelly', stomp: null, color: 0xff9ee8 },
   x: { art: 'plat:bola-fuego', size: 40, w: 30, h: 30, kind: 'podoboo', stomp: null, immune: true, color: 0xff9a3c },
-  a: { art: 'plat:aplastador', size: 86, w: 74, h: 80, kind: 'thwomp', stomp: null, immune: true, safeTop: true, color: 0x9a9aae },
+  a: { art: 'plat:aplastador', size: 86, w: 74, h: 80, kind: 'thwomp', stomp: null, immune: true, safeTop: true, color: 0x4a4a55 },
   k: { art: 'plat:planta', size: 72, w: 34, h: 62, kind: 'plant', stomp: null, color: 0x4cd97b },
   shell: { art: 'plat:caparazon', size: 34, w: 38, h: 30, kind: 'shell', stomp: 'kick', color: 0x4cd97b },
   // Nieve
@@ -37,7 +37,7 @@ export const ENEMIES = {
   E: { art: 'plat:esqueleto', size: 60, w: 34, h: 56, kind: 'walker', speed: 55, stomp: 'collapse', color: 0xffffff },
   V: { art: 'plat:vela', size: 48, w: 26, h: 44, kind: 'floater', stomp: null, fireproof: true, color: 0xffb02e },
   // La bala de los cañones.
-  bala: { art: 'plat:objeto-bala', size: 34, w: 52, h: 30, kind: 'bullet', stomp: 'fall', facesLeft: true, color: 0x2a2a36 },
+  bala: { art: 'plat:objeto-bala', size: 34, w: 52, h: 30, kind: 'bullet', stomp: 'fall', color: 0xb8bcc8 },
 };
 const BULLET_SPEED = 260;
 const PILE_MS = 2600;
@@ -201,15 +201,23 @@ export class Enemy {
 
   // Acomoda el vuelo al espacio entre el piso y el techo de donde sale: que al subir y bajar no se meta en ninguno
   // (antes los pájaros a ras de piso se hundían medio cuerpo y las medusas y velas se metían en el piso).
+  // Se mide en todo lo que recorre de lado (no solo donde sale): un pájaro que sale arriba de un hoyo se hundía en el
+  // piso de junto.
   fitFlight(level) {
-    const col = Math.floor(this.x / T);
     const row = Math.max(0, Math.floor((this.y - this.h / 2) / T));
-    let floor = row;
-    while (floor < level.grid.length && !isSolid(level.at(col, floor))) floor += 1;
-    let ceiling = row;
-    while (ceiling >= 0 && !isSolid(level.at(col, ceiling))) ceiling -= 1;
-    const bottom = floor * T - 2;
-    const top = (ceiling + 1) * T + 2;
+    const reach = { flyer: FLYER.range, fish: FISH.range }[this.type.kind] ?? 0;
+    let bottom = level.grid.length * T - 2;
+    let top = 2;
+    for (let col = Math.floor((this.x - reach - this.w / 2) / T); col <= Math.floor((this.x + reach + this.w / 2) / T); col += 1) {
+      // (Una pared a su altura no cuenta: ahí da la vuelta.)
+      if (isSolid(level.at(col, row))) continue;
+      let floor = row;
+      while (floor < level.grid.length && !isSolid(level.at(col, floor))) floor += 1;
+      let ceiling = row;
+      while (ceiling >= 0 && !isSolid(level.at(col, ceiling))) ceiling -= 1;
+      bottom = Math.min(bottom, floor * T - 2);
+      top = Math.max(top, (ceiling + 1) * T + 2);
+    }
     const want = this.type.kind === 'flyer' ? FLYER.bob : BOB[this.type.kind];
     // Lo que cabe: la mitad del espacio libre menos el cuerpo.
     this.bob = Math.max(0, Math.min(want, (bottom - top - this.h) / 2));

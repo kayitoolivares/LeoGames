@@ -55,7 +55,7 @@ const FIGHT_ENEMIES = 4;
 const FIGHT_REWARD = 10;
 
 // "Súper Bolitas": plataformas como Mario Bros para toda la familia, todos a la vez en la misma pantalla. Mapa de 7
-// mundos (cada uno con su nivel, fuerte con mini jefe, otro nivel, castillo con jefe, casita de hongo con regalos y a
+// mundos (cada uno con su nivel, fuerte con mini jefe, otro nivel, castillo con jefe, casita con regalos y a
 // veces un nivel secreto que se abre con la bandera secreta), un enemigo que camina por el mapa y, con X, los modos:
 // contrarreloj contra tu fantasma, batalla de monedas, jefes en serie, la tienda y vidas extra.
 export class PlatScene extends Phaser.Scene {
@@ -202,7 +202,7 @@ export class PlatScene extends Phaser.Scene {
     this.map = null;
   }
 
-  // ---------- Casita de hongo ----------
+  // ---------- Casita de regalos ----------
 
   openHouse() {
     if (this.housesUsed.has(this.mapState.world)) {

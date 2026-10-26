@@ -116,7 +116,7 @@ export const ghosts = {
 // El enemigo que camina por el mapa de cada mundo (si lo alcanzas, ¡batalla!).
 export const MAP_ENEMY = ['g', 'q', 'c', 't', 'p', 'J', 'E'];
 
-// Los lugares del mapa de un mundo, en el orden del caminito: nivel 1, casita de hongo, fuerte, nivel 3, castillo
+// Los lugares del mapa de un mundo, en el orden del caminito: nivel 1, casita de regalos, fuerte, nivel 3, castillo
 // del jefe y (si ya se abrió) el nivel secreto.
 export function worldNodes(world) {
   const levelIndex = (i) => LEVELS.findIndex((lv) => lv.world === world && lv.index === i);
@@ -238,8 +238,8 @@ export function showMap(scene, state, characters) {
       let text;
       let spoken;
       if (node.kind === 'house') {
-        text = open ? '🍄 Casita de hongo: escoge un regalo' : '🍄 Casita de hongo   ·   🔒 Pasa el primer nivel';
-        spoken = 'Casita de hongo';
+        text = open ? '🎁 Casita de regalos: escoge un regalo' : '🎁 Casita de regalos   ·   🔒 Pasa el primer nivel';
+        spoken = 'Casita de regalos';
       } else {
         const lv = node.kind === 'secret' ? node.info : LEVELS[node.index];
         const data = progress.level(lv.id);

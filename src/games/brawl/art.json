@@ -1,7 +1,19 @@
 {
   "monstruos": [
+    "almeja-ataque",
+    "almeja-burla",
+    "almeja-dolor",
+    "almeja-paso",
     "almeja",
+    "calabaza-ataque",
+    "calabaza-burla",
+    "calabaza-dolor",
+    "calabaza-paso",
     "calabaza",
+    "cangrejo-ataque",
+    "cangrejo-burla",
+    "cangrejo-dolor",
+    "cangrejo-paso",
     "cangrejo",
     "capitan-pulpo-ataque",
     "capitan-pulpo-burla",
@@ -12,7 +24,15 @@
     "capitan-pulpo-mareado",
     "capitan-pulpo-paso",
     "capitan-pulpo",
+    "caramelo-ataque",
+    "caramelo-burla",
+    "caramelo-dolor",
+    "caramelo-paso",
     "caramelo",
+    "cupcake-ataque",
+    "cupcake-burla",
+    "cupcake-dolor",
+    "cupcake-paso",
     "cupcake",
     "dragon-lava-ataque",
     "dragon-lava-burla",
@@ -23,6 +43,10 @@
     "dragon-lava-mareado",
     "dragon-lava-paso",
     "dragon-lava",
+    "gomita-ataque",
+    "gomita-burla",
+    "gomita-dolor",
+    "gomita-paso",
     "gomita",
     "gran-hongo-ataque",
     "gran-hongo-burla",
@@ -42,13 +66,57 @@
     "gran-yeti-mareado",
     "gran-yeti-paso",
     "gran-yeti",
+    "hongo-ataque",
+    "hongo-burla",
+    "hongo-dolor",
+    "hongo-paso",
     "hongo",
+    "marcianito-ataque",
+    "marcianito-burla",
+    "marcianito-dolor",
+    "marcianito-paso",
     "marcianito",
+    "mega-robot-ataque",
+    "mega-robot-burla",
+    "mega-robot-cargando",
+    "mega-robot-derrotado",
+    "mega-robot-dolor",
+    "mega-robot-furioso",
+    "mega-robot-mareado",
+    "mega-robot-paso",
     "mega-robot",
+    "muneco-nieve-ataque",
+    "muneco-nieve-burla",
+    "muneco-nieve-dolor",
+    "muneco-nieve-paso",
     "muneco-nieve",
+    "murcielago-ataque",
+    "murcielago-burla",
+    "murcielago-dolor",
+    "murcielago-paso",
     "murcielago",
+    "ovni-ataque",
+    "ovni-burla",
+    "ovni-dolor",
+    "ovni-paso",
     "ovni",
+    "rey-calabaza-ataque",
+    "rey-calabaza-burla",
+    "rey-calabaza-cargando",
+    "rey-calabaza-derrotado",
+    "rey-calabaza-dolor",
+    "rey-calabaza-furioso",
+    "rey-calabaza-mareado",
+    "rey-calabaza-paso",
     "rey-calabaza",
+    "rey-pastel-ataque",
+    "rey-pastel-burla",
+    "rey-pastel-cargando",
+    "rey-pastel-derrotado",
+    "rey-pastel-dolor",
+    "rey-pastel-furioso",
+    "rey-pastel-mareado",
+    "rey-pastel-paso",
     "rey-pastel",
     "rey-slime-ataque",
     "rey-slime-burla",
@@ -59,10 +127,30 @@
     "rey-slime-mareado",
     "rey-slime-paso",
     "rey-slime",
+    "robotito-ataque",
+    "robotito-burla",
+    "robotito-dolor",
+    "robotito-paso",
     "robotito",
+    "slime-ataque",
+    "slime-burla",
+    "slime-dolor",
+    "slime-grande-ataque",
+    "slime-grande-burla",
+    "slime-grande-dolor",
+    "slime-grande-paso",
     "slime-grande",
+    "slime-lava-ataque",
+    "slime-lava-burla",
+    "slime-lava-dolor",
+    "slime-lava-paso",
     "slime-lava",
+    "slime-paso",
     "slime",
+    "yeti-bebe-ataque",
+    "yeti-bebe-burla",
+    "yeti-bebe-dolor",
+    "yeti-bebe-paso",
     "yeti-bebe"
   ],
   "fondos": [
@@ -100,15 +188,75 @@
     "sombrero-vaquero"
   ],
   "metrics": {
+    "almeja-ataque": [
+      44595,
+      0.486,
+      232
+    ],
+    "almeja-burla": [
+      49015,
+      0.514,
+      244
+    ],
+    "almeja-dolor": [
+      47028,
+      0.494,
+      242
+    ],
+    "almeja-paso": [
+      48873,
+      0.514,
+      247
+    ],
     "almeja": [
       49085,
       0.514,
       245
     ],
+    "calabaza-ataque": [
+      47908,
+      0.496,
+      256
+    ],
+    "calabaza-burla": [
+      49357,
+      0.498,
+      256
+    ],
+    "calabaza-dolor": [
+      48752,
+      0.49,
+      252
+    ],
+    "calabaza-paso": [
+      49493,
+      0.5,
+      256
+    ],
     "calabaza": [
       48997,
       0.502,
       256
+    ],
+    "cangrejo-ataque": [
+      25310,
+      0.51,
+      152
+    ],
+    "cangrejo-burla": [
+      24156,
+      0.549,
+      144
+    ],
+    "cangrejo-dolor": [
+      25111,
+      0.502,
+      164
+    ],
+    "cangrejo-paso": [
+      22096,
+      0.545,
+      144
     ],
     "cangrejo": [
       31234,
@@ -160,10 +308,50 @@
       0.506,
       212
     ],
+    "caramelo-ataque": [
+      31932,
+      0.416,
+      194
+    ],
+    "caramelo-burla": [
+      35458,
+      0.4,
+      224
+    ],
+    "caramelo-dolor": [
+      33438,
+      0.416,
+      215
+    ],
+    "caramelo-paso": [
+      35756,
+      0.412,
+      221
+    ],
     "caramelo": [
       36105,
       0.404,
       226
+    ],
+    "cupcake-ataque": [
+      36120,
+      0.49,
+      256
+    ],
+    "cupcake-burla": [
+      34631,
+      0.513,
+      256
+    ],
+    "cupcake-dolor": [
+      36551,
+      0.505,
+      256
+    ],
+    "cupcake-paso": [
+      36500,
+      0.51,
+      256
     ],
     "cupcake": [
       36601,
@@ -213,6 +401,26 @@
     "dragon-lava": [
       38626,
       0.538,
+      256
+    ],
+    "gomita-ataque": [
+      39917,
+      0.48,
+      256
+    ],
+    "gomita-burla": [
+      37976,
+      0.506,
+      256
+    ],
+    "gomita-dolor": [
+      40421,
+      0.478,
+      256
+    ],
+    "gomita-paso": [
+      38608,
+      0.505,
       256
     ],
     "gomita": [
@@ -310,9 +518,49 @@
       0.443,
       256
     ],
+    "hongo-ataque": [
+      43108,
+      0.482,
+      256
+    ],
+    "hongo-burla": [
+      42017,
+      0.504,
+      256
+    ],
+    "hongo-dolor": [
+      40415,
+      0.482,
+      228
+    ],
+    "hongo-paso": [
+      43986,
+      0.502,
+      256
+    ],
     "hongo": [
       43715,
       0.502,
+      256
+    ],
+    "marcianito-ataque": [
+      33266,
+      0.383,
+      256
+    ],
+    "marcianito-burla": [
+      29559,
+      0.405,
+      256
+    ],
+    "marcianito-dolor": [
+      33860,
+      0.459,
+      239
+    ],
+    "marcianito-paso": [
+      29649,
+      0.421,
       256
     ],
     "marcianito": [
@@ -320,29 +568,209 @@
       0.421,
       256
     ],
+    "mega-robot-ataque": [
+      30440,
+      0.424,
+      198
+    ],
+    "mega-robot-burla": [
+      39931,
+      0.502,
+      230
+    ],
+    "mega-robot-cargando": [
+      34478,
+      0.572,
+      211
+    ],
+    "mega-robot-derrotado": [
+      18186,
+      0.529,
+      122
+    ],
+    "mega-robot-dolor": [
+      25011,
+      0.553,
+      170
+    ],
+    "mega-robot-furioso": [
+      30989,
+      0.549,
+      195
+    ],
+    "mega-robot-mareado": [
+      24192,
+      0.506,
+      169
+    ],
+    "mega-robot-paso": [
+      31914,
+      0.537,
+      201
+    ],
     "mega-robot": [
       32256,
       0.549,
       205
+    ],
+    "muneco-nieve-ataque": [
+      31491,
+      0.498,
+      211
+    ],
+    "muneco-nieve-burla": [
+      34463,
+      0.505,
+      256
+    ],
+    "muneco-nieve-dolor": [
+      34057,
+      0.525,
+      220
+    ],
+    "muneco-nieve-paso": [
+      35614,
+      0.578,
+      256
     ],
     "muneco-nieve": [
       37517,
       0.506,
       256
     ],
+    "murcielago-ataque": [
+      19698,
+      0.51,
+      145
+    ],
+    "murcielago-burla": [
+      20672,
+      0.502,
+      151
+    ],
+    "murcielago-dolor": [
+      23597,
+      0.518,
+      170
+    ],
+    "murcielago-paso": [
+      20688,
+      0.506,
+      145
+    ],
     "murcielago": [
       20433,
       0.498,
       148
+    ],
+    "ovni-ataque": [
+      31869,
+      0.521,
+      187
+    ],
+    "ovni-burla": [
+      30366,
+      0.49,
+      181
+    ],
+    "ovni-dolor": [
+      31131,
+      0.514,
+      184
+    ],
+    "ovni-paso": [
+      30803,
+      0.494,
+      185
     ],
     "ovni": [
       31006,
       0.502,
       186
     ],
+    "rey-calabaza-ataque": [
+      37879,
+      0.6,
+      241
+    ],
+    "rey-calabaza-burla": [
+      38758,
+      0.514,
+      256
+    ],
+    "rey-calabaza-cargando": [
+      41097,
+      0.584,
+      242
+    ],
+    "rey-calabaza-derrotado": [
+      22639,
+      0.588,
+      145
+    ],
+    "rey-calabaza-dolor": [
+      40007,
+      0.437,
+      256
+    ],
+    "rey-calabaza-furioso": [
+      41427,
+      0.544,
+      256
+    ],
+    "rey-calabaza-mareado": [
+      40745,
+      0.588,
+      256
+    ],
+    "rey-calabaza-paso": [
+      40303,
+      0.535,
+      256
+    ],
     "rey-calabaza": [
       41591,
       0.537,
+      256
+    ],
+    "rey-pastel-ataque": [
+      42119,
+      0.61,
+      256
+    ],
+    "rey-pastel-burla": [
+      42889,
+      0.502,
+      251
+    ],
+    "rey-pastel-cargando": [
+      43699,
+      0.506,
+      240
+    ],
+    "rey-pastel-derrotado": [
+      22660,
+      0.506,
+      147
+    ],
+    "rey-pastel-dolor": [
+      41995,
+      0.56,
+      256
+    ],
+    "rey-pastel-furioso": [
+      46737,
+      0.502,
+      256
+    ],
+    "rey-pastel-mareado": [
+      40988,
+      0.482,
+      241
+    ],
+    "rey-pastel-paso": [
+      38730,
+      0.513,
       256
     ],
     "rey-pastel": [
@@ -395,25 +823,125 @@
       0.553,
       216
     ],
+    "robotito-ataque": [
+      29860,
+      0.486,
+      224
+    ],
+    "robotito-burla": [
+      37104,
+      0.44,
+      256
+    ],
+    "robotito-dolor": [
+      29346,
+      0.486,
+      190
+    ],
+    "robotito-paso": [
+      37281,
+      0.445,
+      256
+    ],
     "robotito": [
       36924,
       0.439,
       256
+    ],
+    "slime-ataque": [
+      37632,
+      0.541,
+      198
+    ],
+    "slime-burla": [
+      51825,
+      0.494,
+      249
+    ],
+    "slime-dolor": [
+      48819,
+      0.494,
+      234
+    ],
+    "slime-grande-ataque": [
+      38685,
+      0.545,
+      205
+    ],
+    "slime-grande-burla": [
+      53678,
+      0.494,
+      255
+    ],
+    "slime-grande-dolor": [
+      43543,
+      0.463,
+      223
+    ],
+    "slime-grande-paso": [
+      44636,
+      0.51,
+      224
     ],
     "slime-grande": [
       51813,
       0.498,
       248
     ],
+    "slime-lava-ataque": [
+      37406,
+      0.537,
+      213
+    ],
+    "slime-lava-burla": [
+      52416,
+      0.49,
+      253
+    ],
+    "slime-lava-dolor": [
+      36591,
+      0.545,
+      195
+    ],
+    "slime-lava-paso": [
+      37830,
+      0.561,
+      202
+    ],
     "slime-lava": [
       51798,
       0.498,
       248
     ],
+    "slime-paso": [
+      43223,
+      0.525,
+      219
+    ],
     "slime": [
       51816,
       0.498,
       248
+    ],
+    "yeti-bebe-ataque": [
+      39040,
+      0.494,
+      235
+    ],
+    "yeti-bebe-burla": [
+      42208,
+      0.498,
+      256
+    ],
+    "yeti-bebe-dolor": [
+      41399,
+      0.486,
+      249
+    ],
+    "yeti-bebe-paso": [
+      39864,
+      0.527,
+      256
     ],
     "yeti-bebe": [
       38286,
