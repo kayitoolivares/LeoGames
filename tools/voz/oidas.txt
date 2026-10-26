@@ -534,3 +534,273 @@ Dino dice: ¡Me voy, el jugador 1!
 ¡106.9 metros!
 Robotote, Tanque
 Robotote, Ninja
+Batallas
+Globos
+Atrapa la estrella
+¡Atrapa la estrella! Gana el que la tenga más tiempo
+Eliminación
+¡Eliminación! Cada ratito sale el que va al último
+¡Fuera la compu!
+¡Nueva calcomanía! El último en pie
+¡el jugador 1 es el último en pie!
+¡Ganó el jugador 1, Tanque!
+Escuela de manejo
+Aros
+Aros. Pasa por los 8 aros lo más rápido que puedas
+Aventura
+Mundo Pradera
+Primera carrera
+Primera carrera. Llega entre los 3 primeros
+¡el jugador 1 cruza la meta en primer lugar!
+¡Nueva calcomanía! Primer lugar
+¡Reto superado!
+Caza monedas. Llega a la meta con 10 monedas
+El reto de Rayo. Gánale a Rayo, uno contra uno
+El Rey Bolón. ¡Gánale al Rey Bolón en su kart!
+¡Nueva calcomanía! Le ganaste al jefe
+¡el jugador 1 tiene la estrella!
+¡Nueva calcomanía! Campeón de batalla
+Monedas
+¡Batalla de monedas! Junta todas las que puedas
+¡Nueva calcomanía! Alumno de oro
+Derrapes
+Derrapes. Haz 3 turbos de derrape naranjas o morados (mantén LB en las curvas)
+¡Casi! Inténtalo otra vez
+Salto largo
+Salto largo. Agarra vuelo, salta en la rampa y llega lo más lejos que puedas
+Conos
+Conos. Pasa por en medio de cada puerta de conos sin tirarlos
+Monedas. Junta todas las monedas que puedas en 40 segundos
+Derrapes. Haz 3 turbos de derrape: mantén LB en las curvas y suéltalo cuando salgan chispas
+¡Imán!
+¡Eso es trabajo en equipo!
+¡Primer golpe de Estrella!
+¡Flor de fuego!
+Robotote, Gatito
+¡Hasta la vista, Pingüino!
+¡el jugador 2 trae la estrella!
+¡Cometazo para Hada!
+Resorte dice: ¡La próxima te gano, el jugador 2!
+¡Ganó el jugador 2, Rayo!
+¡Abeja cruza la meta en primer lugar!
+Fantasma dice: ¡Oye, el jugador 1, no se vale!
+Pingüino dice: ¡Uy, casi te alcanzo, el jugador 1!
+Pingüino dice: ¡La próxima te gano, el jugador 1!
+Bloquecito dice: ¡Nos vemos, el jugador 1!
+Robot dice: ¡Te gané, el jugador 1!
+¡Ganó la compu, Robot!
+Rayo dice: ¡Te gané, el jugador 1!
+¡Ganó la compu, Rayo!
+Bloquecito dice: ¡Bye bye, el jugador 1!
+¡No falla!
+¡Parada perfecta!
+¡la compu llamó a Rayo!
+Abeja dice: ¡Uy, casi te alcanzo, el jugador 1!
+3-4 La cueva del Rey Cangrejo
+¡Rescataron a Resorte! Ahora pelea con ustedes
+¡Récord! combo de 31
+¡Primer golpe de Ninja!
+¡Adiós, Gatito!
+Abeja dice: ¡Me voy, el jugador 1!
+¡La bala atropelló a el jugador 1!
+Astronauta dice: ¡Upsi, perdón el jugador 2!
+Bombero dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!
+¡Ganó la compu, Abeja!
+¡Dragoncito cruza la meta en primer lugar!
+Gatito dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!
+Fantasma dice: ¡Uy, casi te alcanzo, el jugador 1!
+Fantasma dice: ¡La próxima te gano, el jugador 1!
+Dino dice: ¡Con permiso, el jugador 1!
+Bombero dice: ¡Soy el más rápido!
+Resorte dice: ¡Soy el más rápido!
+Astronauta dice: ¡Te gané, el jugador 1!
+Ninja dice: ¡La próxima te gano, el jugador 1!
+Pirata dice: ¡Bye bye, el jugador 1!
+Rayo dice: ¡Soy el más rápido!
+¡Atajadón!
+Mejor jugador: la compu · Ninja
+¡Gol para los Dragones!
+¡la compu llamó a Bombero!
+Semifinal: el jugador 1 · Tanque contra la compu · Estrella
+Final: el jugador 1 · Tanque contra la compu · Fantasma
+Arma tu pista
+Arma tu pista. Mueve los puntos con A
+Copa Estrella. Todavía no: Gana una copa del Gran Premio
+Copa Aventura
+Copa Sorpresa
+Copa Tesoro
+Copa Tesoro. Carrera 1 de 4: Desierto
+Va ganando la compu, Hada
+Copa Tesoro. Carrera 2 de 4: Ciudad de noche
+Cambia
+¡Cambió el clima! Lluvia
+¡Cambió el clima! Noche
+¡Ahí se cruza o queda muy pegadito! Aleja esos puntos
+Hada dice: ¡La próxima te gano, el jugador 1!
+Mi pista
+Fantasma dice: ¡Te gané, el jugador 1!
+Va ganando la compu, Fantasma
+Copa Tesoro. Carrera 3 de 4: Casa gigante
+Copa Tesoro. Carrera 4 de 4: Barco pirata
+¡Cometazo para Gatito!
+¡Ya se está haciendo de noche en el desierto!
+¡Cometazo para Ninja!
+¡Se viene la tormenta!
+¡Una abeja le picó a Bombero!
+¡Cometazo para Abeja!
+¡el jugador 1 salió volando con la estrella!
+¡Resorte cruza la meta en primer lugar!
+¡Rescataron a Fantasma! Ahora pelea con ustedes
+¡Récord! combo de 29
+¡Récord! combo de 1
+¡Tanque salió volando!
+¡Adiós, Pirata!
+Gatito dice: ¡Nos vemos, el jugador 1!
+Gatito dice: ¡Me voy, el jugador 1!
+Dragoncito dice: ¡Soy el más rápido!
+Pingüino dice: ¡Soy el más rápido!
+Abeja dice: ¡Soy el más rápido!
+Estrella dice: ¡Uy, casi te alcanzo, el jugador 1!
+Hada dice: ¡Soy el más rápido!
+Pingüino dice: ¡Me voy, el jugador 1!
+¡Tiro relámpago!
+¡Gol, gol, gol de la compu!
+Astronauta dice: ¡Bye bye, el jugador 1!
+Tienda. Tienes 1000 monedas
+¡Compraste Motor nivel 1!
+Llantas ○○○, 25 monedas
+Turbo ○○○, 25 monedas
+Cohete, 60 monedas
+Tina de baño, 40 monedas
+Pato de hule, 50 monedas
+Moto, 80 monedas
+¡Compraste Moto!
+Monstruo
+Moto
+De copiloto con el jugador 1: tú avientas los poderes
+Astronauta dice: ¡Oye, el jugador 1, no se vale!
+Fantasma dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!
+¡Jugador 4, Amarillo!
+¡Nueva calcomanía! Juegan todos
+Tienda. Tienes 500 monedas
+¡Dragoncito pega primero!
+Robotote, Pingüino
+¡Hasta la vista, Dragoncito!
+Fantasma dice: ¡Me voy, el jugador 1!
+¡La bala atropelló a Resorte!
+¡Una abeja le picó a Fantasma!
+¡Fantasma cruza la meta en primer lugar!
+Dino dice: ¡Nos vemos, el jugador 1!
+Gatito dice: ¡Soy el más rápido!
+Abeja dice: ¡Te gané, el jugador 1!
+Ninja dice: ¡Uy, casi te alcanzo, el jugador 1!
+Pingüino dice: ¡Oye, el jugador 1, no se vale!
+Va ganando la compu, Bombero
+¡Fuego desde el cielo!
+Ninja dice: ¡Ay, el jugador 1!
+¡el jugador 2 va montado en el dinosaurio!
+¡Primer golpe de Resorte!
+¡Adiós, Astronauta!
+Gatito dice: ¡Me voy, el jugador 2!
+Gatito dice: ¡Bye bye, el jugador 2!
+Estrella dice: ¡Con permiso, el jugador 1!
+Pirata dice: ¡Uy, casi te alcanzo, el jugador 1!
+Hada dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!
+Pirata dice: ¡Ay, el jugador 1!
+Robot dice: ¡Soy el más rápido!
+Va ganando la compu, Robot
+Rayo dice: ¡Nos vemos, el jugador 1!
+Final: el jugador 1 · Tanque contra la compu · Pingüino
+2-4 El castillo del Rey Nube
+¡El Gran Pájaro!
+¡La Gran Tortuga!
+¡Eso!
+¡Vencieron a la Gran Tortuga!
+¡Vencieron a el Gran Pájaro!
+¡El Capitán Pulpo!
+¡Vencieron a el Capitán Pulpo!
+¡La Gran Bola de Fuego!
+¡Vencieron a la Gran Bola de Fuego!
+4-4 El trono del Rey Dragón
+¡El Gran Pingüino!
+¡Vencieron a el Gran Pingüino!
+5-4 El palacio del Rey Yeti
+¡El Rey Yeti!
+¡Vencieron a el Rey Yeti!
+6-4 El pastel del Rey Pastel
+¡El Rey Pastel!
+¡Vencieron a el Rey Pastel!
+¡El Gran Fantasma!
+7-4 La torre del Rey Calabaza
+¡El Rey Calabaza!
+¡Le duele a el Rey Calabaza!
+¡Vencieron a el Rey Calabaza!
+¡Le duele a el Gran Pájaro!
+¡Vencieron a el Gran Fantasma!
+1-3 Cueva
+3-3 Bajo el mar
+¡Rescataron a Abeja! Ahora pelea con ustedes
+¡Récord! combo de 19
+¡Primer golpe de Dragoncito!
+¡Adiós, Tanque!
+¡Robot salió volando!
+¡Pirata salió volando con la estrella!
+Pirata dice: ¡Ay, el jugador 2!
+Robot dice: ¡Te gané, el jugador 2!
+Gatito dice: ¡Oye, el jugador 1, no se vale!
+Fantasma dice: ¡Bye bye, el jugador 1!
+Rayo dice: ¡Oye, el jugador 1, no se vale!
+Va ganando la compu, Bloquecito
+¡La paró!
+Mejor jugador: la compu · Pingüino
+¡Uuuy, casi!
+Semifinal: el jugador 1 · Tanque contra la compu · Resorte
+¡Dos vidas!
+2-3 Viento en el cielo
+4-3 Castillo
+¡Una mascota!
+¡Récord! combo de 27
+¡Ninja pega primero!
+¡A ver qué sale de la cápsula!
+Robotote, Astronauta
+¡Gatito salió volando!
+Dino dice: ¡Nos vemos, el jugador 2!
+¡Pirata cruza la meta en primer lugar!
+Pingüino dice: ¡Ay, el jugador 1!
+Abeja dice: ¡La próxima te gano, el jugador 1!
+Bombero dice: ¡Ay, el jugador 1!
+Gatito dice: ¡Ay, el jugador 1!
+Mejor jugador: la compu · Dragoncito
+Semifinal: el jugador 1 · Tanque contra la compu · Fantasma
+Final: el jugador 1 · Tanque contra la compu · Pirata
+¡Embestida de acero!
+¡Verde!
+¡Gatito!
+¡Círculo verde!
+¡Corazón verde!
+¡Bravo! ¡Tocaste Estrellita, ¿dónde estás?!
+Campeonato
+Carrera rápida
+Desierto
+¡Escojan su carro!
+¡el jugador 1 listo con Bólido!
+¡el jugador 2 listo con Cohete!
+¡el jugador 1 listo con Mini!
+¡Perrito!
+¡Ganó el jugador 1! Va ganando el jugador 1
+¡el jugador 1 ganó la Copa Sol!
+¡Nueva calcomanía! Campeón de Carreras
+¡Ranita!
+Robotote, Rayo
+¡Adiós, Dragoncito!
+Ninja dice: ¡Me voy, el jugador 2!
+Pirata dice: ¡Jajá, te di, el jugador 2!
+¡La bala atropelló a el jugador 2!
+¡Bloquecito cruza la meta en primer lugar!
+Abeja dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!
+Pirata dice: ¡Te gané, el jugador 1!
+Fantasma dice: ¡Ay, el jugador 1!
+Va ganando la compu, Rayo
+¡la compu llamó a Pirata!
+Casita de regalos
+Casita de regalos. Fíjate dónde está cada premio

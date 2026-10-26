@@ -69,6 +69,8 @@ export const STICKERS = [
   { id: 'kart-jefe', emoji: '👑', name: 'Le ganaste al jefe', hint: 'Gánale a un jefe en la Aventura de Karts locos' },
   { id: 'kart-aventura', emoji: '🗺️', name: 'Aventurero', hint: 'Pasa todos los retos de la Aventura de Karts locos' },
   { id: 'carrera-gana', emoji: '🏎️', name: 'Piloto veloz', hint: 'Gana una carrera vista desde arriba' },
+  { id: 'carrera-copa', emoji: '🏆', name: 'Campeón de Carreras', hint: 'Gana un campeonato de Carreras vista desde arriba' },
+  { id: 'carrera-cohete', emoji: '🚀', name: '¡Le atiné!', hint: 'Pégale a otro carro con un cohete en Carreras vista desde arriba' },
   { id: 'futbol-gol', emoji: '⚽', name: '¡Gol!', hint: 'Mete un gol en Fútbol de bolitas' },
   { id: 'futbol-gana', emoji: '🏆', name: 'Campeones', hint: 'Gana un partido de Fútbol de bolitas' },
   { id: 'futbol-copa', emoji: '🥇', name: 'Copa de fútbol', hint: 'Gana los 3 partidos de la Copa en Fútbol de bolitas' },

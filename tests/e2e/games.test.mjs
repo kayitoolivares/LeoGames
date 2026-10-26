@@ -2778,11 +2778,30 @@ test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { tim
   await p.context.close();
 });
 
-test('carreras desde arriba: el carro avanza por la pista', { timeout: ms(90000) }, async () => {
+test('carreras desde arriba: menús, carros, cajas con poderes y campeonato', { timeout: ms(150000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(1);
   await p.openGameCard('Carreras');
-  await p.page.waitForFunction(() => Boolean(window.leogames.scene.getScene('Race')?.game3d), null, { timeout: ms(30000) });
+  await p.page.waitForFunction(() => window.leogames.scene.getScene('Race')?.game3d?.phase === 'mode', null, { timeout: ms(30000) });
+  await p.wait(ms(300));
+  // (Después de cambiar de pantalla se espera tantito: los botones no cuentan el primer cuarto de segundo.)
+  const phase = async (name, label) => {
+    await p.until(`window.leogames.scene.getScene('Race').game3d.phase === '${name}'`, ms(8000), label);
+    await p.wait(ms(300));
+  };
+  const race = (fn, arg) => p.page.evaluate(([code, a]) => new Function('r', 'a', code)(window.leogames.scene.getScene('Race').game3d, a), [fn, arg]);
+
+  // Carrera rápida en la Playa (la segunda pista) con el Mini (dos a la derecha).
+  await p.tap(0, BUTTON.A);
+  await phase('pick', 'escoger pista');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await phase('cars', 'escoger carro');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  assert.deepEqual(await race('return [r.trackKey, r.humans[0].car.key, r.humans[0].ready]'), ['playa', 'mini', false]);
+  await p.tap(0, BUTTON.A);
+  await phase('race', 'arrancar la carrera');
   await p.page.evaluate(() => {
     window.__bot = setInterval(() => {
       const race = window.leogames.scene.getScene('Race').game3d;
@@ -2794,6 +2813,59 @@ test('carreras desde arriba: el carro avanza por la pista', { timeout: ms(90000)
   });
   await p.until(() => window.leogames.scene.getScene('Race').game3d.humans[0].progress > 0.15, ms(60000), 'avanzar en la pista');
   await stopBot(p.page);
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+
+  // Una caja de regalo: al pasar por ella da un poder.
+  await race('const k = r.humans[0]; const b = r.items.boxes.find((box) => box.hiddenMs === 0); k.item = null; k.x = b.x; k.z = b.z;');
+  await p.until(() => Boolean(window.leogames.scene.getScene('Race').game3d.humans[0].item), ms(4000), 'agarrar un poder de la caja');
+  // El aceite: la compu que lo pisa da una vuelta (y la mancha se va).
+  await race(`const cpu = r.karts.find((k) => k.isCpu);
+    window.__spins = 0; const hit = cpu.hit.bind(cpu); cpu.hit = () => { window.__spins += 1; return hit(); };
+    r.items.addSlick(cpu.x, cpu.z, r.humans[0]);`);
+  await p.until(() => window.__spins > 0, ms(4000), 'que la compu se resbale en el aceite');
+  // El escudo (X) aguanta un cohete; sin escudo, el cohete lo hace girar.
+  await race("const k = r.humans[0]; k.item = 'escudo'; k.itemUses = 1;");
+  await p.tap(0, BUTTON.X);
+  assert.ok((await race('return r.humans[0].shieldMs')) > 0, 'el escudo no se puso');
+  assert.deepEqual(await race("const k = r.humans[0]; r.onItemHit(k, 'cohete'); return [k.spinMs, k.shieldMs, k.item]"), [0, 0, null]);
+  await race("r.onItemHit(r.humans[0], 'cohete')");
+  assert.ok((await race('return r.humans[0].spinMs')) > 0, 'el cohete no lo hizo girar');
+  // El cohete busca al de adelante.
+  await race("const rank = r.ranking(); const last = rank[rank.length - 1]; last.item = 'cohete'; last.itemUses = 1; r.useItem(last, rank);");
+  assert.equal(await race('return r.items.rockets.length'), 1);
+
+  // Llegan todos: resultados; B = otra pista.
+  const finish = "for (const k of [r.humans[0], ...r.ranking()]) if (!k.finished) { k.lap = 3; k.finished = true; r.finishOrder.push(k); }";
+  await race(finish);
+  await phase('results', 'ver los resultados');
+  await p.wait(ms(1300));
+  await p.tap(0, BUTTON.B);
+  await phase('pick', 'regresar a escoger pista');
+
+  // Campeonato: Copa Sol, 4 carreras con puntos.
+  await p.tap(0, BUTTON.B);
+  await phase('mode', 'regresar al modo');
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await phase('pick', 'escoger copa');
+  await p.tap(0, BUTTON.A);
+  await phase('cars', 'escoger carro en el campeonato');
+  assert.equal(await race('return r.trackKey'), 'pradera');
+  await p.tap(0, BUTTON.A);
+  await phase('race', 'primera carrera del campeonato');
+  await race(finish);
+  await phase('results', 'resultados de la primera carrera');
+  assert.deepEqual(await race('return [r.cup.race, [...r.cup.points.values()].reduce((a, b) => a + b, 0), r.cup.points.get(r.humans[0])]'), [1, 28, 10]);
+  await p.wait(ms(1300));
+  await p.tap(0, BUTTON.A);
+  await phase('countdown', 'segunda carrera');
+  assert.equal(await race('return r.trackKey'), 'playa');
+  // La última carrera: gana J1 la copa (y su calcomanía).
+  await race('r.cup.race = 3;');
+  await phase('race', 'última carrera');
+  await race(finish);
+  await phase('results', 'resultados del campeonato');
+  assert.ok((await stickers(p.page)).includes('carrera-copa'), 'no ganó la calcomanía del campeonato');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

@@ -296,7 +296,14 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Récords y medallas**: cada pista guarda su récord (según las vueltas) y se ve en su tarjeta; cada copa guarda
   su mejor medalla (oro, plata o bronce, según el lugar en la copa); en las carreras normales también corre el
   fantasma del récord del contrarreloj.
-- **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar.
+- **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar,
+  **X** = usar el poder. Primero se escoge el modo: **carrera rápida** (en una de **8 pistas**: Pradera, Playa,
+  Dulcelandia, Montaña nevada, Selva, Desierto, Castillo y Arcoíris espacial, con el trazo y los colores de las de Karts
+  locos) o **campeonato** (Copa Sol o Copa Luna: 4 carreras seguidas con puntos 10-8-6-4 y tabla después de cada una).
+  Luego cada quien su **carro** (◀ ▶ y A = listo): Clásico, Bólido (el más rápido), Mini (vueltas cerradas), Monstruo
+  (el pasto no lo frena y empuja fuerte), Cohete (el turbo más fuerte) y Patito. En la pista hay **cajas de regalo**
+  con poderes: triple turbo, mancha de aceite (el que la pisa da una vuelta), escudo (aguanta un golpe) y cohete (va
+  por el de adelante); a los de atrás les tocan los mejores.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
   rasante, en el aire volea), **B** = barrida (tumba al rival; cerquita del balón, patea), **LB o RB** = regate (un

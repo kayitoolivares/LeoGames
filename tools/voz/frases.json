@@ -12,6 +12,12 @@
   "recorded": true
  },
  {
+  "text": "¡106.9 metros!",
+  "name": "97cc65a1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡136.7 metros!",
   "name": "7ec89cf8",
   "from": "oida",
@@ -272,7 +278,7 @@
  {
   "text": "¡Adiós, Hada!",
   "name": "a84e35fd",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -519,6 +525,12 @@
   "text": "¡Bloquecito salió volando!",
   "name": "5549b029",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "¡Bombero cruza la meta en primer lugar!",
+  "name": "4672cda3",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -852,6 +864,18 @@
   "recorded": false
  },
  {
+  "text": "¡el jugador 1 trae la estrella!",
+  "name": "d97321e8",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡el jugador 1 va en primer lugar!",
+  "name": "440cdfdf",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡el jugador 1 va montado en el dinosaurio!",
   "name": "71b3dd4f",
   "from": "oida",
@@ -1012,6 +1036,12 @@
   "name": "9b2a373c",
   "from": "oida",
   "recorded": true
+ },
+ {
+  "text": "¡Escudo!",
+  "name": "4f9d82dc",
+  "from": "oida",
+  "recorded": false
  },
  {
   "text": "¡Eso es trabajo en equipo!",
@@ -1188,6 +1218,24 @@
   "recorded": false
  },
  {
+  "text": "¡Ganó la compu, Bombero!",
+  "name": "1bf42527",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Dino!",
+  "name": "369e571b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Dragoncito!",
+  "name": "91df6ba1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Ganó la compu, Estrella!",
   "name": "554b4877",
   "from": "oida",
@@ -1212,8 +1260,20 @@
   "recorded": false
  },
  {
+  "text": "¡Ganó la compu, Ninja!",
+  "name": "8e62235b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Ganó la compu, Pingüino!",
   "name": "296cb8eb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Ganó la compu, Pirata!",
+  "name": "85784c30",
   "from": "oida",
   "recorded": false
  },
@@ -1272,6 +1332,12 @@
   "recorded": true
  },
  {
+  "text": "¡Gol para los Tiburones!",
+  "name": "fd7fc7ce",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Gol, gol, gol de el jugador 1!",
   "name": "45afb296",
   "from": "oida",
@@ -1316,6 +1382,12 @@
  {
   "text": "¡Gooool de el jugador 1!",
   "name": "82d319a5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Gooool de el jugador 2!",
+  "name": "1ad03756",
   "from": "oida",
   "recorded": false
  },
@@ -1686,6 +1758,12 @@
   "recorded": false
  },
  {
+  "text": "¡La bala atropelló a Rayo!",
+  "name": "7254dc22",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡La burbuja te salvó!",
   "name": "bef3b63d",
   "from": "código",
@@ -1694,6 +1772,18 @@
  {
   "text": "¡la compu llamó a Astronauta!",
   "name": "f50a66dc",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡la compu llamó a Ninja!",
+  "name": "bf63cec0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡la compu llamó a Pingüino!",
+  "name": "4ace235a",
   "from": "oida",
   "recorded": false
  },
@@ -2114,7 +2204,7 @@
  {
   "text": "¡Nueva calcomanía! Campeón de globos",
   "name": "8b67933e",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2168,7 +2258,7 @@
  {
   "text": "¡Nueva calcomanía! Copa de fútbol",
   "name": "aca3e197",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2558,7 +2648,7 @@
  {
   "text": "¡Pingüino salió volando!",
   "name": "9f520aae",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -2742,6 +2832,12 @@
   "recorded": false
  },
  {
+  "text": "¡Qué atajada de la compu!",
+  "name": "259a85fe",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Qué equipo!",
   "name": "249553a1",
   "from": "oida",
@@ -2846,6 +2942,18 @@
  {
   "text": "¡Récord! combo de 30",
   "name": "339de7f0",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! combo de 33",
+  "name": "369deca9",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Récord! combo de 37",
+  "name": "3a9df2f5",
   "from": "oida",
   "recorded": false
  },
@@ -2966,7 +3074,7 @@
  {
   "text": "¡Rescataron a Robot! Ahora pelea con ustedes",
   "name": "125d4d1f",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3150,6 +3258,12 @@
   "recorded": false
  },
  {
+  "text": "¡Tanque contra Dino!",
+  "name": "becc13ba",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Tanque contra Dragoncito!",
   "name": "c4125cf8",
   "from": "oida",
@@ -3158,6 +3272,12 @@
  {
   "text": "¡Tanque contra Dragonzote!",
   "name": "b66c1ba3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "¡Tanque contra Estrella!",
+  "name": "3578d6c2",
   "from": "oida",
   "recorded": false
  },
@@ -3354,6 +3474,12 @@
   "recorded": false
  },
  {
+  "text": "¡Una abeja le picó a Astronauta!",
+  "name": "04361b9b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "¡Una abeja le picó a Pingüino!",
   "name": "480aae89",
   "from": "oida",
@@ -3392,7 +3518,7 @@
  {
   "text": "¡Uy, al travesaño!",
   "name": "0b098f1a",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3464,7 +3590,7 @@
  {
   "text": "¡Vas en primer lugar!",
   "name": "566d4162",
-  "from": "código",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -3876,8 +4002,32 @@
   "recorded": false
  },
  {
+  "text": "Astronauta dice: ¡La próxima te gano, el jugador 1!",
+  "name": "25ea8f13",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta dice: ¡Me voy, el jugador 2!",
+  "name": "9ab439f1",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta dice: ¡Nos vemos, el jugador 2!",
+  "name": "51930fe5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Astronauta dice: ¡Soy el más rápido!",
   "name": "889f1570",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Astronauta dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "dfaf259d",
   "from": "oida",
   "recorded": false
  },
@@ -3936,6 +4086,12 @@
   "recorded": false
  },
  {
+  "text": "Bloquecito dice: ¡La próxima te gano, el jugador 1!",
+  "name": "f21366a2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Bloquecito dice: ¡Soy el más rápido!",
   "name": "35107807",
   "from": "oida",
@@ -3944,6 +4100,12 @@
  {
   "text": "Bloquecito dice: ¡Te gané, el jugador 1!",
   "name": "6961315b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Bloquecito dice: ¡Uy, casi te alcanzo, el jugador 1!",
+  "name": "18d6babe",
   "from": "oida",
   "recorded": false
  },
@@ -3981,6 +4143,12 @@
   "text": "Bombero",
   "name": "04d73f3f",
   "from": "lista",
+  "recorded": false
+ },
+ {
+  "text": "Bombero dice: ¡Te gané, el jugador 1!",
+  "name": "7ceaa0fc",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -4230,8 +4398,32 @@
   "recorded": false
  },
  {
+  "text": "Dino dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "0f1f57d3",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Dino dice: ¡La próxima te gano, el jugador 1!",
   "name": "06b6f331",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡Me voy, el jugador 1!",
+  "name": "ef9a4944",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡Soy el más rápido!",
+  "name": "959df2f2",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dino dice: ¡Te gané, el jugador 1!",
+  "name": "b8571da2",
   "from": "oida",
   "recorded": false
  },
@@ -4268,6 +4460,12 @@
  {
   "text": "Dragoncito dice: ¡La próxima te gano, el jugador 1!",
   "name": "2beeafdb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Dragoncito dice: ¡Te gané, el jugador 1!",
+  "name": "5cb71fcc",
   "from": "oida",
   "recorded": false
  },
@@ -4352,7 +4550,13 @@
  {
   "text": "Estrella",
   "name": "d4b66d3d",
-  "from": "lista",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Estrella dice: ¡Ay, el jugador 1!",
+  "name": "7a1db75e",
+  "from": "oida",
   "recorded": false
  },
  {
@@ -4410,6 +4614,12 @@
   "recorded": false
  },
  {
+  "text": "Final: el jugador 1 · Tanque contra la compu · Dragoncito",
+  "name": "96f7608b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Final: el jugador 1 · Tanque contra la compu · Ninja",
   "name": "e9a38b0f",
   "from": "oida",
@@ -4452,8 +4662,20 @@
   "recorded": false
  },
  {
+  "text": "Gatito dice: ¡La próxima te gano, el jugador 1!",
+  "name": "5a388777",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Gatito dice: ¡Te gané, el jugador 1!",
   "name": "dd3ec338",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Gatito dice: ¡Te gané, el jugador 2!",
+  "name": "6d375723",
   "from": "oida",
   "recorded": false
  },
@@ -4656,6 +4878,12 @@
   "recorded": false
  },
  {
+  "text": "Mejor jugador: la compu · Pirata",
+  "name": "f2117f57",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Mini",
   "name": "f16997ba",
   "from": "oida",
@@ -4730,12 +4958,30 @@
  {
   "text": "Ninja",
   "name": "a0402c4b",
-  "from": "lista",
+  "from": "oida",
   "recorded": false
  },
  {
   "text": "Ninja dice: ¡Bye bye, el jugador 1!",
   "name": "1c050514",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ninja dice: ¡Con permiso, el jugador 1!",
+  "name": "16d08a6d",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ninja dice: ¡Soy el más rápido!",
+  "name": "f34d7844",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Ninja dice: ¡Te gané, el jugador 1!",
+  "name": "3263ad40",
   "from": "oida",
   "recorded": false
  },
@@ -5322,6 +5568,12 @@
   "recorded": false
  },
  {
+  "text": "Pirata dice: ¡Soy el más rápido!",
+  "name": "6460e43f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Pirata, Tanque",
   "name": "0b8c812c",
   "from": "oida",
@@ -5426,6 +5678,12 @@
  {
   "text": "Resorte",
   "name": "aafb39cb",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Resorte dice: ¡Auch! ¡Me las vas a pagar, el jugador 1!",
+  "name": "a980aae1",
   "from": "oida",
   "recorded": false
  },
@@ -5556,8 +5814,20 @@
   "recorded": false
  },
  {
+  "text": "Robotote, Estrella",
+  "name": "c269083f",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Robotote, Hada",
   "name": "81c1b04b",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robotote, Ninja",
+  "name": "d7d1c5fd",
   "from": "oida",
   "recorded": false
  },
@@ -5576,6 +5846,12 @@
  {
   "text": "Robotote, Robot",
   "name": "b630e5b5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Robotote, Tanque",
+  "name": "06c87dcb",
   "from": "oida",
   "recorded": false
  },
@@ -5630,6 +5906,12 @@
  {
   "text": "Semifinal: el jugador 1 · Tanque contra la compu · Bloquecito",
   "name": "8b3ec07a",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Semifinal: el jugador 1 · Tanque contra la compu · Bombero",
+  "name": "a54b6f5d",
   "from": "oida",
   "recorded": false
  },
@@ -5748,6 +6030,12 @@
   "recorded": false
  },
  {
+  "text": "Tanque, Abeja",
+  "name": "a2d66040",
+  "from": "oida",
+  "recorded": false
+ },
+ {
   "text": "Tanque, Astronauta",
   "name": "975019b3",
   "from": "oida",
@@ -5798,6 +6086,12 @@
  {
   "text": "Tanque, Hada",
   "name": "140e56b5",
+  "from": "oida",
+  "recorded": false
+ },
+ {
+  "text": "Tanque, Ninja",
+  "name": "2b1a7c27",
   "from": "oida",
   "recorded": false
  },
