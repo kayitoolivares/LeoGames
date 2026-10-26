@@ -4,7 +4,8 @@ import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, hexToCss, textStyle } from '../../ui/style.js';
 import { fitPose, hasPose, superArtKey } from '../smash/art.js';
-import { FIELD, TEAM_COLORS, attackDir } from './field.js';
+import { BALL_GRAVITY } from './Ball.js';
+import { FIELD, GOAL, TEAM_COLORS, attackDir, goalMouthX } from './field.js';
 
 export const PLAYER_RADIUS = 36;
 const SPEED = 340;
@@ -21,6 +22,10 @@ const KICKS = {
   low: { vx: 820, vy: -90 },
   volley: { vx: 900, vy: -220 },
 };
+// Pase (LT o RT): un globito suave que cae junto a un compañero (el scene escoge a quién: ver passTarget).
+const PASS = { minVy: 300, maxVy: 620, lift: 0.35, maxVx: 950 };
+// El portero que maneja un jugador no se aleja de su portería más que esto (y no se mete en la red).
+export const GOALIE_AREA = 330;
 // Barrida (B lejos del balón): se lanza al piso hacia adelante; el que se barre le quita el balón al de enfrente
 // y al rival que toque lo tumba un ratito.
 const SLIDE = { ms: 380, speed: 620, cooldownMs: 900, tumbleMs: 700 };
@@ -34,6 +39,14 @@ const METER_PER_TOUCH_MS = 0.02;
 const SHOES_SPEED = 1.45;
 const CELEBRATE_MS = 2200;
 const CELEBRATE_HOP = 480;
+// Festejos de gol: bailar (brinquitos), voltereta (un brincote dando la vuelta), barrida de rodillas y el avioncito
+// (corre de un lado a otro con los brazos abiertos). Los compañeros corren a abrazar al que metió el gol.
+export const CELEBRATIONS = ['baile', 'voltereta', 'rodillas', 'avion'];
+const FLIP_JUMP = 900;
+const FLIP_SPIN = 420;
+const KNEE_SLIDE_SPEED = 560;
+const PLANE_SPEED = 380;
+const PLANE_TURN_MS = 650;
 const METER_W = 58;
 
 // El tiro especial de cada personaje: derecho y de fuego, en zigzag o como cohete (sube y cae en picada).
@@ -95,7 +108,7 @@ export class FutbolPlayer {
     this.blob.figure.add([this.foot, this.tag, this.meterBg, this.meterFill]);
     this.blob.add(this.ice);
     this.meter = 0;
-    this.stats = { goals: 0, shots: 0, steals: 0, saves: 0 };
+    this.stats = { goals: 0, shots: 0, steals: 0, saves: 0, passes: 0 };
     // La cancha: en la nieve se resbalan (`grip` bajo) y en la luna brincan alto (`gravity` bajo).
     this.grip = 1;
     this.gravity = 1;
@@ -119,6 +132,9 @@ export class FutbolPlayer {
     this.frozenMs = 0;
     this.shoesMs = 0;
     this.celebrateMs = 0;
+    this.celebrateStyle = 'baile';
+    this.hugX = null;
+    this.flipped = false;
     this.specialReady = false;
   }
 
@@ -154,6 +170,8 @@ export class FutbolPlayer {
       this.vx *= Math.exp(-6 * dt);
     } else if (this.slideMs > 0) {
       this.vx = this.facing * SLIDE.speed;
+    } else if (this.celebrateMs > 0) {
+      this.updateCelebration(dtMs);
     } else {
       const target = input.x * speed;
       const step = ACCEL * this.grip * dt * (this.dribbleMs > 0 ? 2 : 1);
@@ -163,9 +181,26 @@ export class FutbolPlayer {
     }
     this.x += this.vx * dt;
     this.x = Math.max(this.radius, Math.min(FIELD.width - this.radius, this.x));
+    // El portero que maneja un jugador se queda cerca de su portería (sin meterse en la red).
+    if (this.goalie && !this.isCpu) {
+      const mouth = goalMouthX(this.team);
+      const dir = attackDir(this.team);
+      const near = mouth + dir * (this.radius * 0.6);
+      const far = mouth + dir * GOALIE_AREA;
+      this.x = Math.max(Math.min(near, far), Math.min(Math.max(near, far), this.x));
+    }
 
-    // Festejando el gol: brinquitos.
-    if (this.celebrateMs > 0 && this.z === 0 && !this.busy) this.vz = CELEBRATE_HOP;
+    // Festejando el gol: brinquitos (bailando o abrazando) o la voltereta (un solo brincote).
+    if (this.celebrateMs > 0 && this.z === 0 && !this.busy) {
+      if (this.celebrateStyle === 'voltereta') {
+        if (!this.flipped) {
+          this.vz = FLIP_JUMP;
+          this.flipped = true;
+        }
+      } else if (this.celebrateStyle === 'baile' || this.hugX !== null) {
+        this.vz = CELEBRATE_HOP;
+      }
+    }
     if (input.jump && this.z === 0 && !this.busy) {
       this.vz = JUMP_SPEED;
       sfx.jump();
@@ -197,6 +232,21 @@ export class FutbolPlayer {
       sfx.throw();
       return;
     }
+    // Pase: hacia el compañero que escoge la escena (si no hay a quién, no pasa nada).
+    if (input.pass && this.cooldownMs === 0 && !this.specialReady) {
+      const mate = this.scene.passTarget?.(this);
+      if (mate) {
+        this.kickMs = KICK_MS;
+        this.cooldownMs = KICK_COOLDOWN_MS;
+        this.passTo = mate;
+        this.kickDir = Math.sign(mate.x - this.x) || this.attack;
+        this.kickPower = 1;
+        this.facing = this.kickDir;
+        this.kickStyle = 'pass';
+        this.kickHit = false;
+        return;
+      }
+    }
     if ((input.kick || (this.specialReady && input.special)) && this.cooldownMs === 0) {
       this.kickMs = KICK_MS;
       this.cooldownMs = KICK_COOLDOWN_MS;
@@ -226,8 +276,8 @@ export class FutbolPlayer {
   tryKick(ball) {
     if (this.kickMs === 0 || this.kickHit) return null;
     if (Math.hypot(ball.x - this.x, ball.y - this.y) > this.radius + ball.radius + KICK_REACH) return null;
-    // Si el balón quedó atrás (del lado de su portería) no lo alcanza: hay que darle la vuelta.
-    if ((ball.x - this.x) * this.kickDir < -this.radius * 0.5) return null;
+    // Si el balón quedó atrás (del lado de su portería) no lo alcanza: hay que darle la vuelta (el pase sí, a cualquier lado).
+    if (this.kickStyle !== 'pass' && (ball.x - this.x) * this.kickDir < -this.radius * 0.5) return null;
     this.kickHit = true;
     this.stats.shots += 1;
     if (this.specialReady) {
@@ -236,6 +286,19 @@ export class FutbolPlayer {
       ball.shootSpecial(this, this.kickDir, kind, color);
       sfx.boom();
       return 'special';
+    }
+    if (this.kickStyle === 'pass') {
+      // Un globito que cae junto al compañero: entre más lejos, más alto (y nunca más rápido de la cuenta).
+      const dx = this.passTo.x - ball.x;
+      const vy = Math.min(PASS.maxVy, PASS.minVy + Math.abs(dx) * PASS.lift);
+      const flight = (2 * vy) / (BALL_GRAVITY * ball.gravity);
+      ball.vx = Math.max(-PASS.maxVx, Math.min(PASS.maxVx, dx / flight));
+      ball.vy = -vy;
+      ball.lastTouch = this;
+      this.stats.passes += 1;
+      this.addMeter(METER_PER_KICK / 2);
+      sfx.hit(0.35);
+      return 'pass';
     }
     const kick = KICKS[this.kickStyle];
     ball.vx = this.kickDir * kick.vx * this.kickPower + this.vx * 0.25;
@@ -270,9 +333,45 @@ export class FutbolPlayer {
     this.slideMs = 0;
   }
 
-  celebrate() {
+  // `style`: cómo festeja (ver CELEBRATIONS); `hugX`: los compañeros corren hacia ahí (el que metió el gol).
+  celebrate(style = 'baile', hugX = null) {
     this.celebrateMs = CELEBRATE_MS;
-    this.look.dance(CELEBRATE_MS);
+    this.celebrateStyle = style;
+    this.hugX = hugX;
+    this.flipped = false;
+    this.flipAngle = 0;
+    this.celebrateTurnMs = PLANE_TURN_MS;
+    if (style === 'baile' && hugX === null) this.look.dance(CELEBRATE_MS);
+    if (style === 'rodillas') this.scene.dust?.(this);
+  }
+
+  // Cómo se mueve festejando (los brinquitos los pone update).
+  updateCelebration(dtMs) {
+    const dt = dtMs / 1000;
+    if (this.hugX !== null) {
+      // A abrazar al que metió el gol: corre hacia él y se queda pegadito.
+      const dx = this.hugX - this.x;
+      this.vx = Math.abs(dx) < this.radius * 1.6 ? 0 : Math.sign(dx) * SPEED;
+      if (this.vx) this.facing = Math.sign(this.vx);
+    } else if (this.celebrateStyle === 'rodillas') {
+      // Barrida de rodillas: se desliza y se va frenando.
+      const left = this.celebrateMs / CELEBRATE_MS;
+      this.vx = this.facing * KNEE_SLIDE_SPEED * Math.max(0, left - 0.35);
+    } else if (this.celebrateStyle === 'avion') {
+      // Avioncito: corre de un lado a otro con los brazos abiertos.
+      this.celebrateTurnMs -= dtMs;
+      if (this.celebrateTurnMs <= 0) {
+        this.celebrateTurnMs = PLANE_TURN_MS * 2;
+        this.facing = -this.facing;
+      }
+      if (this.x <= GOAL.depth + this.radius) this.facing = 1;
+      else if (this.x >= FIELD.width - GOAL.depth - this.radius) this.facing = -1;
+      this.vx = this.facing * PLANE_SPEED;
+    } else {
+      // (Voltereta: da la vuelta mientras va en el aire.)
+      if (this.celebrateStyle === 'voltereta' && this.z > 0) this.flipAngle = Math.min(360, this.flipAngle + FLIP_SPIN * dt);
+      this.vx *= Math.exp(-6 * dt);
+    }
   }
 
   // Qué pose mostrar (null = parado o caminando).
@@ -280,6 +379,10 @@ export class FutbolPlayer {
     if (this.tumbleMs > 0) return 'dolor';
     if (this.slideMs > 0) return 'agachado';
     if (this.kickMs > 0) return this.z > 10 ? 'aire' : 'patada';
+    if (this.celebrateMs > 0 && this.hugX === null) {
+      if (this.celebrateStyle === 'rodillas') return 'agachado';
+      if (this.celebrateStyle === 'avion') return 'aire';
+    }
     if (this.z > 0) return this.celebrateMs > 0 ? 'gana' : 'salto';
     if (this.celebrateMs > 0) return 'gana';
     return null;
@@ -294,6 +397,8 @@ export class FutbolPlayer {
       pose: this.pose(),
       walking: this.z === 0 && Math.abs(this.vx) > 40 && !this.busy,
       tumble: this.tumbleMs > 0,
+      // La voltereta: una vuelta completa mientras va en el aire.
+      flip: this.celebrateMs > 0 && this.celebrateStyle === 'voltereta' && this.z > 0 ? this.flipAngle : 0,
       kick: this.kickMs > 0,
       aura: this.specialReady,
       frozen: this.frozenMs > 0,
@@ -304,7 +409,7 @@ export class FutbolPlayer {
   render(snap = this.snapshot()) {
     this.blob.setPosition(snap.x, FIELD.ground - this.radius);
     this.blob.figure.y = -snap.z;
-    this.blob.figure.angle = snap.tumble ? -snap.facing * 70 : 0;
+    this.blob.figure.angle = snap.tumble ? -snap.facing * 70 : (snap.flip ?? 0) * snap.facing;
     this.blob.look(snap.facing * 0.9, 0.1);
     const ground = this.look.groundPose(snap.walking);
     const wanted = snap.pose;

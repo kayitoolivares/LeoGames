@@ -1,7 +1,7 @@
 import { FIELD, GOAL, barY } from './field.js';
 
 export const BALL_RADIUS = 24;
-const GRAVITY = 1100;
+export const BALL_GRAVITY = 1100;
 const BOUNCE = 0.72;
 const WALL_BOUNCE = 0.8;
 const ROLL_FRICTION = 0.9;
@@ -16,13 +16,15 @@ const SPECIAL_SPEED = 1250;
 
 // El balón: rebota en el piso, en las paredes, en el techo y en los travesaños.
 // `lastTouch` es el último jugador que lo tocó (para saber de quién fue el gol). `scale` lo hace gigante (poder).
-// `gravity` y `friction` cambian con la cancha (en la luna flota, en la arena se frena).
+// `gravity`, `friction` y `bounce` cambian con la cancha (en la luna flota, en la arena se frena, en la gelatina rebota).
+// `held`: el portero que lo tiene agarrado (entonces no se mueve solo: lo carga él).
 export class Ball {
   constructor(scene) {
     this.scene = scene;
     this.scale = 1;
     this.gravity = 1;
     this.friction = 1;
+    this.bounce = 1;
     this.sprite = scene.add.container(0, 0).setDepth(600);
     this.shadow = scene.add.ellipse(0, 0, BALL_RADIUS * 1.8, BALL_RADIUS * 0.45, 0x000000, 0.25).setDepth(5);
     // El brillo de colores mientras va un tiro especial.
@@ -58,6 +60,7 @@ export class Ball {
     this.stuckMs = 0;
     this.special = null;
     this.specialBy = null;
+    this.held = null;
     this.glow?.setVisible(false);
   }
 
@@ -86,7 +89,7 @@ export class Ball {
     if (this.special) {
       this.updateSpecial(dt);
     } else {
-      this.vy += GRAVITY * this.gravity * dt;
+      this.vy += BALL_GRAVITY * this.gravity * dt;
       const speed = Math.hypot(this.vx, this.vy);
       if (speed > MAX_SPEED) {
         this.vx *= MAX_SPEED / speed;
@@ -100,7 +103,7 @@ export class Ball {
     const floor = FIELD.ground - r;
     if (this.y > floor) {
       this.y = floor;
-      this.vy = Math.abs(this.vy) < 120 ? 0 : -this.vy * BOUNCE;
+      this.vy = Math.abs(this.vy) < 120 ? 0 : -this.vy * Math.min(0.92, BOUNCE * this.bounce);
       this.vx *= Math.exp(-ROLL_FRICTION * this.friction * dt);
     }
     if (this.y < r) {

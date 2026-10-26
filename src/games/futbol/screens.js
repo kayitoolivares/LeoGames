@@ -4,7 +4,8 @@ import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { blockArtKey, characterTexture } from '../smash/art.js';
 import { CHARACTERS } from '../smash/characters.js';
 import manifest from './art.json';
-import { UNIFORMS } from './field.js';
+import { UNIFORMS, teamLabel } from './field.js';
+import { ligaTable } from './liga.js';
 
 // Las pantallas del fútbol: el camino de la Copa (3 partidos, cada uno más difícil) y el final del partido
 // (quién ganó, el mejor jugador y lo que hizo cada quien).
@@ -59,7 +60,7 @@ export function showCopaRoad(scene, round, rivals, ours, depth) {
   const us = UNIFORMS[ours];
   root.add(scene.add.text(width / 2, 590, `Tu equipo: ${us.name}`, textStyle(28, hexToCss(us.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 6 })).setOrigin(0.5));
   root.add(scene.add.text(width / 2, 660, 'A = ¡a jugar!   ·   B = salir de la Copa', textStyle(24, TEXT.accent)).setOrigin(0.5));
-  say(`${COPA_ROUNDS[round].name}: contra los ${UNIFORMS[rivals[round]].name}`);
+  say(`${COPA_ROUNDS[round].name}: contra ${teamLabel(rivals[round])}`);
   return root;
 }
 
@@ -115,12 +116,70 @@ export function showMatchEnd(scene, { title, color, score, players, cup = false,
   root.add(scene.add.text(860, 250, '⚽ goles   🦶 tiros   🛡️ robos   🧤 atajadas', textStyle(20, TEXT.muted)).setOrigin(0.5));
   players.forEach((p, i) => {
     const y = 296 + i * 46;
-    const { goals, shots, steals, saves } = p.stats;
+    const { goals, shots, steals, saves, passes } = p.stats;
     const name = `${p === mvp ? '⭐ ' : ''}${nameOf(p)}`;
     root.add(scene.add.text(590, y, name, textStyle(26, hexToCss(p.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0, 0.5));
-    root.add(scene.add.text(1150, y, `⚽ ${goals}   🦶 ${shots}   🛡️ ${steals}   🧤 ${saves}`, textStyle(24, '#ffffff', { stroke: '#1b1530', strokeThickness: 4 })).setOrigin(1, 0.5));
+    root.add(scene.add.text(1150, y, `⚽ ${goals}   🦶 ${shots}   🤝 ${passes}   🛡️ ${steals}   🧤 ${saves}`, textStyle(24, '#ffffff', { stroke: '#1b1530', strokeThickness: 4 })).setOrigin(1, 0.5));
   });
   root.add(scene.add.text(860, height - 50, hint, textStyle(22, TEXT.accent, { align: 'center', wordWrap: { width: 760 } })).setOrigin(0.5));
   scene.time.delayedCall(1600, () => say(`Mejor jugador: ${nameOf(mvp)}`, { interrupt: false }));
+  return root;
+}
+
+// La tabla de la Liga: los marcadores de la jornada que se acaba de jugar (si hay) y la tabla de posiciones, con tu
+// equipo resaltado. `title` arriba y `hint` (qué botón hace qué) abajo.
+export function showLigaTable(scene, liga, { title, hint, depth, champion = false }) {
+  const { width, height } = scene.scale;
+  const root = scene.add.container(0, 0).setDepth(depth);
+  root.add(scene.add.rectangle(width / 2, height / 2, width, height, 0x14112b, 0.9));
+  root.add(scene.add.text(width / 2, 56, title, textStyle(46, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
+  if (champion) {
+    const cup = trophy(scene, width / 2 + 420, 120, 140);
+    root.add(cup);
+    scene.tweens.add({ targets: cup, angle: { from: -6, to: 6 }, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+  let y = 112;
+  if (liga.lastGames) {
+    for (const { home, away, score } of liga.lastGames) {
+      const [a, b] = [UNIFORMS[home], UNIFORMS[away]];
+      const ours = home === liga.ours || away === liga.ours;
+      root.add([
+        scene.add.text(width / 2 - 40, y, a.name, textStyle(24, hexToCss(a.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(1, 0.5),
+        scene.add.text(width / 2, y, `${score[0]} - ${score[1]}`, textStyle(26, ours ? TEXT.accent : TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5),
+        scene.add.text(width / 2 + 40, y, b.name, textStyle(24, hexToCss(b.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0, 0.5),
+      ]);
+      y += 34;
+    }
+    y += 14;
+  }
+  // La tabla: lugar, equipo, partidos jugados, ganados, perdidos, goles a favor y en contra, y puntos.
+  const columns = [
+    ['#', -330],
+    ['Equipo', -290],
+    ['PJ', 20],
+    ['G', 80],
+    ['P', 140],
+    ['GF', 200],
+    ['GC', 260],
+    ['Pts', 330],
+  ];
+  for (const [label, x] of columns) {
+    root.add(scene.add.text(width / 2 + x, y, label, textStyle(22, TEXT.muted, { fontStyle: 'bold' })).setOrigin(label === 'Equipo' ? 0 : 0.5, 0.5));
+  }
+  y += 40;
+  ligaTable(liga).forEach((team, i) => {
+    const row = scene.add.rectangle(width / 2, y, 740, 44, team.ours ? COLORS.panel : 0x1b1730).setRounded(14);
+    row.setStrokeStyle(team.ours ? 4 : 1, team.ours ? COLORS.accent : COLORS.panelBorder);
+    const cells = [i + 1, null, team.played, team.won, team.lost, team.gf, team.ga, team.points];
+    root.add(row);
+    root.add(scene.add.circle(width / 2 - 270, y, 12, team.color).setStrokeStyle(3, 0x1b1530));
+    root.add(scene.add.text(width / 2 - 250, y, team.name, textStyle(24, hexToCss(team.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0, 0.5));
+    cells.forEach((value, k) => {
+      if (value === null) return;
+      root.add(scene.add.text(width / 2 + columns[k][1], y, String(value), textStyle(24, k === 7 ? TEXT.accent : TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
+    });
+    y += 50;
+  });
+  root.add(scene.add.text(width / 2, height - 34, hint, textStyle(22, TEXT.accent)).setOrigin(0.5));
   return root;
 }

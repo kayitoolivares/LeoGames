@@ -19,12 +19,13 @@ import { loadStageArt } from '../duelo/stage.js';
 import { Ball } from './Ball.js';
 import { CPU_LEVELS, cpuInput } from './cpu.js';
 import { Crowd, Narrator } from './crowd.js';
-import { FIELD, GOAL, GOAL_HEIGHT, TEAM_COLORS, TEAM_NAMES, UNIFORMS, attackDir, barY, drawGoals, goalMouthX, setUniforms } from './field.js';
-import { FutbolPlayer } from './FutbolPlayer.js';
+import { FIELD, GOAL, GOAL_HEIGHT, TEAM_COLORS, TEAM_LABELS, TEAM_NAMES, UNIFORMS, attackDir, barY, drawGoals, goalMouthX, setUniforms, teamLabel } from './field.js';
+import { CELEBRATIONS, FutbolPlayer } from './FutbolPlayer.js';
+import { createLiga, ligaDone, ligaOpponent, ligaTable, playRound } from './liga.js';
 import { PENALTY_ROUNDS, Shootout } from './penalties.js';
 import { PITCHES, PITCH_KEYS, drawPitch, loadPitchArt } from './pitches.js';
 import { POWERS, Powers, loadPowerArt, powerIcon } from './powers.js';
-import { COPA_ROUNDS, copaRivals, loadScreenArt, showCopaRoad, showMatchEnd } from './screens.js';
+import { COPA_ROUNDS, copaRivals, loadScreenArt, showCopaRoad, showLigaTable, showMatchEnd } from './screens.js';
 import { go } from '../../shared/transition.js';
 import { bounceIn } from '../../ui/bounce.js';
 
@@ -40,9 +41,20 @@ const EXIT_HOLD_MS = 1200;
 const BALL_RESTITUTION = 0.55;
 const HUD_DEPTH = 10000;
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
-const KICK_WORDS = { normal: null, lob: '¡Globito!', low: '¡Rasante!', volley: '¡Volea!' };
-const MODES = { partido: 'Partido', copa: 'Copa de fútbol', penales: 'Penales' };
+const KICK_WORDS = { normal: null, lob: '¡Globito!', low: '¡Rasante!', volley: '¡Volea!', pass: '¡Pase!' };
+const MODES = { partido: 'Partido', copa: 'Copa de fútbol', liga: 'Liga (5 jornadas con tabla)', penales: 'Penales' };
 const TEAMS = { juntos: 'Todos contra la compu', versus: 'Unos contra otros' };
+const GOALIES = { compu: 'la compu', jugadores: 'los jugadores (el último de cada equipo, si son 2 o más)' };
+// Los porteros atrapan el balón cerca de su portería (el de la compu, según su nivel) y luego lo despejan: el de un
+// jugador con X (o solo, después de un rato) y el de la compu en un ratito.
+const CATCH_ZONE = 300;
+const CATCH_REACH = 22;
+const HOLD_MS = 2500;
+const CPU_HOLD_MS = 700;
+const MISS_MS = 700;
+const CLEAR_KICK = { vx: 780, vy: -760 };
+// Lo que dice el narrador de cada festejo.
+const CELEBRATION_LINES = { baile: '¡A bailar!', voltereta: '¡Qué voltereta!', rodillas: '¡Se barrió de rodillas!', avion: '¡El avioncito!' };
 // Cómo se acaba el partido: a tantos goles o por tiempo (si empatan: gol de oro).
 const END_CHOICES = [
   { goals: 3, minutes: 0 },
@@ -59,11 +71,11 @@ const SAVE_SPEED = 550;
 const TACKLE_REACH = 14;
 const LAST_MINUTE_MS = 60000;
 const BAR_SOUND_MS = 500;
-const PLAY_HINT = 'A saltar · X patear (↑ globito, ↓ rasante) · B barrida · LB o RB regate · LB + RB tiro especial · Mantén LB + RB + Y salir';
+const PLAY_HINT = 'A saltar · X patear (↑ globito, ↓ rasante) · LT o RT pase · B barrida · LB o RB regate · LB + RB tiro especial · Mantén LB + RB + Y salir';
 
 // Lo último que se escogió, para no escogerlo otra vez.
-const lastSetup = { mode: 'partido', teams: 'juntos', end: 1, level: 'facil', pitch: 'estadio', uniform: 0, powers: true };
-const ROWS = ['mode', 'teams', 'end', 'level', 'pitch', 'uniform', 'powers'];
+const lastSetup = { mode: 'partido', teams: 'juntos', end: 1, level: 'facil', goalies: 'compu', pitch: 'estadio', uniform: 0, powers: true };
+const ROWS = ['mode', 'teams', 'end', 'level', 'goalies', 'pitch', 'uniform', 'powers'];
 
 // El equipo de la derecha trae el uniforme que sigue.
 function rivalUniform(left) {
@@ -147,10 +159,11 @@ export class FutbolScene extends Phaser.Scene {
     this.pitchUpdate = update;
     // Lo que se mueve en el cielo de la cancha (la nieve ya la trae la cancha de nieve).
     this.ambience?.destroy();
-    this.ambience = new Ambience(this, { estadio: 'cancha', playa: 'playa', luna: 'luna', azotea: 'nubes' }[key] ?? null, { depth: -60 });
+    this.ambience = new Ambience(this, { estadio: 'cancha', playa: 'playa', luna: 'luna', azotea: 'nubes', selva: 'selva', dulces: 'dulces', noche: 'espacio' }[key] ?? null, { depth: -60 });
     this.pitch = PITCHES[key];
     this.ball.gravity = this.pitch.gravity;
     this.ball.friction = this.pitch.friction;
+    this.ball.bounce = this.pitch.bounce ?? 1;
     for (const p of this.team) {
       p.grip = this.pitch.grip;
       p.gravity = this.pitch.gravity;
@@ -259,6 +272,7 @@ export class FutbolScene extends Phaser.Scene {
   showSetup() {
     this.phase = 'setup';
     this.copa = null;
+    this.liga = null;
     this.clearMatchStuff();
     this.clearTeam();
     this.hideBanner();
@@ -275,8 +289,8 @@ export class FutbolScene extends Phaser.Scene {
     this.setupLayer.add(this.add.rectangle(width / 2, 360, width, 720, 0x14112b, 0.8));
     this.setupLayer.add(this.add.text(width / 2, 62, 'Fútbol de bolitas ⚽', textStyle(48, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
     this.setupRows = ROWS.map((_, i) => {
-      const bg = this.add.rectangle(width / 2, 132 + i * 54, 660, 46, COLORS.panel).setRounded(16);
-      const text = this.add.text(width / 2, 132 + i * 54, '', textStyle(22, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+      const bg = this.add.rectangle(width / 2, 124 + i * 48, 720, 42, COLORS.panel).setRounded(16);
+      const text = this.add.text(width / 2, 124 + i * 48, '', textStyle(21, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
       this.setupLayer.add([bg, text]);
       return { bg, text };
     });
@@ -300,7 +314,8 @@ export class FutbolScene extends Phaser.Scene {
 
   rowEnabled(row) {
     const { mode } = this.setup;
-    if (row === 'teams') return mode !== 'copa' && this.humans.length >= 2;
+    if (row === 'teams') return mode !== 'copa' && mode !== 'liga' && this.humans.length >= 2;
+    if (row === 'goalies') return mode !== 'penales' && this.humans.length >= 2;
     if (row === 'end') return mode !== 'penales';
     if (row === 'level') return mode !== 'copa';
     if (row === 'powers') return mode !== 'penales';
@@ -314,7 +329,9 @@ export class FutbolScene extends Phaser.Scene {
       case 'mode':
         return `Modo: ${MODES[s.mode]}`;
       case 'teams':
-        return `Equipos: ${TEAMS[s.mode === 'copa' ? 'juntos' : s.teams]}`;
+        return `Equipos: ${TEAMS[s.mode === 'copa' || s.mode === 'liga' ? 'juntos' : s.teams]}`;
+      case 'goalies':
+        return this.humans.length < 2 ? 'Porteros: la compu (con 2 o más jugadores, también ustedes)' : `Porteros: ${GOALIES[s.goalies]}`;
       case 'end':
         if (s.mode === 'penales') return `${PENALTY_ROUNDS} penales para cada equipo`;
         return s.minutes ? `Por tiempo: ${s.minutes} minutos (si empatan, gol de oro)` : `Gana el que meta ${s.goals} goles`;
@@ -323,7 +340,7 @@ export class FutbolScene extends Phaser.Scene {
       case 'pitch':
         return `Cancha: ${pitch.name}${pitch.note ? ` (${pitch.note})` : ''}`;
       case 'uniform':
-        return s.mode === 'copa'
+        return s.mode === 'copa' || s.mode === 'liga'
           ? `Tu equipo: ${UNIFORMS[s.uniform].name}`
           : `Uniformes: ${UNIFORMS[s.uniform].name} vs ${UNIFORMS[rivalUniform(s.uniform)].name}`;
       default:
@@ -333,7 +350,8 @@ export class FutbolScene extends Phaser.Scene {
 
   refreshSetup() {
     const s = this.setup;
-    setUniforms(s.uniform, s.mode === 'copa' ? copaRivals(s.uniform)[0] : rivalUniform(s.uniform));
+    const rival = s.mode === 'copa' ? copaRivals(s.uniform)[0] : s.mode === 'liga' ? createLiga(s.uniform).rivals[0] : rivalUniform(s.uniform);
+    setUniforms(s.uniform, rival);
     this.redrawGoals();
     this.refreshHud();
     this.crowd.recolor();
@@ -342,7 +360,7 @@ export class FutbolScene extends Phaser.Scene {
       text.setText(this.rowLabel(ROWS[i])).setColor(enabled ? TEXT.normal : TEXT.muted);
       bg.setStrokeStyle(i === this.setupRow ? 4 : 2, i === this.setupRow ? COLORS.accent : COLORS.panelBorder);
     });
-    const roster = this.buildRoster(s.mode === 'copa' ? 'juntos' : s.teams);
+    const roster = this.buildRoster(s.mode === 'copa' || s.mode === 'liga' ? 'juntos' : s.teams);
     this.rosterHeaders.forEach((header, team) => header.setText(TEAM_NAMES[team]).setColor(hexToCss(TEAM_COLORS[team])));
     this.rosterText.forEach((list, team) => {
       list.setText(
@@ -385,6 +403,7 @@ export class FutbolScene extends Phaser.Scene {
         s.pitch = this.cycle(PITCH_KEYS, s.pitch, step);
         this.usePitch(s.pitch);
       } else if (row === 'uniform') s.uniform = (s.uniform + step + UNIFORMS.length) % UNIFORMS.length;
+      else if (row === 'goalies') s.goalies = s.goalies === 'compu' ? 'jugadores' : 'compu';
       else s.powers = !s.powers;
       sfx.select();
       this.refreshSetup();
@@ -396,6 +415,9 @@ export class FutbolScene extends Phaser.Scene {
       if (this.setup.mode === 'copa') {
         this.copa = { round: 0, rivals: copaRivals(this.setup.uniform) };
         this.showCopa();
+      } else if (this.setup.mode === 'liga') {
+        this.liga = createLiga(this.setup.uniform);
+        this.showLiga();
       } else this.startMatch();
     } else if (controls.justPressed(id, 'b')) {
       this.exit();
@@ -429,6 +451,57 @@ export class FutbolScene extends Phaser.Scene {
     }
   }
 
+  // ---------- La Liga ----------
+
+  // La tabla de la Liga: antes de cada jornada (contra quién sigue) y, al final, el campeón.
+  showLiga() {
+    this.phase = 'liga';
+    this.clearMatchStuff();
+    this.hideBanner();
+    this.narrator.hide();
+    this.controlsHint.setText('');
+    this.board.setVisible(false);
+    const liga = this.liga;
+    const total = liga.rivals.length;
+    let title;
+    let hint;
+    let champion = false;
+    if (ligaDone(liga)) {
+      const first = ligaTable(liga)[0];
+      champion = first.ours;
+      title = first.ours ? '🏆 ¡Campeones de la Liga!' : `La Liga la ganaron ${teamLabel(first.index)}`;
+      hint = 'A = jugar otra Liga  ·  B = cambiar el partido';
+      say(first.ours ? '¡Son los campeones de la Liga!' : `¡${teamLabel(first.index)} ganaron la Liga!`);
+      if (first.ours) {
+        rewards.earn('futbol-liga');
+        confetti(this, [first.color, 0xffffff, 0xffd84d], 140);
+        sfx.win();
+      }
+    } else {
+      const next = teamLabel(ligaOpponent(liga));
+      title = `Liga · Jornada ${liga.round + 1} de ${total}: contra ${next}`;
+      hint = 'A = ¡a jugar!  ·  B = salir de la Liga';
+      say(`Jornada ${liga.round + 1}. Contra ${next}`);
+    }
+    this.ligaScreen = showLigaTable(this, liga, { title, hint, depth: HUD_DEPTH + 2, champion });
+  }
+
+  updateLigaScreen() {
+    const ids = this.humans.map((player) => player.deviceId);
+    if (ids.some((id) => controls.justPressed(id, 'a'))) {
+      sfx.confirm();
+      this.ligaScreen.destroy();
+      this.ligaScreen = null;
+      if (ligaDone(this.liga)) {
+        this.liga = createLiga(this.setup.uniform);
+        this.showLiga();
+      } else this.startMatch();
+    } else if (ids.some((id) => controls.justPressed(id, 'b'))) {
+      sfx.back();
+      this.showSetup();
+    }
+  }
+
   // ---------- El partido ----------
 
   // Cómo es este partido (en la Copa cambian el rival, el nivel y la cancha en cada ronda).
@@ -439,6 +512,11 @@ export class FutbolScene extends Phaser.Scene {
       const { round, rivals } = this.copa;
       const pitch = PITCH_KEYS[(PITCH_KEYS.indexOf(s.pitch) + round) % PITCH_KEYS.length];
       return { ...base, kind: 'copa', teams: 'juntos', level: COPA_ROUNDS[round].level, pitch, uniforms: [s.uniform, rivals[round]] };
+    }
+    if (this.liga) {
+      // En la Liga cada jornada es en otra cancha.
+      const pitch = PITCH_KEYS[(PITCH_KEYS.indexOf(s.pitch) + this.liga.round) % PITCH_KEYS.length];
+      return { ...base, kind: 'liga', teams: 'juntos', level: s.level, pitch, uniforms: [s.uniform, ligaOpponent(this.liga)] };
     }
     return {
       ...base,
@@ -460,6 +538,9 @@ export class FutbolScene extends Phaser.Scene {
   clearMatchStuff() {
     this.shootout?.destroy();
     this.shootout = null;
+    this.ligaScreen?.destroy();
+    this.ligaScreen = null;
+    this.ball.held = null;
     this.endScreen?.destroy();
     this.endScreen = null;
     this.replayLayer?.destroy();
@@ -487,8 +568,12 @@ export class FutbolScene extends Phaser.Scene {
     // Si un equipo tiene 2 de la compu, uno se queda de portero.
     for (const team of [0, 1]) {
       const cpus = this.team.filter((p) => p.isCpu && p.team === team);
-      if (cpus.length > 1) cpus[cpus.length - 1].goalie = true;
+      const humans = this.team.filter((p) => !p.isCpu && p.team === team);
+      // Porteros jugadores: el último de cada equipo con 2 o más (y entonces la compu ya no cuida la portería).
+      if (this.setup.goalies === 'jugadores' && humans.length > 1 && m.kind !== 'penales') humans[humans.length - 1].goalie = true;
+      else if (cpus.length > 1) cpus[cpus.length - 1].goalie = true;
     }
+    for (const p of this.team) if (p.goalie) p.tag.setText(`🧤 ${p.label}`);
     this.score = [0, 0];
     this.clockMs = m.minutes * 60000;
     this.goldenGoal = false;
@@ -546,6 +631,10 @@ export class FutbolScene extends Phaser.Scene {
       this.updateCopaRoad();
       return;
     }
+    if (this.phase === 'liga') {
+      this.updateLigaScreen();
+      return;
+    }
     this.phaseMs += dt;
     if (this.phase === 'penalties') {
       this.shootout.update(dt);
@@ -566,12 +655,14 @@ export class FutbolScene extends Phaser.Scene {
       player.update(dt, still ? IDLE : this.inputFor(player));
     }
     this.separatePlayers();
-    if (this.phase !== 'kickoff') this.ball.update(dt / 1000);
+    if (this.phase !== 'kickoff' && !this.ball.held) this.ball.update(dt / 1000);
     for (const player of this.team) {
+      if (this.ball.held) break;
       this.collideBall(player, dt);
       const kick = player.tryKick(this.ball);
       if (kick) this.kicked(player, kick);
     }
+    this.updateGoalies(dt);
 
     if (playing) {
       this.updateTackles();
@@ -609,6 +700,7 @@ export class FutbolScene extends Phaser.Scene {
       kick: controls.justPressed(id, 'x') || (b && nearBall),
       slide: b && !nearBall,
       dribble: !both && ((lbTap && !rb) || (rbTap && !lb)),
+      pass: controls.justPressed(id, 'lt') || controls.justPressed(id, 'rt'),
       special: both && !controls.isDown(id, 'y'),
       up: stick.y < -0.5,
       down: stick.y > 0.5,
@@ -628,9 +720,77 @@ export class FutbolScene extends Phaser.Scene {
     }
     ball.specialBy = null;
     if (KICK_WORDS[kick]) popText(this, ball.x, ball.y - 50, KICK_WORDS[kick], '#ffffff');
+    if (kick === 'pass' && !player.isCpu && player.passTo && !player.passTo.isCpu) this.narrator.line([`¡Pase de ${player.label} para ${player.passTo.label}!`, '¡Qué buen pase!']);
     if (kick === 'volley') {
       comicHit(this, ball.x, ball.y - 40, '¡PUM!');
       this.narrator.line(['¡Qué volea!', '¡De volea!']);
+    }
+  }
+
+  // A quién le pasa el balón: al compañero más cercano de los que van más adelante (hacia la portería rival); si todos
+  // van atrás, al más cercano. Al portero solo si no hay nadie más, y nunca a uno que esté pegadito.
+  passTarget(player) {
+    const dir = attackDir(player.team);
+    const mates = this.team.filter((p) => p !== player && p.team === player.team && Math.abs(p.x - player.x) > 90);
+    if (!mates.length) return null;
+    const outfield = mates.filter((p) => !p.goalie);
+    const candidates = outfield.length ? outfield : mates;
+    const ahead = candidates.filter((p) => (p.x - player.x) * dir > 0);
+    const pool = ahead.length ? ahead : candidates;
+    return pool.reduce((best, p) => (Math.abs(p.x - player.x) < Math.abs(best.x - player.x) ? p : best));
+  }
+
+  // Los porteros: atrapan el balón que viene a su portería (el de la compu no siempre: depende de su nivel), lo
+  // cargan un ratito y lo despejan bien lejos.
+  updateGoalies(dt) {
+    const { ball } = this;
+    if (ball.held) {
+      const p = ball.held;
+      p.holdMs += dt;
+      ball.x = p.x + p.attack * (p.radius + ball.radius * 0.5);
+      ball.y = p.y - p.radius * 0.35;
+      ball.vx = 0;
+      ball.vy = 0;
+      const release = p.isCpu ? p.holdMs > CPU_HOLD_MS : p.holdMs > HOLD_MS || (p.holdMs > 250 && controls.justPressed(p.deviceId, 'x'));
+      if (release || this.phase !== 'play') this.clearBall(p);
+      return;
+    }
+    if (ball.special || this.phase !== 'play') return;
+    for (const p of this.team) {
+      if (!p.goalie || p.busy || this.time.now < (p.noCatchUntil ?? 0)) continue;
+      if (Math.abs(ball.x - goalMouthX(p.team)) > CATCH_ZONE) continue;
+      if (Math.hypot(ball.x - p.x, ball.y - p.y) > p.radius + ball.radius + CATCH_REACH) continue;
+      const incoming = ball.vx * attackDir(p.team) < -60 || (ball.lastTouch && ball.lastTouch.team !== p.team);
+      if (!incoming) continue;
+      // La compu a veces no la agarra (así sí se le pueden meter goles).
+      if (p.isCpu && Math.random() > CPU_LEVELS[this.match.level].catchChance) {
+        p.noCatchUntil = this.time.now + MISS_MS;
+        continue;
+      }
+      ball.held = p;
+      ball.lastTouch = p;
+      ball.specialBy = null;
+      p.holdMs = 0;
+      p.stats.saves += 1;
+      comicHit(this, p.x, p.y - 90, '¡LA ATRAPÓ!');
+      this.narrator.line([`¡La atrapó ${p.label}!`, '¡Qué manos!', '¡Atajadón del portero!']);
+      this.crowd.cheer(900, p.team);
+      sfx.block();
+      break;
+    }
+  }
+
+  // El portero despeja: un patadón hacia adelante.
+  clearBall(p) {
+    const { ball } = this;
+    ball.held = null;
+    ball.vx = p.attack * CLEAR_KICK.vx;
+    ball.vy = CLEAR_KICK.vy;
+    ball.lastTouch = p;
+    p.noCatchUntil = this.time.now + MISS_MS * 2;
+    if (this.phase === 'play') {
+      popText(this, ball.x, ball.y - 50, '¡Despeje!', '#ffffff');
+      sfx.hit(0.7);
     }
   }
 
@@ -696,7 +856,7 @@ export class FutbolScene extends Phaser.Scene {
           popText(this, q.x, q.y - 70, '¡Lo esquivó!', '#9fe3ff');
         }
       }
-      if (!ball.special && Math.abs(ball.x - (p.x + p.facing * p.radius)) < ball.radius + 20 && ball.y > p.y - 10) {
+      if (!ball.special && !ball.held && Math.abs(ball.x - (p.x + p.facing * p.radius)) < ball.radius + 20 && ball.y > p.y - 10) {
         ball.vx = p.facing * 420;
         ball.vy = -180;
         ball.lastTouch = p;
@@ -750,7 +910,7 @@ export class FutbolScene extends Phaser.Scene {
 
   powerTaken(kind, team, player) {
     popText(this, player.x, player.y - 90, POWERS[kind].name, hexToCss(TEAM_COLORS[team]));
-    this.narrator.line(`${POWERS[kind].name} para los ${TEAM_NAMES[team]}`);
+    this.narrator.line(`${POWERS[kind].name} para ${TEAM_LABELS[team]}`);
     this.crowd.cheer(600, team);
   }
 
@@ -810,16 +970,24 @@ export class FutbolScene extends Phaser.Scene {
         if (this.ball.specialBy === scorer) rewards.earn('futbol-especial');
       }
     }
-    for (const p of this.team) if (p.team === team) p.celebrate();
+    // El que metió el gol festeja a su manera (bailando, voltereta, de rodillas o en avioncito) y sus compañeros corren
+    // a abrazarlo; en un autogol, el equipo que anotó baila.
+    const style = ours ? Phaser.Utils.Array.GetRandom(CELEBRATIONS) : 'baile';
+    for (const p of this.team) {
+      if (p.team !== team) continue;
+      if (ours && p !== scorer) p.celebrate('baile', scorer.x);
+      else p.celebrate(style);
+    }
+    if (ours) this.time.delayedCall(GOAL_PAUSE_MS - 500, () => this.phase === 'goal' && this.narrator.line(CELEBRATION_LINES[style]));
     const color = TEAM_COLORS[team];
     // Cámara lenta y acercamiento a la portería; luego el letrero.
     epicMoment(this, this.ball.x, this.ball.y, { zoom: 1.35, ms: GOAL_EPIC_MS, slow: 0.25, hide: [this.board], bounds: { x: 0, y: 0, width: this.scale.width, height: this.scale.height } });
     this.time.delayedCall(GOAL_EPIC_MS, () => {
       if (this.phase !== 'goal') return;
-      this.showBanner('¡GOOOL!', ours ? `de ${scorer.label} · ${TEAM_NAMES[team]}` : `de los ${TEAM_NAMES[team]}`, GOAL_PAUSE_MS - 300, hexToCss(color), false);
+      this.showBanner('¡GOOOL!', ours ? `de ${scorer.label} · ${TEAM_NAMES[team]}` : `de ${TEAM_LABELS[team]}`, GOAL_PAUSE_MS - 300, hexToCss(color), false);
       fireworks(this, [color, 0xffffff, 0xffc93c], 3);
     });
-    const lines = ours ? [`¡Gooool de ${scorer.label}!`, `¡Golazo de los ${TEAM_NAMES[team]}!`, `¡Gol, gol, gol de ${scorer.label}!`] : ['¡Uy, autogol!', `¡Gol para los ${TEAM_NAMES[team]}!`];
+    const lines = ours ? [`¡Gooool de ${scorer.label}!`, `¡Golazo de ${TEAM_LABELS[team]}!`, `¡Gol, gol, gol de ${scorer.label}!`] : ['¡Uy, autogol!', `¡Gol para ${TEAM_LABELS[team]}!`];
     this.narrator.line(lines, { important: true });
     confetti(this, [color, 0xffffff, 0xffc93c], 60);
     burst(this, this.ball.x, this.ball.y, color, 14);
@@ -918,6 +1086,7 @@ export class FutbolScene extends Phaser.Scene {
       text = `⏱ ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
     } else text = `A ${m.goals} goles`;
     if (m && this.copa && text) text = `${COPA_ROUNDS[this.copa.round].name} · ${text}`;
+    if (m && this.liga && m.kind === 'liga' && text) text = `Jornada ${this.liga.round + 1} · ${text}`;
     this.clockText.setText(text).setVisible(Boolean(text));
   }
 
@@ -929,10 +1098,14 @@ export class FutbolScene extends Phaser.Scene {
     const humansWon = this.team.some((p) => !p.isCpu && p.team === winner);
     if (humansWon) rewards.earn('futbol-gana');
     for (const p of this.team) if (p.team === winner) p.celebrate();
-    let title = `¡Ganaron los ${TEAM_NAMES[winner]}!`;
+    let title = `¡Ganaron ${TEAM_LABELS[winner]}!`;
     let cup = false;
     let hint = `A = revancha  ·  B = ${this.humans.length > 1 ? 'cambiar equipos' : 'cambiar el partido'}`;
-    if (m.kind === 'copa') {
+    if (m.kind === 'liga') {
+      playRound(this.liga, this.score[0], this.score[1]);
+      title = humansWon ? `¡Ganaron la jornada ${this.liga.round}!` : `¡Uy! Ganaron ${TEAM_LABELS[winner]}`;
+      hint = 'A = ver la tabla  ·  B = salir de la Liga';
+    } else if (m.kind === 'copa') {
       const last = this.copa.round === COPA_ROUNDS.length - 1;
       if (humansWon && last) {
         title = '¡Campeones de la Copa!';
@@ -945,7 +1118,7 @@ export class FutbolScene extends Phaser.Scene {
         this.copaResult = 'next';
         hint = 'A = siguiente partido  ·  B = salir de la Copa';
       } else {
-        title = `¡Uy! Ganaron los ${TEAM_NAMES[winner]}`;
+        title = `¡Uy! Ganaron ${TEAM_LABELS[winner]}`;
         this.copaResult = 'retry';
         hint = 'A = intentar otra vez  ·  B = salir de la Copa';
       }
@@ -969,6 +1142,11 @@ export class FutbolScene extends Phaser.Scene {
     const b = ids.some((id) => controls.justPressed(id, 'b'));
     if (!a && !b) return;
     sfx.confirm();
+    if (this.match.kind === 'liga') {
+      if (a) this.showLiga();
+      else this.showSetup();
+      return;
+    }
     if (this.match.kind === 'copa') {
       if (b) {
         this.showSetup();
@@ -999,4 +1177,4 @@ export class FutbolScene extends Phaser.Scene {
   }
 }
 
-const IDLE = { x: 0, jump: false, kick: false, slide: false, dribble: false, special: false, up: false, down: false };
+const IDLE = { x: 0, jump: false, kick: false, slide: false, dribble: false, special: false, up: false, down: false, pass: false };

@@ -2299,6 +2299,8 @@ test('fútbol de bolitas: poderes, tiro especial, gol de oro, penales y copa', {
   await p.until(() => window.leogames.scene.getScene('Futbol').phaseMs > 1300, ms(10000), 'poder escoger');
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'setup', ms(8000), 'regresar a escoger');
+  // (Penales → Liga → Copa.)
+  await p.tap(0, BUTTON.LEFT);
   await p.tap(0, BUTTON.LEFT);
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'copa', ms(8000), 'ver el camino de la Copa');
@@ -2774,6 +2776,82 @@ test('duelo de bolitas: con 3 jugadores se turnan y el que gana se queda', { tim
   });
   assert.deepEqual(next, { fighters: ['J1', 'J3'], waiting: ['J2'] });
   await p.holdToMenu(0, EXIT, 'salir del duelo');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('fútbol de bolitas: pases, porteros que atrapan, festejos y la liga con su tabla', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Fútbol de bolitas');
+  await p.pickCharacters(2);
+  await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
+  const futbol = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Futbol')), code);
+  // Porteros: los jugadores (renglón 5) y a jugar (los dos contra la compu).
+  for (let i = 0; i < 4; i += 1) await p.tap(0, BUTTON.DOWN);
+  assert.equal(await futbol('return s.setupRow'), 4);
+  await p.tap(0, BUTTON.RIGHT);
+  assert.equal(await futbol('return s.setup.goalies'), 'jugadores');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), 'empezar el partido');
+  const roles = await futbol("return s.team.filter((t) => !t.isCpu).map((t) => [t.label, Boolean(t.goalie), t.tag.text])");
+  assert.deepEqual(roles, [['J1', false, 'J1'], ['J2', true, '🧤 J2']]);
+
+  // Pase (RT): el balón sale hacia el compañero.
+  const pass = await futbol(`const me = s.team.find((t) => t.label === 'J1');
+    const mate = s.team.find((t) => t.label === 'J2');
+    me.x = 640; mate.x = 300; me.cooldownMs = 0; me.facing = 1;
+    s.ball.reset(me.x + 40, 620);
+    window.__mateX = mate.x;
+    return true;`);
+  assert.ok(pass);
+  await p.tap(0, BUTTON.RT);
+  await p.until(() => window.leogames.scene.getScene('Futbol').ball.vx < -100, ms(3000), 'que el pase vaya hacia el compañero');
+  assert.ok((await futbol("return s.team.find((t) => t.label === 'J1').stats.passes")) >= 1);
+
+  // El portero (J2) atrapa un tiro que viene a su portería y lo despeja con X.
+  await futbol(`const keeper = s.team.find((t) => t.label === 'J2');
+    keeper.x = 160; keeper.z = 0;
+    const rival = s.team.find((t) => t.team === 1);
+    s.ball.reset(keeper.x + 90, keeper.y);
+    s.ball.vx = -500; s.ball.vy = 0; s.ball.lastTouch = rival;`);
+  await p.until(() => window.leogames.scene.getScene('Futbol').ball.held?.label === 'J2', ms(3000), 'que el portero atrape el balón');
+  await p.wait(ms(400));
+  await p.tap(1, BUTTON.X);
+  await p.until(() => !window.leogames.scene.getScene('Futbol').ball.held && window.leogames.scene.getScene('Futbol').ball.vx > 300, ms(3000), 'despejar');
+
+  // Gol: el que lo mete festeja a su manera y su compañero corre a abrazarlo.
+  const party = await futbol(`const me = s.team.find((t) => t.label === 'J1');
+    s.ball.lastTouch = me;
+    s.scoreGoal(0);
+    const mate = s.team.find((t) => t.label === 'J2');
+    return [me.celebrateMs > 0, me.celebrateStyle, mate.hugX];`);
+  assert.equal(party[0], true);
+  assert.ok(['baile', 'voltereta', 'rodillas', 'avion'].includes(party[1]), party[1]);
+  assert.equal(typeof party[2], 'number');
+
+  // La Liga: al terminar se ve la tabla; ganar las 5 jornadas da la copa.
+  await futbol('s.showSetup();');
+  await p.wait(ms(300));
+  await futbol("s.setup.mode = 'liga'; s.refreshSetup();");
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'liga', ms(5000), 'ver la tabla de la liga');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), 'primer partido de la liga');
+  for (let round = 0; round < 5; round += 1) {
+    await futbol('s.score = [3, 1]; s.finishMatch(0);');
+    await p.wait(ms(1300));
+    await p.tap(0, BUTTON.A);
+    await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'liga', ms(5000), `tabla después de la jornada ${round + 1}`);
+    if (round < 4) {
+      await p.tap(0, BUTTON.A);
+      await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), `jornada ${round + 2}`);
+    }
+  }
+  const table = await futbol('return s.liga.teams.map((t) => [t.played, t.points])');
+  assert.ok(table.every(([played]) => played === 5), JSON.stringify(table));
+  assert.equal(await futbol('return s.liga.teams.find((t) => t.ours).points'), 15);
+  assert.ok((await stickers(p.page)).includes('futbol-liga'), 'no ganó la calcomanía de la liga');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

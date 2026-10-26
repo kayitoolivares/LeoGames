@@ -804,3 +804,34 @@ Va ganando la compu, Rayo
 ¡la compu llamó a Pirata!
 Casita de regalos
 Casita de regalos. Fíjate dónde está cada premio
+Mejor jugador: la compu · Gatito
+Jornada 1. Contra los Dragones
+¡Qué volea!
+¡Ganaron la jornada 1!
+Jornada 2. Contra los Ranas
+¡Tiburones contra Ranas! ¡Empieza el partido!
+¡Ganaron la jornada 2!
+Jornada 3. Contra los Abejas
+¡Tiburones contra Abejas! ¡Empieza el partido!
+¡Ganaron la jornada 3!
+Jornada 4. Contra los Pulpos
+¡Tiburones contra Pulpos! ¡Empieza el partido!
+¡Ganaron la jornada 4!
+Jornada 5. Contra los Tigres
+¡Tiburones contra Tigres! ¡Empieza el partido!
+¡Ganaron la jornada 5!
+¡Son los campeones de la Liga!
+¡Nueva calcomanía! Campeones de la Liga
+¡Rescataron a Estrella! Ahora pelea con ustedes
+¡Hasta la vista, Astronauta!
+Estrella dice: ¡Ay, el jugador 2!
+Hada dice: ¡Oye, el jugador 1, no se vale!
+Pingüino dice: ¡Con permiso, el jugador 1!
+Pirata dice: ¡Oye, el jugador 1, no se vale!
+Rayo dice: ¡Ay, el jugador 1!
+Astronauta dice: ¡Me voy, el jugador 1!
+Semifinal: el jugador 1 · Tanque contra la compu · Hada
+Final: el jugador 1 · Tanque contra la compu · Gatito
+Jornada 2. Contra las Ranas
+Jornada 3. Contra las Abejas
+¡Cerdito!

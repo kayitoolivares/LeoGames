@@ -124,7 +124,7 @@ const GAMES = {
     },
   },
   futbol: {
-    fondos: { kind: 'background', names: ['estadio', 'playa', 'nieve', 'luna', 'azotea'] },
+    fondos: { kind: 'background', names: ['estadio', 'playa', 'nieve', 'luna', 'azotea', 'selva', 'dulces', 'noche'] },
     poderes: { kind: 'cutout', max: 128, names: ['balon-gigante', 'porteria-chica', 'iman', 'hielo', 'tenis'] },
     copas: { kind: 'cutout', max: 256, names: ['copa-futbol'] },
   },

@@ -306,24 +306,34 @@ Abre http://localhost:5173 en Edge o Chrome.
   por el de adelante); a los de atrás les tocan los mejores.
 - **Fútbol de bolitas**: vista de lado, dos equipos con uniforme (Tiburones, Dragones, Ranas, Abejas, Pulpos, Tigres).
   **Stick** = correr, **A** = saltar, **X** = patear (siempre hacia la portería contraria; con **↑** globito, con **↓**
-  rasante, en el aire volea), **B** = barrida (tumba al rival; cerquita del balón, patea), **LB o RB** = regate (un
+  rasante, en el aire volea), **LT o RT** = **pase** (un globito que cae junto al compañero que va más adelante),
+  **B** = barrida (tumba al rival; cerquita del balón, patea), **LB o RB** = regate (un
   arrancón en el que no te pueden barrer), **mantén LB + RB + Y** = salir. Tocar y patear el balón llena la barrita de
   cada quien; llena + **LB + RB** = **tiro especial** de su personaje (de fuego derechito, en zigzag o cohete que sube y
   cae en picada): atraviesa a todos y tumba a los rivales.
   Antes del partido el Jugador 1 escoge:
   - **Modo**: **Partido**, **Copa de fútbol** (3 partidos contra la compu: cuartos, semifinal y la gran final, cada uno
-    más difícil y en otra cancha; si pierdes, intentas otra vez ese partido; al ganar la final sale la copa) o
+    más difícil y en otra cancha; si pierdes, intentas otra vez ese partido; al ganar la final sale la copa),
+    **Liga** (5 jornadas, una contra cada equipo; los otros equipos también juegan entre ellos y después de cada
+    partido se ve la **tabla** con partidos jugados, ganados, perdidos, goles a favor y en contra y puntos; el que
+    termina arriba es campeón) o
     **Penales** (5 tiros por equipo y luego muerte súbita: el que tira escoge **↑** alto, nada = medio o **↓** rasante;
     el portero adivina: parado ataja los rasantes y brincando a tiempo con **A** los de arriba).
   - **Equipos**: **todos contra la compu** o **unos contra otros** (la compu completa los equipos).
   - **Cómo se acaba**: a 3, 5 o 7 goles, o **por tiempo** (2 o 3 minutos; si van empatados, **gol de oro**).
-  - **Nivel de la compu** (fácil, normal, difícil; la compu también se barre, regatea y usa su tiro especial).
+  - **Nivel de la compu** (fácil, normal, difícil; la compu también se barre, regatea, se pasa el balón y usa su tiro
+    especial).
+  - **Porteros**: la compu o, con 2 o más jugadores, **el último de cada equipo es el portero** (🧤): no se aleja de
+    su portería, atrapa los tiros que vienen y los despeja con **X**. El portero de la compu también atrapa (más
+    seguido entre más difícil).
   - **Cancha** (dibujos de Gemini): **Estadio**, **Playa** (la arena frena el balón), **Nieve** (se resbalan),
-    **Luna** (poca gravedad: todo flota) y **Azotea**.
+    **Luna** (poca gravedad: todo flota), **Azotea**, **Selva** (llueve: el balón se resbala), **Dulcelandia** (piso
+    de gelatina: todo rebota) y **Estadio de noche**.
   - **Uniformes** y **poderes en la cancha** (sí o no): de vez en cuando aparece una cajita flotando; el que la toca
     (o le pega con el balón) se lleva el poder para su equipo: **balón gigante**, **portería chiquita** (la del rival),
     **imán** (el balón se te pega), **hielo** (congela a los rivales) o **tenis veloces**.
-  Cada gol trae **repetición en cámara lenta** (A la brinca) y festejo; hay **narrador** (voz y letrero), **público**
+  Cada gol trae **repetición en cámara lenta** (A la brinca) y **festejo**: el que lo metió baila, da una voltereta,
+  se barre de rodillas o hace el avioncito, y sus compañeros corren a abrazarlo; hay **narrador** (voz y letrero), **público**
   enfrente que hace la ola con banderas de cada equipo, marcador con reloj, estela en los tiros fuertes, letreros de
   cómic, la red que se mueve y, al final, el **mejor jugador** con la tabla de goles, tiros, robos y atajadas.
 - **Duelo de bolitas**: uno contra uno de lado, estilo Street Fighter, con barras de vida, reloj de 60 s y rounds.
