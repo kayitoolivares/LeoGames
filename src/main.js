@@ -10,6 +10,7 @@ import { PadTestScene } from './scenes/PadTestScene.js';
 import { PrizesScene } from './scenes/PrizesScene.js';
 import { WipeScene } from './scenes/WipeScene.js';
 import { BabyScene } from './games/baby/BabyScene.js';
+import { GolfScene } from './games/golf/GolfScene.js';
 import { BrawlScene } from './games/brawl/BrawlScene.js';
 import { DueloScene } from './games/duelo/DueloScene.js';
 import { FutbolScene } from './games/futbol/FutbolScene.js';
@@ -44,6 +45,7 @@ const game = new Phaser.Game({
     FutbolScene,
     DueloScene,
     BabyScene,
+    GolfScene,
     // Los juegos 3D se descargan hasta que alguien entra a ellos.
     new ThreeGameScene('Race', () => import('./games/race/RaceGame.js').then((m) => m.RaceGame)),
     new ThreeGameScene('Kart', () => import('./games/kart/KartGame.js').then((m) => m.KartGame)),
@@ -74,6 +76,7 @@ const SCENE_MUSIC = {
   Futbol: 'futbol',
   Duelo: 'duelo',
   Baby: 'baby',
+  Golf: 'golf',
 };
 game.events.once(Phaser.Core.Events.READY, () => {
   for (const scene of game.scene.scenes) {

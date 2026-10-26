@@ -2951,6 +2951,67 @@ test('fútbol de bolitas: pases, porteros que atrapan, festejos y la liga con su
   await p.context.close();
 });
 
+test('minigolf: tirar con fuerza, rebotar, agua, portales, hoyo en uno y la tabla', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(2);
+  await p.openGameCard('Minigolf');
+  await p.pickCharacters(2);
+  await p.until(() => window.leogames.scene.getScene('Golf')?.phase === 'setup', ms(8000), 'ver las opciones del minigolf');
+  const golf = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Golf')), code);
+  await p.wait(ms(400));
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'aim', ms(8000), 'que le toque a J1');
+  assert.deepEqual(await golf('return [s.holes.length, s.current.label]'), [3, 'J1']);
+  // Mantener A carga la fuerza; al soltar, la pelota sale rodando hacia donde apunta y luego se para.
+  await p.page.evaluate(() => window.__button(0, 0, true));
+  await p.wait(ms(700));
+  await p.page.evaluate(() => window.__button(0, 0, false));
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'roll', ms(3000), 'tirar');
+  assert.equal(await golf('return s.balls[0].strokes'), 1);
+  await p.until(() => ['aim', 'wait'].includes(window.leogames.scene.getScene('Golf').phase) && window.leogames.scene.getScene('Golf').current.label === 'J2', ms(15000), 'que le toque a J2');
+  assert.ok(await golf('return s.balls[0].x > s.hole.tee[0] + 40'), 'la pelota no avanzó');
+
+  // La física: rebota en el barandal, se para sola, el agua la regresa y el portal la pasa al otro lado.
+  const physics = await p.page.evaluate(async () => {
+    const { HOLES } = await import('/src/games/golf/holes.js');
+    const { Course, stepBall } = await import('/src/games/golf/physics.js');
+    const run = (hole, ball, ms = 6000) => {
+      const course = new Course(hole);
+      const seen = {};
+      for (let t = 0; t < ms; t += 16) {
+        course.update(16);
+        Object.assign(seen, stepBall(ball, course, 16));
+        if (seen.sank || seen.water || seen.rest) break;
+      }
+      return seen;
+    };
+    const straight = HOLES[0];
+    const wall = run(straight, { x: 600, y: 400, vx: 0, vy: -500 });
+    const water = run(HOLES[4], { x: 450, y: 300, vx: 600, vy: 0 });
+    const portal = run(HOLES[7], { x: 380, y: 380, vx: 300, vy: 0 });
+    const sank = run(straight, { x: 960, y: 400, vx: 260, vy: 0 });
+    return { wall: Boolean(wall.wall && wall.rest), water: Boolean(water.water), portal: Boolean(portal.portal), sank: Boolean(sank.sank) };
+  });
+  assert.deepEqual(physics, { wall: true, water: true, portal: true, sank: true });
+
+  // Hoyo en uno: los que faltan la meten de un tiro y se ve la tabla; A = siguiente hoyo.
+  // (Si el primer tiro de J1 entró de suerte, nada más falta J2.)
+  for (let left = await golf('return s.balls.filter((b) => !b.done).length'); left > 0; left -= 1) {
+    await p.until(() => window.leogames.scene.getScene('Golf').phase === 'aim', ms(8000), `turno (faltan ${left})`);
+    await golf('const b = s.current; b.strokes = 0; b.x = s.hole.cup[0] - 120; b.y = s.hole.cup[1]; b.aim = 0; s.shoot(b, 0.12);');
+    await p.until(`window.leogames.scene.getScene('Golf').balls.filter((b) => !b.done).length === ${left - 1}`, ms(8000), `meterla (faltan ${left})`);
+  }
+  assert.ok((await stickers(p.page)).includes('golf-hoyo-en-uno'));
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'score', ms(6000), 'ver la tabla');
+  assert.deepEqual(await golf('return s.balls.map((b) => b.scores)'), [[1], [1]]);
+  await p.wait(ms(1000));
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Golf').holeIndex === 1 && window.leogames.scene.getScene('Golf').phase !== 'score', ms(6000), 'el segundo hoyo');
+  await p.holdToMenu(0, EXIT, 'salir del minigolf');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('carreras desde arriba: menús, carros, cajas con poderes y campeonato', { timeout: ms(150000) }, async () => {
   const p = await openPage(game);
   await p.joinPlayers(1);

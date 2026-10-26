@@ -414,6 +414,14 @@ Abre http://localhost:5173 en Edge o Chrome.
   aplasta, 5 estrella, 6 rueda como dado, 7 arcoíris, 8 ocho brazos, 9 golpazo y 10 despega como cohete.
   Su súper forma es **Octobloque** (el 8 superhéroe, con antifaz, capa y ocho brazos). Contar del 1 al 10 da
   la calcomanía "Hasta el 10".
+- **Minigolf** (juego nuevo): por turnos, cada quien con su personaje de pelota. En tu turno el **stick** apunta,
+  **mantén A** para la fuerza (sube y baja sola) y **suelta** para tirar; **LB / RB** afinan la puntería y **B**
+  cancela. Una línea punteada enseña por dónde va a ir (se puede quitar). Recorrido **corto** (3 hoyos) o **completo**
+  (9): ¡A calentar!, La curva, El molino (aspas que dan vueltas), Pinball (hongos que rebotan fuerte), Arena y agua
+  (la arena frena; si cae al agua regresa de donde tiró y cuenta un tiro), La rampa (empuja la pelota), La pared que
+  se mueve, Portales y La gran final. Cerca del hoyo la pelota se jala tantito para adentro; con 4 tiros de más del
+  par se acaba tu hoyo. Después de cada hoyo, la tabla con los tiros de cada quien; calcomanías por hoyo en uno y por
+  ganar los 9.
 - **Modo Bebé**: cualquier botón hace algo bonito y no se gana ni se pierde. A B X Y sacan figuras con carita
   (círculo, estrella, cuadrado, flor, corazón y triángulo) con su nombre y su color ("Estrella roja"), y cada botón
   toca la nota que sigue de una **canción** (Estrellita, Martinillo, Witsi witsi araña, El viejo MacDonald, Cumpleaños

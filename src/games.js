@@ -9,6 +9,7 @@ export const GAMES = [
   { title: 'Carreras', emoji: '🏎️', description: 'Vista desde arriba,\n¡a toda velocidad!', scene: 'Race' },
   { title: 'Fútbol de bolitas', emoji: '⚽', description: 'Azules contra Rojos\n¡a meter goles!', scene: 'Futbol', pick: true },
   { title: 'Duelo de bolitas', emoji: '🥋', description: 'Uno contra uno\n¡estilo Street Fighter!', scene: 'Duelo', pick: true },
+  { title: 'Minigolf', emoji: '⛳', description: 'Molinos, rampas\ny portales', scene: 'Golf', pick: true },
   { title: 'Halcón de Acero', emoji: '✈️', description: 'Combate aéreo 3D\n(se abre aparte)', url: 'https://hda.grupomegarey.mx/' },
   { title: 'Modo Bebé', emoji: '👶', description: 'Aprieta botones:\ncolores y sonidos', scene: 'Baby' },
   { title: 'Mis premios', emoji: '🏆', description: 'Tus calcomanías\ny lo que desbloqueas', scene: 'Premios', badge: 'Ver' },

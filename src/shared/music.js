@@ -62,6 +62,13 @@ const SONGS = {
     bass: { wave: 'triangle', volume: 0.12, notes: 'C3 . G2 . C3 . G2 . | D3 . A2 . D3 . A2 . | E3 . B2 . A2 . E2 . | G2 . D3 . G2 . B2 . | C3 . G2 . C3 . G2 . | F2 . C3 . F2 . C3 . | G2 . D3 . G2 . B2 . | C3 . G2 . C3 . . .' },
     drums: 'k . h k s . h . | k . h k s . h . | k . h k s . h . | k . h k s . s s | k . h k s . h . | k . h k s . h . | k . h k s . h . | k . s k s s s s',
   },
+  // Minigolf: tranquila y saltarina (para pensar el tiro).
+  golf: {
+    bpm: 100,
+    lead: { wave: 'triangle', volume: 0.06, notes: 'G5 . E5 G5 A5 . G5 E5 | F5 . D5 F5 G5 . F5 D5 | E5 . C5 E5 G5 . E5 C5 | D5 E5 F5 D5 G5 - . . | G5 . E5 G5 A5 . G5 E5 | F5 . D5 F5 G5 . F5 D5 | E5 G5 C6 B5 A5 G5 F5 D5 | C5 - . . . . . .' },
+    bass: { wave: 'triangle', volume: 0.1, notes: 'C3 . G2 . C3 . G2 . | D3 . A2 . D3 . A2 . | C3 . G2 . C3 . G2 . | G2 . D3 . G2 . B2 . | C3 . G2 . C3 . G2 . | D3 . A2 . D3 . A2 . | F2 . C3 . G2 . D3 . | C3 . G2 . C3 . . .' },
+    drums: 'k . h . s . h . | k . h . s . h . | k . h . s . h . | k . h . s . h h | k . h . s . h . | k . h . s . h . | k . h . s . h . | k . . . s . . .',
+  },
   // Canción de cuna para el Modo Bebé: lenta, suave y sin batería.
   baby: {
     bpm: 84,
