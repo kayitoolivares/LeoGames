@@ -1,8 +1,8 @@
 import { join, seg } from './level.js';
 
 // Más niveles de Súper Bolitas (cómo se escriben: ver level.js): los fuertes con mini jefe (uno por mundo), los
-// mundos 5 a 7 (nieve, dulces y casa embrujada), los niveles secretos (se abren con la bandera secreta G) y las
-// arenas de la batalla de monedas y de los enemigos del mapa.
+// mundos 5 a 8 (nieve, dulces, casa embrujada y espacio), los niveles secretos (se abren con la bandera secreta G) y
+// las arenas de la batalla de monedas y de los enemigos del mapa.
 
 // La arena de un jefe o mini jefe: 28 de ancho, entre paredes (la puerta de la izquierda se abre sola).
 const ARENA = seg(`
@@ -1093,6 +1093,219 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXX
 };
 
 // ---------- Niveles secretos ----------
+
+// ---------- Mundo 8: El espacio (poca gravedad: se brinca más alto y más lejos; el poder es la mochila cohete) ----------
+// w marcianito   T ovni   I robotito
+
+export const W81 = {
+  name: 'La luna',
+  theme: 'espacio',
+  background: 'espacio',
+  gravity: 0.6,
+  power: 'cohete',
+  rows: join(
+    seg(`
+          o o o
+       ?M?
+
+
+ @          w
+########################
+########################`),
+    seg(`
+                 O
+              =====
+                         T
+
+   o o o      w
+##########   ##################
+##########   ##################`),
+    seg(`
+                   o o o
+             =====       =====
+       T
+                                w
+     w
+#########     ######     ##########
+#########     ######     ##########`),
+    seg(`
+            o o o
+      ?B?M?B
+
+
+                  I
+   w     w              w
+############################
+############################`),
+    seg(`
+                    O
+                 =======
+          =====           =====
+     T
+                                   w
+########       #####         ########
+########       #####         ########`),
+    seg(`
+              o o
+           XXX    XXX
+          XXXX    XXXX
+   w     XXXXX    XXXXX     I
+##############    ##############
+##############    ##############`),
+    seg(`
+             O
+         ======          ooo
+                       ======
+     T                             o
+    ?$?             w
+
+
+#########   ##########   ###########    F
+#########   ##########   ######################
+#########   ##########   ######################`),
+  ),
+};
+
+export const W82 = {
+  name: 'Fuerte del Gran Robotito',
+  theme: 'espacio',
+  background: 'espacio',
+  gravity: 0.6,
+  boss: 'granRobotito',
+  rows: join(
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+                o O o
+         ?M?
+
+
+ @         w            I
+############################
+############################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXXXX
+                   O
+
+       =====            T
+              =====
+    w
+                    w
+##########################
+##########################`),
+    seg(`
+XXXXXXXXXXXXXXXXXXXXXXXX
+           o o o
+          =======
+   I
+
+        w
+########################
+########################`),
+    ARENA,
+  ),
+};
+
+export const W83 = {
+  name: 'Estación espacial',
+  theme: 'espacio',
+  background: 'espacio',
+  gravity: 0.7,
+  power: 'cohete',
+  rows: join(
+    seg(`
+           o o o
+        ?M?B?
+
+
+ @          I
+########################
+########################`),
+    seg(`
+                   O
+               m
+       T                 T
+   =====   =====  =====
+             w
+########                  #######
+########                  #######`),
+    seg(`
+              o o o
+         ===========
+                          I
+    w        T
+                   w
+##############################
+##############################`),
+    seg(`
+                       O
+                    u
+         =====              =====
+    T
+                 w                  w
+#######                        ########
+#######                        ########`),
+    seg(`
+              C
+       ?B?B?
+
+    I
+          w           w
+##########################
+##########################`),
+    seg(`
+                 O
+              =====
+       T              T
+          =====     =====
+            w
+#########                  ##########    F
+#########                  ######################
+#########                  ######################`),
+  ),
+};
+
+export const W84 = {
+  name: 'La nave del Mega Robot',
+  theme: 'espacio',
+  background: 'espacio',
+  gravity: 0.6,
+  boss: 'megaRobot',
+  rows: join(
+    seg(`
+          O
+       ?M?B?
+
+
+ @         w       I
+######################   ####
+######################   ####`),
+    seg(`
+                o o o
+     T      =========
+  ====               O
+        w
+######     ######################
+######     ######################`),
+    seg(`
+              o o
+            ======
+       ===          ===
+   I                    w
+#########         ##########
+#########         ##########`),
+    seg(`
+          o o o o o
+       B?BB?B
+
+
+   w        I        w
+############################
+############################`),
+    ARENA,
+  ),
+};
 
 export const SECRET1 = {
   name: 'Cielo de monedas',

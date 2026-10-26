@@ -9,11 +9,11 @@ import { BLOCKS, ROWS, T, isSemi, isSolid } from './tiles.js';
 //   Enemigos: g hongo malo  t tortuga  v murciélago  q pájaro  n nube mala  f pez  j medusa  e erizo
 //             x bola de fuego (sale de la lava)  a aplastador  k planta (arriba de un tubo)  c cangrejo
 //             p pingüino  l carámbano  N bola de nieve  J galleta  Q dona  A paleta  W chicle  h fantasma
-//             E esqueleto  V vela
+//             E esqueleto  V vela  w marcianito  T ovni  I robotito
 //   Plataformas: m se mueve de lado   u sube y baja   y da vueltas   z se cae cuando la pisas
 // Tubos secretos: un 1 justo arriba de la boca de un tubo = entrar ahí (abajo en el stick) te lleva a donde está el
 // 2; el 3 te lleva al 4. Lo que está desde la columna `bonus` es un cuarto secreto aparte.
-const ENTITIES = new Set('@FGCoORDPdKgtvqnfjexakcpNJQAWhEVlmuyz1234');
+const ENTITIES = new Set('@FGCoORDPdKgtvqnfjexakcpNJQAWhEVlmuyz1234wTI');
 
 export function seg(text) {
   const lines = text.replace(/^\n/, '').split('\n');

@@ -38,6 +38,7 @@ export const THEMES = {
   nieve: { top: '#ffffff', topDark: '#bfe0ff', fill: '#9fd0f0', fillDark: '#74aedb', stone: '#cfe9ff', semi: 'ice', sky: 0xcfeaff },
   dulces: { top: '#ff9ec7', topDark: '#e06a9f', fill: '#c98a5a', fillDark: '#9c6438', stone: '#ffd0e6', semi: 'candy', sky: 0xffd6ec, lava: 'chocolate' },
   embrujada: { top: '#8a6fb8', topDark: '#5e4890', fill: '#5a4a6e', fillDark: '#3e3250', stone: '#7d6a96', semi: 'wood', sky: 0x241a36 },
+  espacio: { top: '#c9c5dd', topDark: '#8f8aa8', fill: '#6f6a8c', fillDark: '#4e4870', stone: '#9a9ab8', semi: 'rock', sky: 0x0b0820 },
 };
 const INK = '#1b1530';
 

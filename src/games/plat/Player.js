@@ -41,6 +41,8 @@ const WATER_EXIT = 720;
 const MINI = { gravity: 0.6, waterRun: 240 };
 // La capa: con A sostenido cae despacito; X = giro que tumba a los de alrededor.
 const CAPE = { fall: 110, spinMs: 320 };
+// La mochila cohete: con A sostenido en el aire (ya pasado el brinco) sube un ratito; se recarga al pisar.
+const ROCKET = { thrust: 2600, maxRise: 420, fuelMs: 1400 };
 export const GIANT_MS = 10000;
 export const STOMP_BOUNCE = { normal: 540, held: 860 };
 const INVULN_MS = 1800;
@@ -48,7 +50,7 @@ export const STAR_MS = 9000;
 const DINO = { jump: 1.15, rise: 34, flutterMs: 900, flutterLift: 3500 };
 const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
 // Color del traje con cada poder.
-const POWER_TINT = { fire: 0xffd0a0, ice: 0xbfe6ff, cape: null };
+const POWER_TINT = { fire: 0xffd0a0, ice: 0xbfe6ff, cape: null, rocket: null };
 
 export class Player {
   constructor(scene, player, character, { peque = false } = {}) {
@@ -91,6 +93,14 @@ export class Player {
     // La capa: un triángulo rojo detrás del personaje.
     this.cape = scene.add.triangle(0, 0, 0, 0, 30, 0, 22, 46, 0xe53935).setStrokeStyle(3, 0x1b1530).setVisible(false);
     this.sprite.addAt(this.cape, 1);
+    // La mochila cohete: dos tanques con punta roja; la flama sale cuando va volando.
+    this.jetFlames = [-6, 6].map((dx) => scene.add.triangle(dx, 18, 0, 0, 10, 0, 5, 22, 0xff9a3c).setStrokeStyle(2, 0xffd84d).setVisible(false));
+    const tanks = [-6, 6].flatMap((dx) => [
+      scene.add.rectangle(dx, 0, 11, 30, 0xc9c5dd).setStrokeStyle(3, 0x1b1530),
+      scene.add.triangle(dx, -19, 0, 8, 11, 8, 5.5, 0, 0xe53935).setStrokeStyle(2, 0x1b1530),
+    ]);
+    this.jetpack = scene.add.container(0, 0, [...this.jetFlames, ...tanks]).setVisible(false);
+    this.sprite.addAt(this.jetpack, 1);
     this.tag = scene.add.text(0, 0, this.label, textStyle(15, hexToCss(this.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 })).setOrigin(0.5);
     this.bubble = scene.add.circle(0, 0, 46, 0xbfe9ff, 0.35).setStrokeStyle(4, 0xffffff, 0.9).setVisible(false);
     this.sprite.setDepth(50);
@@ -197,8 +207,17 @@ export class Player {
         sfx.jump();
       }
       if (!input.held('a') || this.vy > 0) this.holdingJump = false;
-      const gravity = (this.holdingJump ? GRAVITY.held : GRAVITY.normal) * (this.size === 'mini' ? MINI.gravity : 1);
-      this.vy = Math.min(MAX_FALL, this.vy + gravity * dt);
+      // (En el espacio, `level.gravity`: se brinca más alto y se cae más despacio.)
+      const space = level.gravity ?? 1;
+      const gravity = (this.holdingJump ? GRAVITY.held : GRAVITY.normal) * (this.size === 'mini' ? MINI.gravity : 1) * space;
+      this.vy = Math.min(MAX_FALL * (0.5 + 0.5 * space), this.vy + gravity * dt);
+      // Mochila cohete: con A sostenido ya en el aire, sube un ratito.
+      if (this.onGround) this.fuelMs = ROCKET.fuelMs;
+      this.thrusting = this.power === 'rocket' && !this.dino && !this.onGround && !this.holdingJump && input.held('a') && (this.fuelMs ?? 0) > 0;
+      if (this.thrusting) {
+        this.fuelMs -= dtMs;
+        this.vy = Math.max(-ROCKET.maxRise, this.vy - ROCKET.thrust * dt);
+      }
       // Capa: con A sostenido, planea.
       if (this.power === 'cape' && !this.dino && input.held('a') && this.vy > CAPE.fall) this.vy = CAPE.fall;
       // Dinosaurio azul: con A sostenido aletea un ratito (sube un poquito).
@@ -387,6 +406,13 @@ export class Player {
     if (caped) {
       const gliding = !this.onGround && this.vy > 0;
       this.cape.setPosition(-this.facing * RADIUS * 0.6, -RADIUS * 0.9).setScale(-this.facing, 1).setAngle(this.facing * (gliding ? -55 : 10 + Math.sin(now / 120) * 8));
+    }
+    // La mochila cohete (con su flama cuando va volando).
+    const rocket = this.power === 'rocket' && this.state === 'play';
+    this.jetpack.setVisible(rocket);
+    if (rocket) {
+      this.jetpack.setPosition(-this.facing * RADIUS * 0.9, -RADIUS * 1.4);
+      for (const flame of this.jetFlames) flame.setVisible(Boolean(this.thrusting)).setScale(1, 0.8 + 0.3 * Math.sin(now / 40));
     }
     this.hat?.setPosition(this.facing * 2, this.look.top + 12).setFlipX(this.facing < 0);
     const top = this.y - s.h - rise - 14;

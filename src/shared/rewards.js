@@ -30,6 +30,7 @@ export const STICKERS = [
   { id: 'plat-mundo-2', emoji: '☁️', name: 'Adiós Rey Nube', hint: 'Gana el mundo de las nubes en Súper Bolitas' },
   { id: 'plat-mundo-3', emoji: '🦀', name: 'Adiós Rey Cangrejo', hint: 'Gana el mundo del agua en Súper Bolitas' },
   { id: 'plat-mundo-4', emoji: '🐉', name: 'Adiós Rey Dragón', hint: 'Gana el castillo de lava en Súper Bolitas' },
+  { id: 'plat-mundo-8', emoji: '👩‍🚀', name: 'Astronautas', hint: 'Gana el mundo del espacio en Súper Bolitas' },
   { id: 'plat-secreto', emoji: '🔑', name: 'Tubo secreto', hint: 'Encuentra un cuarto secreto en Súper Bolitas' },
   { id: 'plat-monedas', emoji: '🔵', name: 'Las tres grandes', hint: 'Junta las 3 monedas grandes de un nivel de Súper Bolitas' },
   { id: 'plat-dino', emoji: '🥚', name: 'Arre, dinosaurio', hint: 'Súbete al dinosaurio en Súper Bolitas' },

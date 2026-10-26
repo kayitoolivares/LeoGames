@@ -1,8 +1,32 @@
 import { join, seg } from './level.js';
-import { FORT1, FORT2, FORT3, FORT4, SECRET1, SECRET3, SECRET6, W51, W52, W53, W54, W61, W62, W63, W64, W71, W72, W73, W74 } from './levels2.js';
+import {
+  FORT1,
+  FORT2,
+  FORT3,
+  FORT4,
+  SECRET1,
+  SECRET3,
+  SECRET6,
+  W51,
+  W52,
+  W53,
+  W54,
+  W61,
+  W62,
+  W63,
+  W64,
+  W71,
+  W72,
+  W73,
+  W74,
+  W81,
+  W82,
+  W83,
+  W84,
+} from './levels2.js';
 export { Level } from './level.js';
 
-// Los niveles de Súper Bolitas (cómo se escriben: ver level.js). Mundos 1 a 4; los fuertes, los mundos 5 a 7, los
+// Los niveles de Súper Bolitas (cómo se escriben: ver level.js). Mundos 1 a 4; los fuertes, los mundos 5 a 8, los
 // niveles secretos y las arenas están en levels2.js.
 
 // ---------- Mundo 1: Pradera y cuevas ----------
@@ -852,6 +876,7 @@ export const WORLDS = [
   { name: 'Montañas de nieve', emoji: '❄️', levels: [W51, W52, W53, W54], sticker: 'plat-mundo-5', color: 0xcfeaff, dino: 'azul' },
   { name: 'Dulcelandia', emoji: '🍭', levels: [W61, W62, W63, W64], secret: SECRET6, sticker: 'plat-mundo-6', color: 0xff9ec7, dino: 'amarillo' },
   { name: 'Casa embrujada', emoji: '👻', levels: [W71, W72, W73, W74], sticker: 'plat-mundo-7', color: 0x8a6fb8, dino: 'rojo' },
+  { name: 'El espacio', emoji: '🚀', levels: [W81, W82, W83, W84], sticker: 'plat-mundo-8', color: 0x6a5acd, dino: 'azul' },
 ];
 
 // La lista de los niveles del camino, en orden (para el mapa): { world, index, spec, id: "1-1" }.

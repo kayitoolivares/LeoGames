@@ -951,6 +951,9 @@ export class PlatScene extends Phaser.Scene {
       player.getPower('cape');
       rewards.earn('plat-capa');
       say('¡Capa! Mantén A en el aire para planear');
+    } else if (kind === 'cohete') {
+      player.getPower('rocket');
+      say('¡Mochila cohete! Mantén A en el aire para volar');
     } else if (kind === 'hongo-mini') {
       player.shrinkMini();
       say('¡Chiquitito! Cabes por todos lados');

@@ -18,6 +18,7 @@ export const BOSSES = {
   reyDragon: { name: 'el Rey Dragón', art: 'plat:rey-dragon', size: 160, w: 120, h: 140, speed: 100, behavior: 'shooter', shot: 'fire', facesLeft: true, color: 0x8e5cf0 },
   reyYeti: { name: 'el Rey Yeti', art: 'plat:gran-yeti', size: 170, w: 120, h: 150, speed: 95, behavior: 'shooter', shot: 'snow', quake: true, color: 0xffffff },
   reyPastel: { name: 'el Rey Pastel', art: 'plat:rey-pastel', size: 170, w: 130, h: 150, speed: 85, behavior: 'jumper', minion: 'W', color: 0xff9ec7 },
+  megaRobot: { name: 'el Mega Robot', art: 'plat:mega-robot', size: 170, w: 130, h: 150, speed: 90, behavior: 'shooter', shot: 'laser', quake: true, color: 0xe53935 },
   reyCalabaza: { name: 'el Rey Calabaza', art: 'plat:rey-calabaza', size: 150, w: 140, h: 120, speed: 130, behavior: 'flyer', bolts: 0xb07cff, color: 0xff9a3c },
   // Mini jefes (en el fuerte de cada mundo).
   granTortuga: { name: 'la Gran Tortuga', art: 'plat:tortuga', size: 116, w: 80, h: 100, speed: 100, behavior: 'charger', hp: 2, mini: true, color: 0x4cd97b },
@@ -26,6 +27,7 @@ export const BOSSES = {
   granBola: { name: 'la Gran Bola de Fuego', art: 'plat:bola-fuego', size: 100, w: 84, h: 84, speed: 120, behavior: 'jumper', hp: 2, mini: true, color: 0xff9a3c },
   granPinguino: { name: 'el Gran Pingüino', art: 'plat:pinguino', size: 116, w: 84, h: 104, speed: 110, behavior: 'charger', hp: 2, mini: true, color: 0x2a3a7a },
   granGalleta: { name: 'la Gran Galleta', art: 'plat:galleta', size: 124, w: 86, h: 114, speed: 90, behavior: 'jumper', minion: 'J', hp: 2, mini: true, color: 0xc98a5a },
+  granRobotito: { name: 'el Gran Robotito', art: 'plat:robotito', size: 120, w: 90, h: 106, speed: 110, behavior: 'charger', hp: 2, mini: true, color: 0xc0c4d0 },
   granFantasma: { name: 'el Gran Fantasma', art: 'plat:fantasma', size: 120, w: 110, h: 100, speed: 120, behavior: 'flyer', hp: 2, mini: true, color: 0xffffff },
 };
 export const BOSS_HP = 3;
@@ -34,7 +36,7 @@ const GRAVITY = 2200;
 const CHIP = 0.25;
 // Dónde flotan los que vuelan (sus pies).
 const FLY_Y = 4.6 * T;
-const SHOTS = { fire: [0xff7a1f, 0xffd84d], snow: [0xffffff, 0x9fd8ff], ink: [0x3a2a5a, 0x8158d8] };
+const SHOTS = { fire: [0xff7a1f, 0xffd84d], snow: [0xffffff, 0x9fd8ff], ink: [0x3a2a5a, 0x8158d8], laser: [0xff4d6d, 0xffffff] };
 
 export class Boss {
   constructor(scene, key, x, y, arena) {

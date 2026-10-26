@@ -3735,6 +3735,46 @@ test('súper bolitas: mapa por mundos, casita de regalos, enemigo del mapa, bata
 
 // Los jefes que vuelan (Rey Nube, Gran Pájaro...) bajan al piso a descansar: ahí se les puede brincar encima. (Antes
 // buscaban el piso desde arriba, encontraban el techo del castillo y nunca bajaban.)
+test('súper bolitas: en el espacio se brinca más alto y la mochila cohete vuela', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await openPlat(p, 1, { unlocked: 0, levels: {}, peque: {} });
+  // Qué tan alto sube con A sostenido un ratito (desde el piso).
+  const jump = async (holdMs) => {
+    await p.until(() => window.leogames.scene.getScene('Plat').players[0].onGround, ms(6000), 'estar en el piso');
+    await plat(p.page, () => {
+      const s = window.leogames.scene.getScene('Plat');
+      const pl = s.players[0];
+      window.__jump = { start: pl.y, top: pl.y };
+      s.events.off('postupdate', window.__track);
+      window.__track = () => (window.__jump.top = Math.min(window.__jump.top, pl.y));
+      s.events.on('postupdate', window.__track);
+    });
+    await p.page.evaluate(() => window.__button(0, 0, true));
+    await p.wait(holdMs);
+    await p.page.evaluate(() => window.__button(0, 0, false));
+    await p.until(() => window.leogames.scene.getScene('Plat').players[0].onGround, ms(8000), 'caer al piso');
+    return plat(p.page, () => window.__jump.start - window.__jump.top);
+  };
+  await startPlatLevel(p, '1-1');
+  const earth = await jump(1500);
+  await startPlatLevel(p, '8-1');
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').level.gravity), 0.6);
+  const moon = await jump(1500);
+  assert.ok(moon > earth * 1.3, `en la luna no se brincó más alto (${Math.round(earth)} → ${Math.round(moon)})`);
+  // La mochila cohete: ya pasado el brinco, con A sostenido sigue subiendo; al pisar se recarga.
+  await plat(p.page, () => {
+    const s = window.leogames.scene.getScene('Plat');
+    s.powerTaken(s.players[0], 'cohete');
+  });
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').players[0].power), 'rocket');
+  const rocket = await jump(1500);
+  assert.ok(rocket > moon + 100, `con el cohete no se voló (${Math.round(moon)} → ${Math.round(rocket)})`);
+  assert.equal(await plat(p.page, () => window.leogames.scene.getScene('Plat').players[0].fuelMs), 1400);
+  await p.holdToMenu(0, EXIT, 'salir de Súper Bolitas');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('súper bolitas: el Rey Nube baja al piso a descansar', { timeout: ms(90000) }, async () => {
   const p = await openPage(game);
   await openPlat(p, 1, null);

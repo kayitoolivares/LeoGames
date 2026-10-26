@@ -14,8 +14,11 @@ export function loadPlatArt(scene) {
   for (const name of (manifest.jefes ?? []).filter((n) => !isPoseName(n))) load(`plat:${name}`, `plat/jefes/${name}.png`);
   for (const name of manifest.objetos ?? []) load(`plat:objeto-${name}`, `plat/objetos/${name}.png`);
   load('plat:dinosaurio', 'brawl/objetos/dinosaurio.png');
-  // Del arte de Pelea en equipo: el cangrejo, el pulpo (mini jefe) y los jefes de nieve, dulces y la casa embrujada.
-  for (const name of ['cangrejo', 'capitan-pulpo', 'gran-yeti', 'rey-pastel', 'rey-calabaza']) load(`plat:${name}`, `brawl/monstruos/${name}.png`);
+  // Del arte de Pelea en equipo: el cangrejo, el pulpo (mini jefe), los jefes de nieve, dulces y la casa embrujada, y
+  // los del espacio (marcianito, ovni, robotito y el Mega Robot).
+  for (const name of ['cangrejo', 'capitan-pulpo', 'gran-yeti', 'rey-pastel', 'rey-calabaza', 'marcianito', 'ovni', 'robotito', 'mega-robot']) {
+    load(`plat:${name}`, `brawl/monstruos/${name}.png`);
+  }
 }
 
 // El fondo lejano de un nivel, solo cuando se va a jugar (ver shared/lazyArt.js); `onReady` cuando llega.

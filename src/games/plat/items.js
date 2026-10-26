@@ -8,7 +8,7 @@ import { T, isSolid, themeTextures } from './tiles.js';
 // flor, flor de hielo, pluma, hongo mini, hongo gigante, estrella, corazón = vida), bolas de fuego y de hielo,
 // pedacitos de ladrillo, resortes y plataformas que se mueven.
 const GRAVITY = 2000;
-const POWER_SPEED = { hongo: 130, vida: 130, estrella: 180, flor: 0, 'flor-hielo': 0, pluma: 0, 'hongo-mini': 150, 'hongo-gigante': 110 };
+const POWER_SPEED = { hongo: 130, vida: 130, estrella: 180, flor: 0, 'flor-hielo': 0, pluma: 0, cohete: 0, 'hongo-mini': 150, 'hongo-gigante': 110 };
 const FIREBALL = { speed: 560, bounce: 400, lifeMs: 2600, max: 2 };
 const BALL_LOOK = { fire: [0xff7a1f, 0xffd84d, 400], ice: [0xbfe9ff, 0x3fa7ff, 280] };
 const SPRING = { launch: 1350, held: 1600 };

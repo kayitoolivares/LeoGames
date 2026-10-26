@@ -74,12 +74,14 @@ Abre http://localhost:5173 en Edge o Chrome.
   (invencible), espada (pega doble y llega más lejos), escudo (aguanta 3 golpes), imán (jala monedas y comida) o
   mascota (un perrito que muerde monstruos). Si alguien cae, un compañero se para junto a él para levantarlo.
 - **Súper Bolitas** (plataformas estilo Mario Bros): hasta 4 a la vez en la misma pantalla, con los personajes de
-  Bolitas Bros. Mapa con caminito y **7 mundos** de 4 niveles (el segundo es un **fuerte con mini jefe** y el
+  Bolitas Bros. Mapa con caminito y **8 mundos** de 4 niveles (el segundo es un **fuerte con mini jefe** y el
   cuarto un **castillo con jefe**): Pradera y cuevas (Rey Hongo), Nubes y cielo (Rey Nube, con viento), Agua y playa
   (nadar; Rey Cangrejo), Castillo de lava (Rey Dragón), **Montañas de nieve** (piso de hielo que resbala, pingüinos
   que se deslizan de panza, bolas de nieve, carámbanos que caen; Rey Yeti), **Dulcelandia** (chicle que pega, ríos de
-  chocolate, galletas, donas, paletas y chicles que brincan; Rey Pastel) y la **Casa embrujada** (fantasmas tímidos
-  que solo se acercan si no los ves, esqueletos que se desarman, velas, **puertas** a otros cuartos; Rey Calabaza).
+  chocolate, galletas, donas, paletas y chicles que brincan; Rey Pastel), la **Casa embrujada** (fantasmas tímidos
+  que solo se acercan si no los ves, esqueletos que se desarman, velas, **puertas** a otros cuartos; Rey Calabaza) y
+  **El espacio** (poca gravedad: se brinca más alto y se cae despacito; marcianitos, ovnis, robotitos, el Gran
+  Robotito y el Mega Robot con su láser).
   En el mapa los jugadores caminan por el caminito (◀ ▶, LB/RB = otro mundo), hay una **casita de regalos** por mundo
   (tres regalos que se revuelven: un poder para empezar, vidas o monedas) y un **enemigo que camina por el mapa**:
   si lo alcanzan, ¡batalla! **Salidas secretas**: algunos niveles tienen una bandera azul escondida que abre un
@@ -90,7 +92,8 @@ Abre http://localhost:5173 en Edge o Chrome.
   A = saltar (más alto si lo sostienes), B = correr, X = el poder / lengüetazo, ↓ en un tubo = meterse, ↑ en una
   puerta = entrar. Poderes nuevos: **pluma** (capa: con A sostenido planeas y con X giras), **flor de hielo** (X
   congela enemigos: se pisan como bloque o se patean), **hongo mini** (chiquito: cabe en todos lados y corre sobre el
-  agua) y **hongo gigante** (un rato enorme: rompe todo). **Dinosaurios de colores**: verde (lengua), rojo (escupe
+  agua), **hongo gigante** (un rato enorme: rompe todo) y **mochila cohete** (en el espacio: ya en el aire, con A
+  sostenido vuelas un ratito; se recarga al pisar). **Dinosaurios de colores**: verde (lengua), rojo (escupe
   fuego), azul (aletea con A) y amarillo (hace temblar el piso al caer). Bloques nuevos: **botón P** (los ladrillos se
   vuelven monedas un ratito), **bloques de colores** (el bloque ON/OFF cambia cuáles están), **cañones** que disparan
   balas y **plataformas que dan vueltas**.

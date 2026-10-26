@@ -36,6 +36,10 @@ export const ENEMIES = {
   h: { art: 'plat:fantasma', chaseArt: 'plat:fantasma-boca', size: 54, w: 44, h: 46, kind: 'boo', stomp: null, immune: true, color: 0xffffff },
   E: { art: 'plat:esqueleto', size: 60, w: 34, h: 56, kind: 'walker', speed: 55, stomp: 'collapse', color: 0xffffff },
   V: { art: 'plat:vela', size: 48, w: 26, h: 44, kind: 'floater', stomp: null, fireproof: true, color: 0xffb02e },
+  // El espacio (los de Pelea en equipo).
+  w: { art: 'plat:marcianito', size: 50, w: 36, h: 46, kind: 'walker', speed: 90, stomp: 'squash', color: 0x3fe0d0 },
+  T: { art: 'plat:ovni', size: 54, w: 52, h: 34, kind: 'flyer', stomp: 'fall', color: 0x9aa8b8 },
+  I: { art: 'plat:robotito', size: 62, w: 42, h: 56, kind: 'walker', speed: 60, stomp: 'collapse', color: 0xc0c4d0 },
   // La bala de los cañones.
   bala: { art: 'plat:objeto-bala', size: 34, w: 52, h: 30, kind: 'bullet', stomp: 'fall', color: 0xb8bcc8 },
 };
