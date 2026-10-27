@@ -73,35 +73,43 @@ for (let start = 0; start < width * height; start += 1) {
   pieces.push(piece);
 }
 
-// Si dos poses quedaron pegadas (los bordes blancos se tocan en un puntito, pasa mucho con los cuadros de
-// caminar), la pieza más ancha se corta por la columna de en medio donde menos se tocan. Se repite hasta
-// que haya tantas piezas grandes como poses.
+// Si dos poses quedaron pegadas (los bordes blancos se tocan en un puntito: pasa mucho con los cuadros de
+// caminar, o con la cresta de una pose de abajo que llega a los pies de la de arriba), la pieza más grande se
+// corta por donde menos se tocan: la columna o la fila de en medio con menos pixeles. Se repite hasta que haya
+// tantas piezas grandes como poses.
 const bySize = () => [...pieces].sort((a, b) => b.size - a.size);
 const enoughPoses = () => {
   const sorted = bySize();
   return sorted.length >= names.length && sorted[names.length - 1].size > sorted[0].size * 0.25;
 };
+// La mejor línea para cortar la pieza: en x (columna) o en y (fila), entre el 30% y el 70% de su ancho o alto.
+const bestCut = (piece, vertical) => {
+  const [from, to] = vertical ? [piece.left, piece.right] : [piece.top, piece.bottom];
+  const [acrossFrom, acrossTo] = vertical ? [piece.top, piece.bottom] : [piece.left, piece.right];
+  let cut = -1;
+  let fewest = Infinity;
+  for (let t = Math.round(from + (to - from) * 0.3); t <= from + (to - from) * 0.7; t += 1) {
+    let count = 0;
+    for (let a = acrossFrom; a <= acrossTo; a += 1) if (label[vertical ? a * width + t : t * width + a] === piece.id) count += 1;
+    if (count < fewest) [fewest, cut] = [count, t];
+  }
+  return { cut, fewest };
+};
 let forced = 0;
 for (let tries = 0; tries < names.length && !enoughPoses(); tries += 1) {
   forced += 1;
-  const widest = bySize()
-    .slice(0, names.length)
-    .reduce((a, b) => (b.right - b.left > a.right - a.left ? b : a));
-  const w = widest.right - widest.left;
-  let cut = -1;
-  let fewest = Infinity;
-  for (let x = Math.round(widest.left + w * 0.3); x <= widest.left + w * 0.7; x += 1) {
-    let count = 0;
-    for (let y = widest.top; y <= widest.bottom; y += 1) if (label[y * width + x] === widest.id) count += 1;
-    if (count < fewest) [fewest, cut] = [count, x];
-  }
-  const right = { id: pieces.length, size: 0, left: width, top: height, right: 0, bottom: 0 };
-  Object.assign(widest, { size: 0, left: width, top: height, right: 0, bottom: 0 });
+  const merged = bySize()[0];
+  const byColumn = bestCut(merged, true);
+  const byRow = bestCut(merged, false);
+  const vertical = byColumn.fewest <= byRow.fewest;
+  const { cut } = vertical ? byColumn : byRow;
+  const other = { id: pieces.length, size: 0, left: width, top: height, right: 0, bottom: 0 };
+  Object.assign(merged, { size: 0, left: width, top: height, right: 0, bottom: 0 });
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const p = y * width + x;
-      if (label[p] !== widest.id) continue;
-      const piece = x > cut ? right : widest;
+      if (label[p] !== merged.id) continue;
+      const piece = (vertical ? x : y) > cut ? other : merged;
       label[p] = piece.id;
       piece.size += 1;
       piece.left = Math.min(piece.left, x);
@@ -110,7 +118,7 @@ for (let tries = 0; tries < names.length && !enoughPoses(); tries += 1) {
       piece.bottom = Math.max(piece.bottom, y);
     }
   }
-  pieces.push(right);
+  pieces.push(other);
 }
 
 // Las piezas más grandes son las poses. Se acomodan en filas (las que se enciman en altura son de
