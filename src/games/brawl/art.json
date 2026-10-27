@@ -100,6 +100,16 @@
     "ovni-dolor",
     "ovni-paso",
     "ovni",
+    "ptero-ataque",
+    "ptero-burla",
+    "ptero-dolor",
+    "ptero-paso",
+    "ptero",
+    "raptor-ataque",
+    "raptor-burla",
+    "raptor-dolor",
+    "raptor-paso",
+    "raptor",
     "rey-calabaza-ataque",
     "rey-calabaza-burla",
     "rey-calabaza-cargando",
@@ -118,6 +128,15 @@
     "rey-pastel-mareado",
     "rey-pastel-paso",
     "rey-pastel",
+    "rey-rex-ataque",
+    "rey-rex-burla",
+    "rey-rex-cargando",
+    "rey-rex-derrotado",
+    "rey-rex-dolor",
+    "rey-rex-furioso",
+    "rey-rex-mareado",
+    "rey-rex-paso",
+    "rey-rex",
     "rey-slime-ataque",
     "rey-slime-burla",
     "rey-slime-cargando",
@@ -147,6 +166,11 @@
     "slime-lava",
     "slime-paso",
     "slime",
+    "trici-ataque",
+    "trici-burla",
+    "trici-dolor",
+    "trici-paso",
+    "trici",
     "yeti-bebe-ataque",
     "yeti-bebe-burla",
     "yeti-bebe-dolor",
@@ -156,6 +180,7 @@
   "fondos": [
     "bosque",
     "castillo",
+    "dinos",
     "dulces",
     "espacio",
     "nieve",
@@ -174,6 +199,7 @@
     "gorra",
     "gorro-chef",
     "helado",
+    "huevo-dino",
     "iman",
     "jarron",
     "jaula",
@@ -688,6 +714,56 @@
       0.502,
       186
     ],
+    "ptero-ataque": [
+      19544,
+      0.475,
+      153
+    ],
+    "ptero-burla": [
+      21335,
+      0.482,
+      165
+    ],
+    "ptero-dolor": [
+      23114,
+      0.521,
+      168
+    ],
+    "ptero-paso": [
+      30438,
+      0.549,
+      217
+    ],
+    "ptero": [
+      21120,
+      0.482,
+      165
+    ],
+    "raptor-ataque": [
+      20077,
+      0.576,
+      157
+    ],
+    "raptor-burla": [
+      23082,
+      0.615,
+      191
+    ],
+    "raptor-dolor": [
+      21553,
+      0.615,
+      186
+    ],
+    "raptor-paso": [
+      21869,
+      0.607,
+      184
+    ],
+    "raptor": [
+      23407,
+      0.604,
+      196
+    ],
     "rey-calabaza-ataque": [
       37879,
       0.6,
@@ -777,6 +853,51 @@
       45267,
       0.502,
       256
+    ],
+    "rey-rex-ataque": [
+      24460,
+      0.502,
+      169
+    ],
+    "rey-rex-burla": [
+      25912,
+      0.479,
+      184
+    ],
+    "rey-rex-cargando": [
+      26306,
+      0.521,
+      172
+    ],
+    "rey-rex-derrotado": [
+      15324,
+      0.518,
+      93
+    ],
+    "rey-rex-dolor": [
+      24864,
+      0.51,
+      169
+    ],
+    "rey-rex-furioso": [
+      25530,
+      0.479,
+      182
+    ],
+    "rey-rex-mareado": [
+      26330,
+      0.486,
+      177
+    ],
+    "rey-rex-paso": [
+      25180,
+      0.479,
+      179
+    ],
+    "rey-rex": [
+      25673,
+      0.479,
+      184
     ],
     "rey-slime-ataque": [
       26737,
@@ -922,6 +1043,31 @@
       51816,
       0.498,
       248
+    ],
+    "trici-ataque": [
+      29714,
+      0.568,
+      176
+    ],
+    "trici-burla": [
+      29910,
+      0.576,
+      179
+    ],
+    "trici-dolor": [
+      29963,
+      0.584,
+      177
+    ],
+    "trici-paso": [
+      30668,
+      0.572,
+      184
+    ],
+    "trici": [
+      31912,
+      0.572,
+      191
     ],
     "yeti-bebe-ataque": [
       39040,

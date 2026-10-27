@@ -44,7 +44,7 @@ const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'jug
 // Poses de los monstruos y los jefes (ver src/ui/creature.js): <monstruo>-<pose>.
 const MONSTER_POSES = ['paso', 'ataque', 'dolor', 'burla'];
 const BOSS_POSES = [...MONSTER_POSES, 'furioso', 'cargando', 'mareado', 'derrotado'];
-const BRAWL_BOSSES = ['rey-slime', 'gran-hongo', 'dragon-lava', 'capitan-pulpo', 'gran-yeti', 'rey-calabaza', 'rey-pastel', 'mega-robot'];
+const BRAWL_BOSSES = ['rey-slime', 'gran-hongo', 'dragon-lava', 'capitan-pulpo', 'gran-yeti', 'rey-calabaza', 'rey-pastel', 'mega-robot', 'rey-rex'];
 const withPoses = (names, bosses = []) => names.flatMap((name) => [name, ...(bosses.includes(name) ? BOSS_POSES : MONSTER_POSES).map((pose) => `${name}-${pose}`)]);
 
 // Arte de los otros juegos: por carpeta, qué nombres valen y si es recorte (cutout) o fondo.
@@ -58,11 +58,12 @@ const GAMES = {
           'slime', 'slime-grande', 'rey-slime', 'hongo', 'gran-hongo', 'slime-lava', 'dragon-lava',
           'cangrejo', 'almeja', 'capitan-pulpo', 'muneco-nieve', 'yeti-bebe', 'gran-yeti', 'murcielago', 'calabaza', 'rey-calabaza',
           'gomita', 'cupcake', 'caramelo', 'rey-pastel', 'marcianito', 'ovni', 'robotito', 'mega-robot',
+          'raptor', 'ptero', 'trici', 'rey-rex',
         ],
         BRAWL_BOSSES,
       ),
     },
-    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo', 'dulces', 'espacio'] },
+    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo', 'dulces', 'espacio', 'dinos'] },
     objetos: {
       kind: 'cutout',
       max: 192,
@@ -70,7 +71,7 @@ const GAMES = {
         'caja', 'barril', 'jarron', 'pizza', 'helado', 'pollo',
         'espada', 'escudo', 'iman', 'mascota', 'moneda', 'jaula',
         'sombrero-vaquero', 'gorra', 'sombrero-pirata', 'gorro-chef', 'casco-vikingo', 'sombrero-mago',
-        'dinosaurio', 'pollo-gigante', 'canon', 'roca',
+        'dinosaurio', 'pollo-gigante', 'canon', 'roca', 'huevo-dino',
       ],
     },
   },
@@ -87,9 +88,9 @@ const GAMES = {
     objetos: {
       kind: 'cutout',
       max: 128,
-      names: ['hongo', 'flor', 'estrella', 'huevo', 'moneda', 'moneda-grande', 'bandera', 'resorte', 'pluma', 'flor-hielo', 'hongo-mini', 'hongo-gigante', 'bala', 'casita', 'regalo', 'canon'],
+      names: ['hongo', 'flor', 'estrella', 'huevo', 'moneda', 'moneda-grande', 'bandera', 'resorte', 'pluma', 'flor-hielo', 'hongo-mini', 'hongo-gigante', 'bala', 'casita', 'regalo', 'canon', 'cohete'],
     },
-    fondos: { kind: 'background', names: ['pradera', 'cueva', 'cielo', 'playa', 'mar', 'castillo', 'nieve', 'dulces', 'embrujada'] },
+    fondos: { kind: 'background', names: ['pradera', 'cueva', 'cielo', 'playa', 'mar', 'castillo', 'nieve', 'dulces', 'embrujada', 'espacio'] },
     // Las cositas de los fondos con vida (ui/ambient.js), en todos los juegos.
     ambiente: { kind: 'cutout', max: 96, names: ['pajaro1', 'pajaro2', 'murcielago1', 'murcielago2', 'mariposa', 'hoja', 'copo', 'dulce'] },
   },

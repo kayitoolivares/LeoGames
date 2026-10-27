@@ -440,14 +440,21 @@ export class BrawlScene extends Phaser.Scene {
     if (this.nestNumber % 2 === 1) this.props.place(ARENA.left + 100, ARENA.right - 100, ARENA.top, ARENA.bottom);
   }
 
-  // El nido: ramitas, tres huevos (se van quitando conforme le pegan) y su barrita de vida.
+  // El nido: ramitas, tres huevos (se van quitando conforme le pegan) y su barrita de vida. Los huevos son el dibujo
+  // del huevito asomándose si ya llegó; si no, óvalos con manchitas.
   createNest() {
     const x = (ARENA.left + ARENA.right) / 2;
     const y = (ARENA.top + ARENA.bottom) / 2 + 30;
     this.nest = { x, y, radius: 46, hp: NEST_HP, maxHp: NEST_HP, down: false, isNest: true };
     const twigs = this.add.ellipse(0, 0, 130, 46, 0x8b5a2b).setStrokeStyle(5, COLORS.ink);
-    this.nestEggs = [-30, 0, 30].map((dx, i) => this.add.ellipse(dx, -18 - (i === 1 ? 8 : 0), 32, 40, 0xfff4e0).setStrokeStyle(4, COLORS.ink));
-    const spots = this.nestEggs.map((egg) => this.add.circle(egg.x + 5, egg.y - 4, 5, 0x4cd97b));
+    const eggArt = this.textures.exists('brawl:objeto-huevo-dino');
+    this.nestEggs = [-30, 0, 30].map((dx, i) => {
+      const eggY = -18 - (i === 1 ? 8 : 0);
+      if (!eggArt) return this.add.ellipse(dx, eggY, 32, 40, 0xfff4e0).setStrokeStyle(4, COLORS.ink);
+      const egg = this.add.image(dx, eggY, 'brawl:objeto-huevo-dino');
+      return egg.setScale(48 / egg.height);
+    });
+    const spots = eggArt ? [] : this.nestEggs.map((egg) => this.add.circle(egg.x + 5, egg.y - 4, 5, 0x4cd97b));
     this.nestBar = this.add.rectangle(-50, -66, 100, 10, 0x4cd97b).setOrigin(0, 0.5);
     this.nestSprite = this.add.container(x, y, [twigs, ...this.nestEggs, ...spots, this.add.rectangle(0, -66, 106, 16, COLORS.ink), this.nestBar]);
     this.nestSprite.setDepth(y - 1);
