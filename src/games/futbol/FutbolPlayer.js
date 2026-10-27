@@ -49,30 +49,31 @@ const PLANE_SPEED = 380;
 const PLANE_TURN_MS = 650;
 const METER_W = 58;
 
-// El tiro especial de cada personaje: derecho y de fuego, en zigzag o como cohete (sube y cae en picada).
-const SPECIAL_SHOTS = {
-  tanque: ['fire', 0xff9a3c],
-  rayo: ['zigzag', 0xffe14d],
-  resorte: ['rocket', 0xff6fb5],
-  estrella: ['rocket', 0xffd84d],
-  ninja: ['zigzag', 0x8a86b8],
-  robot: ['fire', 0xff4d6d],
-  dragon: ['fire', 0xff5a2f],
-  fantasma: ['zigzag', 0xdfe6ff],
-  dino: ['fire', 0x4cd97b],
-  gatito: ['zigzag', 0xff9a3c],
-  pinguino: ['fire', 0x9fd8ff],
-  pirata: ['rocket', 0x7a4a32],
-  hada: ['zigzag', 0xff9ee8],
-  astronauta: ['rocket', 0xffffff],
-  abeja: ['zigzag', 0xffc93c],
-  bombero: ['fire', 0x3fa7ff],
-  luchador: ['fire', 0x8e5cf0],
-  unicornio: ['zigzag', 0xff7ad9],
-  bloquecito: ['rocket', 0xb07cff],
+// El tiro especial de cada personaje: [cómo vuela (ver Ball.js), el color de su brillo, cómo se llama y lo que dice el
+// estallido de cómic].
+export const SPECIAL_SHOTS = {
+  tanque: ['fire', 0xff9a3c, '¡Cañonazo blindado!', '¡BUM!'],
+  rayo: ['zigzag', 0xffe14d, '¡Tiro relámpago!', '¡ZAS!'],
+  resorte: ['rebote', 0xff6fb5, '¡Tiro saltarín!', '¡BOING!'],
+  estrella: ['magico', 0xffd84d, '¡Tiro estelar!', '¡CHIN!'],
+  ninja: ['fantasma', 0x8a86b8, '¡Tiro ninja invisible!', '¡SHH!'],
+  robot: ['triple', 0xff4d6d, '¡Tiro triple robótico!', '¡BIP BIP!'],
+  dragon: ['fire', 0xff5a2f, '¡Bola de fuego!', '¡FUEGO!'],
+  fantasma: ['fantasma', 0xdfe6ff, '¡Tiro fantasma!', '¡BUU!'],
+  dino: ['gigante', 0x4cd97b, '¡Tiro jurásico!', '¡GRRR!'],
+  gatito: ['curva', 0xff9a3c, '¡Tiro con efecto gatuno!', '¡MIAU!'],
+  pinguino: ['hielo', 0x9fd8ff, '¡Tiro congelado!', '¡BRRR!'],
+  pirata: ['rocket', 0x7a4a32, '¡Cañón pirata!', '¡ARRR!'],
+  hada: ['magico', 0xff9ee8, '¡Tiro de hada!', '¡PLIN!'],
+  astronauta: ['rocket', 0xffffff, '¡Tiro cohete!', '¡DESPEGUE!'],
+  abeja: ['zigzag', 0xffc93c, '¡Tiro zumbador!', '¡BZZZ!'],
+  bombero: ['remolino', 0x3fa7ff, '¡Tiro manguerazo!', '¡SPLASH!'],
+  luchador: ['gigante', 0x8e5cf0, '¡Súper plancha!', '¡PLANCHA!'],
+  unicornio: ['curva', 0xff7ad9, '¡Tiro arcoíris!', '¡ARCOÍRIS!'],
+  bloquecito: ['triple', 0xb07cff, '¡Tiro de bloques!', '¡CLIC!'],
 };
-export const SHOT_NAMES = { fire: '¡Tiro de fuego!', zigzag: '¡Tiro relámpago!', rocket: '¡Tiro cohete!' };
-const SHOT_WORDS = { fire: '¡FUEGO!', zigzag: '¡ZIGZAG!', rocket: '¡COHETE!' };
+// Al rival que toca el tiro congelado, lo congela este rato.
+export const ICE_SHOT_MS = 1800;
 
 // Un jugador: el personaje que escogió (de Bolitas Bros) con un aro del color de su equipo. Corre, salta, patea,
 // se barre, regatea y, con la barra llena, hace su tiro especial.
@@ -312,12 +313,12 @@ export class FutbolPlayer {
   }
 
   specialName() {
-    return SHOT_NAMES[(SPECIAL_SHOTS[this.character] ?? SPECIAL_SHOTS.tanque)[0]];
+    return (SPECIAL_SHOTS[this.character] ?? SPECIAL_SHOTS.tanque)[2];
   }
 
   // La palabra del estallido de cómic del tiro especial.
   specialWord() {
-    return SHOT_WORDS[(SPECIAL_SHOTS[this.character] ?? SPECIAL_SHOTS.tanque)[0]];
+    return (SPECIAL_SHOTS[this.character] ?? SPECIAL_SHOTS.tanque)[3];
   }
 
   // Lo tumbó una barrida (si no va regateando ni saltando).

@@ -85,6 +85,7 @@ export const STICKERS = [
   { id: 'futbol-copa', emoji: '🥇', name: 'Copa de fútbol', hint: 'Gana los 3 partidos de la Copa en Fútbol de bolitas' },
   { id: 'futbol-penales', emoji: '🧤', name: 'Rey de los penales', hint: 'Gana una tanda de penales en Fútbol de bolitas' },
   { id: 'futbol-especial', emoji: '☄️', name: 'Tiro especial', hint: 'Mete gol con tu tiro especial en Fútbol (barra llena + LB + RB)' },
+  { id: 'futbol-retos', emoji: '🏅', name: 'Medalla de oro', hint: 'Gana una medalla de oro en los Retos del Fútbol (tiro al blanco o dominadas)' },
   { id: 'duelo-gana', emoji: '🥋', name: 'Campeón del duelo', hint: 'Gana un Duelo de bolitas' },
   { id: 'duelo-perfecto', emoji: '💯', name: '¡Perfecto!', hint: 'Gana un round del duelo sin que te peguen' },
   { id: 'duelo-super', emoji: '🔥', name: 'Súper peleador', hint: 'Transfórmate en el Duelo de bolitas' },
@@ -99,6 +100,7 @@ export const STICKERS = [
   { id: 'duelo-familiar', emoji: '👨‍👩‍👧', name: 'Campeón de la familia', hint: 'Gana el Torneo familiar del Duelo' },
   { id: 'duelo-jefes', emoji: '👹', name: 'Cazajefes', hint: 'Vence a Dragonzote, Robotote y el Rey Bolón seguidos' },
   { id: 'bebe', emoji: '👶', name: 'Hora del bebé', hint: 'Jueguen el Modo Bebé' },
+  { id: 'bebe-cuenta', emoji: '🎈', name: '¡Hasta el diez!', hint: 'Cuenta hasta el 10 reventando los globos del Modo Bebé' },
   { id: 'bloquecito-10', emoji: '🔟', name: 'Hasta el 10', hint: 'Cuenta del 1 al 10 con Bloquecito (Y sube de número)' },
   { id: 'coleccion', emoji: '⭐', name: 'Coleccionista', hint: 'Consigue 10 calcomanías' },
 ];

@@ -106,7 +106,7 @@ function face(ctx, s, dy) {
 // La figura `kind` del color `color` con su carita y su letrero abajo. Devuelve la clave de la imagen; el centro de la
 // figura es su origen (ver shapeOrigin).
 export function shapeTexture(scene, kind, color, label) {
-  const key = `baby:figura-${kind}-${color.toString(16)}`;
+  const key = `baby:figura-${kind}-${color.toString(16)}-${label}`;
   if (scene.textures.exists(key)) return key;
   const element = canvas(SHAPE_W, SHAPE_H);
   const ctx = element.getContext('2d');

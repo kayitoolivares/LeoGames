@@ -15,6 +15,8 @@ const BUTTONS = {
   y: { label: 'Y', color: 0xffc93c },
   lb: { label: 'LB', color: 0x8a84b8, wide: true },
   rb: { label: 'RB', color: 0x8a84b8, wide: true },
+  lt: { label: 'LT', color: 0x6f6a9e, wide: true },
+  rt: { label: 'RT', color: 0x6f6a9e, wide: true },
 };
 const KEYBOARDS = ['kb1', 'kb2'];
 const STICK_KEYS = { kb1: ['W A S D'], kb2: ['Flechas'] };
@@ -110,11 +112,11 @@ const PAGES = [
       [['x'], 'Patear (con ↑ globito, con ↓ rasante; en el aire, volea)'],
       [['b'], 'Barrida (tumba al rival; cerquita del balón, patea)'],
       [['lb', 'rb'], 'Regate: arrancón en el que no te pueden barrer'],
-      [['lb+rb'], 'Con la barra llena: ¡tiro especial! (fuego, zigzag o cohete)'],
+      [['lb+rb'], 'Con la barra llena: ¡tiro especial! (cada personaje tiene el suyo)'],
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Siempre pateas hacia la portería contraria. En los penales: X tira (↑ alto, ↓ rasante) y A salta para atajar.',
+    note: 'Siempre pateas hacia la portería contraria. En los penales: X tira (↑ alto, ↓ rasante) y A salta para atajar. En los retos: X patea a las dianas y en las dominadas levanta el balón.',
   },
   {
     title: 'Karts locos',
@@ -161,10 +163,11 @@ const PAGES = [
     rows: [
       [['a', 'b', 'x', 'y'], 'Figura con carita y una nota'],
       [['stick'], 'Animalitos y mover a su bolita amiga'],
-      [['lb', 'rb'], 'Fuegos artificiales'],
+      [['lb', 'rb'], 'Fuegos artificiales (pintando: borrar)'],
+      [['lt+rt'], 'Mantener: otro juego (escondidas, globos, pintar)'],
       [['lb+rb+y'], 'Salir (mantener 3 segundos)'],
     ],
-    note: 'En el teclado cualquier otra tecla también hace figuras.',
+    note: 'En el teclado cualquier otra tecla también hace figuras, y Tab cambia de juego.',
   },
 ];
 
@@ -260,6 +263,8 @@ export class ControlsScene extends Phaser.Scene {
     const separator = options.length > 2 ? '' : 'o';
     options.forEach((option) => {
       const keys = option === 'stick' ? STICK_KEYS[kb] : option.split('+').map((name) => keyFor(kb, name));
+      // (LT y RT no tienen tecla.)
+      if (keys.some((key) => !key)) return;
       const label = keys.join(' + ');
       if (seen.has(label)) return;
       if (seen.size > 0) cursor = this.addLabel(cursor + 6, y, separator, TEXT.muted) + 6;

@@ -11,6 +11,7 @@ import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { burst } from '../brawl/effects.js';
 import { go } from '../../shared/transition.js';
 import { ANIMALS, ANIMAL_KEYS, animalTexture, loadAnimalArt } from './animals.js';
+import { Balloons, HideAndSeek, Painting, loadActivityArt } from './activities.js';
 import { BUBBLE_RADIUS, SHAPE_RADIUS, bubbleTexture, shapeOrigin, shapeTexture } from './drawings.js';
 import { SONGS } from './songs.js';
 
@@ -60,6 +61,15 @@ const IDLE_HINT_MS = 10000;
 const EXIT_HOLD_MS = 3000;
 const VOICE_EVERY_MS = 1200;
 const DEPTH = { bubble: 0.5, trail: 1, shape: 2, animal: 3, friend: 4, firework: 5, ui: 10 };
+// Los juegos del Modo Bebé (el primero es el de siempre; los demás, ver activities.js). Para cambiar: mantener LT + RT
+// (o la tecla Tab, o tocar su dibujito arriba a la izquierda).
+const ACTIVITIES = [
+  { key: 'libre', emoji: '🎵', name: 'Botones y canciones' },
+  { key: 'escondidas', emoji: '🙈', name: 'Escondidas', Game: HideAndSeek },
+  { key: 'globos', emoji: '🎈', name: 'Globos con números', Game: Balloons },
+  { key: 'pinta', emoji: '🖍️', name: 'A pintar', Game: Painting },
+];
+const SWITCH_HOLD_MS = 1200;
 
 // Modo Bebé: cualquier botón hace algo bonito. No se gana ni se pierde.
 //   A B X Y = figura con carita de ese color y la nota que sigue de la canción (machacando se toca la canción)
@@ -87,10 +97,15 @@ export class BabyScene extends Phaser.Scene {
     this.songStep = 0;
     this.songPausedUntil = 0;
     this.popped = 0;
+    this.activityIndex = 0;
+    this.activity = null;
+    this.switchMs = 0;
+    this.switchLatched = false;
   }
 
   preload() {
     loadAnimalArt(this);
+    loadActivityArt(this);
   }
 
   create() {
@@ -112,18 +127,80 @@ export class BabyScene extends Phaser.Scene {
     // también hacen figuras.
     const onKey = (event) => {
       if (event.repeat || event.code === 'Escape' || controls.mappedKeys.has(event.code)) return;
-      this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), this.randomSpot());
+      if (event.code === 'Tab') {
+        event.preventDefault();
+        this.switchActivity(this.activityIndex + 1);
+        return;
+      }
+      if (this.activity) this.activity.input('teclado', { faces: [Phaser.Utils.Array.GetRandom(FACE_KEYS)], directions: [], fireworks: [], moving: false });
+      else this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), this.randomSpot());
     };
     window.addEventListener('keydown', onKey);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('keydown', onKey));
     this.input.on('pointerdown', (pointer) => {
       const spot = { x: pointer.worldX, y: pointer.worldY };
-      if (!this.popBubblesAt(spot, 0)) this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), spot);
+      const icon = this.activityIcons.findIndex((item) => Math.hypot(item.x - spot.x, item.y - spot.y) < 30);
+      if (icon >= 0) this.switchActivity(icon);
+      else if (this.activity) this.activity.click(spot);
+      else if (!this.popBubblesAt(spot, 0)) this.pressFace(Phaser.Utils.Array.GetRandom(FACE_KEYS), spot);
     });
+    this.input.on('pointermove', (pointer) => this.activity?.pointerMove?.({ x: pointer.worldX, y: pointer.worldY }, pointer.isDown));
+    this.createActivityBar();
     // En el celular toda la pantalla es para tocar: de los botones táctiles solo quedan LB y RB (para salir).
     touchPad.setMode('bumpers');
     rewards.earn('bebe');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => touchPad.setMode('full'));
+  }
+
+  // Arriba a la izquierda: los dibujitos de los juegos (el que se está jugando, grande) y cómo cambiar.
+  createActivityBar() {
+    this.activityIcons = ACTIVITIES.map((activity, i) => {
+      const icon = this.add.text(40 + i * 56, 34, activity.emoji, textStyle(30, TEXT.normal)).setOrigin(0.5).setDepth(DEPTH.ui);
+      return icon;
+    });
+    this.activityRing = this.add.circle(40, 34, 25).setStrokeStyle(4, COLORS.accent).setDepth(DEPTH.ui);
+    this.add.text(16, 68, 'Mantén LT + RT: otro juego', textStyle(14, TEXT.muted)).setDepth(DEPTH.ui);
+    this.switchBar = this.add.rectangle(16, 88, 200, 5, 0xffffff).setOrigin(0, 0.5).setScale(0, 1).setDepth(DEPTH.ui);
+    this.refreshActivityBar();
+  }
+
+  refreshActivityBar() {
+    this.activityIcons.forEach((icon, i) => icon.setScale(i === this.activityIndex ? 1.25 : 0.85).setAlpha(i === this.activityIndex ? 1 : 0.6));
+    this.activityRing.setPosition(this.activityIcons[this.activityIndex].x, 34);
+  }
+
+  // Cambia de juego: se va el anterior (y en los nuevos no hay canción, burbujas ni figuras sueltas).
+  switchActivity(index) {
+    this.activityIndex = ((index % ACTIVITIES.length) + ACTIVITIES.length) % ACTIVITIES.length;
+    const next = ACTIVITIES[this.activityIndex];
+    this.activity?.destroy();
+    this.activity = null;
+    const free = next.key === 'libre';
+    this.songBar.setVisible(free);
+    if (!free) {
+      for (const shape of [...this.shapes]) this.fadeShape(shape, 200);
+      for (const bubble of [...this.bubbles]) this.removeBubble(bubble);
+      this.hint.setAlpha(0);
+    }
+    // (Las bolitas amigas solo andan en los juegos donde se mueven: libre y pintar.)
+    for (const friend of this.friends.values()) friend.blob.setVisible(free || next.key === 'pinta');
+    if (next.Game) this.activity = new next.Game(this);
+    else say(next.name);
+    this.idleMs = 0;
+    sfx.confirm();
+    this.refreshActivityBar();
+  }
+
+  // Mantener LT + RT (en cualquier control) un ratito cambia de juego; hay que soltarlos para volver a cambiar.
+  updateSwitch(dt) {
+    const holding = controls.connectedDevices().some((device) => controls.isDown(device.id, 'lt') && controls.isDown(device.id, 'rt'));
+    if (!holding) this.switchLatched = false;
+    this.switchMs = holding && !this.switchLatched ? this.switchMs + dt : 0;
+    this.switchBar.setScale(Math.min(1, this.switchMs / SWITCH_HOLD_MS), 1);
+    if (this.switchMs < SWITCH_HOLD_MS) return;
+    this.switchMs = 0;
+    this.switchLatched = true;
+    this.switchActivity(this.activityIndex + 1);
   }
 
   createHint(x, y) {
@@ -187,10 +264,12 @@ export class BabyScene extends Phaser.Scene {
     const dt = frameDelta();
     this.idleMs += dt;
     for (const device of controls.connectedDevices()) this.updateDevice(device.id, dt);
-    this.updateBubbles(dt);
+    this.updateSwitch(dt);
+    if (this.activity) this.activity.update(dt);
+    else this.updateBubbles(dt);
 
-    // El letrero de "¡Aprieta los botones!" se va al jugar y regresa si nadie hace nada un rato.
-    const target = this.idleMs >= IDLE_HINT_MS ? 1 : 0;
+    // El letrero de "¡Aprieta los botones!" se va al jugar y regresa si nadie hace nada un rato (solo en el de siempre).
+    const target = this.idleMs >= IDLE_HINT_MS && !this.activity ? 1 : 0;
     this.hint.setAlpha(this.hint.alpha + (target - this.hint.alpha) * Math.min(1, dt / 150));
     this.soundHint.setVisible(!audioReady());
     this.updateExit(dt);
@@ -204,8 +283,19 @@ export class BabyScene extends Phaser.Scene {
     const moving = stick.x !== 0 || stick.y !== 0;
     if (!faces.length && !fireworks.length && !directions.length && !moving) return;
 
-    // Cada control tiene su bolita amiga; aparece la primera vez que ese control hace algo.
-    const friend = this.friends.get(id) ?? this.addFriend(id);
+    // Cada control tiene su bolita amiga; aparece la primera vez que ese control hace algo (menos en las escondidas y
+    // los globos, donde no hace falta).
+    const key = ACTIVITIES[this.activityIndex].key;
+    const withFriend = key === 'libre' || key === 'pinta';
+    const friend = withFriend ? (this.friends.get(id) ?? this.addFriend(id)) : null;
+    if (this.activity) {
+      if (moving && friend) this.moveFriend(friend, stick, dt);
+      this.activity.input(id, { faces, fireworks, directions, stick, moving, friend }, dt);
+      if (fireworks.length && key !== 'pinta') for (let i = 0; i < fireworks.length; i += 1) this.firework(this.randomSpot());
+      if (faces.length || fireworks.length) this.rumble(id);
+      this.idleMs = 0;
+      return;
+    }
     for (const key of faces) this.pressFace(key, this.randomSpot());
     for (let i = 0; i < fireworks.length; i += 1) this.firework(this.randomSpot());
     if (directions.length && this.time.now >= friend.nextAnimalAt) {

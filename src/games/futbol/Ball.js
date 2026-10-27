@@ -10,9 +10,17 @@ const STUCK_MS = 900;
 // Tiros fuertes: dejan una estela de bolitas que se desvanecen.
 const TRAIL_SPEED = 850;
 const TRAIL_EVERY_MS = 30;
-// El tiro especial vuela sin gravedad un rato (y como cada personaje: derecho, en zigzag o como cohete).
+// El tiro especial vuela sin gravedad un rato, como el de cada personaje (ver SPECIAL_SHOTS en FutbolPlayer.js):
+//   fire: derecho y rapidísimo   zigzag: sube y baja   rocket: sube y cae en picada   curva: hace una curva (con efecto)
+//   rebote: va dando saltitos   remolino: da vueltas y vueltas   hielo: derecho, y al rival que toca lo congela
+//   gigante: el balón crece   fantasma: se vuelve invisible a medio camino   triple: salen dos balones de mentiritas
+//   magico: va brincando hacia adelante (desaparece y aparece más adelante)
 export const SPECIAL_SHOT_MS = 1300;
 const SPECIAL_SPEED = 1250;
+const KIND_SPEED = { gigante: 1000, hielo: 1150, rebote: 1100, magico: 380 };
+const GIANT_SCALE = 2;
+const MAGIC_HOP = { everyMs: 260, distance: 150 };
+const DECOY_SPREAD = 420;
 
 // El balón: rebota en el piso, en las paredes, en el techo y en los travesaños.
 // `lastTouch` es el último jugador que lo tocó (para saber de quién fue el gol). `scale` lo hace gigante (poder).
@@ -29,19 +37,7 @@ export class Ball {
     this.shadow = scene.add.ellipse(0, 0, BALL_RADIUS * 1.8, BALL_RADIUS * 0.45, 0x000000, 0.25).setDepth(5);
     // El brillo de colores mientras va un tiro especial.
     this.glow = scene.add.circle(0, 0, BALL_RADIUS * 1.8, 0xffd84d, 0.5).setVisible(false);
-    this.sprite.add(this.glow);
-    const g = scene.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(0, 0, BALL_RADIUS);
-    g.fillStyle(0x1b1530, 1);
-    g.fillCircle(0, 0, BALL_RADIUS * 0.34);
-    for (let k = 0; k < 5; k += 1) {
-      const angle = (k / 5) * Math.PI * 2 - Math.PI / 2;
-      g.fillCircle(Math.cos(angle) * BALL_RADIUS * 0.82, Math.sin(angle) * BALL_RADIUS * 0.82, BALL_RADIUS * 0.2);
-    }
-    g.lineStyle(3, 0x1b1530, 1);
-    g.strokeCircle(0, 0, BALL_RADIUS);
-    this.sprite.add(g);
+    this.sprite.add([this.glow, drawBall(scene)]);
     this.trailMs = 0;
     this.reset(FIELD.width / 2, 260);
   }
@@ -51,6 +47,7 @@ export class Ball {
   }
 
   reset(x, y) {
+    if (this.special) this.endSpecial();
     this.x = x;
     this.y = y;
     this.vx = 0;
@@ -69,20 +66,34 @@ export class Ball {
     this.sprite.setScale(scale);
   }
 
-  // Tiro especial de `by` hacia `dir`: `kind` = 'fire' (derecho y rapidísimo), 'zigzag' (sube y baja) o
-  // 'rocket' (sube y cae en picada a la portería). `color` es el de su brillo.
+  // Tiro especial de `by` hacia `dir` (ver arriba qué hace cada `kind`). `color` es el de su brillo.
   shootSpecial(by, dir, kind, color) {
-    this.special = { by, dir, kind, color, ms: SPECIAL_SHOT_MS, t: 0, baseY: Math.min(this.y, FIELD.ground - BALL_RADIUS * 3) };
-    this.vx = dir * SPECIAL_SPEED;
+    this.special = { by, dir, kind, color, ms: SPECIAL_SHOT_MS, t: 0, hopMs: 0, baseY: Math.min(this.y, FIELD.ground - BALL_RADIUS * 3) };
+    this.vx = dir * (KIND_SPEED[kind] ?? SPECIAL_SPEED);
     this.vy = kind === 'rocket' ? -900 : 0;
     this.lastTouch = by;
     this.specialBy = by;
     this.glow.setFillStyle(color, 0.55).setVisible(true);
+    if (kind === 'gigante') {
+      this.special.scale = this.scale;
+      this.setScale(this.scale * GIANT_SCALE);
+    }
+    // Los dos balones de mentiritas: uno se va hacia arriba y otro hacia abajo.
+    if (kind === 'triple') {
+      this.special.decoys = [-1, 1].map((side) => ({ side, sprite: this.scene.add.container(this.x, this.y, [drawBall(this.scene)]).setDepth(599).setAlpha(0.85) }));
+    }
   }
 
   endSpecial() {
+    const s = this.special;
     this.special = null;
     this.glow.setVisible(false);
+    if (!s) return;
+    if (s.scale !== undefined) this.setScale(s.scale);
+    this.sprite.setAlpha(1);
+    for (const decoy of s.decoys ?? []) {
+      this.scene.tweens.add({ targets: decoy.sprite, alpha: 0, scale: 0.3, duration: 250, onComplete: () => decoy.sprite.destroy() });
+    }
   }
 
   update(dt) {
@@ -129,16 +140,47 @@ export class Ball {
   updateSpecial(dt) {
     const s = this.special;
     s.t += dt * 1000;
+    this.vx = s.dir * (KIND_SPEED[s.kind] ?? SPECIAL_SPEED);
     if (s.kind === 'zigzag') {
       this.vy = Math.cos(s.t / 90) * 700;
     } else if (s.kind === 'rocket') {
       // Sube y luego se va en picada hacia la portería.
       this.vy = s.t < 350 ? -900 : 650;
+    } else if (s.kind === 'curva') {
+      // Sale hacia arriba y se va doblando hacia abajo.
+      this.vy = -650 + s.t * 1.3;
+    } else if (s.kind === 'rebote') {
+      const target = FIELD.ground - this.radius - Math.abs(Math.sin(s.t / 150)) * 170;
+      this.vy = (target - this.y) * 12;
+    } else if (s.kind === 'remolino') {
+      this.vy = Math.cos(s.t / 60) * 1000;
+      this.spin += s.dir * 0.5;
     } else {
       this.vy = (s.baseY - this.y) * 4;
     }
-    this.vx = s.dir * SPECIAL_SPEED;
+    // Fantasma: invisible a medio camino.
+    if (s.kind === 'fantasma') this.sprite.setAlpha(s.t > 200 && s.t < 950 ? 0.12 : 1);
+    // Mágico: cada ratito desaparece y aparece más adelante, con chispitas.
+    if (s.kind === 'magico') {
+      s.hopMs += dt * 1000;
+      if (s.hopMs >= MAGIC_HOP.everyMs) {
+        s.hopMs = 0;
+        this.sparkle(s.color);
+        this.x += s.dir * MAGIC_HOP.distance;
+        this.sparkle(s.color);
+      }
+    }
+    for (const decoy of s.decoys ?? []) {
+      const spread = Math.min(1, s.t / 700) * DECOY_SPREAD * 0.5;
+      decoy.sprite.setPosition(this.x - s.dir * 30, Math.max(BALL_RADIUS, Math.min(FIELD.ground - BALL_RADIUS, this.y + decoy.side * spread)));
+      decoy.sprite.setRotation(this.spin);
+    }
     if (s.t >= s.ms) this.endSpecial();
+  }
+
+  sparkle(color) {
+    const star = this.scene.add.star(this.x, this.y, 5, 10, 26, color).setDepth(601);
+    this.scene.tweens.add({ targets: star, scale: 2, alpha: 0, angle: 90, duration: 300, onComplete: () => star.destroy() });
   }
 
   // Estela: bolitas del color del tiro (o blancas) que se quedan atrás y se desvanecen.
@@ -209,7 +251,24 @@ export class Ball {
   }
 
   destroy() {
+    if (this.special) this.endSpecial();
     this.sprite.destroy();
     this.shadow.destroy();
   }
+}
+
+// El dibujo del balón: blanco con sus pentágonos.
+function drawBall(scene) {
+  const g = scene.add.graphics();
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(0, 0, BALL_RADIUS);
+  g.fillStyle(0x1b1530, 1);
+  g.fillCircle(0, 0, BALL_RADIUS * 0.34);
+  for (let k = 0; k < 5; k += 1) {
+    const angle = (k / 5) * Math.PI * 2 - Math.PI / 2;
+    g.fillCircle(Math.cos(angle) * BALL_RADIUS * 0.82, Math.sin(angle) * BALL_RADIUS * 0.82, BALL_RADIUS * 0.2);
+  }
+  g.lineStyle(3, 0x1b1530, 1);
+  g.strokeCircle(0, 0, BALL_RADIUS);
+  return g;
 }

@@ -3360,6 +3360,113 @@ test('modo bebé: canción con los botones, animalitos con su sonido y burbujas'
   await p.context.close();
 });
 
+test('fútbol: tiro especial de cada personaje y retos (tiro al blanco y dominadas)', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Fútbol de bolitas');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Futbol')?.phase === 'setup', ms(8000), 'ver la pantalla de equipos');
+  const futbol = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Futbol')), code);
+  // Cada personaje tiene su propio tiro especial (con su nombre).
+  const names = await p.page.evaluate(() => import('/src/games/futbol/FutbolPlayer.js').then((m) => Object.values(m.SPECIAL_SHOTS).map((shot) => shot[2])));
+  assert.equal(new Set(names).size, names.length, 'hay tiros especiales con el mismo nombre');
+
+  // Retos (el segundo modo): solo juega J1, sin la compu.
+  await p.wait(ms(300));
+  await p.tap(0, BUTTON.RIGHT);
+  assert.equal(await futbol('return s.setup.mode'), 'retos');
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').challenges?.state === 'play', ms(8000), 'empezar el tiro al blanco');
+  assert.deepEqual(await futbol('return [s.team.length, s.challenges.challenge.key, s.challenges.targets.length]'), [1, 'diana', 3]);
+  // Patear con X saca el balón hacia la portería.
+  await p.tap(0, BUTTON.X);
+  await p.until(() => window.leogames.scene.getScene('Futbol').challenges.kicked, ms(3000), 'patear');
+  // El balón en una diana: cuenta y la diana sale en otro lado.
+  await p.until(() => window.leogames.scene.getScene('Futbol').challenges.targets.some((t) => t.sprite.visible), ms(3000), 'que salga una diana');
+  await futbol('const t = s.challenges.targets.find((x) => x.sprite.visible); s.ball.x = t.sprite.x; s.ball.y = t.sprite.y; s.ball.vx = 0; s.ball.vy = 0;');
+  await p.until(() => window.leogames.scene.getScene('Futbol').challenges.score === 1, ms(3000), 'pegarle a la diana');
+  // Se acaba el tiempo: sigue el reto de las dominadas.
+  await futbol('s.challenges.ms = 31000;');
+  await p.until(() => window.leogames.scene.getScene('Futbol').challenges.challenge.key === 'dominadas' && window.leogames.scene.getScene('Futbol').challenges.state === 'play', ms(8000), 'empezar las dominadas');
+  assert.deepEqual(await futbol('return s.challenges.scores[0]'), [1, null]);
+  // X cuando el balón va bajando cerca: lo levanta (cuenta un toque).
+  for (let i = 0; i < 3; i += 1) {
+    await p.until(() => {
+      const s = window.leogames.scene.getScene('Futbol');
+      const p1 = s.team[0];
+      return s.ball.vy > 0 && Math.hypot(s.ball.x - p1.x, s.ball.y - p1.y) < p1.radius + s.ball.radius + 45;
+    }, ms(4000), `que baje el balón (${i + 1})`);
+    await p.tap(0, BUTTON.X, 50);
+  }
+  assert.ok((await futbol('return s.challenges.score')) >= 2, 'no contó los toques');
+  // 20 toques = oro: calcomanía; y la tabla de medallas.
+  await futbol('s.challenges.score = 20; s.challenges.finishTurn();');
+  await p.until(() => window.leogames.scene.getScene('Futbol').challenges.state === 'done', ms(6000), 'ver las medallas');
+  assert.ok((await stickers(p.page)).includes('futbol-retos'), 'no ganó la calcomanía de los retos');
+  await p.wait(ms(1200));
+  await p.tap(0, BUTTON.B);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'setup', ms(6000), 'regresar a escoger');
+
+  // Un partido: el tiro congelado congela al rival; el gigante agranda el balón y luego vuelve a su tamaño.
+  await p.tap(0, BUTTON.LEFT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Futbol').phase === 'play', ms(8000), 'empezar el partido');
+  const frozen = await futbol(`const me = s.team.find((x) => !x.isCpu); const rival = s.team.find((x) => x.team !== me.team);
+    s.ball.reset(rival.x - 120, rival.y); s.ball.shootSpecial(me, 1, 'hielo', 0x9fd8ff);
+    s.ball.x = rival.x - 10; s.ball.y = rival.y; s.collideBall(rival); return rival.frozenMs > 0;`);
+  assert.equal(frozen, true, 'el tiro congelado no congeló');
+  const giant = await futbol(`const me = s.team.find((x) => !x.isCpu); s.ball.reset(640, 400); s.ball.shootSpecial(me, 1, 'gigante', 0x4cd97b);
+    const big = s.ball.scale; s.ball.endSpecial(); return [big, s.ball.scale];`);
+  assert.deepEqual(giant, [2, 1]);
+  const decoys = await futbol(`const me = s.team.find((x) => !x.isCpu); s.ball.reset(640, 400); s.ball.shootSpecial(me, 1, 'triple', 0xff4d6d);
+    return s.ball.special.decoys.length;`);
+  assert.equal(decoys, 2);
+  await p.holdToMenu(0, EXIT, 'salir del fútbol');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('modo bebé: escondidas, globos con números y a pintar (mantener LT + RT cambia de juego)', { timeout: ms(90000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Modo Bebé');
+  await p.page.waitForFunction(() => window.leogames.scene.isActive('Baby'), null, { timeout: ms(8000) });
+  const baby = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Baby')), code);
+  const nextGame = async (index, label) => {
+    await p.holdUntil(0, [BUTTON.LT, BUTTON.RT], `window.leogames.scene.getScene('Baby').activityIndex === ${index}`, label);
+    await p.wait(ms(300));
+  };
+  // Escondidas: el botón de la cosa donde está el animalito lo encuentra.
+  await nextGame(1, 'pasar a las escondidas');
+  const spot = await baby('return s.activity.hidingSpot.button');
+  await p.tap(0, { a: BUTTON.A, b: BUTTON.B, x: BUTTON.X, y: BUTTON.Y }[spot]);
+  await p.until(() => window.leogames.scene.getScene('Baby').activity.found === 1, ms(3000), 'encontrar al animalito');
+  // Globos: cada botón revienta el que sigue; al llegar al 10, calcomanía y otra vez.
+  await nextGame(2, 'pasar a los globos');
+  for (let i = 0; i < 2; i += 1) {
+    await p.tap(0, BUTTON.A);
+    await p.wait(ms(300));
+  }
+  assert.equal(await baby('return s.activity.next'), 2);
+  await baby('s.activity.next = 9; s.activity.lastPopAt = -Infinity; s.activity.pop();');
+  assert.ok((await stickers(p.page)).includes('bebe-cuenta'), 'no ganó la calcomanía de contar');
+  await p.until(() => window.leogames.scene.getScene('Baby').activity.next === 0, ms(6000), 'que salgan otros globos');
+  // A pintar: el stick pinta; LB borra.
+  await nextGame(3, 'pasar a pintar');
+  await p.page.evaluate(() => (window.__pads[0].axes = [1, 0.3, 0, 0]));
+  await p.wait(ms(600));
+  await p.page.evaluate(() => (window.__pads[0].axes = [0, 0, 0, 0]));
+  assert.ok((await baby('return s.activity.strokes')) > 5, 'no pintó');
+  await p.tap(0, BUTTON.LB);
+  assert.equal(await baby('return s.activity.strokes'), 0);
+  // Y de vuelta al de siempre.
+  await nextGame(0, 'regresar a los botones');
+  assert.equal(await baby('return s.activity'), null);
+  await p.holdToMenu(0, EXIT, 'salir del Modo Bebé');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
 test('celular: con la pantalla táctil se une y se mueve por el menú', { timeout: ms(60000) }, async () => {
   const p = await openPage(game, { touch: true });
   const cdp = await p.context.newCDPSession(p.page);

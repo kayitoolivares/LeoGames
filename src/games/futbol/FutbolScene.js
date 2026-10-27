@@ -20,9 +20,10 @@ import { Ball } from './Ball.js';
 import { CPU_LEVELS, cpuInput } from './cpu.js';
 import { Crowd, Narrator } from './crowd.js';
 import { FIELD, GOAL, GOAL_HEIGHT, TEAM_COLORS, TEAM_LABELS, TEAM_NAMES, UNIFORMS, attackDir, barY, drawGoals, goalMouthX, setUniforms, teamLabel } from './field.js';
-import { CELEBRATIONS, FutbolPlayer } from './FutbolPlayer.js';
+import { CELEBRATIONS, FutbolPlayer, ICE_SHOT_MS } from './FutbolPlayer.js';
 import { createLiga, ligaDone, ligaOpponent, ligaTable, playRound } from './liga.js';
 import { PENALTY_ROUNDS, Shootout } from './penalties.js';
+import { Challenges } from './challenges.js';
 import { PITCHES, PITCH_KEYS, drawPitch, loadPitchArt } from './pitches.js';
 import { POWERS, Powers, loadPowerArt, powerIcon } from './powers.js';
 import { COPA_ROUNDS, copaRivals, loadScreenArt, showCopaRoad, showLigaTable, showMatchEnd } from './screens.js';
@@ -42,7 +43,7 @@ const BALL_RESTITUTION = 0.55;
 const HUD_DEPTH = 10000;
 const OUTLINE = { stroke: '#1b1530', strokeThickness: 5 };
 const KICK_WORDS = { normal: null, lob: '¡Globito!', low: '¡Rasante!', volley: '¡Volea!', pass: '¡Pase!' };
-const MODES = { partido: 'Partido', copa: 'Copa de fútbol', liga: 'Liga (5 jornadas con tabla)', penales: 'Penales' };
+const MODES = { partido: 'Partido', retos: 'Retos (tiro al blanco y dominadas)', copa: 'Copa de fútbol', liga: 'Liga (5 jornadas con tabla)', penales: 'Penales' };
 const TEAMS = { juntos: 'Todos contra la compu', versus: 'Unos contra otros' };
 const GOALIES = { compu: 'la compu', jugadores: 'los jugadores (el último de cada equipo, si son 2 o más)' };
 // Los porteros atrapan el balón cerca de su portería (el de la compu, según su nivel) y luego lo despejan: el de un
@@ -217,6 +218,11 @@ export class FutbolScene extends Phaser.Scene {
     this.refreshHud();
   }
 
+  // El marcador de los equipos (en los retos solo se ve el letrerito de abajo, con lo que va haciendo cada quien).
+  showTeamBoard(show) {
+    for (const part of [...this.teamTabs, ...this.teamLabels, this.scoreText, this.board.list[0]]) part.setVisible(show);
+  }
+
   refreshHud() {
     [0, 1].forEach((team) => {
       this.teamTabs[team].setFillStyle(TEAM_COLORS[team]);
@@ -317,6 +323,7 @@ export class FutbolScene extends Phaser.Scene {
 
   rowEnabled(row) {
     const { mode } = this.setup;
+    if (mode === 'retos') return row === 'mode' || row === 'pitch' || row === 'uniform';
     if (row === 'teams') return mode !== 'copa' && mode !== 'liga' && this.humans.length >= 2;
     if (row === 'goalies') return mode !== 'penales' && this.humans.length >= 2;
     if (row === 'end') return mode !== 'penales';
@@ -337,6 +344,7 @@ export class FutbolScene extends Phaser.Scene {
         return this.humans.length < 2 ? 'Porteros: la compu (con 2 o más jugadores, también ustedes)' : `Porteros: ${GOALIES[s.goalies]}`;
       case 'end':
         if (s.mode === 'penales') return `${PENALTY_ROUNDS} penales para cada equipo`;
+        if (s.mode === 'retos') return 'Por turnos: 2 retos con medallas de bronce, plata y oro';
         return s.minutes ? `Por tiempo: ${s.minutes} minutos (si empatan, gol de oro)` : `Gana el que meta ${s.goals} goles`;
       case 'level':
         return s.mode === 'copa' ? 'Compu: cada partido más difícil' : `Nivel de la compu: ${CPU_LEVELS[s.level].name}`;
@@ -347,6 +355,7 @@ export class FutbolScene extends Phaser.Scene {
           ? `Tu equipo: ${UNIFORMS[s.uniform].name}`
           : `Uniformes: ${UNIFORMS[s.uniform].name} vs ${UNIFORMS[rivalUniform(s.uniform)].name}`;
       default:
+        if (s.mode === 'retos') return 'Poderes: no hay en los retos';
         return s.mode === 'penales' ? 'Poderes: no hay en los penales' : `Poderes en la cancha: ${s.powers ? 'Sí' : 'No'}`;
     }
   }
@@ -363,7 +372,10 @@ export class FutbolScene extends Phaser.Scene {
       text.setText(this.rowLabel(ROWS[i])).setColor(enabled ? TEXT.normal : TEXT.muted);
       bg.setStrokeStyle(i === this.setupRow ? 4 : 2, i === this.setupRow ? COLORS.accent : COLORS.panelBorder);
     });
-    const roster = this.buildRoster(s.mode === 'copa' || s.mode === 'liga' ? 'juntos' : s.teams);
+    // (En los retos no juega la compu.)
+    const roster = this.buildRoster(s.mode === 'copa' || s.mode === 'liga' || s.mode === 'retos' ? 'juntos' : s.teams).filter(
+      (entry) => s.mode !== 'retos' || entry.deviceId !== null,
+    );
     this.rosterHeaders.forEach((header, team) => header.setText(TEAM_NAMES[team]).setColor(hexToCss(TEAM_COLORS[team])));
     this.rosterText.forEach((list, team) => {
       list.setText(
@@ -524,11 +536,11 @@ export class FutbolScene extends Phaser.Scene {
     return {
       ...base,
       kind: s.mode,
-      teams: s.teams,
+      teams: s.mode === 'retos' ? 'juntos' : s.teams,
       level: s.level,
       pitch: s.pitch,
       uniforms: [s.uniform, rivalUniform(s.uniform)],
-      powers: s.powers && s.mode !== 'penales',
+      powers: s.powers && s.mode !== 'penales' && s.mode !== 'retos',
     };
   }
 
@@ -540,6 +552,8 @@ export class FutbolScene extends Phaser.Scene {
   // Quita lo que queda del partido anterior (penales, pantalla final, poderes, repetición).
   clearMatchStuff() {
     this.shootout?.destroy();
+    this.challenges?.destroy();
+    this.challenges = null;
     this.shootout = null;
     this.ligaScreen?.destroy();
     this.ligaScreen = null;
@@ -564,7 +578,9 @@ export class FutbolScene extends Phaser.Scene {
     this.refreshHud();
     this.crowd.recolor();
     this.clearTeam();
-    this.team = this.buildRoster(m.teams).map((entry) => new FutbolPlayer(this, entry));
+    // (En los retos solo juegan los de a de veras.)
+    const roster = this.buildRoster(m.teams).filter((entry) => m.kind !== 'retos' || entry.deviceId !== null);
+    this.team = roster.map((entry) => new FutbolPlayer(this, entry));
     this.usePitch(m.pitch);
     // Un Bloquecito de la compu sale con un número al azar.
     for (const p of this.team) if (p.isCpu) p.look.setNumber(1 + Math.floor(Math.random() * MAX_NUMBER));
@@ -587,6 +603,13 @@ export class FutbolScene extends Phaser.Scene {
     this.updateScore();
     this.updateClockText();
     this.narrator.hide();
+    this.showTeamBoard(m.kind !== 'retos');
+    if (m.kind === 'retos') {
+      this.phase = 'retos';
+      this.phaseMs = 0;
+      this.challenges = new Challenges(this, HUD_DEPTH - 1);
+      return;
+    }
     if (m.kind === 'penales') {
       this.phase = 'penalties';
       this.phaseMs = 0;
@@ -639,6 +662,11 @@ export class FutbolScene extends Phaser.Scene {
       return;
     }
     this.phaseMs += dt;
+    if (this.phase === 'retos') {
+      this.challenges.update(dt);
+      this.renderAll();
+      return;
+    }
     if (this.phase === 'penalties') {
       this.shootout.update(dt);
       this.renderAll();
@@ -806,9 +834,14 @@ export class FutbolScene extends Phaser.Scene {
     const min = player.radius + ball.radius;
     const dist = Math.hypot(dx, dy);
     if (dist >= min || dist === 0) return;
-    // El tiro especial atraviesa a todos (y a los rivales los tumba).
+    // El tiro especial atraviesa a todos (y a los rivales los tumba; el congelado, los congela).
     if (ball.special) {
-      if (ball.special.by && player.team !== ball.special.by.team && player.tumble()) {
+      const rival = ball.special.by && player.team !== ball.special.by.team;
+      if (rival && ball.special.kind === 'hielo' && player.frozenMs === 0) {
+        player.freeze(ICE_SHOT_MS);
+        comicHit(this, player.x, player.y - 40, '¡BRRR!');
+        sfx.hit(0.5);
+      } else if (rival && ball.special.kind !== 'hielo' && player.tumble()) {
         comicHit(this, player.x, player.y - 40, '¡PAF!', { red: true });
         sfx.hit(0.8);
       }
