@@ -40,6 +40,9 @@ const CSS = `
 .race-car.ready { box-shadow: 0 0 0 6px #4cd97b; }
 .race-car b { display: block; font-size: 30px; margin: 4px 0; }
 .race-car .race-arrows { font-size: 26px; }
+.race-car img { height: 58px; vertical-align: middle; margin-right: 6px; filter: drop-shadow(0 3px 0 #1b1530); }
+.race-lightning { position: absolute; inset: 0; background: #fffbe0; opacity: 0; transition: opacity 0.35s; }
+.race-lightning.on { opacity: 0.75; transition: none; }
 .race-stat { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 17px; margin: 3px 0; }
 .race-stat i { display: inline-block; width: 18px; height: 12px; margin-left: 3px; border-radius: 3px;
   background: rgba(255, 255, 255, 0.2); }
@@ -63,6 +66,7 @@ export class RaceHud {
     this.el = document.createElement('div');
     this.el.className = 'race-hud';
     this.el.innerHTML = `
+      <div class="race-lightning"></div>
       <div class="race-standings"></div>
       <div class="race-center"></div>
       <div class="race-flash"></div>
@@ -77,7 +81,15 @@ export class RaceHud {
     this.menu = this.el.querySelector('.race-menu');
     this.results = this.el.querySelector('.race-results');
     this.exitBar = this.el.querySelector('.race-exit > div');
+    this.lightningEl = this.el.querySelector('.race-lightning');
     this.last = {};
+  }
+
+  // El destello del rayo: la pantalla se pone blanca y se va apagando.
+  lightning() {
+    this.lightningEl.classList.add('on');
+    clearTimeout(this.lightningTimer);
+    this.lightningTimer = setTimeout(() => this.lightningEl.classList.remove('on'), 80);
   }
 
   // Solo toca el HTML cuando algo cambió: reescribirlo cada cuadro es caro para el Xbox.
@@ -128,15 +140,15 @@ export class RaceHud {
     this.setStandings([]);
   }
 
-  // Cada jugador con su carro: nombre, qué tan rápido, arranque y manejo, y si ya está listo.
+  // Cada jugador con su carro: su personaje, nombre, qué tan rápido, arranque y manejo, y si ya está listo.
   showCars(rows, subtitle) {
     const cards = rows
-      .map(({ label, color, car, ready }) => {
+      .map(({ label, color, car, ready, image }) => {
         const stats = STATS.map(
           (name, i) =>
             `<div class="race-stat">${name}<span>${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= car.bars[i] ? 'on' : ''}"></i>`).join('')}</span></div>`,
         ).join('');
-        return `<div class="race-car${ready ? ' ready' : ''}"><span class="race-dot" style="background:${color};display:inline-block"></span> ${label}
+        return `<div class="race-car${ready ? ' ready' : ''}">${image ? `<img src="${image}" alt="">` : ''}<span class="race-dot" style="background:${color};display:inline-block"></span> ${label}
           <b><span class="race-arrows">◀</span> ${car.name} <span class="race-arrows">▶</span></b><small>${car.note}</small>${stats}
           <div>${ready ? '✅ ¡Listo!' : 'A = listo'}</div></div>`;
       })
@@ -185,6 +197,7 @@ export class RaceHud {
 
   destroy() {
     clearTimeout(this.flashTimer);
+    clearTimeout(this.lightningTimer);
     this.el.remove();
   }
 }

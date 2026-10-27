@@ -13,13 +13,16 @@ import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, TEXT, hexToCss, textStyle } from '../../ui/style.js';
 import { burst, confetti, fireworks, popText } from '../brawl/effects.js';
 import { loadSmashArt } from '../smash/art.js';
-import { HOLES } from './holes.js';
-import { BALL_RADIUS, CUP_RADIUS, Course, HUB_RADIUS, MAX_SHOT, predictPath, stepBall } from './physics.js';
+import { golfBackground, golfObject, loadGolfArt } from './art.js';
+import { COURSES, COURSE_KEYS, HOLES, WORLDS, onGrass } from './holes.js';
+import { BALL_RADIUS, CUP_RADIUS, Course, GIANT_CUP, HUB_RADIUS, MAX_SHOT, predictPath, stepBall } from './physics.js';
 
 // "Minigolf": por turnos, cada quien con su personaje de pelota. En tu turno: el stick apunta, mantén A para la fuerza
 // (sube y baja) y suelta para tirar; LB / RB giran poquito la puntería y B cancela. La línea punteada enseña por dónde
-// va a ir (se puede quitar). El recorrido corto son 3 hoyos y el completo 9; gana el que use menos tiros.
-const SHORT_COURSE = [0, 2, 7];
+// va a ir (se puede quitar). Recorridos: corto (3 hoyos), la Pradera (9), la Vuelta al mundo (playa, nieve y espacio,
+// 9) o todos (18); gana el que use menos tiros.
+// Minigolf loco: en cada hoyo hay cajas sorpresa; la pelota que pasa por una se lleva un poder y con X lo usa en su
+// siguiente tiro (ver POWERS).
 const MIN_SHOT = 90;
 const POWER_PERIOD_MS = 1700;
 const FINE_TURN = 1.6;
@@ -30,7 +33,25 @@ const NEXT_TURN_MS = 700;
 const INPUT_DELAY_MS = 900;
 const EXIT_HOLD_MS = 1200;
 const DEPTH = { course: 0, things: 5, ball: 20, aim: 30, hud: 100, screen: 200 };
-const lastSetup = { course: 'corto', guide: true };
+const lastSetup = { course: 'corto', mode: 'normal', guide: true };
+const SETUP_ROWS = 3;
+// Los poderes del Minigolf loco (los de la pelota y el hoyo los hace physics.js).
+const POWERS = {
+  iman: { emoji: '🧲', name: '¡Hoyo imán!' },
+  fantasma: { emoji: '👻', name: '¡Pelota fantasma!' },
+  gigante: { emoji: '🕳️', name: '¡Hoyo gigante!' },
+  hielo: { emoji: '❄️', name: '¡Todo congelado!' },
+  regalo: { emoji: '🎁', name: '¡Tiro gratis!' },
+};
+const POWER_KEYS = Object.keys(POWERS);
+const BALL_POWERS = ['iman', 'fantasma', 'gigante'];
+const BOXES_PER_HOLE = 3;
+const BOX_REACH = 30;
+const BOX_SIZE = 46;
+const FLAG_HEIGHT = 96;
+const FLAG_POLE = 0.3;
+// Lo que se ve de los animalitos si todavía no hay dibujo.
+const CRITTER_EMOJI = { cangrejo: '🦀', pinguino: '🐧', ovni: '🛸' };
 const RESULT = (strokes, par) => {
   if (strokes === 1) return '¡Hoyo en uno!';
   if (strokes <= par - 2) return '¡Águila!';
@@ -38,6 +59,20 @@ const RESULT = (strokes, par) => {
   if (strokes === par) return '¡Par!';
   return `¡Adentro en ${strokes} tiros!`;
 };
+
+// Un color más oscuro (k < 1) o más claro (k > 1).
+function shade(color, k) {
+  const channel = (shift) => Math.min(255, Math.round(((color >> shift) & 0xff) * k));
+  return (channel(16) << 16) | (channel(8) << 8) | channel(0);
+}
+
+// Distancia del punto (px, py) al segmento (x1, y1)-(x2, y2).
+function segmentDistance(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy || 1)));
+  return Math.hypot(px - (x1 + dx * t), py - (y1 + dy * t));
+}
 
 export class GolfScene extends Phaser.Scene {
   constructor() {
@@ -52,11 +87,12 @@ export class GolfScene extends Phaser.Scene {
 
   preload() {
     loadSmashArt(this);
+    loadGolfArt(this);
   }
 
   create() {
     const { width, height } = this.scale;
-    this.add.rectangle(0, 0, width, height, 0x2f7a3f).setOrigin(0).setDepth(-10);
+    this.ground = this.add.rectangle(0, 0, width, height, WORLDS.pradera.ground).setOrigin(0).setDepth(-10);
     this.setup = { ...lastSetup };
     this.humans = players.sorted();
     this.balls = this.humans.map((player) => ({
@@ -66,31 +102,28 @@ export class GolfScene extends Phaser.Scene {
       color: players.color(player).hex,
       character: characterPicks.get(player.deviceId, defaultCharacter(player)),
       scores: [],
+      item: null,
     }));
     this.courseLayer = null;
     this.screen = null;
+    this.boxes = [];
     this.aim = this.add.graphics().setDepth(DEPTH.aim);
     this.hudTitle = this.add
-      .text(width / 2, 30, '', textStyle(30, TEXT.normal, { fontStyle: 'bold' }))
+      .text(width / 2, 30, '', textStyle(30, TEXT.normal, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 }))
       .setOrigin(0.5)
       .setDepth(DEPTH.hud);
     this.hudTurn = this.add
-      .text(width / 2, 64, '', textStyle(22, TEXT.accent, { fontStyle: 'bold' }))
+      .text(width / 2, 64, '', textStyle(22, TEXT.accent, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
       .setOrigin(0.5)
       .setDepth(DEPTH.hud);
     this.help = this.add
-      .text(
-        width / 2,
-        height - 16,
-        'Stick = apuntar · Mantén A = fuerza (suelta para tirar) · LB / RB = afinar · B = cancelar · Mantén LB + RB + Y = salir',
-        textStyle(16, TEXT.muted),
-      )
+      .text(width / 2, height - 16, '', textStyle(16, TEXT.muted, { stroke: '#1b1530', strokeThickness: 3 }))
       .setOrigin(0.5)
       .setDepth(DEPTH.hud);
     this.showSetup();
   }
 
-  // ---------- Antes de jugar: recorrido corto o completo, y la línea de ayuda ----------
+  // ---------- Antes de jugar: el recorrido, normal o loco, y la línea de ayuda ----------
   showSetup() {
     this.phase = 'setup';
     this.phaseMs = 0;
@@ -99,16 +132,16 @@ export class GolfScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.screen = this.add.container(0, 0).setDepth(DEPTH.screen);
     this.screen.add(this.add.rectangle(width / 2, height / 2, width, height, 0x14112b, 0.85));
-    this.screen.add(this.add.text(width / 2, 140, '⛳ Minigolf', textStyle(60, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
+    this.screen.add(this.add.text(width / 2, 130, '⛳ Minigolf', textStyle(60, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
     this.setupRow = 0;
-    this.setupTexts = [0, 1].map((i) => {
-      const bg = this.add.rectangle(width / 2, 280 + i * 70, 640, 56, COLORS.panel).setRounded(16);
-      const text = this.add.text(width / 2, 280 + i * 70, '', textStyle(26, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
+    this.setupTexts = Array.from({ length: SETUP_ROWS }, (_, i) => {
+      const bg = this.add.rectangle(width / 2, 250 + i * 70, 700, 56, COLORS.panel).setRounded(16);
+      const text = this.add.text(width / 2, 250 + i * 70, '', textStyle(26, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
       this.screen.add([bg, text]);
       return { bg, text };
     });
     const people = this.balls.map((b) => b.label).join(', ');
-    this.screen.add(this.add.text(width / 2, 460, `Juegan: ${people}`, textStyle(24, TEXT.normal)).setOrigin(0.5));
+    this.screen.add(this.add.text(width / 2, 500, `Juegan: ${people}`, textStyle(24, TEXT.normal)).setOrigin(0.5));
     this.screen.add(this.add.text(width / 2, 620, '↑ ↓ elegir  ·  ◀ ▶ cambiar  ·  A = ¡a jugar!  ·  B = regresar', textStyle(22, TEXT.accent)).setOrigin(0.5));
     this.refreshSetup();
     say('Minigolf');
@@ -116,7 +149,8 @@ export class GolfScene extends Phaser.Scene {
 
   refreshSetup() {
     const labels = [
-      `Recorrido: ${this.setup.course === 'corto' ? 'Corto (3 hoyos)' : 'Completo (9 hoyos)'}`,
+      `Recorrido: ${COURSES[this.setup.course].name}`,
+      `Modo: ${this.setup.mode === 'loco' ? 'Loco (cajas con poderes)' : 'Normal'}`,
       `Línea de ayuda: ${this.setup.guide ? 'Sí' : 'No'}`,
     ];
     this.setupTexts.forEach(({ bg, text }, i) => {
@@ -129,14 +163,22 @@ export class GolfScene extends Phaser.Scene {
     const host = players.host();
     if (!host) return;
     const id = host.deviceId;
-    if (controls.justPressed(id, 'up') || controls.justPressed(id, 'down')) {
-      this.setupRow = 1 - this.setupRow;
+    const rowStep = controls.justPressed(id, 'down') ? 1 : controls.justPressed(id, 'up') ? -1 : 0;
+    if (rowStep) {
+      this.setupRow = (this.setupRow + rowStep + SETUP_ROWS) % SETUP_ROWS;
       sfx.select();
       this.refreshSetup();
     }
-    if (controls.justPressed(id, 'left') || controls.justPressed(id, 'right')) {
-      if (this.setupRow === 0) this.setup.course = this.setup.course === 'corto' ? 'completo' : 'corto';
-      else this.setup.guide = !this.setup.guide;
+    const step = controls.justPressed(id, 'right') ? 1 : controls.justPressed(id, 'left') ? -1 : 0;
+    if (step) {
+      if (this.setupRow === 0) {
+        const index = COURSE_KEYS.indexOf(this.setup.course);
+        this.setup.course = COURSE_KEYS[(index + step + COURSE_KEYS.length) % COURSE_KEYS.length];
+      } else if (this.setupRow === 1) {
+        this.setup.mode = this.setup.mode === 'loco' ? 'normal' : 'loco';
+      } else {
+        this.setup.guide = !this.setup.guide;
+      }
       sfx.select();
       this.refreshSetup();
     }
@@ -146,9 +188,14 @@ export class GolfScene extends Phaser.Scene {
       Object.assign(lastSetup, this.setup);
       this.screen.destroy();
       this.screen = null;
-      this.holes = this.setup.course === 'corto' ? SHORT_COURSE : HOLES.map((_, i) => i);
-      for (const ball of this.balls) ball.scores = [];
+      this.holes = COURSES[this.setup.course].holes;
+      this.loco = this.setup.mode === 'loco';
+      for (const ball of this.balls) Object.assign(ball, { scores: [], item: null });
+      this.help.setText(
+        `Stick = apuntar · Mantén A = fuerza (suelta para tirar) · LB / RB = afinar · B = cancelar${this.loco ? ' · X = usar poder' : ''} · Mantén LB + RB + Y = salir`,
+      );
       this.holeIndex = 0;
+      if (this.loco) say('¡Minigolf loco!');
       this.startHole();
     } else if (controls.justPressed(id, 'b')) {
       this.exit();
@@ -168,59 +215,102 @@ export class GolfScene extends Phaser.Scene {
     const [tx, ty] = hole.tee;
     this.balls.forEach((ball, i) => {
       Object.assign(ball, { x: tx, y: ty + (i - (this.balls.length - 1) / 2) * 6, vx: 0, vy: 0, strokes: 0, done: false, slowMs: 0, portalMs: 0 });
+      Object.assign(ball, { power: null, armed: false });
       ball.lastX = ball.x;
       ball.lastY = ball.y;
       ball.aim = Math.atan2(hole.cup[1] - ty, hole.cup[0] - tx);
       ball.sprite = this.makeBall(ball);
     });
+    this.boxes = this.loco ? this.placeBoxes(hole) : [];
     this.turn = 0;
     this.phase = 'intro';
     this.phaseMs = 0;
-    this.hudTitle.setText(`Hoyo ${this.holeIndex + 1} de ${this.holes.length} · ${hole.name} · Par ${hole.par}`);
+    const world = WORLDS[hole.world];
+    this.hudTitle.setText(`${world.emoji} Hoyo ${this.holeIndex + 1} de ${this.holes.length} · ${hole.name} · Par ${hole.par}`);
     this.hudTurn.setText('');
     say(`Hoyo ${this.holeIndex + 1}: ${hole.name}. Par ${hole.par}`);
   }
 
   clearCourse() {
-    // (Primero se paran sus animaciones: la bandera y los portales.)
+    // (Primero se paran sus animaciones: la bandera, los portales y las cajas.)
     this.courseLayer?.each((child) => this.tweens.killTweensOf(child));
     this.courseLayer?.destroy();
     this.courseLayer = null;
     for (const ball of this.balls ?? []) ball.sprite?.destroy();
     this.aim?.clear();
+    this.boxes = [];
   }
 
-  // La pelota de cada quien: su bolita con su personaje (un poco transparente si no es su turno) y su letrero.
+  // La pelota de cada quien: su bolita con su personaje (un poco transparente si no es su turno), su letrero y el
+  // poder que trae (en el Minigolf loco).
   makeBall(ball) {
     const blob = new Blob(this, ball.x, ball.y, ball.color, BALL_RADIUS).setDepth(DEPTH.ball);
     new CharacterLook(this, blob, ball.character, { height: 2.6 });
     const tag = this.add
       .text(0, -BALL_RADIUS * 3.2, ball.label, textStyle(16, hexToCss(ball.color), { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 4 }))
       .setOrigin(0.5);
-    blob.add(tag);
+    ball.itemTag = this.add.text(BALL_RADIUS * 2.2, -BALL_RADIUS * 2.4, '', textStyle(24, TEXT.normal)).setOrigin(0.5);
+    blob.add([tag, ball.itemTag]);
+    this.refreshItem(ball);
     return blob;
+  }
+
+  refreshItem(ball) {
+    ball.itemTag?.setText(ball.item ? POWERS[ball.item].emoji : '');
+  }
+
+  // El fondo del mundo (cuando llega su dibujo, quita los adornos de figuras).
+  addBackground(hole, key) {
+    if (this.hole !== hole || !this.courseLayer) return;
+    for (const piece of this.decor) piece.destroy();
+    this.decor = [];
+    const { width, height } = this.scale;
+    const image = this.add.image(width / 2, height / 2, key);
+    image.setScale(Math.max(width / image.width, height / image.height));
+    this.courseLayer.addAt(image, 0);
+  }
+
+  // Adornos alrededor de la cancha mientras no hay fondo (siempre en el mismo lugar para cada hoyo): los dibujos del
+  // mundo o, si no hay, arbolitos de figuras.
+  drawDecor(hole, world) {
+    const rnd = new Phaser.Math.RandomDataGenerator([hole.name]);
+    const g = this.add.graphics();
+    this.courseLayer.add(g);
+    this.decor.push(g);
+    const art = world.decor.map((name) => golfObject(this, name)).filter(Boolean);
+    for (let i = 0; i < 26; i += 1) {
+      const x = rnd.between(30, 1250);
+      const y = rnd.between(100, 690);
+      if (this.nearGrass(hole, x, y)) continue;
+      if (art.length) {
+        const image = this.add.image(x, y, rnd.pick(art));
+        image.setScale(rnd.between(46, 70) / Math.max(image.width, image.height)).setAngle(rnd.between(-15, 15));
+        this.courseLayer.add(image);
+        this.decor.push(image);
+        continue;
+      }
+      g.fillStyle(shade(world.ground, 0.75), 1);
+      g.fillCircle(x, y, rnd.between(16, 28));
+      g.fillStyle(shade(world.ground, 1.15), 1);
+      g.fillCircle(x - 4, y - 5, rnd.between(10, 16));
+    }
   }
 
   // El pasto, los barandales y todo lo del hoyo (lo que se mueve se guarda para moverlo cada cuadro).
   drawCourse(hole) {
+    const world = WORLDS[hole.world];
+    this.ground.setFillStyle(world.ground);
     const layer = this.add.container(0, 0).setDepth(DEPTH.course);
     this.courseLayer = layer;
+    this.decor = [];
+    const background = golfBackground(this, hole.world, (key) => this.addBackground(hole, key));
+    if (background) this.addBackground(hole, background);
+    else this.drawDecor(hole, world);
     const g = this.add.graphics();
     layer.add(g);
-    // Arbolitos alrededor (siempre en el mismo lugar para cada hoyo).
-    const rnd = new Phaser.Math.RandomDataGenerator([hole.name]);
-    for (let i = 0; i < 26; i += 1) {
-      const x = rnd.between(30, 1250);
-      const y = rnd.between(100, 690);
-      if (this.course && this.nearGrass(hole, x, y)) continue;
-      g.fillStyle(0x245f30, 1);
-      g.fillCircle(x, y, rnd.between(16, 28));
-      g.fillStyle(0x2e8b3e, 1);
-      g.fillCircle(x - 4, y - 5, rnd.between(10, 16));
-    }
     for (const polygon of hole.shape) {
       const points = polygon.map(([x, y]) => ({ x, y }));
-      g.fillStyle(0x6cd36c, 1);
+      g.fillStyle(world.grass, 1);
       g.fillPoints(points, true);
     }
     for (const s of hole.slopes ?? []) {
@@ -237,58 +327,83 @@ export class GolfScene extends Phaser.Scene {
         }
       }
     }
+    // Arena (en la nieve, nieve honda: igual frena mucho).
+    const snowy = hole.world === 'nieve';
     for (const s of hole.sand ?? []) {
-      g.fillStyle(0xf2d27a, 1);
+      g.fillStyle(snowy ? 0xffffff : 0xf2d27a, 1);
       g.fillRoundedRect(s.x, s.y, s.w, s.h, 26);
-      g.fillStyle(0xd9b45a, 1);
+      g.fillStyle(snowy ? 0xbcd7f0 : 0xd9b45a, 1);
       for (let k = 0; k < 18; k += 1) g.fillCircle(s.x + 15 + ((k * 37) % (s.w - 30)), s.y + 15 + ((k * 53) % (s.h - 30)), 2.5);
     }
-    for (const w of hole.water ?? []) {
-      g.fillStyle(0x3fa7ff, 1);
-      g.fillRoundedRect(w.x, w.y, w.w, w.h, 20);
-      g.lineStyle(3, 0xffffff, 0.5);
-      for (let y = w.y + 22; y < w.y + w.h - 10; y += 30) {
-        g.beginPath();
-        for (let x = w.x + 14; x <= w.x + w.w - 14; x += 6) g.lineTo(x, y + Math.sin(x / 10) * 3);
-        g.strokePath();
+    // Hielo: azulito con rayitas de brillo.
+    for (const s of hole.ice ?? []) {
+      g.fillStyle(0x9fe0ff, 1);
+      g.fillRect(s.x, s.y, s.w, s.h);
+      g.lineStyle(4, 0xffffff, 0.6);
+      for (let x = s.x + 20; x < s.x + s.w - 30; x += 70) {
+        for (let y = s.y + 20; y < s.y + s.h - 30; y += 60) g.lineBetween(x, y + 24, x + 24, y);
       }
     }
-    // El tapete de salida y el hoyo con su bandera.
+    for (const w of hole.water ?? []) this.drawWater(g, w.x, w.y, w.w, w.h);
+    // El tapete de salida y el hoyo (con el poder del hoyo gigante, crece).
     const [tx, ty] = hole.tee;
     g.fillStyle(0x2e8b57, 1);
     g.fillRoundedRect(tx - 26, ty - 26, 52, 52, 8);
     const [cx, cy] = hole.cup;
-    g.fillStyle(COLORS.ink, 1);
-    g.fillCircle(cx, cy, CUP_RADIUS);
-    g.lineStyle(3, 0xffffff, 0.8);
-    g.strokeCircle(cx, cy, CUP_RADIUS);
-    g.lineStyle(4, 0xdddddd, 1);
-    g.lineBetween(cx, cy, cx, cy - 80);
-    this.flag = this.add
-      .triangle(cx, cy - 80, 0, 0, 0, 28, 44, 14, 0xff5a5f)
-      .setOrigin(0, 0)
-      .setStrokeStyle(2, COLORS.ink);
-    layer.add(this.flag);
-    this.tweens.add({ targets: this.flag, scaleX: 0.8, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    // Los barandales (de madera, con su orilla oscura).
+    this.cupHole = this.add.circle(cx, cy, CUP_RADIUS, COLORS.ink).setStrokeStyle(3, 0xffffff, 0.8);
+    layer.add(this.cupHole);
+    // Los barandales (de madera, de hielo o de metal según el mundo, con su orilla oscura).
     for (const [x1, y1, x2, y2] of this.course.walls) {
       g.lineStyle(16, COLORS.ink, 1);
       g.lineBetween(x1, y1, x2, y2);
     }
     for (const [x1, y1, x2, y2] of this.course.walls) {
-      g.lineStyle(10, 0xb5793f, 1);
+      g.lineStyle(10, world.rail, 1);
       g.lineBetween(x1, y1, x2, y2);
     }
-    // Hongos que rebotan.
+    // Hongos que rebotan (o lo que rebota en ese mundo: estrella de mar, muñeco de nieve, asteroide).
+    const bumperArt = golfObject(this, world.bumper);
     this.bumperSprites = (hole.bumpers ?? []).map((b) => {
-      const bumper = this.add.container(b.x, b.y, [
-        this.add.circle(0, 0, b.r, 0xff5a5f).setStrokeStyle(4, COLORS.ink),
-        this.add.circle(0, 0, b.r * 0.6, 0xffffff),
-        this.add.star(0, 0, 5, b.r * 0.22, b.r * 0.45, 0xffc93c),
-      ]);
+      let bumper;
+      if (bumperArt) {
+        bumper = this.add.image(b.x, b.y, bumperArt);
+        bumper.setScale((b.r * 2.3) / Math.max(bumper.width, bumper.height));
+      } else {
+        bumper = this.add.container(b.x, b.y, [
+          this.add.circle(0, 0, b.r, 0xff5a5f).setStrokeStyle(4, COLORS.ink),
+          this.add.circle(0, 0, b.r * 0.6, 0xffffff),
+          this.add.star(0, 0, 5, b.r * 0.22, b.r * 0.45, 0xffc93c),
+        ]);
+      }
       layer.add(bumper);
       return bumper;
     });
+    // Planetas: con su aro de hasta dónde jalan.
+    const planetArt = golfObject(this, 'planeta');
+    for (const p of hole.planets ?? []) {
+      g.lineStyle(3, 0xffffff, 0.16);
+      g.strokeCircle(p.x, p.y, p.reach);
+      if (planetArt) {
+        const planet = this.add.image(p.x, p.y, planetArt);
+        planet.setScale((p.r * 3.3) / Math.max(planet.width, planet.height));
+        layer.add(planet);
+      } else {
+        layer.add(this.add.circle(p.x, p.y, p.r, 0x9b5de5).setStrokeStyle(4, COLORS.ink));
+        layer.add(this.add.ellipse(p.x, p.y, p.r * 2.8, p.r * 0.7).setStrokeStyle(5, 0xff9a3c));
+      }
+    }
+    // Agujeros negros: remolino morado que da vueltas.
+    for (const b of hole.blackHoles ?? []) {
+      g.lineStyle(3, 0xb07cff, 0.25);
+      g.strokeCircle(b.x, b.y, b.reach);
+      const swirl = this.add.container(b.x, b.y, [
+        this.add.circle(0, 0, b.r * 1.7, 0x6a3cff, 0.35),
+        this.add.star(0, 0, 7, b.r * 0.5, b.r * 1.5, 0xb07cff, 0.6),
+        this.add.circle(0, 0, b.r, 0x05030f).setStrokeStyle(4, 0xb07cff),
+      ]);
+      layer.add(swirl);
+      this.tweens.add({ targets: swirl, angle: -360, duration: 2200, repeat: -1 });
+    }
     // Molinos: el centro y sus 4 aspas, que dan vueltas.
     this.millSprites = (hole.windmills ?? []).map((mill) => {
       const blades = [0, 1, 2, 3].map((k) =>
@@ -308,6 +423,14 @@ export class GolfScene extends Phaser.Scene {
       layer.add(sprite);
       return { m, sprite };
     });
+    // Olas: agua que va y viene.
+    this.waveSprites = (hole.waves ?? []).map((wave) => {
+      const wg = this.add.graphics();
+      this.drawWater(wg, 0, 0, wave.w, wave.h);
+      const sprite = this.add.container(wave.x, wave.y, [wg]);
+      layer.add(sprite);
+      return { wave, sprite };
+    });
     // Portales: remolinos de colores.
     for (const portal of hole.portals ?? []) {
       for (const [[x, y], color] of [
@@ -322,6 +445,50 @@ export class GolfScene extends Phaser.Scene {
         this.tweens.add({ targets: swirl, angle: 360, duration: 1600, repeat: -1 });
       }
     }
+    // Los animalitos que van y vienen (cangrejos, pingüinos, ovnis).
+    this.critterSprites = (hole.critters ?? []).map((c) => {
+      const art = golfObject(this, c.kind);
+      let sprite;
+      if (art) {
+        sprite = this.add.image(c.x, c.y, art);
+        sprite.setScale((c.r * 2.5) / Math.max(sprite.width, sprite.height));
+      } else {
+        sprite = this.add.container(c.x, c.y, [
+          this.add.circle(0, 0, c.r, 0xffffff, 0.85).setStrokeStyle(4, COLORS.ink),
+          this.add.text(0, 0, CRITTER_EMOJI[c.kind] ?? '⭐', textStyle(c.r * 1.2, TEXT.normal)).setOrigin(0.5),
+        ]);
+      }
+      layer.add(sprite);
+      return { c, sprite };
+    });
+    // La bandera del hoyo, encima de todo lo de la cancha (en el dibujo, el palito está a FLAG_POLE de su ancho).
+    const flagArt = golfObject(this, 'bandera');
+    if (flagArt) {
+      this.flag = this.add.image(cx, cy + 4, flagArt).setOrigin(FLAG_POLE, 0.95);
+      this.flag.setScale(FLAG_HEIGHT / this.flag.height);
+      layer.add(this.flag);
+      this.tweens.add({ targets: this.flag, angle: 4, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      return;
+    }
+    g.lineStyle(4, 0xdddddd, 1);
+    g.lineBetween(cx, cy, cx, cy - 80);
+    this.flag = this.add
+      .triangle(cx, cy - 80, 0, 0, 0, 28, 44, 14, 0xff5a5f)
+      .setOrigin(0, 0)
+      .setStrokeStyle(2, COLORS.ink);
+    layer.add(this.flag);
+    this.tweens.add({ targets: this.flag, scaleX: 0.8, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
+  drawWater(g, x, y, w, h) {
+    g.fillStyle(0x3fa7ff, 1);
+    g.fillRoundedRect(x, y, w, h, 20);
+    g.lineStyle(3, 0xffffff, 0.5);
+    for (let wy = y + 22; wy < y + h - 10; wy += 30) {
+      g.beginPath();
+      for (let wx = x + 14; wx <= x + w - 14; wx += 6) g.lineTo(wx, wy + Math.sin(wx / 10) * 3);
+      g.strokePath();
+    }
   }
 
   // (Los arbolitos no van sobre el pasto ni pegados a él.)
@@ -331,6 +498,69 @@ export class GolfScene extends Phaser.Scene {
       const ys = polygon.map(([, py]) => py);
       return x > Math.min(...xs) - 40 && x < Math.max(...xs) + 40 && y > Math.min(...ys) - 40 && y < Math.max(...ys) + 40;
     });
+  }
+
+  // ---------- Minigolf loco: las cajas sorpresa ----------
+  // Lugares libres en el pasto: lejos de la salida, del hoyo, de los barandales y de todo lo que estorba.
+  freeSpot(hole, x, y) {
+    if (!onGrass(hole, x, y)) return false;
+    if (Math.hypot(x - hole.tee[0], y - hole.tee[1]) < 120 || Math.hypot(x - hole.cup[0], y - hole.cup[1]) < 90) return false;
+    if (this.course.walls.some(([x1, y1, x2, y2]) => segmentDistance(x, y, x1, y1, x2, y2) < 36)) return false;
+    const inside = (r, margin) => x > r.x - margin && x < r.x + r.w + margin && y > r.y - margin && y < r.y + r.h + margin;
+    if ([...(hole.water ?? []), ...(hole.sand ?? [])].some((r) => inside(r, 24))) return false;
+    if ((hole.waves ?? []).some((w) => inside({ x: w.x, y: w.y, w: w.w + w.dx, h: w.h + w.dy }, 24))) return false;
+    if ((hole.critters ?? []).some((c) => inside({ x: c.x + Math.min(0, c.dx), y: c.y + Math.min(0, c.dy), w: Math.abs(c.dx), h: Math.abs(c.dy) }, c.r + 24))) {
+      return false;
+    }
+    const round = [...(hole.bumpers ?? []), ...(hole.planets ?? []), ...(hole.blackHoles ?? [])];
+    if (round.some((b) => Math.hypot(x - b.x, y - b.y) < b.r * (b.reach ? 1.8 : 1) + 34)) return false;
+    if ((hole.windmills ?? []).some((m) => Math.hypot(x - m.x, y - m.y) < m.length + 30)) return false;
+    if ((hole.movers ?? []).some((m) => inside({ x: m.x, y: m.y, w: m.w + m.dx, h: m.h + m.dy }, 30))) return false;
+    if ((hole.portals ?? []).some((p) => [p.a, p.b].some(([px, py]) => Math.hypot(x - px, y - py) < 60))) return false;
+    return true;
+  }
+
+  placeBoxes(hole) {
+    const art = golfObject(this, 'regalo');
+    const boxes = [];
+    for (let tries = 0; tries < 600 && boxes.length < BOXES_PER_HOLE; tries += 1) {
+      const x = Phaser.Math.Between(150, 1130);
+      const y = Phaser.Math.Between(130, 650);
+      if (!this.freeSpot(hole, x, y) || boxes.some((b) => Math.hypot(b.x - x, b.y - y) < 170)) continue;
+      let sprite;
+      if (art) {
+        sprite = this.add.image(x, y, art);
+        sprite.setScale(BOX_SIZE / Math.max(sprite.width, sprite.height));
+      } else {
+        sprite = this.add.container(x, y, [
+          this.add.rectangle(0, 0, BOX_SIZE * 0.8, BOX_SIZE * 0.8, 0x9b5de5).setStrokeStyle(4, COLORS.ink),
+          this.add.text(0, 0, '?', textStyle(28, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5),
+        ]);
+      }
+      this.courseLayer.add(sprite);
+      this.tweens.add({ targets: sprite, y: y - 6, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      boxes.push({ x, y, sprite, taken: false });
+    }
+    return boxes;
+  }
+
+  // La pelota que rueda por una caja se lleva un poder (si no trae uno ya).
+  checkBoxes(ball, fromX, fromY) {
+    if (ball.item) return;
+    for (const box of this.boxes) {
+      if (box.taken || segmentDistance(box.x, box.y, fromX, fromY, ball.x, ball.y) > BOX_REACH) continue;
+      box.taken = true;
+      this.tweens.killTweensOf(box.sprite);
+      this.tweens.add({ targets: box.sprite, scale: box.sprite.scale * 1.6, alpha: 0, duration: 300, onComplete: () => box.sprite.setVisible(false) });
+      ball.item = Phaser.Utils.Array.GetRandom(POWER_KEYS);
+      const power = POWERS[ball.item];
+      burst(this, box.x, box.y, 0xffc93c, 12);
+      popText(this, box.x, box.y - 40, `${power.emoji} ${power.name}`, '#ffc93c');
+      say(power.name);
+      sfx.pickup();
+      this.refreshItem(ball);
+      return;
+    }
   }
 
   get current() {
@@ -352,6 +582,16 @@ export class GolfScene extends Phaser.Scene {
         const r = this.course.mover(m);
         sprite.setPosition(r.x, r.y);
       }
+      for (const { wave, sprite } of this.waveSprites ?? []) {
+        const r = this.course.mover(wave);
+        sprite.setPosition(r.x, r.y);
+      }
+      for (const { c, sprite } of this.critterSprites ?? []) {
+        const at = this.course.critter(c);
+        sprite.setPosition(at.x, at.y);
+        // (Van meneándose al caminar; congelados, quietos.)
+        if (!this.course.frozen) sprite.setAngle(Math.sin(this.course.t / 110) * 8);
+      }
     }
     if (this.phase === 'intro' && this.phaseMs >= INTRO_MS) this.startTurn();
     else if (this.phase === 'aim') this.updateAim(dt);
@@ -369,8 +609,14 @@ export class GolfScene extends Phaser.Scene {
     this.charging = false;
     for (const other of this.balls) other.sprite?.setAlpha(other === ball || other.done ? 1 : 0.55);
     ball.sprite.hop?.();
-    this.hudTurn.setText(`Turno de ${ball.label} · Tiro ${ball.strokes + 1}`).setColor(hexToCss(ball.color));
+    this.refreshTurnText(ball);
     say(`Turno de ${ball.label}`);
+  }
+
+  refreshTurnText(ball) {
+    let text = `Turno de ${ball.label} · Tiro ${ball.strokes + 1}`;
+    if (ball.item) text += ball.armed ? ` · ${POWERS[ball.item].emoji} ¡listo!` : ` · ${POWERS[ball.item].emoji} X = usar`;
+    this.hudTurn.setText(text).setColor(hexToCss(ball.color));
   }
 
   updateAim(dt) {
@@ -380,6 +626,13 @@ export class GolfScene extends Phaser.Scene {
     if (Math.hypot(stick.x, stick.y) > 0.4) ball.aim = Math.atan2(stick.y, stick.x);
     if (controls.isDown(id, 'lb')) ball.aim -= Phaser.Math.DegToRad(FINE_TURN);
     if (controls.isDown(id, 'rb')) ball.aim += Phaser.Math.DegToRad(FINE_TURN);
+    // X: preparar (o guardar otra vez) el poder para este tiro.
+    if (ball.item && controls.justPressed(id, 'x')) {
+      ball.armed = !ball.armed;
+      sfx.select();
+      if (ball.armed) say(POWERS[ball.item].name);
+      this.refreshTurnText(ball);
+    }
     const holding = controls.isDown(id, 'a') && this.phaseMs > 250;
     if (holding) {
       if (!this.charging) {
@@ -409,7 +662,8 @@ export class GolfScene extends Phaser.Scene {
     const dir = { x: Math.cos(ball.aim), y: Math.sin(ball.aim) };
     const speed = MIN_SHOT + Math.max(this.power, this.charging ? this.power : 0.45) * (MAX_SHOT - MIN_SHOT);
     if (this.setup.guide) {
-      const path = predictPath(this.course, ball.x, ball.y, dir.x * speed, dir.y * speed);
+      const power = ball.armed && BALL_POWERS.includes(ball.item) ? ball.item : null;
+      const path = predictPath(this.course, ball.x, ball.y, dir.x * speed, dir.y * speed, { power });
       g.fillStyle(0xffffff, 0.75);
       path.forEach(([x, y], i) => g.fillCircle(x, y, i % 2 ? 3 : 4));
     }
@@ -438,20 +692,53 @@ export class GolfScene extends Phaser.Scene {
     ball.vx = Math.cos(ball.aim) * speed;
     ball.vy = Math.sin(ball.aim) * speed;
     ball.slowMs = 0;
-    ball.strokes += 1;
+    // El poder preparado se usa en este tiro (el tiro gratis no cuenta).
+    const item = ball.armed ? ball.item : null;
+    ball.power = BALL_POWERS.includes(item) ? item : null;
+    ball.usedPower = item;
+    if (item) this.usePower(ball, item);
+    if (item !== 'regalo') ball.strokes += 1;
     this.phase = 'roll';
     this.phaseMs = 0;
     this.aim.clear();
     this.wallSoundMs = 0;
     sfx.hit(0.3 + power * 0.5);
-    this.hudTurn.setText(`${ball.label} · Tiro ${ball.strokes}`);
+    this.hudTurn.setText(`${ball.label} · Tiro ${ball.strokes}${item ? ` · ${POWERS[item].emoji}` : ''}`);
+  }
+
+  usePower(ball, item) {
+    ball.item = null;
+    ball.armed = false;
+    this.refreshItem(ball);
+    sfx.special();
+    if (item === 'gigante') this.tweens.add({ targets: this.cupHole, scale: GIANT_CUP, duration: 300, ease: 'Back.easeOut' });
+    if (item === 'fantasma') ball.sprite.setAlpha(0.45);
+    if (item === 'hielo') {
+      this.course.frozen = true;
+      for (const { sprite } of [...(this.critterSprites ?? []), ...(this.millSprites ?? []), ...(this.moverSprites ?? []), ...(this.waveSprites ?? [])]) {
+        burst(this, sprite.x, sprite.y, 0x9fd8ff, 8);
+      }
+    }
+    popText(this, ball.x, ball.y - 50, `${POWERS[item].emoji} ${POWERS[item].name}`, '#ffc93c');
+  }
+
+  // Al acabar el tiro, el poder se acaba (la cancha se descongela y el hoyo vuelve a su tamaño).
+  endPower(ball) {
+    if (!ball.usedPower) return;
+    ball.power = null;
+    ball.usedPower = null;
+    if (this.course) this.course.frozen = false;
+    if (this.cupHole?.scale !== 1) this.tweens.add({ targets: this.cupHole, scale: 1, duration: 300 });
+    ball.sprite?.setAlpha(1);
   }
 
   updateRoll(dt) {
     const ball = this.current;
     if (ball.done) return;
     this.wallSoundMs = Math.max(0, this.wallSoundMs - dt);
+    const [fromX, fromY] = [ball.x, ball.y];
     const events = stepBall(ball, this.course, Math.min(dt, 40));
+    if (this.loco) this.checkBoxes(ball, fromX, fromY);
     if (events.wall && this.wallSoundMs === 0) {
       sfx.block();
       this.wallSoundMs = 120;
@@ -459,20 +746,31 @@ export class GolfScene extends Phaser.Scene {
     if (events.bumper) {
       sfx.boing();
       const sprite = this.bumperSprites[(this.hole.bumpers ?? []).indexOf(events.bumper)];
-      if (sprite) this.tweens.add({ targets: sprite, scale: 1.25, duration: 90, yoyo: true });
+      if (sprite) this.tweens.add({ targets: sprite, scale: sprite.scale * 1.25, duration: 90, yoyo: true });
+    }
+    if (events.critter && this.wallSoundMs === 0) {
+      sfx.boing();
+      this.wallSoundMs = 200;
     }
     if (events.portal) {
       sfx.poof();
       burst(this, ball.x, ball.y, 0xb07cff, 10);
     }
     if (events.water || events.out) {
-      // Al agua (o se salió): regresa de donde tiró; el agua cuesta un tiro.
+      // Al agua (o al agujero negro, o se salió): regresa de donde tiró; el agua cuesta un tiro.
       if (events.water) {
         ball.strokes += 1;
-        burst(this, ball.x, ball.y, 0x3fa7ff, 12);
-        popText(this, ball.x, ball.y - 30, '¡Splash!', '#9fd8ff');
-        say('¡Al agua!');
-        sfx.throw();
+        if (events.blackHole) {
+          burst(this, ball.x, ball.y, 0xb07cff, 14);
+          popText(this, ball.x, ball.y - 30, '¡Se la tragó!', '#d6b8ff');
+          say('¡Se la tragó el agujero negro!');
+          sfx.ghost();
+        } else {
+          burst(this, ball.x, ball.y, 0x3fa7ff, 12);
+          popText(this, ball.x, ball.y - 30, '¡Splash!', '#9fd8ff');
+          say('¡Al agua!');
+          sfx.throw();
+        }
       }
       Object.assign(ball, { x: ball.lastX, y: ball.lastY, vx: 0, vy: 0, slowMs: 0 });
       this.endTurn(ball);
@@ -490,6 +788,8 @@ export class GolfScene extends Phaser.Scene {
     const hole = this.hole;
     const text = RESULT(ball.strokes, hole.par);
     ball.scores.push(ball.strokes);
+    if (ball.usedPower) rewards.earn('golf-loco');
+    this.endPower(ball);
     this.tweens.add({ targets: ball.sprite, scale: 0.2, alpha: 0, duration: 400, ease: 'Back.easeIn' });
     burst(this, hole.cup[0], hole.cup[1], ball.color, 16);
     popText(this, hole.cup[0], hole.cup[1] - 60, text, hexToCss(ball.color));
@@ -506,6 +806,7 @@ export class GolfScene extends Phaser.Scene {
 
   endTurn(ball) {
     this.phase = 'wait';
+    this.endPower(ball);
     // Ya no le quedan tiros: se acaba su hoyo.
     if (!ball.done && ball.strokes >= this.hole.par + EXTRA_STROKES) {
       ball.done = true;
@@ -549,20 +850,25 @@ export class GolfScene extends Phaser.Scene {
       const solo = this.balls.length === 1;
       title = solo ? `¡Terminaste con ${best.total} tiros!` : `🏆 ¡Ganó ${best.b.label}!`;
       say(solo ? `¡Terminaste con ${best.total} tiros! El par era ${par}` : `¡Ganó ${best.b.label} con ${best.total} tiros!`);
-      // Gana la calcomanía el que gana con varios, o el que juega solo y queda en el par o abajo (en el completo).
-      if (this.holes.length === HOLES.length && (!solo || best.total <= par)) rewards.earn('golf-gana');
+      // Gana la calcomanía el que gana con varios, o el que juega solo y queda en el par o abajo (en 9 hoyos o más).
+      if (this.holes.length >= 9 && (!solo || best.total <= par)) rewards.earn('golf-gana');
+      // La Vuelta al mundo: terminar sus 9 hoyos (en ese recorrido o en el de todos).
+      if (this.setup.course === 'mundo' || this.setup.course === 'todo') rewards.earn('golf-mundo');
       confetti(this, [best.b.color, 0xffffff, 0xffc93c], 90);
       sfx.win();
     }
     this.screen.add(this.add.text(width / 2, 70, title, textStyle(46, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5));
     // La tabla: un renglón por jugador con sus tiros en cada hoyo y el total; abajo el par.
     const cols = this.holes.length;
-    const cellW = Math.min(80, 760 / cols);
+    const cellW = Math.min(80, 820 / cols);
+    const font = cols > 9 ? 20 : 26;
     const left = width / 2 - (180 + cols * cellW + 110) / 2;
     const header = ['', ...this.holes.map((_, i) => String(i + 1)), 'Total'];
     const rowY = (r) => 170 + r * 62;
     const cellX = (c) => (c === 0 ? left + 90 : c <= cols ? left + 180 + (c - 0.5) * cellW : left + 180 + cols * cellW + 55);
-    header.forEach((label, c) => this.screen.add(this.add.text(cellX(c), rowY(0), label, textStyle(24, TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5)));
+    header.forEach((label, c) =>
+      this.screen.add(this.add.text(cellX(c), rowY(0), label, textStyle(font - 2, TEXT.muted, { fontStyle: 'bold' })).setOrigin(0.5)),
+    );
     const parRow = ['Par', ...this.holes.map((i) => String(HOLES[i].par)), String(this.holes.reduce((sum, i) => sum + HOLES[i].par, 0))];
     const rows = [
       ...ranking.map(({ b }) => [
@@ -576,8 +882,9 @@ export class GolfScene extends Phaser.Scene {
       this.screen.add(this.add.rectangle(width / 2, y, cellX(cols + 1) - left + 70, 52, b ? COLORS.panel : 0x1b1730).setRounded(14));
       cells.forEach((cell, c) => {
         const color = c === 0 && b ? hexToCss(b.color) : c > 0 && c <= cols && b && Number(cell) < HOLES[this.holes[c - 1]].par ? TEXT.accent : TEXT.normal;
+        const size = c === 0 || c > cols ? 26 : font;
         this.screen.add(
-          this.add.text(cellX(c), y, cell, textStyle(26, color, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: c === 0 ? 5 : 0 })).setOrigin(0.5),
+          this.add.text(cellX(c), y, cell, textStyle(size, color, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: c === 0 ? 5 : 0 })).setOrigin(0.5),
         );
       });
     });

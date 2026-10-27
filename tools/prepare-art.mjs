@@ -137,6 +137,17 @@ const GAMES = {
       max: 256,
       names: ['perro', 'gato', 'vaca', 'cerdito', 'pollito', 'pato', 'rana', 'oveja', 'caballo', 'leon', 'elefante', 'mono'].flatMap((animal) => [animal, `${animal}-canta`]),
     },
+    // Las escondidas: detrás de qué se esconden los animalitos.
+    escondites: { kind: 'cutout', max: 320, names: ['arbusto', 'regalo', 'nube', 'casita'] },
+  },
+  // Minigolf: el fondo de cada mundo visto desde arriba y las cositas de las canchas.
+  golf: {
+    fondos: { kind: 'background', names: ['pradera', 'playa', 'nieve', 'espacio'] },
+    objetos: {
+      kind: 'cutout',
+      max: 160,
+      names: ['hongo', 'arbusto', 'flores', 'bandera', 'palmera', 'cangrejo', 'castillo', 'estrella-mar', 'pino', 'pinguino', 'muneco', 'iglu', 'planeta', 'ovni', 'asteroide', 'cohete'],
+    },
   },
   duelo: {
     fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono', 'playa', 'nieve', 'espacio', 'cueva', 'guarida', 'fabrica'] },

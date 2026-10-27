@@ -13,16 +13,21 @@ const TURBO_FACTOR = 1.5;
 const TURBO_MS = 1200;
 const TURBO_COOLDOWN_MS = 3500;
 export const KART_RADIUS = 1.7;
+// La estrella (ver items.js): más rápido.
+const STAR_FACTOR = 1.25;
 
 // Física de arcade: el carro gira hacia donde apunta el stick (respecto a la pantalla)
 // y acelera según qué tanto se empuja. A = turbo, B = freno, X = su poder (ver items.js).
 // Cada carro (cars.js) cambia la velocidad, el arranque, qué tan cerrado da vuelta, el pasto y el turbo.
+// Lo maneja el personaje que escogió cada quien (su dibujo, de `drivers`: un DriverArt de Karts locos).
 export class Kart {
-  constructor({ color, label, deviceId = null, car = CARS[0] }) {
+  constructor({ color, label, deviceId = null, car = CARS[0], character, drivers }) {
     this.color = color;
     this.label = label;
     this.deviceId = deviceId;
     this.isCpu = deviceId === null;
+    this.character = character;
+    this.driver = drivers.createDriver(character, deviceId);
     this.object = new THREE.Group();
     this.object.add(buildKartLabel(label, color));
     // La burbuja del escudo.
@@ -33,21 +38,30 @@ export class Kart {
     this.shield.position.y = 1.2;
     this.shield.visible = false;
     this.object.add(this.shield);
+    // El brillo dorado de la estrella.
+    this.starGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(2.4, 16, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffd84d, transparent: true, opacity: 0.4, depthWrite: false }),
+    );
+    this.starGlow.position.y = 1.2;
+    this.starGlow.visible = false;
+    this.object.add(this.starGlow, this.driver.sprite);
     this.setCar(car);
     this.reset(0, 0, 0, 0);
   }
 
-  // Cambia de carro (al escogerlo): otro modelo y otros números.
+  // Cambia de carro (al escogerlo): otro modelo y otros números (y el piloto se sienta en su asiento).
   setCar(car) {
     this.car = car;
     if (this.model) {
       this.object.remove(this.model);
       disposeKartModel(this.model);
     }
-    const { group, flame } = buildKartModel(this.color, car.model);
+    const { group, flame, seat } = buildKartModel(this.color, { ...car.model, driver: true });
     this.model = group;
     this.flame = flame;
     this.object.add(group);
+    this.driver.sprite.position.copy(seat).setY(seat.y - this.driver.sink);
   }
 
   reset(x, z, heading, index) {
@@ -67,6 +81,9 @@ export class Kart {
     this.trackDistance = 0;
     this.spinMs = 0;
     this.shieldMs = 0;
+    this.starMs = 0;
+    this.steerInput = 0;
+    this.caught = false;
     this.item = null;
     this.itemUses = 0;
   }
@@ -90,8 +107,10 @@ export class Kart {
     this.turboMs = TURBO_MS;
   }
 
-  // Le pegan (aceite o cohete): da una vuelta y casi se para, a menos que traiga escudo (que se rompe).
+  // Le pegan (aceite, cohete, bomba, rayo o la estrella de otro): da una vuelta y casi se para, a menos que traiga
+  // escudo (que se rompe) o estrella.
   hit() {
+    if (this.starMs > 0) return false;
     if (this.shieldMs > 0) {
       this.shieldMs = 0;
       return false;
@@ -109,6 +128,8 @@ export class Kart {
     this.turboCooldownMs = Math.max(0, this.turboCooldownMs - dtMs);
     this.blinkMs = Math.max(0, this.blinkMs - dtMs);
     this.shieldMs = Math.max(0, this.shieldMs - dtMs);
+    this.starMs = Math.max(0, this.starMs - dtMs);
+    this.steerInput = 0;
     if (this.spinMs > 0) {
       // Dando vueltas: no se maneja y se va frenando.
       this.spinMs = Math.max(0, this.spinMs - dtMs);
@@ -126,6 +147,7 @@ export class Kart {
     const push = Math.min(1, Math.hypot(input.x, input.y));
     if (push > 0.3) {
       const diff = angleDiff(Math.atan2(input.x, input.y), this.heading);
+      this.steerInput = Math.max(-1, Math.min(1, -diff * 2));
       const maxTurn = TURN_RATE * car.turn * dt;
       this.heading += Math.max(-maxTurn, Math.min(maxTurn, diff));
       target = MAX_SPEED * car.speed * push * speedBonus;
@@ -133,7 +155,8 @@ export class Kart {
       if (Math.abs(diff) > 1.6) target *= 0.6;
     }
     if (this.turboMs > 0) target = Math.max(target, MAX_SPEED * car.speed * TURBO_FACTOR * car.turbo);
-    if (offroad) target *= Math.min(1, OFFROAD_FACTOR * car.offroad);
+    if (this.starMs > 0) target *= STAR_FACTOR;
+    if (offroad && this.starMs === 0) target *= Math.min(1, OFFROAD_FACTOR * car.offroad);
     if (input.brake) target = 0;
 
     const rate = input.brake ? BRAKE : target > this.speed ? ACCEL * car.accel : COAST;
@@ -149,14 +172,19 @@ export class Kart {
     this.object.visible = this.blinkMs === 0 || Math.floor(this.blinkMs / 100) % 2 === 0;
     this.flame.visible = this.turboMs > 0;
     if (this.flame.visible) this.flame.scale.setScalar(0.8 + Math.sin(timeMs / 30) * 0.25);
-    // El escudo parpadea cuando se le está acabando.
+    // El escudo parpadea cuando se le está acabando; la estrella late.
     this.shield.visible = this.shieldMs > 0 && (this.shieldMs > 1500 || Math.floor(this.shieldMs / 120) % 2 === 0);
+    this.starGlow.visible = this.starMs > 0 && (this.starMs > 1200 || Math.floor(this.starMs / 100) % 2 === 0);
+    if (this.starGlow.visible) this.starGlow.scale.setScalar(1 + Math.sin(timeMs / 70) * 0.12);
   }
 
   destroy() {
     disposeKartModel(this.model);
-    this.shield.geometry.dispose();
-    this.shield.material.dispose();
+    this.driver.dispose();
+    for (const mesh of [this.shield, this.starGlow]) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
   }
 }
 

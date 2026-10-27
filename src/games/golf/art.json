@@ -1,0 +1,26 @@
+{
+  "fondos": [
+    "espacio",
+    "nieve",
+    "playa",
+    "pradera"
+  ],
+  "objetos": [
+    "arbusto",
+    "asteroide",
+    "bandera",
+    "cangrejo",
+    "castillo",
+    "cohete",
+    "estrella-mar",
+    "flores",
+    "hongo",
+    "iglu",
+    "muneco",
+    "ovni",
+    "palmera",
+    "pinguino",
+    "pino",
+    "planeta"
+  ]
+}

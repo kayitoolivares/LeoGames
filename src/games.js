@@ -6,7 +6,7 @@ export const GAMES = [
   { title: 'Bolitas Bros', emoji: '🥊', description: 'Sácalos de la pantalla\n¡estilo Smash!', scene: 'SmashSelect' },
   { title: 'Súper Bolitas', emoji: '🍄', description: 'Saltos, monedas y jefes\n¡todos juntos!', scene: 'Plat', pick: true },
   { title: 'Karts locos', emoji: '🏁', description: 'Nitro, cajitas\ny poderes', scene: 'Kart' },
-  { title: 'Carreras', emoji: '🏎️', description: 'Vista desde arriba,\n¡a toda velocidad!', scene: 'Race' },
+  { title: 'Carreras', emoji: '🏎️', description: 'Vista desde arriba,\n¡a toda velocidad!', scene: 'Race', pick: true },
   { title: 'Fútbol de bolitas', emoji: '⚽', description: 'Azules contra Rojos\n¡a meter goles!', scene: 'Futbol', pick: true },
   { title: 'Duelo de bolitas', emoji: '🥋', description: 'Uno contra uno\n¡estilo Street Fighter!', scene: 'Duelo', pick: true },
   { title: 'Minigolf', emoji: '⛳', description: 'Molinos, rampas\ny portales', scene: 'Golf', pick: true },

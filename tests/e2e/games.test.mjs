@@ -41,6 +41,8 @@ test('menú: cada juego abre y se puede salir', { timeout: ms(180000) }, async (
 
   for (const [title, key] of [['Karts locos', 'Kart'], ['Carreras', 'Race']]) {
     await p.openGameCard(title);
+    // (En Carreras primero se escoge quién maneja.)
+    if (key === 'Race') await p.pickCharacters(1);
     await p.page.waitForFunction((k) => Boolean(window.leogames.scene.getScene(k)?.game3d), key, { timeout: ms(30000) });
     await p.holdToMenu(0, EXIT, `salir de ${title}`);
     assert.equal(await p.page.evaluate(() => document.querySelectorAll('body > div[style*="z-index"]').length), 0, `${title} dejó su capa 3D`);
@@ -3094,6 +3096,7 @@ test('carreras desde arriba: menús, carros, cajas con poderes y campeonato', { 
   const p = await openPage(game);
   await p.joinPlayers(1);
   await p.openGameCard('Carreras');
+  await p.pickCharacters(1);
   await p.page.waitForFunction(() => window.leogames.scene.getScene('Race')?.game3d?.phase === 'mode', null, { timeout: ms(30000) });
   await p.wait(ms(300));
   // (Después de cambiar de pantalla se espera tantito: los botones no cuentan el primer cuarto de segundo.)
@@ -3178,6 +3181,148 @@ test('carreras desde arriba: menús, carros, cajas con poderes y campeonato', { 
   await race(finish);
   await phase('results', 'resultados del campeonato');
   assert.ok((await stickers(p.page)).includes('carrera-copa'), 'no ganó la calcomanía del campeonato');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('minigolf: vuelta al mundo (hielo, planetas, agujero negro, animalitos) y minigolf loco con poderes', { timeout: ms(120000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Minigolf');
+  await p.pickCharacters(1);
+  await p.until(() => window.leogames.scene.getScene('Golf')?.phase === 'setup', ms(8000), 'ver las opciones del minigolf');
+  const golf = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Golf')), code);
+  await p.wait(ms(400));
+  // Recorrido: la Vuelta al mundo (dos a la derecha); modo: loco.
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.DOWN);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'aim', ms(8000), 'el primer hoyo de la playa');
+  assert.deepEqual(await golf('return [s.holes.length, s.hole.world, s.loco, s.boxes.length]'), [9, 'playa', true, 3]);
+
+  // La física de los mundos nuevos.
+  const physics = await p.page.evaluate(async () => {
+    const { HOLES } = await import('/src/games/golf/holes.js');
+    const { Course, stepBall } = await import('/src/games/golf/physics.js');
+    const hole = (name) => HOLES.find((h) => h.name === name);
+    const run = (h, ball, { ms = 8000, until = (e) => e.sank || e.water || e.rest, t = 0 } = {}) => {
+      const course = new Course(h);
+      course.t = t;
+      const seen = {};
+      for (let k = 0; k < ms; k += 16) {
+        course.update(16);
+        Object.assign(seen, stepBall(ball, course, 16));
+        if (until(seen)) break;
+      }
+      return { seen, ball };
+    };
+    // En el hielo la pelota llega mucho más lejos que en el pasto.
+    const ice = run(hole('Pista de hielo'), { x: 340, y: 330, vx: 300, vy: 0 }).ball.x;
+    const grass = run({ ...hole('Pista de hielo'), ice: [] }, { x: 340, y: 330, vx: 300, vy: 0 }).ball.x;
+    // El planeta jala: la pelota que pasa arriba de él se dobla hacia él.
+    const planet = run(hole('Planetas'), { x: 400, y: 250, vx: 500, vy: 0 }, { ms: 900, until: () => false }).ball.y;
+    // El agujero negro se la traga.
+    const black = run(hole('El agujero negro'), { x: 640, y: 300, vx: 0, vy: 300 }).seen;
+    // El cangrejo que va y viene avienta a la pelota que está en su camino.
+    const crab = hole('Cangrejos').critters[0];
+    const pushed = run(hole('Cangrejos'), { x: crab.x, y: 300, vx: 0, vy: 0 }, { ms: 4000, until: (e) => e.critter }).seen.critter;
+    // Fantasma: atraviesa los barandales de adentro y pasa sobre el agua (pero no se sale de la cancha).
+    const ghost = run(hole('El laberinto helado'), { x: 300, y: 220, vx: 700, vy: 0, power: 'fantasma' }).ball.x;
+    const wall = run(hole('El laberinto helado'), { x: 300, y: 220, vx: 700, vy: 0 }).ball.x;
+    const overWater = run(hole('El puentecito'), { x: 400, y: 250, vx: 600, vy: 0, power: 'fantasma' }).seen.water;
+    // Hoyo gigante e imán: la pelota que pasa lejito del hoyo igual entra.
+    const giant = run(HOLES[0], { x: 960, y: 420, vx: 200, vy: 0, power: 'gigante' }).seen.sank;
+    const magnet = run(HOLES[0], { x: 900, y: 470, vx: 300, vy: 0, power: 'iman' }).seen.sank;
+    const plain = run(HOLES[0], { x: 900, y: 470, vx: 300, vy: 0 }).seen.sank;
+    return { iceFarther: ice > grass + 150, bent: planet > 270, black: Boolean(black.water && black.blackHole), pushed: Boolean(pushed), ghost: ghost > 400 && wall < 380, overWater: Boolean(overWater), giant: Boolean(giant), magnet: Boolean(magnet), plain: Boolean(plain) };
+  });
+  assert.deepEqual(physics, { iceFarther: true, bent: true, black: true, pushed: true, ghost: true, overWater: false, giant: true, magnet: true, plain: false });
+
+  // Una caja sorpresa: la pelota que rueda por ella se lleva un poder; X lo prepara y se usa en el tiro.
+  // (Los tiros de aquí en adelante, despacito y desde la salida, para que no la meta sin querer.)
+  await golf('const b = s.current; const box = s.boxes[0]; Object.assign(box, { x: 400, y: 380 }); b.item = null; b.x = 340; b.y = 380; b.aim = 0; s.shoot(b, 0.1);');
+  await p.until(() => Boolean(window.leogames.scene.getScene('Golf').balls[0].item), ms(4000), 'agarrar el poder de la caja');
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'aim', ms(8000), 'otro tiro');
+  // El tiro gratis no cuenta; con el hielo, la cancha se congela mientras rueda.
+  await golf("const b = s.current; b.item = 'regalo'; s.refreshItem(b); b.x = 260; b.y = 380; b.aim = Math.PI;");
+  await p.tap(0, BUTTON.X);
+  assert.equal(await golf('return s.current.armed'), true);
+  const before = await golf('return s.current.strokes');
+  await golf('s.shoot(s.current, 0.05);');
+  assert.deepEqual(await golf('return [s.current.strokes, s.current.item]'), [before, null]);
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'aim', ms(8000), 'tiro después del gratis');
+  await golf("const b = s.current; b.item = 'hielo'; b.armed = true; b.x = 260; b.y = 380; b.aim = Math.PI; s.shoot(b, 0.05);");
+  const t0 = await golf('return [s.course.frozen, s.course.t]');
+  await p.frames(3);
+  assert.deepEqual(await golf('return [s.course.frozen, s.course.t]'), t0);
+  assert.equal(t0[0], true);
+  await p.until(() => window.leogames.scene.getScene('Golf').phase === 'aim', ms(8000), 'que se descongele');
+  assert.equal(await golf('return s.course.frozen'), false);
+  // Meterla con un poder da la calcomanía del Minigolf loco.
+  await golf("const b = s.current; b.item = 'gigante'; b.armed = true; b.x = s.hole.cup[0] - 120; b.y = s.hole.cup[1]; b.aim = 0; s.shoot(b, 0.12);");
+  await p.until(() => window.leogames.scene.getScene('Golf').balls[0].done, ms(8000), 'meterla con el hoyo gigante');
+  assert.ok((await stickers(p.page)).includes('golf-loco'), 'no ganó la calcomanía del Minigolf loco');
+  await p.holdToMenu(0, EXIT, 'salir del minigolf');
+  assert.deepEqual(p.errors, []);
+  await p.context.close();
+});
+
+test('carreras: pilotos, atajo, estrella, bomba, rayo y la persecución del Rey Rex', { timeout: ms(150000) }, async () => {
+  const p = await openPage(game);
+  await p.joinPlayers(1);
+  await p.openGameCard('Carreras');
+  await p.pickCharacters(1);
+  await p.page.waitForFunction(() => window.leogames.scene.getScene('Race')?.game3d?.phase === 'mode', null, { timeout: ms(30000) });
+  await p.wait(ms(300));
+  const phase = async (name, label) => {
+    await p.until(`window.leogames.scene.getScene('Race').game3d.phase === '${name}'`, ms(8000), label);
+    await p.wait(ms(300));
+  };
+  const race = (fn) => p.page.evaluate((code) => new Function('r', code)(window.leogames.scene.getScene('Race').game3d), fn);
+
+  // Persecución (el tercer modo) en la pradera.
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.RIGHT);
+  await p.tap(0, BUTTON.A);
+  await phase('pick', 'escoger pista');
+  await p.tap(0, BUTTON.A);
+  await phase('cars', 'escoger carro');
+  // Cada carro lo maneja un personaje (el del jugador, el que escogió).
+  assert.deepEqual(await race('return [r.chase, r.humans[0].character === r.humans[0].driver.character, new Set(r.karts.map((k) => k.character)).size]'), [true, true, 4]);
+  await p.tap(0, BUTTON.A);
+  await phase('race', 'arrancar la persecución');
+
+  // El atajo: a la mitad, la flecha da turbo y avanza como si fuera por la pista. (J1 ya va en la primera vuelta,
+  // muy adelante del Rey Rex.)
+  await race('const s = r.shortcut; const k = r.humans[0]; k.x = (s.from.x + s.to.x) / 2; k.z = (s.from.z + s.to.z) / 2; k.turboMs = 0; k.lap = 3;');
+  await p.frames(3);
+  assert.ok(await race('const s = r.shortcut; const k = r.humans[0]; return k.turboMs > 0 && Math.abs(k.index - (s.a + s.b) / 2) < 5'), 'el atajo no dio turbo');
+  assert.equal(await race('return r.shortcutSeen'), true);
+
+  // La estrella: nada le pega y al que toca lo hace girar.
+  const hits = await race(`const k = r.humans[0]; const cpu = r.karts.find((c) => c.isCpu);
+    k.item = 'estrella'; k.itemUses = 1; r.useItem(k, r.ranking());
+    r.onItemHit(k, 'cohete'); const immune = k.spinMs === 0;
+    cpu.x = k.x + 1; cpu.z = k.z; cpu.spinMs = 0; cpu.shieldMs = 0; r.separateKarts();
+    return [immune, cpu.spinMs > 0];`);
+  assert.deepEqual(hits, [true, true]);
+  // La bomba cae adelante y explota; el rayo les pega a todos los demás.
+  await race("const k = r.humans[0]; k.starMs = 0; k.item = 'bomba'; k.itemUses = 1; r.useItem(k, r.ranking());");
+  assert.equal(await race('return r.items.bombs.length'), 1);
+  await p.until(() => window.leogames.scene.getScene('Race').game3d.items.bombs.length === 0, ms(4000), 'que explote la bomba');
+  const zapped = await race(`for (const c of r.karts) { c.spinMs = 0; c.shieldMs = 0; c.starMs = 0; }
+    const k = r.humans[0]; k.item = 'rayo'; k.itemUses = 1; r.useItem(k, r.ranking());
+    return [k.spinMs === 0, r.karts.filter((c) => c !== k && !c.caught).every((c) => c.spinMs > 0)];`);
+  assert.deepEqual(zapped, [true, true]);
+
+  // El Rey Rex alcanza a los de la compu y J1 se escapa: calcomanía.
+  await race('r.rex.at = Math.max(...r.karts.filter((c) => c.isCpu).map((c) => c.progress * r.track.count)) + 1;');
+  await phase('results', 'que el Rey Rex atrape a la compu');
+  assert.deepEqual(await race('return [r.caughtOrder.length, r.ranking()[0].label]'), [3, 'J1']);
+  assert.ok((await stickers(p.page)).includes('carrera-persecucion'), 'no ganó la calcomanía de la persecución');
+  await p.holdToMenu(0, EXIT, 'salir de Carreras');
   assert.deepEqual(p.errors, []);
   await p.context.close();
 });

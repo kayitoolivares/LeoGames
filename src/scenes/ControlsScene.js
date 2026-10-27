@@ -138,8 +138,22 @@ const PAGES = [
       [['stick'], 'Manejar (el carro va hacia donde apuntas)'],
       [['a'], 'Turbo'],
       [['b'], 'Frenar'],
+      [['x'], 'Usar el poder de la caja de regalo'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
+  },
+  {
+    title: 'Minigolf',
+    emoji: '⛳',
+    rows: [
+      [['stick'], 'Apuntar'],
+      [['a'], 'Mantener para la fuerza; soltar para tirar'],
+      [['lb', 'rb'], 'Afinar la puntería'],
+      [['b'], 'Cancelar el tiro'],
+      [['x'], 'Minigolf loco: usar el poder de la caja sorpresa'],
+      [['lb+rb+y'], 'Salir (mantener)'],
+    ],
+    note: 'La línea punteada enseña por dónde va a ir la pelota (se puede quitar antes de jugar).',
   },
   {
     title: 'Modo Bebé',
