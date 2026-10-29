@@ -1,4 +1,18 @@
 {
-  "objetos": [],
-  "adornos": []
+  "objetos": [
+    "chorrito",
+    "globo",
+    "largo",
+    "rodillo"
+  ],
+  "adornos": [
+    "castillo-arena",
+    "columpio",
+    "oso",
+    "resbaladilla",
+    "sombrilla",
+    "torre-bloques",
+    "tren",
+    "trompo"
+  ]
 }

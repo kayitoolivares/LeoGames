@@ -23,6 +23,7 @@
   "copas": [
     "copa-aventura",
     "copa-estrella",
+    "copa-fiesta",
     "copa-hoja",
     "copa-sorpresa",
     "copa-tesoro"
@@ -36,8 +37,13 @@
     "dulces",
     "embrujada",
     "espacio",
+    "feria",
+    "fuerte",
+    "granja",
+    "jardin",
     "juguetes",
     "mar",
+    "mina",
     "neon",
     "nieve",
     "nubes",
@@ -103,11 +109,14 @@
     "bala-canon",
     "bola-nieve",
     "cangrejo",
+    "catarina",
     "dino",
     "dona",
     "espectro",
+    "estalactita",
     "fresa",
     "lava",
+    "mazo",
     "meteorito",
     "oveja",
     "pantufla",
@@ -116,6 +125,7 @@
     "relampago",
     "rodadora",
     "taxi",
-    "tronco"
+    "tronco",
+    "vaca"
   ]
 }
