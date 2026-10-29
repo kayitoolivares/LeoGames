@@ -6,10 +6,11 @@
 //   2. Que ningún bloque sorpresa o ladrillo (de los que tienen aire abajo) esté encima de un hoyo, lava o agua: al
 //      brincar para pegarle, uno se caería.
 //   3. Que a cada bloque sorpresa o ladrillo se le pueda pegar por abajo (que quepa uno abajo y que no esté muy alto).
-//   4. Que cada nivel tenga sus 3 monedas grandes.
+//   4. Que cada nivel tenga sus 3 monedas grandes (las pistas de las Carreritas no llevan).
 // (Si el nivel tiene botón P, los ladrillos cuentan como que se pueden atravesar: el botón los vuelve monedas.)
 // Uso: node tools/plat-check.mjs
 import { LEVELS, Level, SECRETS } from '../src/games/plat/levels.js';
+import { RACE_TRACKS } from '../src/games/plat/levels3.js';
 import { BLOCKS, isSolid } from '../src/games/plat/tiles.js';
 
 // El salto: hasta 4 cuadritos para arriba y, a la misma altura, hasta 7 de lado (menos si sube, más si baja).
@@ -19,7 +20,8 @@ const MAX_SIDE = 7;
 const BLOCK_FLOOR = 6;
 
 let problems = 0;
-for (const info of [...LEVELS, ...SECRETS]) {
+const races = RACE_TRACKS.map((spec, i) => ({ id: `carrera-${i + 1}`, spec, race: true }));
+for (const info of [...LEVELS, ...SECRETS, ...races]) {
   const level = new Level(info.spec);
   const plat = new Set();
   for (const e of level.entities) {
@@ -124,7 +126,7 @@ for (const info of [...LEVELS, ...SECRETS]) {
 
   // 4. Las 3 monedas grandes.
   const big = level.entities.filter((e) => e.ch === 'O').length;
-  if (big !== 3) notes.push(`tiene ${big} monedas grandes (deben ser 3)`);
+  if (big !== (info.race ? 0 : 3)) notes.push(`tiene ${big} monedas grandes (deben ser 3)`);
 
   problems += notes.length;
   console.log(`${info.id} ${notes.length ? '✗' : '✓'} ${level.name}`);

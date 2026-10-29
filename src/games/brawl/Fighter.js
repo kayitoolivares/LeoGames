@@ -9,6 +9,7 @@ import { isBlockCharacter } from '../smash/bloquecito.js';
 import { drawItem } from '../smash/items.js';
 import { ARENA } from './arena.js';
 import { humanInput } from './buddies.js';
+import { levelPerks } from './levels.js';
 import { MOUNTS, MOUNT_REACH } from './mounts.js';
 import { SPECIALS, SPECIAL_COOLDOWN_MS, blockSpecial } from './specials.js';
 
@@ -74,7 +75,12 @@ export class Fighter {
     this.vz = 0;
     this.knockback = 0;
     this.facing = 1;
+    // El nivel del personaje (ver levels.js; la escena lo pone con setLevel): más corazones y otras mejoritas.
+    this.level = 1;
+    this.perks = levelPerks(1);
+    this.maxHp = MAX_HP;
     this.hp = MAX_HP;
+    this.superTotalMs = SUPER_MS;
     this.down = false;
     this.reviveMs = 0;
     this.attackMs = 0;
@@ -113,6 +119,9 @@ export class Fighter {
     // Brillo en súper y destellos de colores con la estrella.
     this.aura = scene.add.circle(0, -RADIUS * 0.6, RADIUS * 1.9, 0xffd84d, 0.45).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.sprite.addAt(this.aura, 0);
+    // Nivel 10: un brillo dorado en los pies que siempre late.
+    this.levelGlow = scene.add.ellipse(0, RADIUS - 2, RADIUS * 3.2, RADIUS * 0.9, 0xffd84d, 0.4).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    this.sprite.addAt(this.levelGlow, 0);
     this.fist = scene.add.circle(0, 6, 11, this.color).setStrokeStyle(3, COLORS.ink).setVisible(false);
     this.hammer = drawItem(scene, 'hammer').setVisible(false);
     this.bomb = drawItem(scene, 'bomb').setScale(0.8).setVisible(false);
@@ -131,6 +140,18 @@ export class Fighter {
     this.reviveRing = scene.add.graphics();
   }
 
+  // Pone el nivel del personaje y sus mejoras. Si gana un corazón a media pelea, se lo llena.
+  setLevel(level) {
+    const before = this.maxHp;
+    this.level = level;
+    this.perks = levelPerks(level);
+    this.maxHp = MAX_HP + this.perks.hearts;
+    if (this.maxHp > before && !this.down) this.hp = Math.min(this.maxHp, this.hp + this.maxHp - before);
+    // La estrellita (nivel 5) y la corona (nivel 10) van junto al nombre.
+    this.tag.setText(`${this.label}${this.perks.crown ? ' 👑' : this.perks.star ? ' ⭐' : ''}`);
+    this.levelGlow.setVisible(this.perks.crown);
+  }
+
   isAttacking() {
     return this.attackMs > 0;
   }
@@ -142,7 +163,7 @@ export class Fighter {
   // Cuánto vale cada golpe: más con el martillo (o la espada), montado y en súper.
   get power() {
     const weapon = this.item?.type === 'hammer' || this.item?.type === 'sword' ? 2 : 1;
-    return weapon * (this.mount ? 2 : 1) * (this.superMs > 0 ? 2 : 1);
+    return weapon * (this.mount ? 2 : 1) * (this.superMs > 0 ? 2 : 1) * this.perks.power;
   }
 
   specialData() {
@@ -257,7 +278,7 @@ export class Fighter {
     const data = this.specialData();
     this.special = { data, t: 0, ms: data.ms ?? 380, hit: new Set(), fired: false };
     this.attackId = (this.attackId ?? 0) + 1;
-    this.specialCooldownMs = data.cooldownMs ?? SPECIAL_COOLDOWN_MS;
+    this.specialCooldownMs = (data.cooldownMs ?? SPECIAL_COOLDOWN_MS) * this.perks.special;
     if (data.kind === 'dash') {
       this.dashMs = data.ms;
       this.dashSpeed = data.speed;
@@ -299,7 +320,8 @@ export class Fighter {
   // Barra llena + LB + RB: súper un rato (más fuerte y rápido, con su dibujo de súper si lo tiene).
   startSuper() {
     this.meter = 0;
-    this.superMs = SUPER_MS;
+    this.superTotalMs = SUPER_MS + this.perks.superMs;
+    this.superMs = this.superTotalMs;
     this.superStartedAt = this.scene.time.now;
     if (this.blocks) this.look.setSuper(true);
     else if (this.superArt) this.look.character = this.superArt;
@@ -319,7 +341,7 @@ export class Fighter {
   addMeter(amount) {
     if (this.superMs > 0) return;
     const before = this.meter;
-    this.meter = Math.min(METER_MAX, this.meter + amount);
+    this.meter = Math.min(METER_MAX, this.meter + amount * this.perks.meter);
     if (before < METER_MAX && this.meter >= METER_MAX) this.scene.meterFull?.(this);
   }
 
@@ -327,12 +349,15 @@ export class Fighter {
   landedHit() {
     this.stats.hits += 1;
     this.addMeter(METER_PER_HIT);
+    this.scene.landedHitXp?.(this);
   }
 
   updateDown(dtMs, fighters) {
     // Cada compañero cerca ayuda: entre más, más rápido se levanta.
     const helpers = fighters.filter((f) => f !== this && !f.down && Math.hypot(f.x - this.x, (f.y - this.y) * 1.4) < REVIVE_RADIUS + f.radius);
-    this.reviveMs = helpers.length > 0 ? this.reviveMs + dtMs * helpers.length : Math.max(0, this.reviveMs - dtMs * 0.5);
+    // (Desde el nivel 2, cada quien levanta más rápido.)
+    const help = helpers.reduce((sum, f) => sum + f.perks.revive, 0);
+    this.reviveMs = helpers.length > 0 ? this.reviveMs + dtMs * help : Math.max(0, this.reviveMs - dtMs * 0.5);
     if (this.reviveMs >= REVIVE_MS) {
       this.down = false;
       this.hp = REVIVE_HP;
@@ -391,15 +416,15 @@ export class Fighter {
   }
 
   heal(amount = 1) {
-    if (this.down || this.hp >= MAX_HP) return false;
-    this.hp = Math.min(MAX_HP, this.hp + amount);
+    if (this.down || this.hp >= this.maxHp) return false;
+    this.hp = Math.min(this.maxHp, this.hp + amount);
     return true;
   }
 
   // Al reintentar una ronda (o empezar otro mundo) todos regresan completos.
   reset() {
     this.down = false;
-    this.hp = MAX_HP;
+    this.hp = this.maxHp;
     this.reviveMs = 0;
     this.invulnerableMs = INVULNERABLE_MS;
     this.special = null;
@@ -461,6 +486,7 @@ export class Fighter {
     if (this.starMs > 0) this.aura.setFillStyle(RAINBOW[Math.floor(now / 90) % RAINBOW.length], 0.45);
     else if (this.superMs > 0) this.aura.setFillStyle(0xffd84d, this.superMs < 2000 && Math.floor(now / 120) % 2 === 0 ? 0.15 : 0.45);
     this.aura.setScale(1 + 0.08 * Math.sin(now / 90));
+    if (this.levelGlow.visible) this.levelGlow.setAlpha(0.3 + 0.2 * Math.sin(now / 220));
 
     // El puño sale y regresa durante el golpe (si su dibujo no trae la pose de golpe).
     const progress = this.attackMs > 0 ? 1 - this.attackMs / ATTACK_MS : 0;

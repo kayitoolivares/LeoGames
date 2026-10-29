@@ -21,6 +21,12 @@ export const ITEM_ART = {
   capsule: 'capsula',
   tornado: 'tornado',
   sandbag: 'saco',
+  // Los objetos nuevos (la burbuja es del Duelo).
+  waterballoon: 'globo-agua',
+  pie: 'pastel',
+  magnet: 'iman',
+  umbrella: 'paraguas',
+  bubble: 'burbuja',
 };
 // La caminata son 4 cuadros (caminar1 a caminar4) que se repiten mientras el personaje camina.
 export const WALK_FRAMES = 4;

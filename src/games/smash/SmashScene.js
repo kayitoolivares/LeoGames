@@ -15,7 +15,11 @@ import { loadBossArt } from '../duelo/boss.js';
 import { COSTUMES } from '../duelo/DueloFighter.js';
 import { GIANTS, SANDBAG, TARGETS, TEAMS, TIME_MS, jonronRecord, targetRecords, targetSpots } from './modes.js';
 import { BOSS_CHARACTERS, CHARACTERS, CHARACTER_KEYS, characterInfo } from './characters.js';
-import { METER_MAX, SUPER_MS, SmashFighter, STOCKS, THROW_HIT } from './SmashFighter.js';
+import { METER_MAX, PIE_MS, SUPER_MS, SmashFighter, STOCKS, THROW_HIT, WET_MS } from './SmashFighter.js';
+import { DUO_CPU_CHANCE, DuoWatch, duoFor } from './duos.js';
+import { duoEffect } from './duofx.js';
+import { settings } from '../../shared/settings.js';
+import { epicMoment } from '../../ui/epic.js';
 import { backgroundTexture, characterTexture, loadSmashArt, loadStageBackground } from './art.js';
 import { Ambience } from '../../ui/ambient.js';
 import { MAX_NUMBER, RAINBOW, numberStep } from './bloquecito.js';
@@ -26,7 +30,7 @@ import { HILL_GOAL, Hill } from './hill.js';
 import { HotBomb } from './hotbomb.js';
 import { JonronContest } from './jonron.js';
 import { SmashReplay } from './replay.js';
-import { SmashTalk } from './talk.js';
+import { SmashTalk, fighterName } from './talk.js';
 import { Tornadoes } from './tornado.js';
 import { Geysers } from './geysers.js';
 import { StageEvents } from './events.js';
@@ -61,7 +65,19 @@ const SHOTS = {
   fireball: { lifeMs: 1700, radius: 15, gravity: 1300, bounce: 520, color: 0xff7a2f, hit: { damage: 6, base: 230, scale: 6, angle: 40 } },
   // El puño cohete de Robotote.
   fist: { speed: 950, lifeMs: 900, radius: 26, color: 0x5a7ab0, hit: { damage: 12, base: 400, scale: 9, angle: 28 } },
+  // El pastel (objeto): casi no avienta, pero al que le cae en la cara no puede pegar un ratito (`effect`).
+  pie: { speed: 880, lifeMs: 800, radius: 22, color: 0xfff6e5, effect: 'pie', hit: { damage: 3, base: 160, scale: 2, angle: 35 } },
 };
+// El globo de agua (objeto): vuela en arco y revienta al tocar a alguien o al caer; a los que alcanza los moja (se
+// resbalan un rato).
+const BALLOON = { gravity: 1300, fuseMs: 1600, splash: 110, hit: { damage: 4, base: 220, scale: 3, angle: 55 } };
+// El imán (objeto): a los rivales que estén a menos de esto los jala hacia ti (llegan sin poder hacer nada un instante).
+const MAGNET = { reach: 560, stunMs: 380, maxSpeed: 1500 };
+// Combo de dúo (ver duos.js): qué tan cerca tienen que estar los dos compañeros y hasta dónde alcanza a los rivales.
+const DUO_RANGE = 460;
+const DUO_REACH = 700;
+// Los escenarios nuevos: pelear en los tres da la calcomanía "De paseo".
+const PASEO_STAGES = ['granja', 'tren', 'feria'];
 // El bumerán: sale rápido, se va frenando y regresa a la mano del que lo aventó (pega de ida y de vuelta).
 const BOOMERANG = { pull: 2100, lifeMs: 2200, radius: 24, hit: { damage: 8, base: 280, scale: 7, angle: 35 } };
 // Escudo perfecto: el que pegó se queda mareado este rato.
@@ -107,6 +123,10 @@ const ITEM_NAMES = {
   fireflower: '¡Flor de fuego!',
   capsule: '¡Caja sorpresa!',
   tornado: '¡Tornado!',
+  waterballoon: '¡Globo de agua!',
+  pie: '¡Pastel!',
+  magnet: '¡Imán!',
+  umbrella: '¡Paraguas!',
 };
 
 // Qué tan bueno es el CPU. attack/shield/special/jump/transform: probabilidad por cuadro de hacerlo cuando conviene.
@@ -211,6 +231,8 @@ export class SmashScene extends Phaser.Scene {
     this.lastKo = null;
     this.lastBossHitAt = 0;
     this.replay = new SmashReplay();
+    this.duos = new DuoWatch();
+    this.visitStage();
     this.fighters = this.createFighters();
     this.players = [...this.fighters];
     this.boss = this.fighters.find((f) => f.isBoss) ?? null;
@@ -258,6 +280,16 @@ export class SmashScene extends Phaser.Scene {
       this.stage.drawBackground(this, this.world);
     }
     this.stage.drawProps?.(this, this.world);
+  }
+
+  // Los escenarios nuevos (Granja, Tren y Feria): se anota en cuál ya pelearon; en los tres, calcomanía.
+  visitStage() {
+    const key = this.settings.stage;
+    if (!PASEO_STAGES.includes(key) || this.adventure) return;
+    const seen = new Set(settings.get('smashPaseo', []));
+    seen.add(key);
+    settings.set('smashPaseo', [...seen]);
+    if (PASEO_STAGES.every((stage) => seen.has(stage))) rewards.earn('smash-paseo');
   }
 
   // Los jugadores con su personaje y, si se pidieron, CPUs con personaje al azar (siempre hay al menos un rival).
@@ -549,7 +581,8 @@ export class SmashScene extends Phaser.Scene {
 
     for (const fighter of this.fighters) fighter.render();
     this.talk.update(dt);
-    this.updateCamera(dt / 1000);
+    // (Durante el acercamiento del combo de dúo, la cámara la mueve ui/epic.js.)
+    if (!this.epicBusy) this.updateCamera(dt / 1000);
     this.updateHud();
   }
 
@@ -657,6 +690,11 @@ export class SmashScene extends Phaser.Scene {
   // va por objetos (y lanza bombas), huye del que tiene estrella y regresa al escenario si se cae.
   cpuInput(fighter) {
     if (fighter.hitstunMs > 0 || fighter.stunMs > 0 || this.phase !== 'fight') return IDLE;
+    // Su compañero usó el especial cerquita: lo acompaña con el suyo (¡combo de dúo!).
+    if (fighter.duoCallMs > 0) {
+      fighter.duoCallMs -= frameDelta();
+      if (fighter.duoCallMs <= 0 && !fighter.attack && fighter.cooldownMs === 0) return { ...IDLE, special: true };
+    }
     // Cargando un golpe: lo suelta cuando se le acaba la paciencia.
     if (fighter.attack?.chargeable && !fighter.attack.released) {
       fighter.cpuChargeMs = (fighter.cpuChargeMs ?? 0) - frameDelta();
@@ -732,13 +770,18 @@ export class SmashScene extends Phaser.Scene {
     // Con la bola súper rota, el golpe final en cuanto tiene a alguien cerquita.
     if (fighter.finalReady && best < 600) return { ...IDLE, special: true };
     // Con la pistola de rayos, la flor de fuego o el bumerán, dispara cuando el rival está a su altura.
-    const shooting = ['raygun', 'fireflower'].includes(fighter.held?.type) || (fighter.held?.type === 'boomerang' && !fighter.held.out);
+    const shooting = ['raygun', 'fireflower', 'pie'].includes(fighter.held?.type) || (fighter.held?.type === 'boomerang' && !fighter.held.out);
     if (shooting) {
       const lined = Math.abs(tdy) < 50 && Math.abs(dx) < 700;
       return { ...IDLE, x: lined ? Math.sign(dx) * 0.2 : x, ...climb, attack: lined && Math.random() < 0.08 };
     }
-    // Con la bomba en la mano, la lanza cuando el rival está a buena distancia y a su altura.
-    if (fighter.held?.type === 'bomb') {
+    // Con el imán, jala al rival cuando está a media distancia.
+    if (fighter.held?.type === 'magnet') {
+      const inReach = best > 180 && best < MAGNET.reach * 0.9;
+      return { ...IDLE, x, ...climb, attack: inReach && Math.random() < 0.06 };
+    }
+    // Con la bomba (o el globo de agua) en la mano, la lanza cuando el rival está a buena distancia y a su altura.
+    if (fighter.held?.type === 'bomb' || fighter.held?.type === 'waterballoon') {
       const inRange = Math.abs(dx) > 120 && Math.abs(dx) < 520 && Math.abs(tdy) < 120;
       return { ...IDLE, x: inRange ? Math.sign(dx) * 0.3 : x, ...climb, attack: inRange && Math.random() < 0.1 };
     }
@@ -784,9 +827,15 @@ export class SmashScene extends Phaser.Scene {
         this.throwJuggle(fighter, request);
         continue;
       }
+      if (request.kind === 'magnet') {
+        this.magnetPull(fighter);
+        continue;
+      }
       let sprite;
       if (request.kind === 'bomb' && !fighter.isCpu) rewards.earn('smash-bomba');
       if (request.kind === 'bomb') sprite = drawItem(this, 'bomb');
+      else if (request.kind === 'balloon') sprite = drawItem(this, 'waterballoon');
+      else if (request.kind === 'pie') sprite = drawItem(this, 'pie').setPosition(request.x, request.y);
       else if (request.kind === 'laser') sprite = this.add.rectangle(request.x, request.y, 80, 12, SHOTS.laser.color).setStrokeStyle(3, 0xffffff);
       else if (request.kind === 'zap') sprite = this.add.ellipse(request.x, request.y, 54, 14, SHOTS.zap.color).setStrokeStyle(3, 0xffffff);
       else if (request.kind === 'boomerang') sprite = drawItem(this, 'boomerang').setPosition(request.x, request.y);
@@ -864,6 +913,7 @@ export class SmashScene extends Phaser.Scene {
     this.projectiles = this.projectiles.filter((p) => {
       p.ageMs += dtMs;
       if (p.kind === 'boomerang') return this.updateBoomerang(p, dtMs);
+      if (p.kind === 'balloon') return this.updateBalloon(p, dtMs);
       const shot = SHOTS[p.kind];
       if (shot) {
         if (shot.gravity) {
@@ -900,6 +950,8 @@ export class SmashScene extends Phaser.Scene {
           this.noteHit(p.owner, victim, result.dealt, result.speed);
           burst(this, p.x, p.y, result.blocked ? 0x7fdcff : shot.color, 6, this.world);
           if (!result.blocked) sfx.hit(0.2);
+          // El pastel: al que le cae en la cara no puede pegar un ratito.
+          if (!result.blocked && shot.effect) this.itemEffect(victim, shot.effect);
         }
         if (this.targets.length) this.hitTargets(p.x, p.y, shot.radius, p.owner);
         // Los disparos también le pegan a la bola súper.
@@ -966,6 +1018,142 @@ export class SmashScene extends Phaser.Scene {
     if (caught) sfx.select();
     p.sprite.destroy();
     return false;
+  }
+
+  // El globo de agua: vuela en arco y revienta al tocar a alguien, al caer en una plataforma o al rato.
+  updateBalloon(p, dtMs) {
+    const dt = dtMs / 1000;
+    const prevY = p.y;
+    p.vy += BALLOON.gravity * (this.stage.gravity ?? 1) * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.sprite.setPosition(p.x, p.y).setAngle(Math.sin(p.ageMs / 90) * 15);
+    const landed = p.vy > 0 && this.platforms.some((pl) => p.x >= pl.left && p.x <= pl.right && prevY + 18 <= pl.top && p.y + 18 >= pl.top);
+    if (this.touching(p, 20) || landed || p.ageMs > BALLOON.fuseMs) {
+      this.splash(p);
+      p.sprite.destroy();
+      return false;
+    }
+    if (p.y > this.stage.blast.bottom) {
+      p.sprite.destroy();
+      return false;
+    }
+    return true;
+  }
+
+  // ¡Splash! A los rivales de alrededor los moja (se resbalan) y los empuja tantito.
+  splash(p) {
+    burst(this, p.x, p.y, 0x3fa7ff, 14, this.world);
+    burst(this, p.x, p.y, 0xffffff, 6, this.world);
+    popText(this, p.x, p.y - 40, '¡Splash!', '#9fd8ff', this.world);
+    sfx.poof();
+    for (const f of this.fighters) {
+      if (f.team === p.owner.team || !f.isAlive() || f.isInvulnerable() || f.distanceTo(p.x, p.y) > BALLOON.splash + f.radius) continue;
+      const result = f.takeHit({ facing: Math.sign(f.x - p.x) || p.dir, power: 1, x: p.x }, BALLOON.hit);
+      p.owner.dealtDamage(result.dealt);
+      this.noteHit(p.owner, f, result.dealt, result.speed);
+      if (!result.blocked) this.itemEffect(f, 'wet');
+    }
+  }
+
+  // Lo que le pasa al que le pegaron con el globo de agua (mojado: se resbala) o el pastel (no ve: no puede pegar).
+  itemEffect(victim, effect) {
+    if (effect === 'wet') {
+      victim.wetMs = WET_MS;
+      popText(this, victim.x, victim.y - 90, '¡Mojado!', '#9fd8ff', this.world);
+    } else if (effect === 'pie') {
+      victim.pieMs = PIE_MS;
+      victim.attack = null;
+      popText(this, victim.x, victim.y - 90, '¡Pastelazo!', '#fff6e5', this.world);
+      this.talk.line([`¡Pastelazo a ${fighterName(victim)}!`, '¡No ve nada!']);
+      sfx.poof();
+    }
+  }
+
+  // El imán: los rivales de alrededor salen jalados hacia el que lo usó (y un instante no pueden hacer nada).
+  magnetPull(owner) {
+    let pulled = 0;
+    for (const f of this.fighters) {
+      if (f.team === owner.team || !f.isAlive() || f.isInvulnerable() || f.heldBy || f.hanging || f.isBoss) continue;
+      const dx = owner.x - f.x;
+      const dist = Math.hypot(dx, owner.y - f.y);
+      const gap = owner.radius + f.radius + 20;
+      if (dist > MAGNET.reach || dist < gap) continue;
+      // Con el freno del empujón (ver SmashFighter LAUNCH_DRAG), esta velocidad lo deja casi pegadito.
+      f.vx = Math.sign(dx) * Math.min(MAGNET.maxSpeed, (Math.abs(dx) - gap) / 0.29);
+      f.vy = Math.min(f.vy, -240);
+      f.grounded = false;
+      f.platform = null;
+      f.attack = null;
+      f.shielding = false;
+      f.hitstunMs = Math.max(f.hitstunMs, MAGNET.stunMs);
+      pulled += 1;
+    }
+    // Anillos que se cierran hacia el imán.
+    for (let i = 0; i < 3; i += 1) {
+      const ring = this.add.circle(owner.x, owner.y, 60).setStrokeStyle(8, i % 2 ? 0xd8dce8 : 0xe53935);
+      this.world.add(ring);
+      ring.setScale(4 + i);
+      this.tweens.add({ targets: ring, scale: 0.4, alpha: 0.2, delay: i * 90, duration: 380, onComplete: () => ring.destroy() });
+    }
+    popText(this, owner.x, owner.y - 100, pulled ? '¡Imán!' : '¡Nadie cerca!', '#ff5a5f', this.world);
+    sfx.sparkle();
+  }
+
+  // Alguien usó su especial (lo avisa SmashFighter): si un compañero hizo el suyo casi al mismo tiempo y cerquita,
+  // ¡combo de dúo! Si no, la compu de su equipo que esté cerca a veces lo acompaña.
+  specialUsed(fighter) {
+    if (this.phase !== 'fight' || fighter.isBoss || fighter.isDummy) return;
+    const now = this.time.now;
+    const mates = this.fighters.filter((f) => f !== fighter && f.team === fighter.team && f.isAlive() && !f.isBoss && !f.isDummy);
+    if (!mates.length) return;
+    const near = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) <= DUO_RANGE;
+    const partner = this.duos.special(fighter, fighter.team, now, mates, near);
+    if (partner) {
+      this.duoCombo(partner, fighter);
+      return;
+    }
+    if (!this.duos.ready(fighter.team, now)) return;
+    for (const mate of mates) {
+      if (!mate.isCpu || mate.duoCallMs > 0 || !near(fighter, mate)) continue;
+      if (Math.random() < (DUO_CPU_CHANCE[mate.cpuLevel] ?? DUO_CPU_CHANCE.normal)) mate.duoCallMs = 150 + Math.random() * 250;
+    }
+  }
+
+  // ¡Combo de dúo! Letrero con su nombre, el efecto de su tipo y les pega a los rivales de alrededor; el juego se
+  // congela un instante y luego la cámara se acerca en cámara lenta.
+  duoCombo(a, b) {
+    const duo = duoFor(a.characterKey, b.characterKey);
+    const x = (a.x + b.x) / 2;
+    const y = (a.y + b.y) / 2;
+    for (const f of [a, b]) {
+      const credit = f.helperOf ?? f;
+      credit.record.duos = (credit.record.duos ?? 0) + 1;
+    }
+    this.duoCount = (this.duoCount ?? 0) + 1;
+    if (!a.isCpu || !b.isCpu) rewards.earn('smash-duo');
+    this.showBanner(`¡${duo.name}!`, `🤝 ¡Combo de dúo! ${a.label} + ${b.label}`, 1700, hexToCss(duo.color));
+    const victims = this.fighters.filter((f) => f.team !== a.team && f.isAlive() && !f.isInvulnerable() && !f.isDummy && Math.hypot(f.x - x, f.y - y) < DUO_REACH);
+    // (El terremoto solo alcanza a los que están parados en el piso.)
+    const hit = duo.kind === 'quake' ? victims.filter((f) => f.grounded) : victims;
+    duoEffect(this, duo, x, y, hit.map((f) => ({ x: f.x, y: f.y, top: f.y - f.radius * 2 })), this.world);
+    const up = ['quake', 'whirl', 'stars'].includes(duo.kind);
+    for (const f of hit) {
+      f.shielding = false;
+      const data = { damage: duo.hit.damage, base: 120 + 520 * duo.hit.push, scale: 2 + 8 * duo.hit.push, angle: up ? 82 : 45, around: true };
+      const result = f.takeHit({ facing: Math.sign(f.x - x) || 1, power: 1, x }, data);
+      if (duo.hit.stunMs) f.stunMs = Math.max(f.stunMs, duo.hit.stunMs);
+      a.dealtDamage(result.dealt / 2);
+      b.dealtDamage(result.dealt / 2);
+      this.noteHit(a, f, result.dealt, result.speed);
+    }
+    // Se congela tantito y luego, cámara lenta con acercamiento.
+    setTimeScale(0, 140);
+    this.time.delayedCall(150, () => {
+      if (this.phase !== 'fight') return;
+      const zoom = Phaser.Math.Clamp(this.cam.zoom * 1.3, ZOOM_MIN, 1.4);
+      epicMoment(this, x, y - 60, { zoom, ms: 1000, slow: 0.35 });
+    });
   }
 
   // Primer peleador (que no sea del equipo del que lo lanzó) que toca el proyectil.

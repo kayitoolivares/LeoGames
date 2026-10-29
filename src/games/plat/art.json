@@ -122,6 +122,33 @@
     "vela"
   ],
   "jefes": [
+    "abeja-reina-ataque",
+    "abeja-reina-burla",
+    "abeja-reina-cargando",
+    "abeja-reina-derrotado",
+    "abeja-reina-dolor",
+    "abeja-reina-furioso",
+    "abeja-reina-mareado",
+    "abeja-reina-paso",
+    "abeja-reina",
+    "gelatina-ataque",
+    "gelatina-burla",
+    "gelatina-cargando",
+    "gelatina-derrotado",
+    "gelatina-dolor",
+    "gelatina-furioso",
+    "gelatina-mareado",
+    "gelatina-paso",
+    "gelatina",
+    "pez-globo-ataque",
+    "pez-globo-burla",
+    "pez-globo-cargando",
+    "pez-globo-derrotado",
+    "pez-globo-dolor",
+    "pez-globo-furioso",
+    "pez-globo-mareado",
+    "pez-globo-paso",
+    "pez-globo",
     "rey-cangrejo-ataque",
     "rey-cangrejo-burla",
     "rey-cangrejo-cargando",
@@ -800,6 +827,141 @@
       10483,
       0.5,
       160
+    ],
+    "abeja-reina-ataque": [
+      63613,
+      0.517,
+      306
+    ],
+    "abeja-reina-burla": [
+      57047,
+      0.498,
+      289
+    ],
+    "abeja-reina-cargando": [
+      56569,
+      0.5,
+      320
+    ],
+    "abeja-reina-derrotado": [
+      40235,
+      0.52,
+      192
+    ],
+    "abeja-reina-dolor": [
+      58962,
+      0.498,
+      307
+    ],
+    "abeja-reina-furioso": [
+      57750,
+      0.502,
+      300
+    ],
+    "abeja-reina-mareado": [
+      68843,
+      0.48,
+      316
+    ],
+    "abeja-reina-paso": [
+      58364,
+      0.502,
+      305
+    ],
+    "abeja-reina": [
+      59427,
+      0.498,
+      308
+    ],
+    "gelatina-ataque": [
+      61166,
+      0.546,
+      320
+    ],
+    "gelatina-burla": [
+      65630,
+      0.44,
+      320
+    ],
+    "gelatina-cargando": [
+      47137,
+      0.505,
+      235
+    ],
+    "gelatina-derrotado": [
+      34433,
+      0.483,
+      190
+    ],
+    "gelatina-dolor": [
+      70068,
+      0.523,
+      316
+    ],
+    "gelatina-furioso": [
+      68013,
+      0.506,
+      320
+    ],
+    "gelatina-mareado": [
+      67084,
+      0.515,
+      320
+    ],
+    "gelatina-paso": [
+      53038,
+      0.498,
+      263
+    ],
+    "gelatina": [
+      67343,
+      0.505,
+      320
+    ],
+    "pez-globo-ataque": [
+      58399,
+      0.517,
+      264
+    ],
+    "pez-globo-burla": [
+      62377,
+      0.539,
+      263
+    ],
+    "pez-globo-cargando": [
+      55049,
+      0.517,
+      253
+    ],
+    "pez-globo-derrotado": [
+      39162,
+      0.542,
+      179
+    ],
+    "pez-globo-dolor": [
+      59014,
+      0.533,
+      253
+    ],
+    "pez-globo-furioso": [
+      57551,
+      0.53,
+      245
+    ],
+    "pez-globo-mareado": [
+      57723,
+      0.527,
+      248
+    ],
+    "pez-globo-paso": [
+      59539,
+      0.523,
+      256
+    ],
+    "pez-globo": [
+      58969,
+      0.523,
+      254
     ],
     "rey-cangrejo-ataque": [
       32174,

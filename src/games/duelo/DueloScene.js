@@ -26,6 +26,10 @@ import { Assist, pickHelper } from './assist.js';
 import { CHALLENGES, completeChallenge, newChallengeStats, showChallenges } from './challenges.js';
 import { FamilyCup, showBracket } from './family.js';
 import { FIGHT_ITEMS, FightItems } from './items.js';
+import { ArenaEvents } from './places.js';
+import { DUO_CPU_CHANCE, DuoWatch, duoFor } from '../smash/duos.js';
+import { duoEffect } from '../smash/duofx.js';
+import { epicMoment } from '../../ui/epic.js';
 import { fame, showFame } from './records.js';
 import { KoReplay } from './replay.js';
 import { SCHOOL_PARRY_MS, School } from './school.js';
@@ -71,6 +75,9 @@ const DOUBLE_TAP_MS = 260;
 // Golpes seguidos (sin que el rival se reponga) cuentan como combo.
 const COMBO_GAP_MS = 1000;
 const LOW_HEALTH = 25;
+// Combo de dúo (2 contra 2, ver smash/duos.js): qué tan cerca tienen que estar los compañeros y hasta dónde alcanza.
+const DUO_RANGE = 520;
+const DUO_REACH = 700;
 
 // Lo último que se escogió, para no escogerlo otra vez.
 const lastSetup = { mode: 'duelo', rival: 'versus', rounds: 2, level: 'facil', arena: 'azar', items: true, cupSize: 4, twists: false };
@@ -702,6 +709,8 @@ export class DueloScene extends Phaser.Scene {
     this.drills = null;
     this.stageLife?.destroy();
     this.stageLife = null;
+    this.arenaEvents?.destroy(this.fighters);
+    this.arenaEvents = null;
     this.items?.clear();
     this.items = null;
     this.closeMenu?.();
@@ -766,6 +775,10 @@ export class DueloScene extends Phaser.Scene {
       fighter.baseFriction = fighter.friction;
     }
     this.lastTwist = null;
+    // Lo que pasa a ratos en las arenas nuevas (arenas movedizas, sin gravedad, corriente); practicando, no.
+    this.arenaEvents = look.event && !this.training ? new ArenaEvents(this, look.event) : null;
+    this.duos = new DuoWatch();
+    this.duoCounts = [0, 0];
     this.items = this.setup.items && ITEM_MODES.includes(mode) ? new FightItems(this) : null;
     this.koReplay = new KoReplay();
     this.challengeStats = this.challenge ? newChallengeStats() : null;
@@ -811,6 +824,7 @@ export class DueloScene extends Phaser.Scene {
     this.firstHitSaid = false;
     this.items?.clear();
     this.stageLife?.clearHazards();
+    this.arenaEvents?.finish(this.fighters);
     this.koReplay = new KoReplay();
     for (const fighter of this.fighters) {
       fighter.posing = true;
@@ -889,6 +903,7 @@ export class DueloScene extends Phaser.Scene {
     }
     this.separate();
     this.updateShots(step);
+    this.arenaEvents?.update(step, this.fighters, fighting);
     if (fighting) {
       this.resolveHits();
       this.announceMeters();
@@ -914,6 +929,11 @@ export class DueloScene extends Phaser.Scene {
   inputFor(fighter, foe, dt) {
     if (this.school && fighter.isCpu) return this.school.dummyInput(fighter, foe, dt, IDLE);
     if (fighter.isCpu) {
+      // Su compañero usó el especial cerquita: lo acompaña con el suyo (¡combo de dúo!).
+      if (fighter.duoCallMs > 0) {
+        fighter.duoCallMs -= dt;
+        if (fighter.duoCallMs <= 0 && fighter.canAct() && fighter.cooldownMs === 0 && fighter.superMs <= 0) return { ...IDLE, special: true };
+      }
       const input = cpuInput(fighter, foe, this.shots, fighter.dummy ? DUMMY : CPU_LEVELS[fighter.cpuLevel ?? this.setup.level], dt, this.items);
       if (input.assist) this.callAssist(fighter);
       return input;
@@ -1009,11 +1029,40 @@ export class DueloScene extends Phaser.Scene {
   // Agarró un objeto.
   onItem(fighter, kind) {
     if (kind === 'bomb') this.spawnShot(fighter, { shape: 'bomb', speed: 560, damage: 14, push: 540, launch: true });
+    // El pastel y la burbuja se avientan de una vez hacia el rival; el imán lo jala.
+    else if (kind === 'pie') this.spawnShot(fighter, { shape: 'pie', speed: 640, damage: 4, push: 140, pie: true });
+    else if (kind === 'bubble') this.spawnShot(fighter, { shape: 'trap', speed: 430, damage: 3, push: 0, trap: true });
+    else if (kind === 'magnet') this.magnetPull(fighter);
     else fighter.takeItem(kind);
     popText(this, fighter.x, fighter.y - fighter.height - 50, FIGHT_ITEMS[kind].name, '#ffd84d');
     burst(this, fighter.x, fighter.y - fighter.height / 2, 0xffd84d, 10);
     sfx.pickup();
     this.talk.line(`¡${fighter.label} agarró ${FIGHT_ITEMS[kind].name.replace(/[¡!]/g, '').toLowerCase()}!`);
+  }
+
+  // El imán: el rival más cercano sale jalado hasta quedar pegadito (y un instante no puede hacer nada).
+  magnetPull(fighter) {
+    const foe = this.foeOf(fighter);
+    if (!foe || foe.koed || foe.isInvulnerable() || foe.trapMs > 0) return;
+    const gap = (fighter.radius + foe.radius) * 0.75;
+    if (!foe.pullToward(fighter.x, gap)) return;
+    const y = fighter.y - fighter.height / 2;
+    for (let i = 0; i < 3; i += 1) {
+      const ring = this.add.circle(fighter.x, y, 60).setStrokeStyle(8, i % 2 ? 0xd8dce8 : 0xe53935).setDepth(160).setScale(4 + i);
+      this.tweens.add({ targets: ring, scale: 0.4, alpha: 0.2, delay: i * 90, duration: 380, onComplete: () => ring.destroy() });
+    }
+    sfx.sparkle();
+  }
+
+  // Le pegó un pastel (no puede pegar un ratito) o lo atrapó una burbuja.
+  itemHit(victim, data) {
+    if (data.pie) {
+      popText(this, victim.x, victim.y - victim.height - 60, '¡Pastelazo!', '#fff6e5');
+      this.talk.line([`¡Pastelazo a ${victim.name}!`, '¡No ve nada!']);
+    } else if (data.trap && victim.trapMs > 0) {
+      popText(this, victim.x, victim.y - victim.height - 60, '¡Atrapado!', '#9fd8ff');
+      this.talk.line(`¡${victim.name} quedó atrapado en una burbuja!`);
+    }
   }
 
   // Le cayó un coco o un cristal (no se puede cubrir).
@@ -1214,6 +1263,7 @@ export class DueloScene extends Phaser.Scene {
           }
         } else if (result) {
           shot.destroy();
+          if (!result.blocked) this.itemHit(victim, shot.data);
           this.afterHit(shot.owner, victim, result, shot.hit, shot.x, shot.y);
           continue;
         }
@@ -1247,6 +1297,67 @@ export class DueloScene extends Phaser.Scene {
     say(fighter.superName);
     this.cameras.main.flash(200, 255, 230, 120);
     if (!fighter.isCpu) rewards.earn('duelo-super');
+  }
+
+  // Alguien usó su especial (lo avisa DueloFighter). En el 2 contra 2: si su compañero hizo el suyo casi al mismo
+  // tiempo y cerquita, ¡combo de dúo! Si no, la compu de su equipo que esté cerca a veces lo acompaña.
+  specialUsed(fighter) {
+    if (!this.teamsMode || this.phase !== 'fight' || fighter.koed) return;
+    const now = this.time.now;
+    const mates = this.fighters.filter((f) => f !== fighter && f.team === fighter.team && !f.koed);
+    const near = (a, b) => Math.abs(a.x - b.x) <= DUO_RANGE;
+    const partner = this.duos.special(fighter, fighter.team, now, mates, near);
+    if (partner) {
+      this.duoCombo(partner, fighter);
+      return;
+    }
+    if (!this.duos.ready(fighter.team, now)) return;
+    for (const mate of mates) {
+      if (!mate.isCpu || mate.duoCallMs > 0 || !near(fighter, mate)) continue;
+      const level = mate.cpuLevel ?? this.setup.level;
+      if (Math.random() < (DUO_CPU_CHANCE[level] ?? DUO_CPU_CHANCE.normal)) mate.duoCallMs = 150 + Math.random() * 250;
+    }
+  }
+
+  // ¡Combo de dúo! Letrero con su nombre, el efecto de su tipo y les pega a los rivales que alcanza (aunque se estén
+  // cubriendo); el juego se congela un instante y luego la cámara se acerca en cámara lenta.
+  duoCombo(a, b) {
+    const duo = duoFor(a.character, b.character);
+    const x = (a.x + b.x) / 2;
+    const y = (a.y - a.height / 2 + b.y - b.height / 2) / 2;
+    this.duoCounts[a.team] += 1;
+    if (!a.isCpu || !b.isCpu) rewards.earn('duelo-duo');
+    this.showBanner(`¡${duo.name}!`, `🤝 ¡Combo de dúo! ${a.label} ${a.name} + ${b.label} ${b.name}`, 1700, hexToCss(duo.color));
+    const victims = this.enemiesOf(a).filter((f) => !f.koed && !f.isInvulnerable() && Math.abs(f.x - x) < DUO_REACH);
+    // (El terremoto solo alcanza a los que están parados en el piso.)
+    const hit = duo.kind === 'quake' ? victims.filter((f) => f.grounded) : victims;
+    duoEffect(this, duo, x, y, hit.map((f) => ({ x: f.x, y: f.y - f.height / 2, top: f.y - f.height })));
+    const up = ['quake', 'whirl', 'stars', 'shock'].includes(duo.kind);
+    const data = {
+      damage: duo.hit.damage,
+      push: 200 + 380 * duo.hit.push,
+      stunMs: Math.max(380, duo.hit.stunMs),
+      launch: up,
+      lift: up ? 1.2 : 1,
+      freeze: duo.kind === 'freeze',
+      special: true,
+      unblockable: true,
+      power: 1,
+    };
+    for (const victim of hit) {
+      const result = victim.takeHit(data, x);
+      if (!result) continue;
+      // El vapor marea un buen rato (se queda quieto con estrellitas).
+      if (duo.kind === 'dizzy') victim.stagger(duo.hit.stunMs);
+      this.afterHit(a, victim, result, data, victim.x, victim.y - victim.height / 2);
+    }
+    // Se congela tantito y luego, cámara lenta con acercamiento (sin el marcador, que se vería gigante).
+    setTimeScale(0, 140);
+    this.time.delayedCall(150, () => {
+      if (this.phase !== 'fight') return;
+      const hide = [...(this.teamHud ?? []).map((bar) => bar.root), this.timerBox, this.helpText, this.talk.caption];
+      epicMoment(this, x, y, { zoom: 1.25, ms: 1000, slow: 0.35, hide, bounds: { x: 0, y: 0, width: this.scale.width, height: this.scale.height } });
+    });
   }
 
   // El golpe final (lo pide el peleador en súper forma con X). Devuelve false si ahorita no se puede.
@@ -1429,7 +1540,9 @@ export class DueloScene extends Phaser.Scene {
     const team = TEAMS[winner.team];
     const star = this.fighters.find((f) => f.team === winner.team && !f.isCpu) ?? winner;
     this.hideBanner();
-    this.victory = showVictory(this, star, `¡Ganan los ${team.name}!`, 'A = revancha\nB = cambiar personajes\nMantén LB + RB + Y = salir');
+    // Cuántos combos de dúo hizo cada equipo (si hubo).
+    const duos = this.duoCounts.some((n) => n > 0) ? `🤝 Combos de dúo: ${TEAMS.map((t, i) => `${t.name} ${this.duoCounts[i]}`).join('  ·  ')}\n\n` : '';
+    this.victory = showVictory(this, star, `¡Ganan los ${team.name}!`, `${duos}A = revancha\nB = cambiar personajes\nMantén LB + RB + Y = salir`);
     say(`¡Ganan los ${team.name}!`);
     confetti(this, [team.color, 0xffffff, 0xffc93c], 110);
     sfx.win();

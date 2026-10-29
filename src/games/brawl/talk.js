@@ -49,4 +49,27 @@ export class BrawlTalk extends FightTalk {
   angry(name) {
     this.line([`¡${name} se enojó!`, `¡Uy! ¡${name} está furioso!`], { important: true });
   }
+
+  // Un personaje subió de nivel (con lo que ganó).
+  levelUp(name, level, prize) {
+    this.line(prize ? `¡${name} subió a nivel ${level}! ${prize}` : `¡${name} subió a nivel ${level}!`, { important: true });
+  }
+
+  // El Rey Tiburón va a embestir por un carril; el Gran Gorila va a hacer temblar el piso.
+  charge() {
+    this.line(['¡Quítense del carril rojo!', '¡Cuidado, va a embestir!'], { important: true });
+  }
+
+  quake() {
+    this.line(['¡Salten! ¡Va a temblar!', '¡Brinquen la onda!'], { important: true });
+  }
+
+  // Defiende la base.
+  baseDanger() {
+    this.line(['¡Cuiden la base!', '¡A la base le queda poquito!'], { important: true });
+  }
+
+  barricade() {
+    this.line(['¡Rompieron una barricada!', '¡Se cayó la barricada!']);
+  }
 }

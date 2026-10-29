@@ -12,7 +12,7 @@ export function addTreasureScenery(scene, track, kind) {
 }
 
 // Pone cada lugar de `spots` en un InstancedMesh (con `place(dummy, spot, i)` para moverlo, girarlo y escalarlo).
-function instances(scene, geometry, material, spots, place, colors = null) {
+export function instances(scene, geometry, material, spots, place, colors = null) {
   const mesh = new THREE.InstancedMesh(geometry, material, spots.length);
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
@@ -30,7 +30,7 @@ function instances(scene, geometry, material, spots, place, colors = null) {
 }
 
 // Lugares lejos del camino (de `far` a `far + spread` afuera de las llantas) para cosas grandes.
-function farSpots(track, every, far, spread) {
+export function farSpots(track, every, far, spread) {
   return roadside(track, every, far).map((spot, i) => {
     const out = ((i * 37) % 10) / 10;
     const p = track.pointAt(spot.index, Math.sign(track.lateral(spot.x, spot.z, spot.index) || 1) * (track.wallDistance + far + out * spread));

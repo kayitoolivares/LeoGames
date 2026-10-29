@@ -20,6 +20,8 @@ const BUTTONS = {
 };
 const KEYBOARDS = ['kb1', 'kb2'];
 const STICK_KEYS = { kb1: ['W A S D'], kb2: ['Flechas'] };
+// El stick derecho ('look', para mirar en la Guerra de pintura).
+const LOOK_KEYS = { kb1: ['I J K L'], kb2: ['Num 8 4 5 6'] };
 const COLUMN_X = { buttons: 70, action: 250, kb1: 730, kb2: 985 };
 const ROW_Y = 200;
 const ROW_H = 50;
@@ -57,7 +59,7 @@ const PAGES = [
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'En el mapa: X = tienda, Y = amigos de la compu. Si alguien cae, párate junto a él. Rompe cajas y jaulas; tócale al animal para montarlo.',
+    note: 'En el mapa: X = tienda, Y = amigos de la compu, ▲ ▼ = modos. Si alguien cae, párate junto a él. Tu personaje sube de nivel peleando. En La base: entre oleadas, ◀ ▶ y A compran barricadas, torrecitas y resortes; Y = ¡listos!',
   },
   {
     title: 'Bolitas Bros',
@@ -72,7 +74,7 @@ const PAGES = [
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Con un objeto en la mano, X lo usa. Cerca de la orilla te agarras (A o ↑ para subir). En la selección, X cambia tu traje.',
+    note: 'Con un objeto en la mano, X lo usa (globo de agua, pastel, imán...). En equipo, B de los dos juntos y cerquita: ¡combo de dúo! Cerca de la orilla te agarras (A o ↑ para subir). En la selección, X cambia tu traje.',
   },
   {
     title: 'Súper Bolitas',
@@ -81,12 +83,12 @@ const PAGES = [
       [['stick'], 'Caminar (↓ en un tubo = meterse; ↑ en una puerta = entrar; ↓ + A = bajar de una plataforma)'],
       [['a'], 'Saltar (sostenlo: más alto; con capa: planear; en el agua: nadar)'],
       [['b'], 'Correr más rápido (mantener)'],
-      [['x'], 'Poder: bola de fuego o de hielo, giro de capa; en el dinosaurio: lengüetazo. En el mapa: modos y tienda'],
-      [['lb', 'rb'], 'En el mapa: cambiar de mundo'],
-      [['y'], 'En el mapa: modo peque (cada quien). Bloquecito: cambia de número'],
+      [['x'], 'Poder: bola de fuego o de hielo, giro de capa; en el dinosaurio: lengüetazo. En el mapa: modos (Carreritas, Arma tu nivel...)'],
+      [['lb', 'rb'], 'En el mapa: cambiar de mundo. Armando tu nivel: cambiar de pieza'],
+      [['y'], 'En el mapa: modo peque (cada quien). Armando tu nivel: ¡probarlo! Bloquecito: cambia de número'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Brínquenles encima a los enemigos (¡los que tienen picos no!). Si te caes, regresas en burbuja: un compañero la revienta tocándola.',
+    note: 'Brínquenles encima a los enemigos (¡los que tienen picos no!). Si te caes, regresas en burbuja. Armando tu nivel: A pone la pieza y B la borra.',
   },
   {
     title: 'Duelo de bolitas',
@@ -101,7 +103,7 @@ const PAGES = [
       [['y'], 'Ayudante (una vez por round; Bloquecito: ↑ + Y, y Y cambia de número)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'Antes de pelear, X en tu control cambia el color de tu traje.',
+    note: 'Antes de pelear, X en tu control cambia el color de tu traje. En el 2 contra 2, X de los dos juntos y cerquita: ¡combo de dúo!',
   },
   {
     title: 'Fútbol de bolitas',
@@ -131,7 +133,7 @@ const PAGES = [
       [['y'], 'Bloquecito: cambia de número (↓ + Y baja)'],
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
-    note: 'En el taller: ↑ ↓ qué cambiar, ◀ ▶ cambiarlo, Y = modo peque 🐣, X = tienda. Al escoger pista: LB = nivel de la compu, RB = vueltas, X = velocidad (y espejo), Y = clima. Busca el letrero "¡Atajo!".',
+    note: 'En el taller: ↑ ↓ qué cambiar, ◀ ▶ cambiarlo, Y = modo peque 🐣, X = tienda. Al escoger pista: LB = nivel de la compu, RB = vueltas, X = velocidad (y espejo), Y = clima. Busca el letrero "¡Atajo!". Copa Fiesta: granja, feria, jardín gigante y mina (en sus puentes no hay barandal: si te caes, la red te regresa). En Batallas, abajo están las de equipos: Rojos contra Azules.',
   },
   {
     title: 'Carreras',
@@ -156,6 +158,47 @@ const PAGES = [
       [['lb+rb+y'], 'Salir (mantener)'],
     ],
     note: 'La línea punteada enseña por dónde va a ir la pelota (se puede quitar antes de jugar).',
+  },
+  {
+    title: 'Laberinto',
+    emoji: '🍒',
+    rows: [
+      [['stick'], 'Caminar por el laberinto (apriétalo antes de la esquina y voltea solito)'],
+      [['y'], 'Antes de jugar: modo peque (cada quien el suyo)'],
+      [['a'], 'Empezar / jugar otra vez'],
+      [['b'], 'Regresar'],
+      [['lb+rb+y'], 'Salir (mantener)'],
+    ],
+    note: 'Con la fruta de poder los fantasmitas se ponen azules: ¡a comérselos! Al que atrapan regresa en una burbuja.',
+  },
+  {
+    title: 'Mundo de bloques',
+    emoji: '⛏️',
+    rows: [
+      [['stick'], 'Caminar y apuntar (↑ ↓ en la escalera)'],
+      [['a'], 'Brincar (Creativo: A dos veces = volar)'],
+      [['x'], 'Mantener: escarbar el bloque marcado (o saludar a un animalito)'],
+      [['b'], 'Poner el bloque que escogiste'],
+      [['lb', 'rb'], 'Escoger bloque de tu barrita'],
+      [['y'], 'Hacer cosas (de noche, junto a tu cama: dormir)'],
+      [['lb+rb+y'], 'Salir (mantener; el mundo se guarda solito)'],
+    ],
+    note: 'Para hacer una torre: brinca y pon un bloque bajo tus pies (↓ + B). La oveja te da lana para la cama.',
+  },
+  {
+    title: 'Guerra de pintura',
+    emoji: '🎨',
+    rows: [
+      [['stick'], 'Caminar (stick izquierdo)'],
+      [['look'], 'Mirar y apuntar (stick derecho)'],
+      [['rt'], 'Pintar (mantener)'],
+      [['lt'], 'Apuntar de cerquita (mantener)'],
+      [['a'], 'Brincar'],
+      [['b'], 'Nadar en tu tinta (mantener): rapidísimo y se rellena la tinta'],
+      [['x'], 'Aventar un globo de pintura'],
+      [['lb', 'rb'], 'Cambiar de lanzador: chorrito, largo o rodillo'],
+      [['lb+rb+y'], 'Salir (mantener)'],
+    ],
   },
   {
     title: 'Modo Bebé',
@@ -239,9 +282,10 @@ export class ControlsScene extends Phaser.Scene {
   }
 
   drawButton(x, y, name) {
-    if (name === 'stick') {
+    if (name === 'stick' || name === 'look') {
       const base = this.add.circle(x + 18, y, 18, 0x3a3a4a).setStrokeStyle(3, 0x8a84b8);
-      const knob = this.add.circle(x + 18, y, 9, 0xb9b4dd);
+      // (El derecho, con la bolita amarilla.)
+      const knob = this.add.circle(x + 18, y, 9, name === 'look' ? 0xffc93c : 0xb9b4dd);
       this.content.add([base, knob]);
       return x + 36;
     }
@@ -262,8 +306,8 @@ export class ControlsScene extends Phaser.Scene {
     const seen = new Set();
     const separator = options.length > 2 ? '' : 'o';
     options.forEach((option) => {
-      const keys = option === 'stick' ? STICK_KEYS[kb] : option.split('+').map((name) => keyFor(kb, name));
-      // (LT y RT no tienen tecla.)
+      const keys = option === 'stick' ? STICK_KEYS[kb] : option === 'look' ? LOOK_KEYS[kb] : option.split('+').map((name) => keyFor(kb, name));
+      // (Si un botón no tiene tecla, no se pone.)
       if (keys.some((key) => !key)) return;
       const label = keys.join(' + ');
       if (seen.has(label)) return;

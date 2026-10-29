@@ -8,8 +8,9 @@ import { say } from '../../shared/voice.js';
 const STYLE_ID = 'kart-choose-style';
 const COLUMNS = 3;
 const MANY = { after: 6, columns: 5 };
-// Más de 10 (todas las pistas): 7 por renglón, más chiquitas.
+// Más de 10 (todas las pistas): 7 por renglón, más chiquitas; más de 21: 8 por renglón, todavía más chiquitas.
 const LOTS = { after: 10, columns: 7 };
+const TONS = { after: 21, columns: 8 };
 const MAP_W = 200;
 const MAP_H = 80;
 const CSS = `
@@ -36,6 +37,14 @@ const CSS = `
 .kart-choose .cards.lots .card svg { width: ${MAP_W * 0.72}px; height: ${MAP_H * 0.72}px; }
 .kart-choose .cards.lots .card small { font-size: 12px; }
 .kart-choose .cards.lots .card .info { font-size: 14px; }
+.kart-choose .cards.tons { grid-template-columns: repeat(${TONS.columns}, 148px); gap: 10px; }
+.kart-choose .cards.tons .card { height: 160px; padding: 0 4px; border-width: 3px; }
+.kart-choose .cards.tons .card .title { flex-direction: column; gap: 0; }
+.kart-choose .cards.tons .card .emoji { font-size: 28px; }
+.kart-choose .cards.tons .card b { font-size: 16px; text-align: center; }
+.kart-choose .cards.tons .card svg { width: ${MAP_W * 0.64}px; height: ${MAP_H * 0.64}px; }
+.kart-choose .cards.tons .card small { font-size: 11px; }
+.kart-choose .cards.tons .card .info { font-size: 12px; }
 .kart-choose .card .title { display: flex; align-items: center; gap: 10px; }
 .kart-choose .card .emoji { font-size: 46px; line-height: 1; }
 .kart-choose .card b { font-size: 27px; }
@@ -70,8 +79,8 @@ export class TrackChooser {
           <b>${track.name}</b></div>${outlineSvg(track.outline, track.color)}${track.info ? `<div class="info">${track.info}</div>` : ''}<small>${track.open ? '' : `🔒 ${track.lock}`}</small></div>`,
       )
       .join('');
-    this.columns = tracks.length > LOTS.after ? LOTS.columns : tracks.length > MANY.after ? MANY.columns : COLUMNS;
-    const size = { [COLUMNS]: '', [MANY.columns]: ' many', [LOTS.columns]: ' lots' }[this.columns];
+    this.columns = tracks.length > TONS.after ? TONS.columns : tracks.length > LOTS.after ? LOTS.columns : tracks.length > MANY.after ? MANY.columns : COLUMNS;
+    const size = { [COLUMNS]: '', [MANY.columns]: ' many', [LOTS.columns]: ' lots', [TONS.columns]: ' tons' }[this.columns];
     this.el.innerHTML = `<h1>${title}</h1><div class="cards${size}">${cards}</div><div class="options"></div>
       <p>◀ ▶ ↑ ↓ escoger  ·  A = ¡a jugar!  ·  B = regresar</p><div class="exit"><div></div></div>`;
     stage.append(this.el);

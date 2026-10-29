@@ -24,6 +24,7 @@ import {
   W83,
   W84,
 } from './levels2.js';
+import { W91, W92, W93 } from './levels3.js';
 export { Level } from './level.js';
 
 // Los niveles de Súper Bolitas (cómo se escriben: ver level.js). Mundos 1 a 4; los fuertes, los mundos 5 a 8, los
@@ -867,7 +868,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXX`),
 
 // Los mundos: 4 niveles cada uno (el segundo es un fuerte con mini jefe y el cuarto tiene al jefe). `secret`: el
 // nivel secreto que se abre con la bandera secreta (G) de alguno de sus niveles. `dino`: el color de los
-// dinosaurios que salen de los huevos. `sticker`: la calcomanía al ganar el mundo.
+// dinosaurios que salen de los huevos. `sticker`: la calcomanía al ganar el mundo. `bonus`: un mundo aparte (la Isla
+// de los jefes: 3 niveles, cada uno con un jefe nuevo) que no se abre en orden sino al pasar `opensAfter`, y cada
+// nivel abre el siguiente (ver progress.open en map.js).
 export const WORLDS = [
   { name: 'Pradera y cuevas', emoji: '🌿', levels: [W11, FORT1, W12, W13], secret: SECRET1, sticker: 'plat-mundo-1', color: 0x4cd97b, dino: 'verde' },
   { name: 'Nubes y cielo', emoji: '☁️', levels: [W21, FORT2, W22, W23], sticker: 'plat-mundo-2', color: 0x8fd3ff, dino: 'azul' },
@@ -877,6 +880,7 @@ export const WORLDS = [
   { name: 'Dulcelandia', emoji: '🍭', levels: [W61, W62, W63, W64], secret: SECRET6, sticker: 'plat-mundo-6', color: 0xff9ec7, dino: 'amarillo' },
   { name: 'Casa embrujada', emoji: '👻', levels: [W71, W72, W73, W74], sticker: 'plat-mundo-7', color: 0x8a6fb8, dino: 'rojo' },
   { name: 'El espacio', emoji: '🚀', levels: [W81, W82, W83, W84], sticker: 'plat-mundo-8', color: 0x6a5acd, dino: 'azul' },
+  { name: 'Isla de los jefes', emoji: '🏝️', levels: [W91, W92, W93], sticker: 'plat-isla', color: 0xffc93c, dino: 'verde', bonus: true, opensAfter: '1-4' },
 ];
 
 // La lista de los niveles del camino, en orden (para el mapa): { world, index, spec, id: "1-1" }.

@@ -47,6 +47,8 @@ export const GIANT_MS = 10000;
 export const STOMP_BOUNCE = { normal: 540, held: 860 };
 const INVULN_MS = 1800;
 export const STAR_MS = 9000;
+// El turbo de las Carreritas (al que va hasta atrás o al reaparecer): corre más rápido un ratito.
+const BOOST = 1.45;
 const DINO = { jump: 1.15, rise: 34, flutterMs: 900, flutterLift: 3500 };
 const RAINBOW = [0xff5a5f, 0xff9a3c, 0xffc93c, 0x4cd97b, 0x3fa7ff, 0xb07cff];
 // Color del traje con cada poder.
@@ -143,6 +145,7 @@ export class Player {
   update(dtMs, level) {
     this.invulnMs = Math.max(0, this.invulnMs - dtMs);
     this.starMs = Math.max(0, this.starMs - dtMs);
+    this.boostMs = Math.max(0, (this.boostMs ?? 0) - dtMs);
     this.throwMs = Math.max(0, this.throwMs - dtMs);
     this.spinMs = Math.max(0, this.spinMs - dtMs);
     this.stunMs = Math.max(0, (this.stunMs ?? 0) - dtMs);
@@ -169,7 +172,7 @@ export class Player {
     const sticky = this.onGround && under === 's';
 
     // De lado: acelera hacia donde apunta el stick; sin stick se frena (en el hielo, resbala).
-    const top = water ? SWIM.speed : input.held('b') ? RUN : WALK;
+    const top = (water ? SWIM.speed : input.held('b') ? RUN : WALK) * (this.boostMs > 0 ? BOOST : 1);
     const want = Math.abs(stick.x) > 0.2 ? Math.sign(stick.x) * top * (sticky ? STICKY.speed : 1) * Math.min(1, Math.abs(stick.x) * 1.3) : 0;
     let accel = want === 0 ? (this.onGround ? FRICTION : ACCEL.air * 0.5) : this.onGround ? ACCEL.ground : ACCEL.air;
     if (icy) accel *= want === 0 ? ICE.friction : ICE.accel;
@@ -398,8 +401,9 @@ export class Player {
     const blink = this.invulnMs > 0 && Math.floor(this.invulnMs / 90) % 2 === 1;
     this.sprite.setAlpha(blink ? 0.35 : 1);
     const now = this.scene.time.now;
-    this.aura.setVisible(this.starMs > 0);
+    this.aura.setVisible(this.starMs > 0 || this.boostMs > 0);
     if (this.starMs > 0) this.aura.setFillStyle(RAINBOW[Math.floor(now / 90) % RAINBOW.length], this.starMs < 2000 && Math.floor(now / 150) % 2 ? 0.15 : 0.45);
+    else if (this.boostMs > 0) this.aura.setFillStyle(0x7dff7a, Math.floor(now / 80) % 2 ? 0.25 : 0.45);
     // La capa ondea (más si va planeando).
     const caped = this.power === 'cape' && this.state === 'play';
     this.cape.setVisible(caped);

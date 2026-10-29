@@ -69,6 +69,27 @@ const SONGS = {
     bass: { wave: 'triangle', volume: 0.1, notes: 'C3 . G2 . C3 . G2 . | D3 . A2 . D3 . A2 . | C3 . G2 . C3 . G2 . | G2 . D3 . G2 . B2 . | C3 . G2 . C3 . G2 . | D3 . A2 . D3 . A2 . | F2 . C3 . G2 . D3 . | C3 . G2 . C3 . . .' },
     drums: 'k . h . s . h . | k . h . s . h . | k . h . s . h . | k . h . s . h h | k . h . s . h . | k . h . s . h . | k . h . s . h . | k . . . s . . .',
   },
+  // Laberinto come-frutas: saltarina y traviesa (con la fruta de poder se acelera).
+  laberinto: {
+    bpm: 128,
+    lead: { wave: 'square', volume: 0.04, notes: 'C5 . G5 . E5 . C6 . | B4 . G5 . D5 . B5 . | A4 . E5 . C5 . A5 . | G4 A4 B4 C5 D5 E5 F5 G5 | C5 . G5 . E5 . C6 . | B4 . G5 . D5 . B5 . | A4 C5 F5 A5 G5 E5 D5 B4 | C5 - . . G4 - . .' },
+    bass: { wave: 'triangle', volume: 0.12, notes: 'C3 . C3 G2 C3 . C3 G2 | G2 . G2 D3 G2 . G2 D3 | A2 . A2 E3 A2 . A2 E3 | G2 . G2 . G2 A2 B2 . | C3 . C3 G2 C3 . C3 G2 | G2 . G2 D3 G2 . G2 D3 | F2 . F2 C3 G2 . G2 D3 | C3 . G2 . C3 . . .' },
+    drums: 'k . h s k . h s | k . h s k . h s | k . h s k . h s | k . h s k s s s | k . h s k . h s | k . h s k . h s | k . h s k . h s | k . s . k . . .',
+  },
+  // Mundo de bloques: tranquila, para escarbar y construir con calma.
+  bloques: {
+    bpm: 92,
+    lead: { wave: 'triangle', volume: 0.06, notes: 'E5 - G5 - D5 - . . | C5 - E5 - G4 - . . | A4 - C5 - E5 - D5 - | G5 - - - . . . . | E5 - G5 - A5 - G5 - | F5 - E5 - D5 - . . | C5 - D5 - E5 - G5 - | C5 - - - . . . .' },
+    bass: { wave: 'triangle', volume: 0.09, notes: 'C3 - - - G2 - - - | A2 - - - E2 - - - | F2 - - - C3 - - - | G2 - - - D3 - - - | C3 - - - G2 - - - | F2 - - - G2 - - - | A2 - - - F2 - - - | C3 - - - - - - -' },
+    drums: 'k . . . h . . . | k . . . h . . . | k . . . h . . . | k . . . h . h . | k . . . h . . . | k . . . h . . . | k . . . h . . . | k . . . . . . .',
+  },
+  // Guerra de pintura: brincadora y con ritmo, para correr pintando.
+  pintura: {
+    bpm: 144,
+    lead: { wave: 'square', volume: 0.04, notes: 'G5 . B5 D6 . B5 G5 . | A5 . C6 E6 . C6 A5 . | B5 . D6 G6 . D6 B5 . | A5 G5 F#5 G5 A5 - . .' },
+    bass: { wave: 'triangle', volume: 0.12, notes: 'G2 . G3 G2 . G3 G2 . | A2 . A3 A2 . A3 A2 . | E2 . E3 E2 . E3 E2 . | D2 . D3 D2 D3 D2 D3 .' },
+    drums: 'k . s k . k s . | k . s k . k s . | k . s k . k s . | k s k s s s s s',
+  },
   // Canción de cuna para el Modo Bebé: lenta, suave y sin batería.
   baby: {
     bpm: 84,

@@ -67,7 +67,7 @@ function defaultDescribe(fighter) {
 }
 
 // Los premios del final: quién pegó más veces, el golpe más fuerte (en "km/h" de mentiritas), quién se cayó más,
-// quién hizo más paradas perfectas y quién agarró más objetos. Solo los que alguien sí hizo.
+// quién hizo más paradas perfectas, quién agarró más objetos y quién hizo más combos de dúo. Solo los que alguien sí hizo.
 export function awards(fighters) {
   const top = (key) => {
     let best = null;
@@ -85,6 +85,8 @@ export function awards(fighters) {
   if (perfect) list.push(`✨ Paradas perfectas: ${perfect.label} (${perfect.record.perfects})`);
   const items = top('items');
   if (items) list.push(`🎁 Más objetos: ${items.label} (${items.record.items})`);
+  const duos = top('duos');
+  if (duos) list.push(`🤝 Combos de dúo: ${duos.label} (${duos.record.duos})`);
   return list;
 }
 

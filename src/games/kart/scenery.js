@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { addTreasureScenery } from './scenery2.js';
+import { addFiestaScenery } from './scenery3.js';
 
 const FLAKES = 900;
 const SNOW_TOP = 45;
@@ -123,7 +124,7 @@ export function addScenery(scene, track, kind) {
   else if (kind === 'party') return addParty(scene, track);
   else if (kind === 'dinos') addDinos(scene, track);
   else if (kind === 'clouds') addClouds(scene, track);
-  else return addTreasureScenery(scene, track, kind);
+  else return addTreasureScenery(scene, track, kind) ?? addFiestaScenery(scene, track, kind);
   return null;
 }
 

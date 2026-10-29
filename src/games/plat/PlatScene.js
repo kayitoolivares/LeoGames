@@ -21,6 +21,7 @@ import { loadSmashArt } from '../smash/art.js';
 import { loadLevelBackground, loadPlatArt, platTexture } from './art.js';
 import { Boss, BOSSES } from './boss.js';
 import { Dino } from './dino.js';
+import { Editor, levelProblem, levelSpec, myLevels, showMyLevels } from './editor.js';
 import { ENEMIES, Enemy } from './enemies.js';
 import { GhostRecorder, GhostRunner } from './ghost.js';
 import { House } from './house.js';
@@ -30,6 +31,7 @@ import { BATTLE1, BATTLE2, MAP_FIGHT } from './levels2.js';
 import { MAP_ENEMY, MODES, formatTime, ghosts, nodeOpen, progress, showMap, showModes, worldNodes, worldOpen } from './map.js';
 import { overlaps, tileAt } from './physics.js';
 import { Player, STAR_MS } from './Player.js';
+import { Race } from './race.js';
 import { THEMES, T, ROWS, isSolid, switches, themeTextures, tileTexture } from './tiles.js';
 import { go } from '../../shared/transition.js';
 import { bounceIn, bump } from '../../ui/bounce.js';
@@ -54,10 +56,11 @@ const BATTLE = { ms: 90000, coinEveryMs: 1100, maxCoins: 10, drop: 3 };
 const FIGHT_ENEMIES = 4;
 const FIGHT_REWARD = 10;
 
-// "Súper Bolitas": plataformas como Mario Bros para toda la familia, todos a la vez en la misma pantalla. Mapa de 7
+// "Súper Bolitas": plataformas como Mario Bros para toda la familia, todos a la vez en la misma pantalla. Mapa de 8
 // mundos (cada uno con su nivel, fuerte con mini jefe, otro nivel, castillo con jefe, casita con regalos y a
-// veces un nivel secreto que se abre con la bandera secreta), un enemigo que camina por el mapa y, con X, los modos:
-// contrarreloj contra tu fantasma, batalla de monedas, jefes en serie, la tienda y vidas extra.
+// veces un nivel secreto que se abre con la bandera secreta) más la Isla de los jefes, un enemigo que camina por el
+// mapa y, con X, los modos: contrarreloj contra tu fantasma, batalla de monedas, jefes en serie, la tienda, vidas
+// extra, las Carreritas (race.js) y Arma tu nivel (editor.js).
 export class PlatScene extends Phaser.Scene {
   constructor() {
     super('Plat');
@@ -88,11 +91,13 @@ export class PlatScene extends Phaser.Scene {
     this.exitMs = 0;
     this.exiting = false;
     this.coins = 0;
-    // Dónde está el equipo en el mapa: en el último nivel abierto.
-    const lastWorld = WORLDS.reduce((best, _, i) => (worldOpen(i) ? i : best), 0);
+    // Dónde está el equipo en el mapa: en el último nivel abierto (la Isla de los jefes no cuenta: va aparte).
+    const lastWorld = WORLDS.reduce((best, world, i) => (worldOpen(i) && !world.bonus ? i : best), 0);
     const lastNode = worldNodes(lastWorld).reduce((best, node, i) => (node.kind === 'level' && nodeOpen(lastWorld, node) ? i : best), 0);
     this.mapState = { world: lastWorld, node: lastNode, enemy: null };
-    this.mapEnemies = WORLDS.map(() => 3);
+    this.mapEnemies = WORLDS.map((world) => (world.bonus ? null : 3));
+    this.race = null;
+    this.editor = null;
     this.housesUsed = new Set();
     this.modeIndex = 0;
     this.createHud();
@@ -114,6 +119,7 @@ export class PlatScene extends Phaser.Scene {
 
   openMap() {
     const fromRun = Boolean(this.run);
+    this.leaveSpecialModes();
     this.clearLevel();
     this.phase = 'map';
     this.run = null;
@@ -161,7 +167,9 @@ export class PlatScene extends Phaser.Scene {
     }
     const worldStep = (controls.justPressed(id, 'rb') ? 1 : 0) - (controls.justPressed(id, 'lb') ? 1 : 0);
     if (worldStep) {
-      const next = this.mapState.world + worldStep;
+      // (Se brinca los mundos cerrados: la Isla de los jefes se abre antes que los de en medio.)
+      let next = this.mapState.world + worldStep;
+      while (next >= 0 && next < WORLDS.length && !worldOpen(next)) next += worldStep;
       if (next >= 0 && next < WORLDS.length && worldOpen(next)) {
         this.mapState = { world: next, node: 0, enemy: null };
         sfx.confirm();
@@ -284,7 +292,118 @@ export class PlatScene extends Phaser.Scene {
         sfx.back();
         say('No alcanzan las monedas');
       }
+    } else if (mode === 'race') {
+      this.startRun('race');
+    } else if (mode === 'editor') {
+      this.openMyLevels();
     }
+  }
+
+  // Al regresar al mapa (o a los modos) se van los corredores de la compu y se guarda el editor.
+  leaveSpecialModes() {
+    this.race?.destroy();
+    this.race = null;
+    this.closeEditor();
+  }
+
+  // ---------- Arma tu nivel (editor.js) ----------
+
+  // Las 3 ranuras: ◀ ▶ escoger, A armar, X jugar, B regresar a los modos.
+  openMyLevels(selected = this.myLevelsIndex ?? 0) {
+    this.leaveSpecialModes();
+    this.clearLevel();
+    this.closeScreen();
+    this.run = null;
+    this.phase = 'myLevels';
+    this.hud.setVisible(false);
+    this.hideBanner();
+    this.talk.hide();
+    this.cameras.main.setScroll(0, 0).setBackgroundColor(0x7fd0ff);
+    music.play('plat');
+    this.myLevels = showMyLevels(this, selected);
+    this.screen = this.myLevels.root;
+  }
+
+  updateMyLevels() {
+    const input = this.hostInput;
+    const menu = this.myLevels;
+    const step = (input.pressed('right') ? 1 : 0) - (input.pressed('left') ? 1 : 0);
+    if (step) {
+      menu.select(menu.selected + step);
+      sfx.select();
+    }
+    this.myLevelsIndex = menu.selected;
+    if (input.pressed('a')) {
+      sfx.confirm();
+      this.openEditor(menu.selected);
+    } else if (input.pressed('x')) {
+      const level = menu.levels[menu.selected];
+      const problem = level ? levelProblem(level) : 'Ese nivel está vacío: apriétale A para armarlo';
+      if (problem) {
+        sfx.back();
+        say(problem);
+        return;
+      }
+      sfx.confirm();
+      this.startRun('custom', { slot: menu.selected });
+    } else if (input.pressed('b')) {
+      sfx.back();
+      this.openModes();
+    }
+  }
+
+  openEditor(slot, state = {}) {
+    this.closeScreen();
+    this.clearLevel();
+    this.run = null;
+    this.phase = 'editor';
+    this.hud.setVisible(false);
+    this.hideBanner();
+    this.talk.hide();
+    this.cameras.main.setScroll(0, 0);
+    music.play('plat');
+    this.editor = new Editor(this, slot, state);
+    this.myLevelsIndex = slot;
+  }
+
+  updateEditor(dt) {
+    const action = this.editor.update(dt);
+    if (action === 'test') this.testEditorLevel();
+    else if (action === 'exit') {
+      sfx.back();
+      this.openMyLevels(this.editor.slot);
+    }
+  }
+
+  // Y en el editor: a jugarlo (Y otra vez regresa a editar, en el mismo lugar).
+  testEditorLevel() {
+    const editor = this.editor;
+    editor.save();
+    const problem = levelProblem(editor.level);
+    if (problem) {
+      sfx.back();
+      say(problem);
+      editor.showToast(problem);
+      return;
+    }
+    sfx.confirm();
+    this.editorState = { slot: editor.slot, ...editor.state() };
+    this.closeEditor();
+    this.startRun('custom', { slot: this.editorState.slot, test: true });
+  }
+
+  closeEditor() {
+    if (!this.editor) return;
+    this.editor.save();
+    this.editor.destroy();
+    this.editor = null;
+  }
+
+  backToEditor(message = null) {
+    this.hideBanner();
+    this.talk.hide();
+    this.openEditor(this.editorState.slot, this.editorState);
+    if (message) this.editor.showToast(message);
   }
 
   updateShop() {
@@ -298,12 +417,14 @@ export class PlatScene extends Phaser.Scene {
   // ---------- Partidas ----------
 
   // mode: 'level' | 'secret' | 'trial' (contrarreloj) | 'battle' (monedas) | 'rush' (jefes en serie) | 'fight'
-  // (contra el enemigo del mapa).
-  startRun(mode, { index = null, info = null } = {}) {
+  // (contra el enemigo del mapa) | 'race' (Carreritas) | 'custom' (un nivel de Arma tu nivel: `slot`; con `test`,
+  // probándolo desde el editor).
+  startRun(mode, { index = null, info = null, slot = null, test = false } = {}) {
     this.closeScreen();
-    this.run = { mode, ms: 0 };
-    // Las vidas compradas y las de la casita se guardan para una partida con vidas (no contrarreloj ni batalla).
-    const withLives = !['trial', 'battle'].includes(mode);
+    this.run = { mode, ms: 0, slot, test };
+    // Las vidas compradas y las de la casita se guardan para una partida con vidas (no contrarreloj, batalla,
+    // carreritas ni probando tu nivel).
+    const withLives = !['trial', 'battle', 'race'].includes(mode) && !test;
     this.lives = this.startLives() + (withLives ? progress.takeExtraLives() + (this.bonusLives ?? 0) : 0);
     if (withLives) this.bonusLives = 0;
     this.coinsRun = 0;
@@ -330,8 +451,15 @@ export class PlatScene extends Phaser.Scene {
       this.run.left = BATTLE.ms;
       this.run.coinMs = 0;
       this.loadLevel({ spec, id: 'batalla', world: this.mapState.world, index: null });
+    } else if (mode === 'race') {
+      this.race = new Race(this);
+      this.race.start();
+    } else if (mode === 'custom') {
+      this.loadLevel({ spec: levelSpec(myLevels.get(slot), slot), id: `mi-${slot + 1}`, world: null, index: null, custom: true });
     } else if (mode === 'rush') {
-      this.run.list = LEVELS.map((lv, i) => (lv.index === 3 && progress.open(i) ? i : -1)).filter((i) => i >= 0);
+      // Los jefes de los castillos abiertos y los de la Isla de los jefes que ya vencieron.
+      const listed = (lv, i) => (lv.index === 3 && progress.open(i)) || (WORLDS[lv.world].bonus && progress.level(lv.id).done);
+      this.run.list = LEVELS.map((lv, i) => (listed(lv, i) ? i : -1)).filter((i) => i >= 0);
       this.run.step = 0;
       this.loadLevel(LEVELS[this.run.list[0]], { arenaStart: true });
     } else if (mode === 'fight') {
@@ -413,14 +541,15 @@ export class PlatScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(THEMES[level.theme]?.sky ?? 0x8fd3ff);
     this.phase = 'play';
     this.hud.setVisible(true);
-    music.play(this.run?.mode === 'battle' ? 'brawl' : 'plat');
+    music.play({ battle: 'brawl', race: 'race' }[this.run?.mode] ?? 'plat');
     // Contrarreloj: graba al jugador y, si hay récord guardado, sale su fantasma.
     if (solo) {
       this.recorder = new GhostRecorder();
       const ghost = ghosts.get(info.id);
       this.ghost = ghost ? new GhostRunner(this, ghost, this.players[0].character) : null;
     }
-    const label = info.id === 'batalla' || info.id === 'pelea' ? level.name : `${info.id}  ${level.name}`;
+    const named = info.id === 'batalla' || info.id === 'pelea' || info.race || info.custom;
+    const label = named ? level.name : `${info.id}  ${level.name}`;
     this.waveText.setText(label);
     if (arenaStart) {
       // Jefes en serie: directo a la arena.
@@ -432,6 +561,10 @@ export class PlatScene extends Phaser.Scene {
       this.showBanner('¡Batalla de monedas!', 'El que junte más gana · ¡brínquenle encima a los demás!', 2200);
     } else if (this.run?.mode === 'fight') {
       this.showBanner('¡Batalla!', 'Tumben a todos los enemigos', 1600);
+    } else if (info.race) {
+      this.showBanner(level.name, `Carrera ${this.race.round + 1} de 3 · ¡a la bandera!`, 900);
+    } else if (info.custom) {
+      this.showBanner(level.name, this.run.test ? 'Y = regresar a editar' : '¡Un nivel hecho en casa!', 1600);
     } else {
       this.showBanner(label.replace('  ', ' '), info.secret ? '¡Nivel secreto!' : WORLDS[info.world].name, 1600);
     }
@@ -608,6 +741,8 @@ export class PlatScene extends Phaser.Scene {
     if (this.phase === 'modes') return this.updateModes();
     if (this.phase === 'shop') return this.updateShop();
     if (this.phase === 'house') return this.updateHouse(dt);
+    if (this.phase === 'myLevels') return this.updateMyLevels();
+    if (this.phase === 'editor') return this.updateEditor(dt);
     if (['results', 'gameover'].includes(this.phase)) return this.updateEndScreen(dt);
     if (this.phase === 'play') {
       this.levelMs += dt;
@@ -618,12 +753,31 @@ export class PlatScene extends Phaser.Scene {
       this.renderAll();
       return;
     }
+    // Probando tu nivel: Y regresa a editar.
+    if (this.run.test && this.phase === 'play' && this.players.some((p) => controls.justPressed(p.deviceId, 'y') && !controls.isDown(p.deviceId, 'lb'))) {
+      sfx.back();
+      this.clearLevel();
+      this.backToEditor();
+      return;
+    }
+    // Carreritas: la cuenta regresiva (nadie se mueve).
+    const race = this.run.mode === 'race' ? this.race : null;
+    if (race?.countdown(dt)) {
+      this.renderAll();
+      this.updateHud();
+      return;
+    }
     this.platforms.update(dt);
     for (const p of this.players) {
       if (p.state === 'off') continue;
-      if (p.state === 'bubble') this.updateBubble(p, dt);
-      else p.update(dt, this.level);
+      if (p.state === 'finished') race?.celebrate(p, dt);
+      else if (p.state === 'bubble') this.updateBubble(p, dt);
+      else {
+        p.bot?.think(dt, this, p);
+        p.update(dt, this.level);
+      }
     }
+    race?.update(dt);
     if (this.recorder && this.players[0].active) this.recorder.record(dt, this.players[0]);
     this.ghost?.update(dt);
     for (const d of this.dinos) d.update(dt, this);
@@ -665,6 +819,10 @@ export class PlatScene extends Phaser.Scene {
   updateCamera(dt) {
     // (En un momento épico la cámara la mueve ui/epic.js.)
     if (this.epicBusy) return;
+    if (this.run?.mode === 'race') {
+      this.race.camera(dt);
+      return;
+    }
     const cam = this.cameras.main;
     const W = this.scale.width;
     const active = this.players.filter((p) => p.active);
@@ -887,9 +1045,8 @@ export class PlatScene extends Phaser.Scene {
       e.kill('star', Math.sign(e.x - player.x) || 1);
       sfx.hit(0.5);
     }
-    if (this.boss && !this.boss.dead && Math.abs(this.boss.x - player.x) < CAPE_SPIN.reach + this.boss.w / 2 && overlaps(player, this.boss, -30)) {
-      if (this.boss.fireHit()) this.bossDefeated();
-    }
+    const body = this.boss && !this.boss.dead && this.boss.bodies().find((b) => Math.abs(b.x - player.x) < CAPE_SPIN.reach + b.w / 2 && overlaps(player, b, -30));
+    if (body && this.boss.fireHit(body)) this.bossDefeated();
   }
 
   coinTaken(player) {
@@ -1056,6 +1213,8 @@ export class PlatScene extends Phaser.Scene {
 
   playerDied(player) {
     this.deathAt = this.time.now;
+    // En las Carreritas reaparece solito (ver race.js).
+    if (this.run?.mode === 'race') return;
     // El jefe se carcajea un buen rato.
     if (this.boss && !this.boss.dead) this.boss.taunt(2200);
     if (this.run?.mode === 'battle') {
@@ -1069,6 +1228,10 @@ export class PlatScene extends Phaser.Scene {
   // Los que cayeron: si quedan compañeros regresan en burbuja; si no queda nadie, se pierde una vida.
   updateDeaths() {
     if (this.phase !== 'play') return;
+    if (this.run.mode === 'race') {
+      this.race.updateDeaths();
+      return;
+    }
     if (this.run.mode === 'battle') {
       for (const p of this.players) {
         if (p.state !== 'dead' || p.deadMs < 800) continue;
@@ -1091,8 +1254,8 @@ export class PlatScene extends Phaser.Scene {
   }
 
   loseLife() {
-    // En la contrarreloj no hay vidas: se vuelve a empezar.
-    if (this.run.mode === 'trial') {
+    // En la contrarreloj (y probando tu nivel) no hay vidas: se vuelve a empezar.
+    if (this.run.mode === 'trial' || this.run.test) {
       this.phase = 'retry';
       this.showBanner('¡Otra vez!', '', 900);
       this.time.delayedCall(1000, () => this.phase === 'retry' && this.loadLevel(this.info));
@@ -1279,8 +1442,9 @@ export class PlatScene extends Phaser.Scene {
       }
       return true;
     }
-    if (this.boss && !this.boss.dead && overlaps(f, this.boss)) {
-      if (this.boss.fireHit()) this.bossDefeated();
+    const body = this.boss && !this.boss.dead && this.boss.bodies().find((b) => overlaps(f, b));
+    if (body) {
+      if (this.boss.fireHit(body)) this.bossDefeated();
       return true;
     }
     return false;
@@ -1358,25 +1522,39 @@ export class PlatScene extends Phaser.Scene {
     if (!boss) return;
     boss.update(dt, this);
     if (boss.dead) return;
+    // (La Gelatina Gigante tiene varios pedazos: a cada uno se le brinca por separado.)
     for (const p of this.players) {
-      if (!p.active || !overlaps(p, boss, 8)) continue;
-      const fromAbove = p.vy > 40 && p.y - (boss.y - boss.h) < 40;
-      if (fromAbove && boss.stompable) {
-        p.vy = -900;
-        const done = boss.stomped();
+      if (!p.active) continue;
+      const body = boss.bodies().find((b) => overlaps(p, b, 8));
+      if (!body) continue;
+      const fromAbove = p.vy > 40 && p.y - (body.y - body.h) < 40;
+      if (fromAbove && boss.canStomp(body)) {
+        // (En el agua no sale volando tan alto.)
+        p.vy = this.level.water ? -480 : -900;
+        const done = boss.stomped(body);
         const count = boss.maxHp - Math.ceil(boss.hp);
-        popText(this, boss.x, boss.y - boss.h - 30, done ? '¡Ganaron!' : ['¡Uno!', '¡Dos!', '¡Tres!'][count - 1] ?? '¡Pum!', '#ffd84d');
-        impact(this, boss.x, boss.y - boss.h, { power: done ? 2 : 1.3 });
-        comicHit(this, boss.x + 50, boss.y - boss.h - 40, done ? '¡KO!' : randomPow(), { big: done });
-        if (done) this.bossDefeated();
-        else this.talk.line(['¡Bien! ¡Otra vez!', '¡Eso!', `¡Le duele a ${boss.type.name}!`]);
+        popText(this, body.x, body.y - body.h - 30, done ? '¡Ganaron!' : ['¡Uno!', '¡Dos!', '¡Tres!'][count - 1] ?? '¡Pum!', '#ffd84d');
+        impact(this, body.x, body.y - body.h, { power: done ? 2 : 1.3 });
+        comicHit(this, body.x + 50, body.y - body.h - 40, done ? '¡KO!' : randomPow(), { big: done });
+        if (done) {
+          this.bossDefeated();
+          return;
+        }
+        this.talk.line(['¡Bien! ¡Otra vez!', '¡Eso!', `¡Le duele a ${boss.type.name}!`]);
+      } else if (body.harmless) {
+        // Las gelatinas chiquitas solo empujan.
+        p.vx = (Math.sign(p.x - body.x) || 1) * 320;
+        if (fromAbove) p.vy = -500;
       } else if (fromAbove || boss.stunMs > 0) {
         p.vy = -500;
       } else if (p.starMs > 0 || p.giantMs > 0) {
-        if (boss.fireHit()) this.bossDefeated();
-        p.vx = Math.sign(p.x - boss.x) * 400;
+        if (boss.fireHit(body)) {
+          this.bossDefeated();
+          return;
+        }
+        p.vx = Math.sign(p.x - body.x) * 400;
       } else if (p.hurt()) {
-        p.vx = Math.sign(p.x - boss.x) * 380;
+        p.vx = Math.sign(p.x - body.x) * 380;
         boss.taunt();
       }
     }
@@ -1398,7 +1576,7 @@ export class PlatScene extends Phaser.Scene {
     music.play('jefe');
     this.cameras.main.shake(300, 0.006);
     const name = BOSSES[key].name.replace(/^(el|la) /, (m) => m[0].toUpperCase() + m.slice(1));
-    this.showBanner(`¡${name}!`, `Brínquenle encima ${this.boss.maxHp} veces`, 2000);
+    this.showBanner(`¡${name}!`, BOSSES[key].hint ?? `Brínquenle encima ${this.boss.maxHp} veces`, 2000);
   }
 
   bossDefeated() {
@@ -1491,6 +1669,10 @@ export class PlatScene extends Phaser.Scene {
   }
 
   checkGoal() {
+    if (this.run.mode === 'race') {
+      this.race.checkFinish();
+      return;
+    }
     // (El cuarto secreto está pasando la bandera: ahí no cuenta.)
     const at = (goal) => goal && this.players.find((p) => p.active && Math.abs(p.x - goal.x) < 24 + p.w / 2 && p.y > goal.y - goal.height && p.y <= goal.y + 4 && !this.level.inBonus(p.x));
     const goal = this.goal;
@@ -1556,6 +1738,10 @@ export class PlatScene extends Phaser.Scene {
 
   showResults() {
     const mode = this.run.mode;
+    if (mode === 'custom') {
+      this.customResults();
+      return;
+    }
     if (mode === 'fight') {
       this.mapEnemies[this.mapState.world] = null;
       coinBank.add(FIGHT_REWARD);
@@ -1599,6 +1785,24 @@ export class PlatScene extends Phaser.Scene {
     if (lastOfWorld) confetti(this, this.players.map((p) => p.color));
   }
 
+  // Pasaron un nivel de Arma tu nivel: si lo estaban probando, regresan a editar; si no, la tabla.
+  customResults() {
+    rewards.earn('plat-mi-nivel');
+    const slot = this.run.slot;
+    const level = myLevels.get(slot);
+    if (level) myLevels.save(slot, { ...level, tested: true });
+    if (this.run.test) {
+      this.clearLevel();
+      this.backToEditor('¡Tu nivel sí se puede pasar! ✓');
+      return;
+    }
+    this.phase = 'results';
+    this.endMs = 0;
+    this.nextAction = 'custom';
+    const stats = this.players.map((p) => `${p.label}: 🪙 ${p.stats.coins}  👟 ${p.stats.stomps}`);
+    this.showEndScreen('¡Pasaron el nivel!', [`⏱️  Tiempo: ${formatTime(this.levelMs)}`, `🪙  Monedas: ${this.levelCoins}`, '', stats.join('      ')], 'A = jugarlo otra vez   ·   B = tus niveles', this.info.spec.name);
+  }
+
   showEndScreen(title, lines, hint, subtitle = '') {
     const { width, height } = this.scale;
     const root = this.add.container(0, 0).setDepth(HUD_DEPTH + 3).setScrollFactor(0);
@@ -1623,7 +1827,8 @@ export class PlatScene extends Phaser.Scene {
         this.loadLevel(this.info);
       } else if (pressed('b')) {
         this.hideBanner();
-        this.openMap();
+        if (this.run.mode === 'custom') this.openMyLevels(this.run.slot);
+        else this.openMap();
       }
       return;
     }
@@ -1631,6 +1836,16 @@ export class PlatScene extends Phaser.Scene {
     const again = pressed('a');
     this.closeScreen();
     this.levelCoins = 0;
+    // Carreritas: A = la siguiente carrera (u otra copa); Arma tu nivel: A = otra vez, B = tus niveles.
+    if (this.nextAction === 'race' && again) {
+      this.race.next();
+      return;
+    }
+    if (this.nextAction === 'custom') {
+      if (again) this.startRun('custom', { slot: this.run.slot });
+      else this.openMyLevels(this.run.slot);
+      return;
+    }
     if (again && this.nextAction === 'next') {
       this.syncMapNode(this.nextLevel);
       this.loadLevel(LEVELS[this.nextLevel]);
@@ -1662,7 +1877,13 @@ export class PlatScene extends Phaser.Scene {
     this.livesText = fixed(this.add.text(20, 14, '', textStyle(26, '#ffffff', OUTLINE)));
     this.waveText = fixed(this.add.text(width / 2, 14, '', textStyle(24, '#ffffff', OUTLINE)).setOrigin(0.5, 0));
     this.bigText = fixed(this.add.text(width - 20, 14, '', textStyle(26, '#ffd84d', OUTLINE)).setOrigin(1, 0));
-    this.hud.add([this.livesText, this.waveText, this.bigText]);
+    // La vida del jefe (solo en su pelea).
+    this.bossName = fixed(this.add.text(width / 2, 50, '', textStyle(20, '#ffffff', OUTLINE)).setOrigin(0.5, 0));
+    this.bossBack = fixed(this.add.rectangle(width / 2, 88, 340, 18, 0x1b1530).setStrokeStyle(3, 0xffffff));
+    this.bossFill = fixed(this.add.rectangle(width / 2 - 166, 88, 332, 10, 0xff5a5f).setOrigin(0, 0.5));
+    this.bossBar = [this.bossName, this.bossBack, this.bossFill];
+    for (const o of this.bossBar) o.setVisible(false);
+    this.hud.add([this.livesText, this.waveText, this.bigText, ...this.bossBar]);
     const bannerStyle = { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 10, align: 'center' };
     this.banner = fixed(this.add.text(width / 2, 250, '', textStyle(64, TEXT.accent, bannerStyle)).setOrigin(0.5).setDepth(HUD_DEPTH + 1).setAlpha(0));
     this.subBanner = fixed(this.add.text(width / 2, 320, '', textStyle(28, TEXT.normal, { ...bannerStyle, strokeThickness: 6 })).setOrigin(0.5).setDepth(HUD_DEPTH + 1).setAlpha(0));
@@ -1683,6 +1904,11 @@ export class PlatScene extends Phaser.Scene {
     } else if (mode === 'rush') {
       left = `❤️ ${this.lives}    ⏱️ ${formatTime(this.run.ms)}`;
       right = `👑 ${this.run.step + 1} de ${this.run.list.length}`;
+    } else if (mode === 'race') {
+      ({ left, right } = this.race.hud());
+    } else if (mode === 'custom') {
+      left = this.run.test ? '🛠️ Probando tu nivel   ·   Y = regresar a editar' : `❤️ ${this.lives}    🪙 ${this.coins}`;
+      right = '';
     } else {
       const saved = this.info.id ? progress.level(this.info.id).big : [false, false, false];
       left = `❤️ ${this.lives}    🪙 ${this.coins}`;
@@ -1694,6 +1920,13 @@ export class PlatScene extends Phaser.Scene {
     }
     if (this.bigText.text !== right) this.bigText.setText(right);
     if (mode === 'battle') this.bigText.setColor(hexToCss(0xffd84d));
+    const boss = this.bossFight && this.boss && !this.boss.dead ? this.boss : null;
+    for (const o of this.bossBar) o.setVisible(Boolean(boss));
+    if (boss) {
+      const name = `👑 ${boss.type.name.replace(/^(el|la) /, (m) => m[0].toUpperCase() + m.slice(1))}`;
+      if (this.bossName.text !== name) this.bossName.setText(name);
+      this.bossFill.setScale(Math.max(0, boss.hp) / boss.maxHp, 1);
+    }
   }
 
   showBanner(title, subtitle = '', holdMs = 1300) {
@@ -1723,6 +1956,7 @@ export class PlatScene extends Phaser.Scene {
     if (this.exiting) return;
     this.exiting = true;
     switches.red = true;
+    this.editor?.save();
     go(this, 'Menu', { selected: this.returnData.selected });
   }
 }

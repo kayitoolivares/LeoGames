@@ -49,6 +49,10 @@ export const AMBIENCE = {
   lucha: ['confetti', 'sparkles'],
   dojo: ['leaves'],
   juguetes: ['confetti'],
+  // Los escenarios nuevos de Bolitas Bros.
+  granja: ['birds', 'butterflies'],
+  tren: ['clouds', 'birds'],
+  feria: ['confetti', 'birds'],
 };
 
 // Los dibujos de Gemini (los carga scenes/WipeScene.js); si no están, se dibujan con figuras.

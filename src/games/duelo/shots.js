@@ -72,6 +72,21 @@ const SHAPES = {
     draw: (scene) => [scene.add.circle(0, 0, 22, 0x2b2b3a).setStrokeStyle(4, COLORS.ink), scene.add.rectangle(0, -24, 8, 10, 0x8a6a4a), scene.add.circle(0, -32, 6, 0xffd84d)],
     spin: 8,
   },
+  // Los objetos nuevos: el pastel que se avienta y la burbuja que atrapa.
+  pie: {
+    w: 26,
+    h: 16,
+    draw: (scene) => [
+      scene.add.ellipse(0, 8, 60, 24, 0xc98b4f).setStrokeStyle(4, COLORS.ink),
+      scene.add.ellipse(0, -2, 54, 26, 0xfff6e5).setStrokeStyle(3, COLORS.ink),
+      scene.add.circle(0, -14, 7, 0xe0203a).setStrokeStyle(2, COLORS.ink),
+    ],
+  },
+  trap: {
+    w: 34,
+    h: 34,
+    draw: (scene) => [scene.add.circle(0, 0, 40, 0x9fd8ff, 0.35).setStrokeStyle(5, 0xffffff, 0.95), scene.add.circle(-13, -13, 9, 0xffffff, 0.8), scene.add.circle(14, 12, 4, 0xffffff, 0.6)],
+  },
   // Bloquecito: las tres pelotas de malabares del 3 y el arcoíris del 7.
   juggle: {
     w: 26,
@@ -147,7 +162,7 @@ export class Shot {
   // Lo que hace al pegar (igual que un golpe especial).
   get hit() {
     const d = this.data;
-    const hit = { damage: d.damage, push: d.push, stunMs: d.freeze || d.scare ? 900 : 360, special: true, power: this.owner.power, freeze: d.freeze };
+    const hit = { damage: d.damage, push: d.push, stunMs: d.freeze || d.scare ? 900 : 360, special: true, power: this.owner.power, freeze: d.freeze, pie: d.pie, trap: d.trap };
     // La burbuja levanta al que le pega; la bomba explota y avienta.
     if (d.float) Object.assign(hit, { launch: true, lift: 1.4 });
     if (d.launch) hit.launch = true;

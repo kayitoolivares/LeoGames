@@ -3,6 +3,7 @@ import brawlArt from '../brawl/art.json';
 import futbolArt from '../futbol/art.json';
 import smashArt from '../smash/art.json';
 import dueloArt from './art.json';
+import { drawDesert, drawReef, drawSpaceship } from './places.js';
 
 // Escenarios del duelo: los propios (dojo, lucha libre, azotea y el castillo del Rey Bolón, que es donde se pelea con
 // el jefe del torneo) y los fondos de los otros juegos que tienen piso.
@@ -47,6 +48,46 @@ Object.assign(ARENAS, {
   dulces: { name: 'Dulcelandia', texture: 'futbol:fondo-dulces', url: 'futbol/fondos/dulces.jpg', has: futbolArt.fondos.includes('dulces'), needsArt: true, sky: 0xffd6f5, ground: 0x9be36a, ambient: 'confetti', gravity: 0.8 },
   selva: { name: 'Selva con lluvia', texture: 'futbol:fondo-selva', url: 'futbol/fondos/selva.jpg', has: futbolArt.fondos.includes('selva'), needsArt: true, sky: 0x9be3c4, ground: 0x3f8a3a, ambient: 'leaves', friction: 0.5 },
 });
+// Las arenas con sorpresa (ver places.js): `event` es lo que pasa a ratos y `draw` su dibujo mientras no haya imagen
+// (así se pueden escoger desde antes de que llegue su dibujo de Gemini; al azar salen ya con su dibujo).
+Object.assign(ARENAS, {
+  piramide: {
+    name: 'Pirámide del desierto',
+    texture: 'duelo:fondo-piramide',
+    url: 'duelo/fondos/piramide.jpg',
+    has: dueloArt.fondos.includes('piramide'),
+    sky: 0xffd08a,
+    ground: 0xe8c27a,
+    ambient: 'sand',
+    event: 'quicksand',
+    draw: drawDesert,
+  },
+  nave: {
+    name: 'Nave espacial',
+    texture: 'duelo:fondo-nave',
+    url: 'duelo/fondos/nave.jpg',
+    has: dueloArt.fondos.includes('nave'),
+    sky: 0x1b2440,
+    ground: 0x6a7890,
+    ambient: 'sparkles',
+    lights: true,
+    event: 'zerog',
+    draw: drawSpaceship,
+  },
+  arrecife: {
+    name: 'Arrecife',
+    texture: 'duelo:fondo-arrecife',
+    url: 'duelo/fondos/arrecife.jpg',
+    has: dueloArt.fondos.includes('arrecife'),
+    sky: 0x1f7fb5,
+    ground: 0xf2d9a0,
+    ambient: 'bubbles',
+    // Bajo el agua todo flota un poquito.
+    gravity: 0.8,
+    event: 'current',
+    draw: drawReef,
+  },
+});
 export const ARENA_KEYS = Object.keys(ARENAS);
 
 // El fondo de un escenario, solo cuando se va a ver (ver shared/lazyArt.js); `onReady` cuando llega. Devuelve si ya
@@ -67,6 +108,7 @@ export function drawArena(scene, key, floorY, layer) {
     layer.add(image);
   } else {
     layer.add(scene.add.rectangle(width / 2, height / 2, width, height, arena.sky));
+    arena.draw?.(scene, layer, floorY);
     layer.add(scene.add.rectangle(width / 2, (floorY - 40 + height) / 2, width, height - floorY + 40, arena.ground));
   }
 }

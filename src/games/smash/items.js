@@ -7,7 +7,11 @@ import { itemTexture } from './art.js';
 // hacen efecto al instante; el huevo sorpresa se abre y sale un ayudante que pelea de tu lado un rato; la cápsula se
 // abre y sale otro objeto (o explota); el tornado sale volando hacia donde miras y levanta a los rivales.
 // El resorte no se agarra: se queda en el piso y el que lo pisa sale disparado para arriba.
-export const ITEM_TYPES = ['hammer', 'bomb', 'heart', 'star', 'bat', 'raygun', 'skate', 'egg', 'boomerang', 'fireflower', 'spring', 'capsule', 'tornado'];
+// Los nuevos: el globo de agua (X lo avienta: al que moja se resbala un rato), el pastel (X lo avienta: al que le
+// cae en la cara no puede pegar un ratito), el imán (X jala a los rivales hacia ti, 3 veces) y el paraguas (al caer,
+// planeas despacito un rato).
+const CLASSIC_ITEMS = ['hammer', 'bomb', 'heart', 'star', 'bat', 'raygun', 'skate', 'egg', 'boomerang', 'fireflower', 'spring', 'capsule', 'tornado'];
+export const ITEM_TYPES = [...CLASSIC_ITEMS, 'waterballoon', 'pie', 'magnet', 'umbrella'];
 // Lo que puede salir de la cápsula sorpresa.
 export const CAPSULE_ITEMS = ITEM_TYPES.filter((type) => type !== 'capsule' && type !== 'spring');
 // El resorte: qué tan fuerte avienta para arriba y cada cuánto puede volver a aventar.
@@ -99,6 +103,42 @@ export function drawItem(scene, type) {
     ]);
   } else if (type === 'tornado') {
     for (let i = 0; i < 5; i += 1) box.add(scene.add.ellipse(i * 2 - 4, -18 + i * 9, 44 - i * 7, 10, 0x9aa8b8).setStrokeStyle(2, 0x5a6878));
+  } else if (type === 'waterballoon') {
+    box.add([
+      scene.add.triangle(0, 18, -6, 8, 6, 8, 0, 0, 0x2f7fd6).setStrokeStyle(2, COLORS.ink),
+      scene.add.ellipse(0, -4, 36, 40, 0x3fa7ff).setStrokeStyle(3, COLORS.ink),
+      scene.add.ellipse(-7, -12, 9, 13, 0xffffff, 0.6),
+    ]);
+  } else if (type === 'pie') {
+    box.add([
+      scene.add.ellipse(0, 8, 50, 22, 0xc98b4f).setStrokeStyle(3, COLORS.ink),
+      scene.add.ellipse(0, 0, 44, 22, 0xfff6e5).setStrokeStyle(3, COLORS.ink),
+      ...[-14, 0, 14].map((x) => scene.add.circle(x, -6, 7, 0xffffff).setStrokeStyle(2, 0xe8d8c8)),
+      scene.add.circle(0, -14, 6, 0xe0203a).setStrokeStyle(2, COLORS.ink),
+    ]);
+  } else if (type === 'magnet') {
+    // Una U roja con las puntas plateadas.
+    box.add([
+      scene.add.arc(0, -2, 18, 0, 180, false).setStrokeStyle(12, 0xe53935).setClosePath(false),
+      scene.add.rectangle(-18, -10, 12, 18, 0xe53935).setStrokeStyle(2, COLORS.ink),
+      scene.add.rectangle(18, -10, 12, 18, 0xe53935).setStrokeStyle(2, COLORS.ink),
+      scene.add.rectangle(-18, -22, 12, 8, 0xd8dce8).setStrokeStyle(2, COLORS.ink),
+      scene.add.rectangle(18, -22, 12, 8, 0xd8dce8).setStrokeStyle(2, COLORS.ink),
+    ]);
+  } else if (type === 'umbrella') {
+    box.add([
+      scene.add.rectangle(0, 8, 4, 30, 0x6b4223),
+      scene.add.arc(5, 22, 6, 0, 180, false).setStrokeStyle(4, 0x6b4223).setClosePath(false),
+      scene.add.arc(0, -4, 26, 180, 360, false, 0xff5fd2).setStrokeStyle(3, COLORS.ink),
+      scene.add.arc(0, -4, 9, 180, 360, false, 0xffd02a),
+      scene.add.circle(0, -30, 3, COLORS.ink),
+    ]);
+  } else if (type === 'bubble') {
+    box.add([
+      scene.add.circle(0, 0, 22, 0x9fd8ff, 0.4).setStrokeStyle(4, 0xffffff),
+      scene.add.circle(-8, -8, 6, 0xffffff, 0.8),
+      scene.add.circle(9, 9, 3, 0xffffff, 0.6),
+    ]);
   } else if (type === 'sandbag') {
     box.add([
       scene.add.rectangle(0, 4, 36, 44, 0xa8743f).setRounded(16).setStrokeStyle(3, COLORS.ink),

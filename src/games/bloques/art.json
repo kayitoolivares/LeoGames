@@ -1,0 +1,11 @@
+{
+  "objetos": [
+    "luna",
+    "pico",
+    "slime",
+    "sol"
+  ],
+  "paisaje": [
+    "colinas"
+  ]
+}

@@ -197,6 +197,8 @@ export class Racer {
     this.rampGlider = false;
     this.underwater = false;
     this.shortcut = false;
+    // Cayéndose de un puente colgante (ver ledges.js): cuánto lleva cayendo.
+    this.fallMs = 0;
     this.starMs = 0;
     this.bulletMs = 0;
     this.ghostMs = 0;
@@ -214,9 +216,10 @@ export class Racer {
     this.events = [];
   }
 
-  // Carrera por equipos: un aro del color del equipo en el piso, debajo del kart.
+  // Carrera (o batalla) por equipos: un aro del color del equipo en el piso, debajo del kart.
   setTeam(team, color) {
     this.team = team;
+    this.teamColor = color;
     const ring = new THREE.Mesh(new THREE.RingGeometry(2, 2.45, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color }));
     ring.position.y = 0.08;
     this.object.add(ring);

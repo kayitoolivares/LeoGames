@@ -1,0 +1,26 @@
+{
+  "fondos": [
+    "dulces",
+    "embrujada",
+    "espacio",
+    "jardin"
+  ],
+  "objetos": [
+    "cereza",
+    "fresa-dorada",
+    "fresa",
+    "manzana",
+    "naranja",
+    "pina",
+    "platano",
+    "sandia",
+    "uvas"
+  ],
+  "fantasmas": [
+    "asustado",
+    "chispa",
+    "mandarina",
+    "nube",
+    "rosita"
+  ]
+}

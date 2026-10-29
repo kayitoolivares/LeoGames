@@ -16,10 +16,12 @@ import { comicHit, loadFxArt, shockwave } from '../duelo/fx.js';
 import { ARENA, SECTION_W, setSection } from './arena.js';
 import { backgroundTexture, loadBrawlArt, loadWorldBackground } from './art.js';
 import { Ambience } from '../../ui/ambient.js';
+import { BASE_STICKER_AT, BASE_WAVE_BONUS, BaseDefense, baseRecord } from './base.js';
 import { CpuBuddy, buddyCount } from './buddies.js';
 import { Coins, coinBank, coinsFor } from './coins.js';
 import { COMBO_STICKER_AT, TeamCombo } from './combo.js';
-import { Fighter, MAX_HP, METER_MAX, SUPER_MS, newStats } from './Fighter.js';
+import { Fighter, METER_MAX, newStats } from './Fighter.js';
+import { LEVEL_PRIZES, MAX_LEVEL, XP, brawlLevels, levelFor } from './levels.js';
 import { MONSTER_TYPES, Monster } from './Monster.js';
 import { Mounts } from './mounts.js';
 import { Pets } from './pets.js';
@@ -30,7 +32,7 @@ import { STAR_TIME_MS, beatenWorlds, endlessRecord, showBossIntro, showMap, show
 import { Shop, dressFighter, wardrobe } from './shop.js';
 import { BrawlTalk } from './talk.js';
 import { Traps } from './traps.js';
-import { ENDLESS_BOSS_EVERY, MINI_WAVE, NEST_HP, NEST_ROUNDS, WORLDS, bossRushWaves, buildSpawnQueue, endlessWave, nestWave } from './worlds.js';
+import { ENDLESS_BOSS_EVERY, MINI_WAVE, NEST_HP, NEST_ROUNDS, WORLDS, baseWave, bossRushWaves, buildSpawnQueue, endlessWave, nestWave } from './worlds.js';
 import { burst, confetti, fireworks, popText, randomPow } from './effects.js';
 import { go } from '../../shared/transition.js';
 import { bounceIn } from '../../ui/bounce.js';
@@ -58,8 +60,11 @@ const FIREBALL_LOOKS = {
   frosting: [0xffffff, 0xff7ad9, 0xffc4e6],
   laser: [0xffffff, 0xff4d6d, 0xff9aa8],
   rock: [0xc9935a, 0x5c3a1a, 0x8b5a2b],
+  banana: [0xffe14d, 0xb08a00, 0xfff4a0],
 };
-const FIREBALL_WORDS = { fire: '¡Quema!', ink: '¡Tinta!', snow: '¡Brrr!', magic: '¡Zas!', frosting: '¡Betún!', laser: '¡Láser!', rock: '¡Pum!' };
+const FIREBALL_WORDS = { fire: '¡Quema!', ink: '¡Tinta!', snow: '¡Brrr!', magic: '¡Zas!', frosting: '¡Betún!', laser: '¡Láser!', rock: '¡Pum!', banana: '¡Plátano!' };
+// La onda del Gran Gorila: qué tan rápido crece, qué tan gruesa es (se salta) y de qué color.
+const QUAKE = { ms: 900, band: 34, color: 0xc9935a };
 // Lo que lanzan los especiales (estrella, bala de cañón).
 const SHOT = { radius: 22, lane: 40 };
 // Golpe en equipo: si dos (o más) se vuelven súper con menos de esto de diferencia.
@@ -81,10 +86,11 @@ const AIR_COMBO_DAMAGE = 3;
 const RUSH_HEAL = 2;
 
 // "Pelea en equipo": todos los jugadores (y sus amigos de la compu) contra monstruos, estilo arcade. Se escoge en el
-// mapa: 8 mundos, los jefes en serie y el modo sin fin. Cada mundo son 4 tramos: al limpiar uno se camina a la derecha
-// al siguiente, y en el último llega el jefe. En el camino: un animal para montar, trampas, un mini jefe y una jaula
-// con un amigo para rescatar. Las monedas se gastan en la tienda (sombreros y colores). Al final, resultados con
-// medallas, estrellas y récords.
+// mapa: 11 mundos y los modos (Defiende el nido, Defiende la base, los jefes en serie y el sin fin). Cada mundo son 4
+// tramos: al limpiar uno se camina a la derecha al siguiente, y en el último llega el jefe. En el camino: un animal
+// para montar, trampas, un mini jefe y una jaula con un amigo para rescatar. Las monedas se gastan en la tienda
+// (sombreros y colores). Cada personaje junta experiencia y sube de nivel (levels.js). Al final, resultados con
+// medallas, estrellas, niveles y récords.
 export class BrawlScene extends Phaser.Scene {
   constructor() {
     super('Brawl');
@@ -111,10 +117,16 @@ export class BrawlScene extends Phaser.Scene {
       return fighter;
     });
     this.fighters = [...this.humans];
+    // La experiencia de cada personaje de los jugadores (si dos escogen el mismo, la juntan entre los dos).
+    this.levelPool = new Map(this.humans.map((f) => [f.character, brawlLevels.xp(f.character)]));
+    for (const f of this.humans) f.setLevel(levelFor(this.levelPool.get(f.character)).level);
     this.monsters = [];
     this.hearts = [];
     this.fireballs = [];
     this.shots = [];
+    this.quakes = [];
+    this.laneWarnings = [];
+    this.baseDefense = null;
     this.props = new Props(this);
     this.coins = new Coins(this);
     this.mounts = new Mounts(this);
@@ -218,7 +230,18 @@ export class BrawlScene extends Phaser.Scene {
       const back = fixed(this.add.rectangle(barX, 62, barW, 10, 0xffffff, 0.2).setOrigin(0, 0.5));
       const meter = fixed(this.add.rectangle(barX, 62, barW, 10, 0xffd84d).setOrigin(0, 0.5).setScale(0, 1));
       const meterText = fixed(this.add.text(many ? x : x + 232, many ? 78 : 62, '', textStyle(many ? 12 : 15, '#ffd84d', { fontStyle: 'bold', ...OUTLINE })).setOrigin(0, 0.5));
-      return { fighter, hearts, meter, meterText, shown: null, parts: [label, hearts, back, meter, meterText] };
+      const parts = [label, hearts, back, meter, meterText];
+      // Los jugadores: el nivel de su personaje y su barrita de experiencia (azul) debajo de la de poder.
+      let level = null;
+      let xpBar = null;
+      if (!fighter.isCpu) {
+        level = fixed(this.add.text(many ? x + label.width + 6 : x, many ? 10 : 64, '', textStyle(many ? 13 : 15, '#7fdcff', { fontStyle: 'bold', ...OUTLINE })));
+        if (!many) level.setOrigin(0, 0.5);
+        const xpBack = fixed(this.add.rectangle(barX, many ? 70 : 74, barW, 5, 0xffffff, 0.15).setOrigin(0, 0.5));
+        xpBar = fixed(this.add.rectangle(barX, many ? 70 : 74, barW, 5, 0x7fdcff).setOrigin(0, 0.5).setScale(0, 1));
+        parts.push(level, xpBack, xpBar);
+      }
+      return { fighter, hearts, meter, meterText, level, xpBar, shown: null, shownLevel: null, parts };
     });
   }
 
@@ -247,7 +270,7 @@ export class BrawlScene extends Phaser.Scene {
     this.phase = 'map';
     this.drawBackground(WORLDS[0], 0);
     this.screen?.destroy();
-    this.map = showMap(this, this.mapIndex, buddyCount.get());
+    this.map = showMap(this, this.mapIndex, buddyCount.get(), this.levelList());
     this.screen = this.map.root;
   }
 
@@ -258,6 +281,9 @@ export class BrawlScene extends Phaser.Scene {
     const step = (controls.justPressed(id, 'right') ? 1 : 0) - (controls.justPressed(id, 'left') ? 1 : 0);
     if (step !== 0) {
       this.map.select(this.map.selected + step);
+      sfx.select();
+    } else if (controls.justPressed(id, 'up') || controls.justPressed(id, 'down')) {
+      this.map.selectOtherRow();
       sfx.select();
     }
     if (controls.justPressed(id, 'a')) {
@@ -272,6 +298,7 @@ export class BrawlScene extends Phaser.Scene {
       if (spot.endless) this.startEndless();
       else if (spot.bossRush) this.startBossRush();
       else if (spot.nest) this.startNest();
+      else if (spot.base) this.startBase();
       else this.startWorld(spot.world);
     } else if (controls.justPressed(id, 'x')) {
       sfx.confirm();
@@ -320,6 +347,8 @@ export class BrawlScene extends Phaser.Scene {
     for (const f of this.fighters) {
       f.reset();
       f.stats = newStats();
+      f.runXp = 0;
+      f.levelsGained = 0;
     }
     this.buildFighterHud();
     this.combo.reset();
@@ -330,6 +359,15 @@ export class BrawlScene extends Phaser.Scene {
     this.endlessOver = false;
     this.rushOver = false;
     this.nestOver = false;
+    this.baseOver = false;
+  }
+
+  // Ningún modo especial: cada start* prende el suyo.
+  clearModes() {
+    this.endless = false;
+    this.bossRush = false;
+    this.nestMode = false;
+    this.baseMode = false;
   }
 
   // Un peleador de la compu (amigo o rescatado), con el primer color que no use nadie.
@@ -353,9 +391,7 @@ export class BrawlScene extends Phaser.Scene {
   // ---------- Mundos y rondas ----------
 
   startWorld(index) {
-    this.endless = false;
-    this.bossRush = false;
-    this.nestMode = false;
+    this.clearModes();
     this.worldIndex = index;
     this.world = WORLDS[index];
     this.drawBackground(this.world, this.world.waves.length);
@@ -366,9 +402,8 @@ export class BrawlScene extends Phaser.Scene {
 
   // Modo sin fin: siempre en el mismo tramo, una ronda tras otra (con los monstruos de los mundos ya abiertos).
   startEndless() {
+    this.clearModes();
     this.endless = true;
-    this.bossRush = false;
-    this.nestMode = false;
     this.endlessNumber = 0;
     const open = WORLDS.filter((world) => rewards.unlocked(world.unlock));
     this.endlessWorlds = open;
@@ -390,9 +425,8 @@ export class BrawlScene extends Phaser.Scene {
 
   // Jefes en serie: los jefes de los mundos ya ganados, uno tras otro, contra el reloj.
   startBossRush() {
-    this.endless = false;
+    this.clearModes();
     this.bossRush = true;
-    this.nestMode = false;
     this.rushWaves = bossRushWaves(beatenWorlds(), MONSTER_TYPES);
     this.rushIndex = 0;
     this.world = this.rushWaves[0].world;
@@ -418,8 +452,7 @@ export class BrawlScene extends Phaser.Scene {
   // Son NEST_ROUNDS rondas (con los monstruos de los mundos ya abiertos; la última con jefe); si le pegan NEST_HP
   // veces, se llevan los huevos.
   startNest() {
-    this.endless = false;
-    this.bossRush = false;
+    this.clearModes();
     this.nestMode = true;
     this.nestNumber = 0;
     const open = WORLDS.filter((world) => rewards.unlocked(world.unlock));
@@ -465,10 +498,104 @@ export class BrawlScene extends Phaser.Scene {
     this.nestSprite?.destroy();
     this.nestSprite = null;
     this.nest = null;
+    this.baseDefense?.destroy();
+    this.baseDefense = null;
+  }
+
+  // Defiende la base (ver base.js): en medio, la casita que buscan los monstruos; antes de cada oleada, el menú de
+  // defensas (barricadas, torrecitas, resortes, reparar). Oleadas sin fin (cada 5, un jefe).
+  startBase() {
+    this.clearModes();
+    this.baseMode = true;
+    this.baseNumber = 0;
+    const open = WORLDS.filter((world) => rewards.unlocked(world.unlock));
+    this.baseWorlds = open;
+    this.world = Phaser.Utils.Array.GetRandom(open);
+    this.worldIndex = WORLDS.indexOf(this.world);
+    this.drawBackground(this.world, 0);
+    this.beginRun();
+    this.baseDefense = new BaseDefense(this);
+    this.baseWarned = false;
+    // (Los monstruos la buscan como al nido.)
+    this.nest = this.baseDefense.base;
+    this.fighters.forEach((fighter, i) => {
+      fighter.x = this.nest.x - 150 + (i % 4) * 100;
+      fighter.y = this.nest.y + 70 + Math.floor(i / 4) * 40;
+      fighter.z = 0;
+      fighter.vz = 0;
+    });
+    this.waveLabel = 'La base';
+    this.openBuild(true);
+  }
+
+  // Entre oleadas: el menú de defensas (los jugadores se quedan quietos mientras).
+  openBuild(first) {
+    this.phase = 'build';
+    this.goArrow.setVisible(false);
+    this.baseDefense.openMenu(this.baseNumber + 1, first);
+    say(first ? '¡Pongan sus defensas!' : '¡A prepararse! Compren defensas');
+  }
+
+  updateBuild(dt) {
+    for (const fighter of this.fighters) fighter.render();
+    this.updateHud();
+    if (!this.baseDefense.updateMenu(dt)) return;
+    this.baseDefense.closeMenu();
+    this.nextBaseWave();
+  }
+
+  nextBaseWave() {
+    this.baseNumber += 1;
+    const wave = baseWave(this.baseNumber, this.baseWorlds, MONSTER_TYPES);
+    this.beginWave(wave, 0, `La base · Oleada ${this.baseNumber}`);
+    if (this.baseNumber % 2 === 1) this.props.place(ARENA.left + 100, ARENA.right - 100, ARENA.top, ARENA.bottom);
+  }
+
+  // Al terminar una oleada, las monedas que quedaron en el piso se juntan solas (para gastarlas en defensas).
+  collectFloorCoins() {
+    const alive = this.fighters.filter((f) => !f.down);
+    for (const coin of this.coins.list) {
+      const taker = alive.length ? alive.reduce((a, b) => (Math.hypot(a.x - coin.x, a.y - coin.y) <= Math.hypot(b.x - coin.x, b.y - coin.y) ? a : b)) : this.fighters[0];
+      this.coinPicked(taker);
+    }
+    if (this.coins.list.length) sfx.coin();
+    this.coins.clear();
+  }
+
+  // Le pegaron a la base: le baja la barra (los jefes, más).
+  baseHit(monster) {
+    const amount = monster.type.boss ? 3 : 1;
+    const down = this.baseDefense.hitBase(amount);
+    const base = this.nest;
+    popText(this, base.x, base.y - 210, '¡La base!', '#ff5a7a');
+    this.cameras.main.shake(120, 0.004);
+    sfx.hit(0.5);
+    monster.taunt();
+    if (!this.baseWarned && base.hp <= base.maxHp / 3) {
+      this.baseWarned = true;
+      this.talk.baseDanger();
+    }
+    if (down) this.lose('¡Tumbaron la base!');
+  }
+
+  // Una bolita de una torrecita le pegó a un monstruo.
+  towerHit(monster, fromX) {
+    if (monster.dead) return;
+    monster.hurt(fromX, 1, 0.6);
+    burst(this, monster.x, monster.y - monster.radius * 0.5, 0xffd84d, 6);
+    sfx.hit(0.25);
+  }
+
+  barricadeBroken() {
+    this.talk.barricade();
   }
 
   // Le pegaron al nido: se va un pedacito de su barra (y un huevo cada tercio).
   nestHit(monster) {
+    if (this.nest.isBase) {
+      this.baseHit(monster);
+      return;
+    }
     const nest = this.nest;
     nest.hp -= 1;
     this.nestBar.setScale(Math.max(0, nest.hp / nest.maxHp), 1);
@@ -550,9 +677,13 @@ export class BrawlScene extends Phaser.Scene {
     for (const monster of this.monsters) monster.destroy();
     for (const ball of this.fireballs) ball.sprite.destroy();
     for (const shot of this.shots) shot.sprite.destroy();
+    for (const quake of this.quakes) quake.ring.destroy();
+    for (const lane of this.laneWarnings) lane.sprite.destroy();
     this.monsters = [];
     this.fireballs = [];
     this.shots = [];
+    this.quakes = [];
+    this.laneWarnings = [];
     this.hideBossBar();
     this.replay.clear();
   }
@@ -590,6 +721,10 @@ export class BrawlScene extends Phaser.Scene {
       this.updateReplay(dt);
       return;
     }
+    if (this.phase === 'build') {
+      this.updateBuild(dt);
+      return;
+    }
     if (['results', 'lost'].includes(this.phase)) this.updateEndScreen(dt);
     if (this.phase === 'bossIntro') {
       for (const fighter of this.fighters) fighter.render();
@@ -612,8 +747,11 @@ export class BrawlScene extends Phaser.Scene {
       }
     }
     this.handleMonsterRequests();
+    if (this.phase === 'fight' || this.phase === 'between') this.baseDefense?.update(dt, this.monsters);
     this.updateFireballs(dt);
     this.updateShots(dt);
+    this.updateQuakes(dt);
+    this.updateLaneWarnings(dt);
     this.separateMonsters();
     this.resolveHits();
     this.updateSpecials();
@@ -700,6 +838,24 @@ export class BrawlScene extends Phaser.Scene {
         sprite.setDepth(request.y + 1);
         this.fireballs.push({ x: request.x, y: request.y, dir: request.dir, look: request.look, sprite, owner: request.owner });
         sfx.special();
+      } else if (request.kind === 'chargeWarn') {
+        // La franja roja del carril por donde va a embestir.
+        const sprite = this.add.rectangle((ARENA.left + ARENA.right) / 2, request.y, ARENA.right - ARENA.left + 100, 56, 0xff4d4d, 0.25).setDepth(-5);
+        sprite.setStrokeStyle(3, 0xff4d4d, 0.8);
+        this.laneWarnings.push({ sprite, ms: request.ms, owner: monster });
+        popText(this, monster.x, monster.y - monster.radius - 50, '¡Va a embestir!', '#ff5a5f');
+        this.talk.charge();
+        sfx.special();
+      } else if (request.kind === 'quakeWarn') {
+        popText(this, monster.x, monster.y - monster.radius - 60, '¡Salten!', '#ffd84d');
+        this.talk.quake();
+      } else if (request.kind === 'quake') {
+        // Cae del brinco: tiembla y sale la onda (se esquiva saltando).
+        const ring = this.add.graphics().setDepth(-4);
+        this.quakes.push({ x: request.x, y: request.y, radius: request.radius, t: 0, ring, hit: new Set() });
+        this.cameras.main.shake(350, 0.012);
+        burst(this, request.x, request.y, QUAKE.color, 16);
+        sfx.boom();
       } else if (request.kind === 'angry') {
         // A la mitad de su vida el jefe se enoja: se pone rojo, va más rápido y usa sus poderes más seguido.
         comicHit(this, monster.x, monster.y - monster.radius - 60, '¡GRRR!', { big: true, red: true });
@@ -728,6 +884,39 @@ export class BrawlScene extends Phaser.Scene {
         return false;
       }
       return true;
+    });
+  }
+
+  // La onda del Gran Gorila crece desde donde cayó: al que esté en el piso cuando le pasa, le quita un corazón (y a
+  // los monstruos no les hace nada).
+  updateQuakes(dt) {
+    this.quakes = this.quakes.filter((quake) => {
+      quake.t += dt;
+      const r = (quake.t / QUAKE.ms) * quake.radius;
+      quake.ring.clear();
+      quake.ring.lineStyle(QUAKE.band * 0.6, QUAKE.color, 1 - quake.t / QUAKE.ms);
+      quake.ring.strokeEllipse(quake.x, quake.y, r * 2, r * 2 * 0.55);
+      for (const f of this.fighters) {
+        if (f.down || quake.hit.has(f) || f.z > 12) continue;
+        const d = Math.hypot(f.x - quake.x, (f.y - quake.y) / 0.55);
+        if (Math.abs(d - r) > QUAKE.band) continue;
+        quake.hit.add(f);
+        if (f.hurt(quake.x)) popText(this, f.x, f.y - 90, '¡Temblor!', '#ff9a3c');
+      }
+      if (quake.t < QUAKE.ms) return true;
+      quake.ring.destroy();
+      return false;
+    });
+  }
+
+  updateLaneWarnings(dt) {
+    this.laneWarnings = this.laneWarnings.filter((lane) => {
+      lane.ms -= dt;
+      lane.sprite.setAlpha(Math.floor(lane.ms / 120) % 2 ? 0.9 : 0.4);
+      // Se quita cuando acaba la embestida.
+      if (lane.ms > 0 || lane.owner.state === 'charge') return true;
+      lane.sprite.destroy();
+      return false;
     });
   }
 
@@ -802,7 +991,7 @@ export class BrawlScene extends Phaser.Scene {
     }
 
     for (const monster of this.monsters) {
-      if (monster.state !== 'lunge' || monster.dead) continue;
+      if (!monster.charging || monster.dead) continue;
       // Defiende el nido: el que se lanza contra el nido le pega (una vez por embestida).
       const nest = this.nest;
       if (nest && !nest.down && monster.target === nest && !monster.hitDuringLunge.has(nest)) {
@@ -1088,6 +1277,50 @@ export class BrawlScene extends Phaser.Scene {
     fighter.stats.coins += 1;
     this.worldCoins += 1;
     coinBank.add(1);
+    // En Defiende la base también se juntan para comprar defensas.
+    if (this.baseMode && this.baseDefense) this.baseDefense.coins += 1;
+  }
+
+  // ---------- Niveles de los personajes (ver levels.js) ----------
+
+  landedHitXp(fighter) {
+    this.gainXp(fighter, XP.hit);
+  }
+
+  // Experiencia para el personaje de un jugador (los amigos de la compu no suben de nivel). Si le alcanza, ¡sube!
+  gainXp(fighter, amount) {
+    if (!fighter || fighter.isCpu || !this.levelPool?.has(fighter.character)) return;
+    const xp = this.levelPool.get(fighter.character) + amount;
+    this.levelPool.set(fighter.character, xp);
+    fighter.runXp = (fighter.runXp ?? 0) + amount;
+    const { level } = levelFor(xp);
+    // (Si dos escogieron el mismo personaje, suben juntos.)
+    for (const f of this.humans) if (f.character === fighter.character && level > f.level) this.levelUp(f, level);
+  }
+
+  levelUp(fighter, level) {
+    const gained = level - fighter.level;
+    fighter.setLevel(level);
+    fighter.levelsGained = (fighter.levelsGained ?? 0) + gained;
+    fighter.celebrate();
+    burst(this, fighter.x, fighter.y - 50, 0x7fdcff, 18);
+    burst(this, fighter.x, fighter.y - 50, 0xffd84d, 10);
+    popText(this, fighter.x, fighter.y - 150, `¡Nivel ${level}!`, '#7fdcff');
+    if (LEVEL_PRIZES[level]) this.time.delayedCall(500, () => fighter.sprite.active && popText(this, fighter.x, fighter.y - 120, LEVEL_PRIZES[level], '#ffd84d'));
+    sfx.star();
+    this.talk.levelUp(CHARACTERS[fighter.character]?.name ?? fighter.label, level, LEVEL_PRIZES[level]);
+    if (level >= MAX_LEVEL) rewards.earn('pelea-nivel10');
+    this.saveLevels();
+  }
+
+  saveLevels() {
+    for (const [character, xp] of this.levelPool ?? []) brawlLevels.save(character, xp);
+    for (const f of this.humans ?? []) f.levelInfo = levelFor(this.levelPool.get(f.character));
+  }
+
+  // El nivel de cada jugador para el mapa: [{ label, color, name, level, into, need }].
+  levelList() {
+    return this.humans.map((f) => ({ label: f.label, color: f.color, name: CHARACTERS[f.character]?.name ?? '', ...levelFor(this.levelPool.get(f.character)) }));
   }
 
   // ---------- Súper y golpe en equipo ----------
@@ -1148,8 +1381,11 @@ export class BrawlScene extends Phaser.Scene {
     if (by) {
       by.stats.kills += 1;
       if (monster.type.boss) by.stats.boss += 1;
+      this.gainXp(by, monster.type.boss ? XP.boss : monster.isBig || !monster.type.small ? XP.big : XP.monster);
     }
     if (monster.type.boss) {
+      // Al jefe lo vencieron entre todos: experiencia para todos.
+      for (const f of this.humans) this.gainXp(f, XP.bossTeam);
       this.bossesBeaten += 1;
       music.play('brawl');
       comicHit(this, monster.x, monster.y - monster.radius, '¡K.O.!', { big: true, red: true });
@@ -1199,7 +1435,7 @@ export class BrawlScene extends Phaser.Scene {
   updateHearts(dt) {
     this.hearts = this.hearts.filter((heart) => {
       heart.ageMs += dt;
-      const taker = this.fighters.find((f) => !f.down && f.hp < MAX_HP && Math.abs(f.x - heart.x) < 45 && Math.abs(f.y - heart.y) < 35);
+      const taker = this.fighters.find((f) => !f.down && f.hp < f.maxHp && Math.abs(f.x - heart.x) < 45 && Math.abs(f.y - heart.y) < 35);
       if (taker) {
         taker.heal();
         popText(this, heart.x, heart.y - 60, '+♥', '#ff5a7a');
@@ -1239,14 +1475,24 @@ export class BrawlScene extends Phaser.Scene {
     for (const slot of this.hud) {
       const f = slot.fighter;
       const full = f.meter >= METER_MAX;
-      slot.meter.setScale(f.superMs > 0 ? f.superMs / SUPER_MS : f.meter / METER_MAX, 1).setFillStyle(f.superMs > 0 ? f.color : full && blink ? 0xffffff : 0xffd84d);
+      slot.meter.setScale(f.superMs > 0 ? f.superMs / f.superTotalMs : f.meter / METER_MAX, 1).setFillStyle(f.superMs > 0 ? f.color : full && blink ? 0xffffff : 0xffd84d);
       const label = f.superMs > 0 ? '¡SÚPER!' : full && !f.isCpu ? 'LB+RB' : '';
       if (slot.meterText.text !== label) slot.meterText.setText(label);
-      if (slot.shown === f.hp) continue;
-      slot.shown = f.hp;
-      slot.hearts.setText('♥'.repeat(f.hp) + '♡'.repeat(MAX_HP - f.hp));
+      if (slot.level) {
+        const info = levelFor(this.levelPool.get(f.character));
+        slot.xpBar.setScale(info.need ? info.into / info.need : 1, 1).setFillStyle(info.need ? 0x7fdcff : 0xffd84d);
+        if (slot.shownLevel !== info.level) {
+          slot.shownLevel = info.level;
+          slot.level.setText(`Nv ${info.level}`);
+        }
+      }
+      const hearts = `${f.hp}/${f.maxHp}`;
+      if (slot.shown === hearts) continue;
+      slot.shown = hearts;
+      slot.hearts.setText('♥'.repeat(f.hp) + '♡'.repeat(f.maxHp - f.hp));
     }
-    const wave = `${this.waveLabel ?? ''}   💰 ${coinBank.get()}`;
+    // (En Defiende la base, las monedas para comprar defensas.)
+    const wave = `${this.waveLabel ?? ''}   💰 ${this.baseMode && this.baseDefense ? this.baseDefense.coins : coinBank.get()}`;
     if (this.waveText.text !== wave) this.waveText.setText(wave);
     if (this.boss) {
       // El jefe enojado tiene la barra roja que parpadea.
@@ -1268,6 +1514,18 @@ export class BrawlScene extends Phaser.Scene {
 
     rewards.earn('pelea-ronda');
     for (const fighter of this.fighters) if (!fighter.down) fighter.celebrate();
+    for (const f of this.humans) if (!f.down) this.gainXp(f, XP.wave);
+    this.saveLevels();
+    if (this.baseMode) {
+      if (this.baseNumber >= BASE_STICKER_AT) rewards.earn('pelea-base');
+      this.collectFloorCoins();
+      this.baseDefense.coins += BASE_WAVE_BONUS;
+      this.phase = 'between';
+      const bossNext = (this.baseNumber + 1) % ENDLESS_BOSS_EVERY === 0;
+      this.showBanner(`¡Oleada ${this.baseNumber} superada!`, bossNext ? '¡Sigue un jefe!' : `+${BASE_WAVE_BONUS} monedas`, 900);
+      this.time.delayedCall(1400, () => this.phase === 'between' && this.openBuild(false));
+      return;
+    }
     if (this.nestMode) {
       if (this.nestNumber >= NEST_ROUNDS) {
         this.winNest();
@@ -1339,6 +1597,8 @@ export class BrawlScene extends Phaser.Scene {
 
   winWorld() {
     rewards.earn(this.world.sticker);
+    for (const f of this.humans) this.gainXp(f, XP.world);
+    this.saveLevels();
     this.phase = 'results';
     this.endMs = 0;
     confetti(this, this.fighters.map((f) => f.color));
@@ -1377,14 +1637,22 @@ export class BrawlScene extends Phaser.Scene {
   // `why`: por qué se perdió (si no, porque todos cayeron).
   lose(why = null) {
     this.endMs = 0;
+    this.saveLevels();
+    this.baseDefense?.closeMenu();
     // Los monstruos se carcajean.
     for (const monster of this.monsters) monster.taunt(6000);
-    if (this.endless || this.bossRush || this.nestMode) {
+    if (this.endless || this.bossRush || this.nestMode || this.baseMode) {
       const extra = this.saveRecords();
       this.phase = 'results';
       this.nextWorld = null;
       let title;
-      if (this.nestMode) {
+      if (this.baseMode) {
+        this.baseOver = true;
+        const waves = this.baseNumber - 1;
+        const record = baseRecord.save(waves);
+        title = `${why ?? '¡Uy! Todos cayeron'} · ${record ? '¡Récord! ' : ''}Aguantaron ${waves} ${waves === 1 ? 'oleada' : 'oleadas'}`;
+        say(why ?? '¡Uy! Todos cayeron');
+      } else if (this.nestMode) {
         this.nestOver = true;
         const rounds = this.nestNumber - 1;
         title = `${why ?? '¡Uy! Todos cayeron'} · Aguantaron ${rounds} de ${NEST_ROUNDS} rondas`;
@@ -1425,6 +1693,9 @@ export class BrawlScene extends Phaser.Scene {
       if (this.nestOver) {
         this.closeScreen();
         this.startNest();
+      } else if (this.baseOver) {
+        this.closeScreen();
+        this.startBase();
       } else if (this.endlessOver) {
         this.closeScreen();
         this.startEndless();
@@ -1453,6 +1724,7 @@ export class BrawlScene extends Phaser.Scene {
   exit() {
     if (this.exiting) return;
     this.exiting = true;
+    this.saveLevels();
     setSection(0);
     this.cameras.main.setZoom(1);
     go(this, 'Menu', { selected: this.returnData.selected });

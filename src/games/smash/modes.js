@@ -86,7 +86,13 @@ export function targetSpots(stage) {
   const platforms = [...stage.platforms].sort((a, b) => a.top - b.top);
   for (const p of platforms) {
     const width = p.right - p.left;
-    spots.push({ x: p.left + width * 0.2, y: p.top - 70 }, { x: p.right - width * 0.2, y: p.top - 70 });
+    // (Las canastillas de la rueda de la fortuna empiezan en el mismo lugar: una diana por lugar.)
+    for (const spot of [
+      { x: p.left + width * 0.2, y: p.top - 70 },
+      { x: p.right - width * 0.2, y: p.top - 70 },
+    ]) {
+      if (!spots.some((s) => s.x === spot.x && s.y === spot.y)) spots.push(spot);
+    }
   }
   const main = stage.platforms.find((p) => p.main);
   // Más en el aire: arriba de todo, a los lados del escenario (afuera de la orilla) y en medio.

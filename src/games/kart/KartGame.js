@@ -14,7 +14,8 @@ import { ItemBoxes, Projectiles, ITEMS, rollItem } from './items.js';
 import { KartHud } from './hud.js';
 import manifest from './art.json';
 import { TrackChooser } from './chooser.js';
-import { Arena, Battle, BATTLE_KINDS, BATTLE_KIND_KEYS, BATTLE_RACERS } from './battle.js';
+import { Arena, Battle, BATTLE_KINDS, BATTLE_KIND_KEYS, BATTLE_RACERS, TEAMS } from './battle.js';
+import { Ledges } from './ledges.js';
 import { Ceremony } from './ceremony.js';
 import { Coins } from './coins.js';
 import { Particles } from './particles.js';
@@ -41,6 +42,8 @@ import { CHARACTER_KEYS } from '../smash/characters.js';
 const TOTAL_RACERS = 6;
 const COUNTDOWN_STEP_MS = 800;
 const GO_MS = 700;
+// Cuándo da la bienvenida el locutor en las pistas que la traen (después del "¡Ya!").
+const INTRO_AFTER_MS = 1300;
 const HELP_MS = 6000;
 const ROLL_MS = 1000;
 const WRONG_WAY_MS = 1200;
@@ -189,11 +192,9 @@ const BOSS_ATTACK_MS = [5500, 8500];
 const BOSS_TAUNTS = ['¡Jo, jo, jo! ¡Nadie me gana!', '¡Ahí les va uno!', '¡Atrápenme si pueden!', '¡Soy el más rápido!'];
 // Carrera de eliminación: cuándo sale el primero y luego cada cuánto; unos segundos antes se avisa al último.
 const ELIMINATION = { firstMs: 25000, everyMs: 18000, warnMs: 5000, laps: 99 };
-// Carreras por equipos: los colores y nombres de los dos equipos.
-const TEAMS = [
-  { name: 'Rojos', color: 0xff5a5f, emoji: '🔴' },
-  { name: 'Azules', color: 0x3fa7ff, emoji: '🔵' },
-];
+// Las batallas en equipos (abajo de las normales en la pantalla de escoger batalla).
+const TEAM_BATTLE_NAMES = { globos: 'Globos en equipos', estrella: 'Estrella en equipos', monedas: 'Monedas en equipos' };
+const TEAM_BATTLE_INFO = '🔴 Rojos contra Azules 🔵 (2 y 2) en el fuerte: lo de tu equipo no te hace nada';
 
 // Cómo se reparte la pantalla: 1 jugador = completa, 2 = arriba/abajo,
 // 3 o 4 = cuatro cuadros (con 3, el cuarto muestra el mapa).
@@ -426,19 +427,20 @@ export class KartGame {
     );
   }
 
-  // Las batallas: Globos, Atrapa la estrella y Monedas.
+  // Las batallas: Globos, Atrapa la estrella y Monedas (arriba) y las mismas en equipos (abajo).
   showBattles() {
-    const cards = BATTLE_KIND_KEYS.map((key) => {
-      const kind = BATTLE_KINDS[key];
-      return { ...kind, emoji: manifest.objetos.includes(kind.image) ? `<img src="kart/objetos/${kind.image}.png" alt="" style="height:56px">` : kind.emoji, open: true };
-    });
+    const icon = (kind) => (manifest.objetos.includes(kind.image) ? `<img src="kart/objetos/${kind.image}.png" alt="" style="height:56px">` : kind.emoji);
+    const cards = [
+      ...BATTLE_KIND_KEYS.map((key) => ({ ...BATTLE_KINDS[key], emoji: icon(BATTLE_KINDS[key]), open: true })),
+      ...BATTLE_KIND_KEYS.map((key) => ({ ...BATTLE_KINDS[key], emoji: icon(BATTLE_KINDS[key]), name: TEAM_BATTLE_NAMES[key], info: TEAM_BATTLE_INFO, open: true })),
+    ];
     this.choose(
       cards,
       0,
       'Escoge batalla',
       (i) => {
         this.closeChooser();
-        this.buildBattle(BATTLE_KIND_KEYS[i]);
+        this.buildBattle(BATTLE_KIND_KEYS[i % BATTLE_KIND_KEYS.length], i >= BATTLE_KIND_KEYS.length);
       },
       () => this.showModes(),
     );
@@ -578,10 +580,14 @@ export class KartGame {
     };
     this.track = new Track({ roadWidth: 18, scale: 1.3, barriers: true, points, ground: look.ground, snowy: look.snowy, theme });
     // El atajo: antes de dibujar la pista, para dejar el hueco en las llantas y no poner árboles en el caminito.
+    // (Los puentes colgantes tampoco llevan llantas.)
     this.shortcut = look.shortcut ? new Shortcut(this.track, look.shortcut) : null;
+    this.ledges = look.ledges ? new Ledges(this.track, look.ledges) : null;
     if (this.shortcut) Object.assign(this.track.theme, { gaps: this.shortcut.gaps, clear: this.shortcut.clear });
+    if (this.ledges) this.track.theme.gaps = [...(this.track.theme.gaps ?? []), ...this.ledges.gaps];
     this.track.addTo(this.scene);
     this.shortcut?.addTo(this.scene);
+    this.ledges?.addTo(this.scene);
     if (!this.addPanorama(key) && look.mountains) this.addMountains(look.mountains);
     if (look.scenery === 'snow') {
       addSnowmen(this.scene, this.track);
@@ -615,6 +621,8 @@ export class KartGame {
       const cup = CUPS[this.gp.cup];
       say(`${cup.name}. Carrera ${this.gp.race + 1} de ${cup.tracks.length}: ${look.name}`);
     }
+    // Las pistas nuevas: el locutor da la bienvenida (ya corriendo, para no encimarse con la cuenta regresiva).
+    this.introLine = look.intro && !this.stageData && !this.lessonKey ? look.intro : null;
   }
 
   // Cielo, neblina a lo lejos (`fog`: [desde, hasta]) y luz (`light` menos de 1 = de noche).
@@ -676,13 +684,16 @@ export class KartGame {
     racer.say(hurt ? text : '¡La burbuja te salvó!');
   }
 
-  // Batalla: la arena en vez de pista, con 4 karts. `kind`: globos, estrella o monedas.
-  buildBattle(kind = 'globos') {
+  // Batalla: la arena en vez de pista, con 4 karts. `kind`: globos, estrella o monedas. `teams`: Rojos contra Azules,
+  // en la arena del fuerte.
+  buildBattle(kind = 'globos', teams = false) {
     this.trackKey = 'arena';
+    this.battleTeams = teams;
     this.setSky(0x8fd3ff, 0x5a7a3a, 1);
-    this.track = new Arena();
+    this.track = new Arena(teams ? 'fuerte' : 'juguetes');
     this.track.addTo(this.scene);
-    if (!this.addPanorama('arena')) this.addMountains(0x8a86b8);
+    // (Si la arena del fuerte todavía no tiene su paisaje, el de la arena de siempre.)
+    if (!this.addPanorama(this.track.panorama) && !this.addPanorama('arena')) this.addMountains(0x8a86b8);
     this.boxes = new ItemBoxes(this.scene, this.track, this.track.boxSpots);
     this.projectiles = new Projectiles(this.scene);
     this.particles = new Particles(this.scene);
@@ -690,9 +701,10 @@ export class KartGame {
     this.createViews();
     this.hud = new KartHud(this.view.stage, this.views);
     this.hud.setMapOutline(this.track.points);
-    this.battle = new Battle(this, kind);
+    this.battle = new Battle(this, kind, { teams });
     this.startBattle();
-    say({ globos: '¡Batalla de globos! Revienta los globos de los demás', estrella: '¡Atrapa la estrella! Gana el que la tenga más tiempo', monedas: '¡Batalla de monedas! Junta todas las que puedas' }[kind]);
+    const intro = { globos: '¡Batalla de globos! Revienta los globos de los demás', estrella: '¡Atrapa la estrella! Gana el que la tenga más tiempo', monedas: '¡Batalla de monedas! Junta todas las que puedas' }[kind];
+    say(teams ? `¡Batalla en equipos! Rojos contra Azules. ${intro}` : intro);
   }
 
   startBattle() {
@@ -843,8 +855,8 @@ export class KartGame {
       this.racers.push(new Racer({ color: cpuColors[i % cpuColors.length].hex, label: 'CPU', setup, drivers }));
     }
     if (this.gp && !saved) this.gp.setups = this.racers.filter((racer) => racer.isCpu).map((racer) => racer.setup);
-    // Por equipos: los jugadores nones son Rojos y los pares Azules; la compu completa los dos equipos.
-    if (this.teams) {
+    // Por equipos (carrera o batalla): los jugadores nones son Rojos y los pares Azules; la compu completa los dos equipos.
+    if (this.teams || this.battleTeams) {
       const count = [0, 0];
       for (const racer of this.racers) {
         const team = racer.isCpu ? (count[0] <= count[1] ? 0 : 1) : Number(racer.label.slice(1) - 1) % 2;
@@ -1150,6 +1162,10 @@ export class KartGame {
   updateRace(dtMs, now) {
     this.raceMs += dtMs;
     if (this.raceMs > GO_MS) this.hud.setCenter('');
+    if (this.introLine && this.raceMs > INTRO_AFTER_MS) {
+      this.talk.line(this.introLine, { important: true });
+      this.introLine = null;
+    }
     if (this.raceMs > HELP_MS) this.hud.showHelp(false);
 
     const ranking = this.ranking();
@@ -1184,6 +1200,8 @@ export class KartGame {
       racer.floor = this.shortcut.heightAt(racer.x, racer.z) + 0.12;
       racer.ramp = 0;
     }
+    // Los puentes colgantes: el que se sale se cae y la red lo regresa.
+    this.ledges?.update(dtMs, this.racers, { onFall: (racer) => this.onFall(racer), onSaved: (racer) => this.onSaved(racer) });
     for (const racer of this.racers) this.tilt(racer);
     this.updateDrafting(dtMs);
     this.updateMagnets(dtMs, ranking);
@@ -1286,6 +1304,24 @@ export class KartGame {
       sfx.poof();
       if (wet) racer.say('¡Al agua! 🌊', 900);
     }
+  }
+
+  // Se cayó de un puente colgante (ver ledges.js).
+  onFall(racer) {
+    this.particles.burst('dust', racer.x, racer.y + 0.6, racer.z, 12, [this.dustColor, 0xffffff], { speed: 6, up: 4, lifeMs: 600 });
+    if (racer.isCpu) return;
+    sfx.powerDown();
+    racer.say('¡Te caíste del puente! 😱', 1200);
+    this.talk.line(`¡${nameOf(racer)} se cayó del puente!`);
+  }
+
+  // La red lo regresó al camino: rebota para arriba con brillitos.
+  onSaved(racer) {
+    this.particles.burst('spark', racer.x, racer.y + 1, racer.z, 16, [0xffffff, 0x3fe0ff, 0xffd02a], { speed: 6, up: 9, lifeMs: 700 });
+    if (racer.isCpu) return;
+    sfx.boing();
+    racer.say('¡La red te regresó! 🕸️', 1500);
+    rewards.earn('kart-red');
   }
 
   // Un charco (lluvia): se resbala tantito.
@@ -1754,6 +1790,8 @@ export class KartGame {
       if (this.shortcut.keepInside(racer)) racer.speed *= 0.95;
       return;
     }
+    // En los puentes colgantes no hay llantas (el que se sale se cae).
+    if (racer.fallMs > 0 || this.ledges?.open(racer.index)) return;
     const lateral = this.track.lateral(racer.x, racer.z, racer.index);
     const limit = this.track.wallDistance;
     if (Math.abs(lateral) <= limit) return;
@@ -2048,6 +2086,7 @@ export class KartGame {
     }
     const winner = rows[0];
     if (winner.human) rewards.earn('kart-copa');
+    if (winner.human && this.gp.cup === 'fiesta') rewards.earn('kart-fiesta');
     // La medalla de la copa: según el mejor lugar de un jugador (1° oro, 2° plata, 3° bronce).
     const place = rows.findIndex((row) => row.human);
     if (place >= 0 && place < 3) {
@@ -2125,7 +2164,7 @@ export class KartGame {
       const lesson = this.lesson ? { pos: this.lesson.panel(racer), lap: `⏱️ ${formatTime(this.raceMs)}` } : null;
       this.hud.setPanel(i, {
         pos: lesson?.pos ?? battle?.pos ?? clock ?? `${ranking.indexOf(racer) + 1}°`,
-        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}${racer.gunner ? `+${racer.gunner.label}` : ''}</span>${this.teams ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
+        who: `<span style="color:${hexToCss(racer.color)}">${racer.label}${racer.gunner ? `+${racer.gunner.label}` : ''}</span>${racer.team !== undefined ? ` ${TEAMS[racer.team].emoji}` : ''}${racer.setup.peque ? ' 🐣' : ''}`,
         lap: lesson?.lap ?? battle?.lap ?? elimination ?? (racer.finished ? '¡Meta!' : `Vuelta ${clamp(racer.lap + 1, 1, this.laps)}/${this.laps}`),
         coins: this.battle ? '' : `🪙 ${racer.coins}`,
         face: this.faceHtml(racer),
@@ -2172,11 +2211,13 @@ export class KartGame {
       const racer = view.watch ?? view.racer;
       const fx = Math.sin(racer.heading);
       const fz = Math.cos(racer.heading);
-      // La altura del camino bajo el kart (las lomas) se sigue toda; los saltos, solo un poco.
-      const road = racer.floor - racer.ramp;
-      const up = racer.y - road;
+      // La altura del camino bajo el kart (las lomas) se sigue toda; los saltos, solo un poco. (Cayéndose de un puente,
+      // la cámara se queda arriba viendo cómo se cae.)
+      const falling = racer.fallMs > 0;
+      const road = falling ? racer.fallRoad : racer.floor - racer.ramp;
+      const up = falling ? 0 : racer.y - road;
       desiredPos.set(racer.x - fx * 9, road + 4.6 + up * 0.7, racer.z - fz * 9);
-      desiredLook.set(racer.x + fx * 7, road + 1.4 + up + Math.tan(racer.pitch) * 7, racer.z + fz * 7);
+      desiredLook.set(racer.x + fx * 7, (falling ? racer.y : road + 1.4 + up) + Math.tan(racer.pitch) * 7, racer.z + fz * 7);
       view.pos.lerp(desiredPos, jump ? 1 : blend);
       view.look.lerp(desiredLook, jump ? 1 : blend);
       view.camera.position.copy(view.pos);

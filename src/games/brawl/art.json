@@ -48,6 +48,20 @@
     "gomita-dolor",
     "gomita-paso",
     "gomita",
+    "gorilita-ataque",
+    "gorilita-burla",
+    "gorilita-dolor",
+    "gorilita-paso",
+    "gorilita",
+    "gran-gorila-ataque",
+    "gran-gorila-burla",
+    "gran-gorila-cargando",
+    "gran-gorila-derrotado",
+    "gran-gorila-dolor",
+    "gran-gorila-furioso",
+    "gran-gorila-mareado",
+    "gran-gorila-paso",
+    "gran-gorila",
     "gran-hongo-ataque",
     "gran-hongo-burla",
     "gran-hongo-cargando",
@@ -71,11 +85,21 @@
     "hongo-dolor",
     "hongo-paso",
     "hongo",
+    "loro-ataque",
+    "loro-burla",
+    "loro-dolor",
+    "loro-paso",
+    "loro",
     "marcianito-ataque",
     "marcianito-burla",
     "marcianito-dolor",
     "marcianito-paso",
     "marcianito",
+    "medusa-ataque",
+    "medusa-burla",
+    "medusa-dolor",
+    "medusa-paso",
+    "medusa",
     "mega-robot-ataque",
     "mega-robot-burla",
     "mega-robot-cargando",
@@ -85,6 +109,11 @@
     "mega-robot-mareado",
     "mega-robot-paso",
     "mega-robot",
+    "mono-ataque",
+    "mono-burla",
+    "mono-dolor",
+    "mono-paso",
+    "mono",
     "muneco-nieve-ataque",
     "muneco-nieve-burla",
     "muneco-nieve-dolor",
@@ -100,6 +129,16 @@
     "ovni-dolor",
     "ovni-paso",
     "ovni",
+    "pececito-ataque",
+    "pececito-burla",
+    "pececito-dolor",
+    "pececito-paso",
+    "pececito",
+    "pez-globo-ataque",
+    "pez-globo-burla",
+    "pez-globo-dolor",
+    "pez-globo-paso",
+    "pez-globo",
     "ptero-ataque",
     "ptero-burla",
     "ptero-dolor",
@@ -146,11 +185,25 @@
     "rey-slime-mareado",
     "rey-slime-paso",
     "rey-slime",
+    "rey-tiburon-ataque",
+    "rey-tiburon-burla",
+    "rey-tiburon-cargando",
+    "rey-tiburon-derrotado",
+    "rey-tiburon-dolor",
+    "rey-tiburon-furioso",
+    "rey-tiburon-mareado",
+    "rey-tiburon-paso",
+    "rey-tiburon",
     "robotito-ataque",
     "robotito-burla",
     "robotito-dolor",
     "robotito-paso",
     "robotito",
+    "serpiente-ataque",
+    "serpiente-burla",
+    "serpiente-dolor",
+    "serpiente-paso",
+    "serpiente",
     "slime-ataque",
     "slime-burla",
     "slime-dolor",
@@ -183,16 +236,21 @@
     "dinos",
     "dulces",
     "espacio",
+    "mar",
     "nieve",
     "playa",
     "pradera",
+    "selva",
     "volcan"
   ],
   "objetos": [
+    "barricada",
     "barril",
+    "base",
     "caja",
     "canon",
     "casco-vikingo",
+    "coco",
     "dinosaurio",
     "escudo",
     "espada",
@@ -208,10 +266,12 @@
     "pizza",
     "pollo-gigante",
     "pollo",
+    "resorte",
     "roca",
     "sombrero-mago",
     "sombrero-pirata",
-    "sombrero-vaquero"
+    "sombrero-vaquero",
+    "torrecita"
   ],
   "metrics": {
     "almeja-ataque": [
@@ -454,6 +514,76 @@
       0.461,
       256
     ],
+    "gorilita-ataque": [
+      38273,
+      0.525,
+      244
+    ],
+    "gorilita-burla": [
+      36189,
+      0.5,
+      256
+    ],
+    "gorilita-dolor": [
+      31707,
+      0.518,
+      219
+    ],
+    "gorilita-paso": [
+      36546,
+      0.418,
+      256
+    ],
+    "gorilita": [
+      38927,
+      0.521,
+      256
+    ],
+    "gran-gorila-ataque": [
+      29988,
+      0.502,
+      216
+    ],
+    "gran-gorila-burla": [
+      45251,
+      0.545,
+      256
+    ],
+    "gran-gorila-cargando": [
+      44272,
+      0.561,
+      247
+    ],
+    "gran-gorila-derrotado": [
+      23770,
+      0.521,
+      131
+    ],
+    "gran-gorila-dolor": [
+      31004,
+      0.482,
+      190
+    ],
+    "gran-gorila-furioso": [
+      38640,
+      0.514,
+      228
+    ],
+    "gran-gorila-mareado": [
+      42145,
+      0.543,
+      256
+    ],
+    "gran-gorila-paso": [
+      44056,
+      0.541,
+      242
+    ],
+    "gran-gorila": [
+      45729,
+      0.541,
+      252
+    ],
     "gran-hongo-ataque": [
       38623,
       0.537,
@@ -569,6 +699,31 @@
       0.502,
       256
     ],
+    "loro-ataque": [
+      33310,
+      0.533,
+      231
+    ],
+    "loro-burla": [
+      38468,
+      0.578,
+      256
+    ],
+    "loro-dolor": [
+      44823,
+      0.536,
+      256
+    ],
+    "loro-paso": [
+      37332,
+      0.581,
+      256
+    ],
+    "loro": [
+      38281,
+      0.581,
+      256
+    ],
     "marcianito-ataque": [
       33266,
       0.383,
@@ -592,6 +747,31 @@
     "marcianito": [
       29690,
       0.421,
+      256
+    ],
+    "medusa-ataque": [
+      30699,
+      0.568,
+      197
+    ],
+    "medusa-burla": [
+      39453,
+      0.482,
+      244
+    ],
+    "medusa-dolor": [
+      33828,
+      0.436,
+      209
+    ],
+    "medusa-paso": [
+      29043,
+      0.475,
+      193
+    ],
+    "medusa": [
+      37454,
+      0.513,
       256
     ],
     "mega-robot-ataque": [
@@ -638,6 +818,31 @@
       32256,
       0.549,
       205
+    ],
+    "mono-ataque": [
+      29242,
+      0.482,
+      199
+    ],
+    "mono-burla": [
+      42141,
+      0.5,
+      256
+    ],
+    "mono-dolor": [
+      44284,
+      0.479,
+      253
+    ],
+    "mono-paso": [
+      42365,
+      0.502,
+      256
+    ],
+    "mono": [
+      42187,
+      0.502,
+      256
     ],
     "muneco-nieve-ataque": [
       31491,
@@ -713,6 +918,56 @@
       31006,
       0.502,
       186
+    ],
+    "pececito-ataque": [
+      35441,
+      0.541,
+      197
+    ],
+    "pececito-burla": [
+      36466,
+      0.506,
+      202
+    ],
+    "pececito-dolor": [
+      33372,
+      0.494,
+      194
+    ],
+    "pececito-paso": [
+      40919,
+      0.529,
+      220
+    ],
+    "pececito": [
+      39244,
+      0.529,
+      216
+    ],
+    "pez-globo-ataque": [
+      37092,
+      0.521,
+      215
+    ],
+    "pez-globo-burla": [
+      37008,
+      0.506,
+      214
+    ],
+    "pez-globo-dolor": [
+      39255,
+      0.521,
+      222
+    ],
+    "pez-globo-paso": [
+      36000,
+      0.494,
+      213
+    ],
+    "pez-globo": [
+      39391,
+      0.514,
+      224
     ],
     "ptero-ataque": [
       19544,
@@ -944,6 +1199,51 @@
       0.553,
       216
     ],
+    "rey-tiburon-ataque": [
+      24651,
+      0.557,
+      149
+    ],
+    "rey-tiburon-burla": [
+      30373,
+      0.549,
+      176
+    ],
+    "rey-tiburon-cargando": [
+      27213,
+      0.557,
+      160
+    ],
+    "rey-tiburon-derrotado": [
+      26204,
+      0.537,
+      147
+    ],
+    "rey-tiburon-dolor": [
+      30469,
+      0.549,
+      177
+    ],
+    "rey-tiburon-furioso": [
+      29232,
+      0.549,
+      170
+    ],
+    "rey-tiburon-mareado": [
+      29424,
+      0.549,
+      171
+    ],
+    "rey-tiburon-paso": [
+      29700,
+      0.549,
+      172
+    ],
+    "rey-tiburon": [
+      30562,
+      0.549,
+      178
+    ],
     "robotito-ataque": [
       29860,
       0.486,
@@ -967,6 +1267,31 @@
     "robotito": [
       36924,
       0.439,
+      256
+    ],
+    "serpiente-ataque": [
+      24775,
+      0.451,
+      150
+    ],
+    "serpiente-burla": [
+      31418,
+      0.424,
+      186
+    ],
+    "serpiente-dolor": [
+      25657,
+      0.424,
+      164
+    ],
+    "serpiente-paso": [
+      21252,
+      0.635,
+      153
+    ],
+    "serpiente": [
+      42780,
+      0.529,
       256
     ],
     "slime-ataque": [

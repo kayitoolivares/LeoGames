@@ -33,7 +33,7 @@ Abre http://localhost:5173 en Edge o Chrome.
 
 ## Juegos
 
-- Antes de **Pelea en equipo**, **Fútbol de bolitas** y **Duelo de bolitas** cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
+- Antes de **Pelea en equipo**, **Fútbol de bolitas**, **Duelo de bolitas** y los juegos nuevos cada quien escoge personaje (los de Bolitas Bros) con ◀ ▶ y A;
   lo que escojas se recuerda en los demás juegos mientras la página siga abierta.
 - **Pelea en equipo**: todos contra los monstruos, estilo arcade. Se escoge en el **mapa de mundos** (con candados y
   hasta 3 estrellas por mundo: ganarlo, que nadie se caiga y hacerlo en menos de 4 minutos). 9 mundos de 4 rondas
@@ -73,6 +73,12 @@ Abre http://localhost:5173 en Edge o Chrome.
   barriles y jarrones**: rotos sueltan comida (cura), martillo (pega doble), bomba (X la lanza), estrella
   (invencible), espada (pega doble y llega más lejos), escudo (aguanta 3 golpes), imán (jala monedas y comida) o
   mascota (un perrito que muerde monstruos). Si alguien cae, un compañero se para junto a él para levantarlo.
+  **Ronda 4**: dos mundos más, **Fondo del mar** (pececitos, medusas, el pez globo que se infla y el **Rey Tiburón**,
+  que avisa con una franja roja y cruza embistiendo) y **Selva** (monitos que avientan plátanos, serpientes, loros, cocos
+  que caen y el **Gran Gorila**, que brinca y al caer saca una onda que hay que saltar). Cada personaje **sube de nivel**
+  (hasta el 10) con lo que pelea: más vida, especial más rápido y golpes más fuertes, con ⭐ desde el 5 y corona en el 10.
+  **Defiende la base**: una casita en medio, oleadas por los dos lados y jefe cada 5; entre oleadas se compran
+  barricadas, torrecitas y resortes con las monedas.
 - **Súper Bolitas** (plataformas estilo Mario Bros): hasta 4 a la vez en la misma pantalla, con los personajes de
   Bolitas Bros. Mapa con caminito y **8 mundos** de 4 niveles (el segundo es un **fuerte con mini jefe** y el
   cuarto un **castillo con jefe**): Pradera y cuevas (Rey Hongo), Nubes y cielo (Rey Nube, con viento), Agua y playa
@@ -118,6 +124,11 @@ Abre http://localhost:5173 en Edge o Chrome.
   descansar: ahí se les brinca encima. Los monstruitos se mueven con vida: los que caminan rebotan y se balancean en cada paso
   (y dan un brinquito al verte), los que vuelan aletean y dan la vuelta en las paredes, los peces coletean y las
   medusas y velas laten; ninguno se mete en el piso, el techo ni las paredes.
+  **Carreritas** (modo 6 en X del mapa): copa de 3 carreras en pistas cortas, sin vidas, con turbo para el último y
+  tabla de puntos. **Isla de los jefes** (mundo 9, se abre al vencer al Rey Hongo): la Abeja Reina (se lanza en picada
+  y se le atora el aguijón), el Pez Globo (se infla con picos) y la Gelatina Gigante (se parte en dos cada vez que la
+  pisan). **Arma tu nivel** (modo 7): editor con el control (cruceta mueve, A pone, B borra, LB/RB cambian de pieza,
+  Y lo prueba al instante), 3 ranuras que se guardan solas.
 - **Bolitas Bros** (estilo Smash, fase 3): cada golpe sube tu **%** y entre más llevas, más lejos sales volando;
   si te sacan de la pantalla pierdes una de tus 3 vidas. Antes de pelear cada quien escoge personaje:
   **Tanque** (fuerte y pesado, B = puñetazo cargado), **Rayo** (rápido, B = embestida),
@@ -185,6 +196,10 @@ Abre http://localhost:5173 en Edge o Chrome.
   - **Narrador y premios**: comenta el primer golpe, los golpazos, quién sale volando, las paradas perfectas, los
     golpes cargados, los objetos y los últimos 10 segundos; al final salen los premios: más golpes, golpe más fuerte,
     más caídas, paradas perfectas y más objetos.
+  - **Ronda 4**: escenarios **Granja** (pasa un tractor), **Tren en marcha** (cuidado con el túnel) y **Feria** (te
+    subes a la rueda de la fortuna); objetos **globo de agua** (resbala), **pastel** (tapa la cara), **imán** y
+    **paraguas** (planeas). **Combo de dúo**: si dos compañeros de equipo usan su especial casi juntos, sale un combo
+    según la pareja (vapor, descarga, terremoto, lluvia de estrellas...).
 - **Karts locos** (3D): cámara detrás del carro, pantalla dividida para cada jugador y CPU hasta completar 6.
   Antes de correr, en el **taller** cada quien escoge piloto (los personajes de Bolitas Bros, con su imagen
   manejando; Bloquecito cambia de número con Y), kart (**Clásico**, **Bólido** rápido, **Mini** que arranca y gira
@@ -308,6 +323,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   **Récords y medallas**: cada pista guarda su récord (según las vueltas) y se ve en su tarjeta; cada copa guarda
   su mejor medalla (oro, plata o bronce, según el lugar en la copa); en las carreras normales también corre el
   fantasma del récord del contrarreloj.
+  **Copa Fiesta**: Granja (vacas y tractor), Feria (mazos y un carrusel que te da vueltas), Jardín gigante (catarinas
+  y aspersores) y Mina de cristales (puentes colgantes sin barandal: si te caes, la red te regresa). **Batallas en
+  equipos**: globos, estrella y monedas, Rojos contra Azules en el fuerte, sin fuego amigo.
 - **Carreras** (3D): vista desde arriba, el carro va hacia donde apunta el stick. **A** = turbo, **B** = frenar,
   **X** = usar el poder. Primero se escoge el modo: **carrera rápida** (en una de **8 pistas**: Pradera, Playa,
   Dulcelandia, Montaña nevada, Selva, Desierto, Castillo y Arcoíris espacial, con el trazo y los colores de las de Karts
@@ -410,6 +428,9 @@ Abre http://localhost:5173 en Edge o Chrome.
   - **Escenarios nuevos** (con los dibujos de las canchas nuevas del fútbol): **Estadio de noche**, **Dulcelandia**
     (se salta más alto) y **Selva con lluvia** (el piso resbala). Luchador y Unicornio también pelean aquí (plancha y
     rayo arcoíris; agachados, azotón y lluvia de estrellitas; en el aire, plancha voladora y cuernazo).
+  - **Ronda 4**: arenas **Pirámide** (arenas movedizas), **Nave espacial** (se abre la compuerta y casi no hay
+    gravedad) y **Arrecife** (una corriente empuja); objetos pastel, burbuja (atrapa al rival) e imán; y el **combo de
+    dúo** en el 2 contra 2.
 - **Bloquecito** (en Bolitas Bros, el Duelo, Pelea en equipo y Fútbol): un personaje hecho de bloques, con dibujos de
   Gemini para cada número y su súper forma (`bloque1` a `bloque10` y `octobloque`, con sus poses y su caminata). Para
   que Gemini no se equivoque contando cubos, cada hoja se pide con una referencia que dibuja el juego (la cantidad
@@ -428,6 +449,19 @@ Abre http://localhost:5173 en Edge o Chrome.
   se mueve, Portales y La gran final. Cerca del hoyo la pelota se jala tantito para adentro; con 4 tiros de más del
   par se acaba tu hoyo. Después de cada hoyo, la tabla con los tiros de cada quien; calcomanías por hoyo en uno y por
   ganar los 9.
+- **Laberinto** (juego nuevo, estilo come-frutas pero en equipo): de 1 a 4 a la vez, cada quien con su personaje. Hay
+  que comerse todas las bolitas entre todos; la **fresa dorada** pone azules a los 4 fantasmitas (Chispa, Rosita, Nube
+  y Mandarina, cada uno busca distinto) y se los pueden comer. Vidas compartidas: al que atrapan regresa en burbuja.
+  4 laberintos (Jardín, Dulcelandia, Espacio y Casa embrujada), modo peque (Y antes de jugar), competencia y récord.
+- **Mundo de bloques** (juego nuevo, estilo Minecraft de lado): un mundo de bloques para todos juntos. **Mantén X**
+  para escarbar, **B** pone el bloque, **LB / RB** escogen de la barrita y **Y** hace cosas (tablas, mesa, antorchas,
+  escalera, puerta, cama, vidrio, ladrillos). Creativo (todo sin fin, A dos veces para volar) o Aventura (corazones);
+  día y noche con slimes que solo empujan (se pueden quitar), animalitos con su sonido y 3 mundos que se guardan solos.
+- **Guerra de pintura** (juego nuevo, 3D en primera persona, estilo Splatoon): pistolas de pintura, nada de armas de
+  verdad. Pantalla dividida de 1 a 4 y la compu llena los equipos. Stick izquierdo camina, derecho mira, **RT** pinta,
+  **LT** apunta, **A** brinca, **B** nada en tu tinta, **X** avienta un globo y **LB / RB** cambian de lanzador
+  (chorrito, largo o rodillo). La mira ayuda a apuntar (más en modo peque). Modos **Pinta el piso**, **Equipos** y
+  **Contra robots**, en el Parque de juegos, el Castillo de juguete y la Playa.
 - **Modo Bebé**: cualquier botón hace algo bonito y no se gana ni se pierde. A B X Y sacan figuras con carita
   (círculo, estrella, cuadrado, flor, corazón y triángulo) con su nombre y su color ("Estrella roja"), y cada botón
   toca la nota que sigue de una **canción** (Estrellita, Martinillo, Witsi witsi araña, El viejo MacDonald, Cumpleaños
@@ -583,6 +617,9 @@ antes de cada publicación, y si alguna falla no se publica.
   del K.O. (`replay.js`), narrador (`talk.js`) y los jefes (`boss.js`).
 - `src/games/kart/` y `src/games/race/`: los dos juegos de carreras (Three.js).
 - `src/games/three/`: piezas 3D compartidas (pista, modelo del kart, lienzo).
+- `src/games/laberinto/`: Laberinto (laberintos en ASCII en `mazes.js`, fantasmitas en `ghosts.js`).
+- `src/games/bloques/`: Mundo de bloques (mundo en `world.js`, recetas en `crafting.js`, guardado en `save.js`).
+- `src/games/pintura/`: Guerra de pintura (Three.js, en primera persona).
 - `src/games/ThreeGameScene.js`: abre un juego 3D encima de Phaser y lo cierra al salir.
 - `src/ui/`: estilos y el personaje (la bolita); `BlockBody.js` pone a Bloquecito (sus dibujos o, si faltan, sus
   bloques; sus números están en `src/games/smash/bloquecito.js`).

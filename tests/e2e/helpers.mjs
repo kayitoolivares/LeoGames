@@ -121,9 +121,9 @@ export async function openPage(game, { touch = false } = {}) {
   };
   // Mueve la selección del menú hasta la tarjeta con ese título y entra.
   const openGameCard = async (title) => {
-    for (let i = 0; i < 12; i += 1) {
+    const titles = await page.evaluate(() => import('/src/games.js').then((m) => m.GAMES.map((g) => g.title)));
+    for (let i = 0; i < titles.length; i += 1) {
       const selected = await page.evaluate(() => window.leogames.scene.getScene('Menu').selected);
-      const titles = await page.evaluate(() => import('/src/games.js').then((m) => m.GAMES.map((g) => g.title)));
       if (titles[selected] === title) break;
       await tap(0, BUTTON.RIGHT);
     }

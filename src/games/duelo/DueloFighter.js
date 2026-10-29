@@ -58,6 +58,13 @@ const HAMMER_POWER = 1.6;
 const SHIELD_HITS = 2;
 // La bola de nieve deja azulito y quieto un rato.
 const CHILL_TINT = 0x9fdcff;
+// Los objetos nuevos: con pastel en la cara no puede pegar (sí caminar, saltar y cubrirse); la burbuja lo sube flotando
+// y luego se revienta y cae. Y en las arenas movedizas (la Pirámide) se hunde: camina y salta poquito.
+export const PIE_MS = 2600;
+const TRAP_MS = 1800;
+const TRAP_RISE = 170;
+const SAND_SLOW = 0.35;
+const SAND_JUMP = 0.6;
 // Los trajes de colores (se le pone ese tinte a su dibujo; null = el de siempre).
 export const COSTUMES = [null, 0xff9a9a, 0x9ad0ff, 0xa8f0a0, 0xffe08a, 0xd0b0ff, 0x8a8aa0];
 export const COSTUME_NAMES = ['normal', 'rojo', 'azul', 'verde', 'dorado', 'morado', 'sombra'];
@@ -148,7 +155,16 @@ export class DueloFighter {
     this.hammer = hammer ? scene.add.image(r * 0.9, r - this.height * 0.75, hammer) : scene.add.text(r * 0.9, r - this.height * 0.75, '🔨', textStyle(44, '#ffffff')).setOrigin(0.5);
     if (hammer) this.hammer.setScale((r * 1.3) / this.hammer.height);
     this.hammer.setVisible(false);
-    figure.add([this.shield, this.bubble, this.hammer, this.fist, this.tag]);
+    // Los objetos nuevos: el pastel en la cara (betún con su cereza) y la burbuja que lo atrapa.
+    this.cream = scene.add
+      .container(0, r - this.height * 0.68, [
+        scene.add.ellipse(0, 0, r * 1.5, r * 1.05, 0xfff6e5).setStrokeStyle(4, 0xe8d8c8),
+        ...[-0.5, 0.05, 0.5].map((x, i) => scene.add.ellipse(x * r, r * (0.45 + (i % 2) * 0.2), r * 0.3, r * 0.5, 0xfff6e5)),
+        scene.add.circle(r * 0.15, -r * 0.42, r * 0.2, 0xe0203a).setStrokeStyle(3, COLORS.ink),
+      ])
+      .setVisible(false);
+    this.trapBubble = scene.add.circle(0, r - this.height / 2, Math.max(r * 1.5, this.height * 0.66), 0x9fd8ff, 0.3).setStrokeStyle(6, 0xffffff, 0.95).setVisible(false);
+    figure.add([this.shield, this.bubble, this.hammer, this.fist, this.cream, this.trapBubble, this.tag]);
 
     this.meter = 0;
     this.superMs = 0;
@@ -215,6 +231,9 @@ export class DueloFighter {
     this.hammerHits = 0;
     this.bubbleHits = 0;
     this.chillMs = 0;
+    this.pieMs = 0;
+    this.trapMs = 0;
+    this.sandMs = 0;
     this.blob.figure.setAngle(0).setAlpha(1);
   }
 
@@ -249,7 +268,7 @@ export class DueloFighter {
   }
 
   get speed() {
-    return this.superMs > 0 ? SUPER.speed : 1;
+    return (this.superMs > 0 ? SUPER.speed : 1) * (this.sandMs > 0 ? SAND_SLOW : 1);
   }
 
   get scale() {
@@ -331,6 +350,11 @@ export class DueloFighter {
     const dt = dtMs / 1000;
     this.tick(dtMs);
     if (input.change && this.blocks && !this.koed && !this.celebrating) this.changeNumber(input.change);
+    // Atrapado en la burbuja: flota hacia arriba sin poder hacer nada hasta que se revienta.
+    if (this.trapMs > 0) {
+      this.updateTrap(dtMs);
+      return;
+    }
     if (this.koed || this.celebrating) {
       this.move(dt);
       return;
@@ -361,6 +385,8 @@ export class DueloFighter {
     this.invulnerableMs = Math.max(0, this.invulnerableMs - dtMs);
     this.flashMs = Math.max(0, this.flashMs - dtMs);
     this.chillMs = Math.max(0, this.chillMs - dtMs);
+    this.pieMs = Math.max(0, this.pieMs - dtMs);
+    this.sandMs = Math.max(0, this.sandMs - dtMs);
     this.cooldownMs = Math.max(0, this.cooldownMs - dtMs * (this.superMs > 0 ? 2 : 1));
     this.sinceAttackMs += dtMs;
     if (this.superMs > 0) {
@@ -370,6 +396,8 @@ export class DueloFighter {
   }
 
   act(input, dt, opponent) {
+    // Con pastel en la cara no ve: no puede pegar (sí caminar, saltar y cubrirse).
+    if (this.pieMs > 0) input = { ...input, punch: false, kick: false, special: false };
     const wasBlocking = this.blocking;
     this.blocking = false;
     this.crouching = false;
@@ -404,7 +432,7 @@ export class DueloFighter {
       return;
     }
     if (input.up) {
-      this.vy = -this.jumpSpeed;
+      this.vy = -this.jumpSpeed * (this.sandMs > 0 ? SAND_JUMP : 1);
       this.vx = Math.abs(input.x) > 0.3 ? Math.sign(input.x) * this.walkSpeed * 1.1 * this.speed : 0;
       sfx.jump();
     } else if (input.down) {
@@ -427,6 +455,38 @@ export class DueloFighter {
       const backwards = Math.sign(input.x) === -this.facing;
       this.vx = Math.abs(input.x) > 0.25 ? input.x * this.walkSpeed * (backwards ? BACK : 1) * this.speed : 0;
     }
+  }
+
+  // La burbuja (objeto): sube flotando y, al acabarse, se revienta y cae (queda tirado un momento).
+  updateTrap(dtMs) {
+    this.trapMs -= dtMs;
+    this.attack = null;
+    this.special = null;
+    this.blocking = false;
+    this.vx = 0;
+    this.pushVx = 0;
+    this.vy = 0;
+    this.y += (FLOOR - TRAP_RISE - this.y) * Math.min(1, (dtMs / 1000) * 3);
+    if (this.trapMs > 0) return;
+    this.trapMs = 0;
+    this.launched = true;
+    this.vy = -150;
+    this.scene.poof?.(this.x, this.y - this.height / 2);
+  }
+
+  // El imán (objeto): sale jalado hacia `x` y se queda a `gap` (con el frenón del piso; en la nieve resbala más,
+  // así que se le da menos vuelo). Un instante no puede hacer nada.
+  pullToward(x, gap) {
+    const distance = Math.abs(x - this.x) - gap;
+    if (distance <= 0) return false;
+    this.attack = null;
+    this.special = null;
+    this.blocking = false;
+    this.dash = null;
+    this.vx = 0;
+    this.pushVx = Math.sign(x - this.x) * Math.sqrt(2 * FRICTION * (this.friction ?? 1) * distance);
+    this.hurtMs = Math.max(this.hurtMs, 450);
+    return true;
   }
 
   canGrab(opponent) {
@@ -500,6 +560,8 @@ export class DueloFighter {
     this.punchChain = 0;
     if (this.grounded) this.vx = 0;
     sfx.special();
+    // Si su compañero (2 contra 2) hizo el suyo casi al mismo tiempo y cerquita: ¡combo de dúo! (lo revisa la escena).
+    this.scene.specialUsed?.(this);
   }
 
   updateSpecial(dtMs, opponent) {
@@ -617,6 +679,8 @@ export class DueloFighter {
   // Recibe un golpe desde `fromX`. Devuelve { blocked, dealt, parried?, absorbed? } o null si no le hizo nada.
   takeHit(data, fromX) {
     if (this.isInvulnerable() || this.celebrating) return null;
+    // Si lo atrapó una burbuja, el golpe la revienta (y le pega en el aire).
+    this.trapMs = 0;
     const fromFront = Math.sign(fromX - this.x) === this.facing || fromX === this.x;
     const dir = Math.sign(this.x - fromX) || -this.facing;
     // Un agarre solo funciona en el piso, pero ni cubriéndose se salva.
@@ -666,6 +730,14 @@ export class DueloFighter {
     }
     if (this.launched) this.y = Math.min(this.y, FLOOR - 1);
     if (data.freeze) this.chillMs = data.stunMs;
+    // El pastel le tapa la cara; la burbuja lo atrapa (en vez de aventarlo).
+    if (data.pie) this.pieMs = PIE_MS;
+    if (data.trap && !this.koed) {
+      this.trapMs = TRAP_MS;
+      this.launched = false;
+      this.hurtMs = 0;
+      this.pushVx = 0;
+    }
     if (this.look.hasArt) this.flashMs = 70;
     else this.blob.flash();
     return { blocked: false, dealt };
@@ -780,7 +852,8 @@ export class DueloFighter {
     const lying = this.downMs > 0 || (this.koed && this.grounded);
     if (!figure.scene.tweens.isTweening(figure)) figure.setScale(s * sx, s * sy);
     figure.setAngle(angle);
-    figure.y = this.y - FLOOR - r * (s - 1) + bob + (lying ? r * 0.55 : 0);
+    // (En las arenas movedizas se hunde un poco.)
+    figure.y = this.y - FLOOR - r * (s - 1) + bob + (lying ? r * 0.55 : 0) + (this.sandMs > 0 && this.grounded ? r * 0.35 : 0);
     const blink = this.invulnerableMs > 0 && Math.floor(now / 90) % 2 === 0;
     figure.setAlpha(this.ghosting ? 0.25 : blink ? 0.45 : 1);
     this.blob.list[0].setScale(Math.max(0.4, 1 - (FLOOR - this.y) / 400));
@@ -788,6 +861,9 @@ export class DueloFighter {
     this.shield.setVisible(this.blocking);
     this.bubble.setVisible(this.bubbleHits > 0).setScale(1 + 0.04 * Math.sin(now / 120));
     this.hammer.setVisible(this.hammerHits > 0 && !this.koed);
+    this.cream.setVisible(this.pieMs > 0 && !this.koed);
+    if (this.pieMs > 0) this.cream.x = this.facing * r * 0.18;
+    this.trapBubble.setVisible(this.trapMs > 0).setScale(1 + 0.05 * Math.sin(now / 100), 1 - 0.05 * Math.sin(now / 100));
     const box = this.attack || (this.special && this.special.kind !== 'shot') ? this.hitbox() : null;
     const showFist = Boolean(box) && shown !== 'golpe' && shown !== 'patada' && shown !== 'especial';
     this.fist.setVisible(showFist);

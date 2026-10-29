@@ -9,15 +9,19 @@ import { burst, popText } from './effects.js';
 //   boulder / snowball / cannon: algo rueda (o sale disparado) por un carril de lado a lado; una flecha avisa.
 //   lava / ghostfire / meteor: un charco brilla en el piso y luego arde (o cae un meteorito) un ratito.
 //   gum:       charcos de chicle que hacen ir más lento.
+//   current:   (Fondo del mar) una corriente de burbujas cruza un carril y empuja lejos (no quita corazones).
+//   coconut:   (Selva) un coco cae de una palmera donde está alguien.
 const KINDS = {
   spring: { kind: 'pad' },
   gum: { kind: 'gum' },
   boulder: { kind: 'roller', art: 'roca', color: 0x8a8a96, speed: 520, radius: 46, word: '¡Roca!' },
   snowball: { kind: 'roller', color: 0xffffff, speed: 480, radius: 48, word: '¡Bola de nieve!' },
   cannon: { kind: 'roller', color: 0x2a2a36, speed: 820, radius: 22, word: '¡Cañonazo!', shot: true },
+  current: { kind: 'roller', color: 0x9fd8ff, speed: 560, radius: 50, word: '¡Corriente!', push: 760, bubbles: true },
   lava: { kind: 'patch', color: 0xff5a2f, glow: 0xffd84d, word: '¡Lava!' },
   ghostfire: { kind: 'patch', color: 0xb07cff, glow: 0xe8d0ff, word: '¡Fuego fantasma!' },
   meteor: { kind: 'patch', color: 0x8a6a5a, glow: 0xff9a3c, word: '¡Meteorito!', falls: true },
+  coconut: { kind: 'patch', art: 'coco', color: 0x8b5a2b, glow: 0x4cd97b, word: '¡Coco!', falls: true, burnMs: 350 },
 };
 const EVERY_MS = { first: 5000, min: 6500, extra: 3500 };
 const WARN_MS = 1300;
@@ -30,6 +34,22 @@ const HIT = 2;
 function propTexture(scene, name) {
   const key = `brawl:objeto-${name}`;
   return scene.textures.exists(key) ? key : null;
+}
+
+// La corriente del mar: un montón de burbujas (se mecen mientras cruzan).
+function drawBubbles(scene, radius) {
+  const bubbles = [
+    [0, 0, 0.55],
+    [-0.6, -0.5, 0.35],
+    [0.55, -0.6, 0.4],
+    [-0.7, 0.45, 0.3],
+    [0.6, 0.5, 0.32],
+    [0, -1.05, 0.25],
+  ].map(([x, y, r]) => {
+    const b = scene.add.circle(x * radius, y * radius, r * radius, 0xdff4ff, 0.35).setStrokeStyle(4, 0xffffff, 0.9);
+    return b.setData('y', y * radius);
+  });
+  return scene.add.container(0, 0, bubbles);
 }
 
 export class Traps {
@@ -119,8 +139,11 @@ export class Traps {
       const startX = dir > 0 ? left - 120 : right + 120;
       const arrow = this.scene.add.text(dir > 0 ? left + 40 : right - 40, y - 60, dir > 0 ? '➡️' : '⬅️', textStyle(56)).setOrigin(0.5).setDepth(y + 1);
       const key = data.art ? propTexture(this.scene, data.art) : null;
-      const ball = key ? this.scene.add.image(0, 0, key) : this.scene.add.circle(0, 0, data.radius, data.color).setStrokeStyle(5, 0x1b1530);
-      if (key) ball.setScale((data.radius * 2.2) / Math.max(ball.width, ball.height));
+      let ball;
+      if (data.bubbles) ball = drawBubbles(this.scene, data.radius);
+      else if (key) ball = this.scene.add.image(0, 0, key);
+      else ball = this.scene.add.circle(0, 0, data.radius, data.color).setStrokeStyle(5, 0x1b1530);
+      if (key && !data.bubbles) ball.setScale((data.radius * 2.2) / Math.max(ball.width, ball.height));
       const thing = this.scene.add.container(startX, y - data.radius, [ball]).setDepth(y);
       popText(this.scene, arrow.x, y - 110, data.word, '#ffd84d');
       this.active.push({ data, kind: 'roller', t: 0, y, dir, x: startX, arrow, thing, parts: [arrow, thing], hit: new Set() });
@@ -133,7 +156,14 @@ export class Traps {
     const parts = [glow];
     let rock = null;
     if (data.falls) {
-      rock = this.scene.add.circle(x - 200, y - 600, 40, data.color).setStrokeStyle(5, 0x1b1530).setDepth(y + 1);
+      const key = data.art ? propTexture(this.scene, data.art) : null;
+      if (key) {
+        rock = this.scene.add.image(x - 200, y - 600, key);
+        rock.setScale(84 / Math.max(rock.width, rock.height));
+      } else {
+        rock = this.scene.add.circle(x - 200, y - 600, 40, data.color).setStrokeStyle(5, 0x1b1530);
+      }
+      rock.setDepth(y + 1);
       parts.push(rock);
     }
     popText(this.scene, x, y - 90, data.word, '#ffd84d');
@@ -147,7 +177,8 @@ export class Traps {
       if (a.t < WARN_MS) return true;
       a.arrow.setVisible(false);
       a.x += a.dir * a.data.speed * (dtMs / 1000);
-      a.thing.setPosition(a.x, a.y - a.data.radius).setAngle(a.data.shot ? 0 : a.x);
+      a.thing.setPosition(a.x, a.y - a.data.radius).setAngle(a.data.shot || a.data.bubbles ? 0 : a.x);
+      if (a.data.bubbles) a.thing.list[0].list.forEach((b, i) => (b.y = b.getData('y') + Math.sin(a.t / 90 + i) * 6));
       this.strike(a, fighters, monsters, (o) => Math.abs(o.x - a.x) < a.data.radius + o.radius * 0.6 && Math.abs(o.y - a.y) < 34);
       const { left, right } = this.bounds;
       const done = a.dir > 0 ? a.x > right + 160 : a.x < left - 160;
@@ -172,22 +203,27 @@ export class Traps {
       sfx.fire();
     }
     this.strike(a, fighters, monsters, (o) => ((o.x - a.x) / PATCH.rx) ** 2 + ((o.y - a.y) / PATCH.ry) ** 2 < 1);
-    if (a.t < WARN_MS + BURN_MS) return true;
+    if (a.t < WARN_MS + (a.data.burnMs ?? BURN_MS)) return true;
     a.parts.forEach((p) => p.destroy());
     return false;
   }
 
-  // Le pega una vez a cada quien que toque (a los jugadores les quita un corazón; a los monstruos, vida).
+  // Le pega una vez a cada quien que toque (a los jugadores les quita un corazón; a los monstruos, vida). La
+  // corriente solo empuja a los jugadores (y a los monstruos los empuja y les quita poquito).
   strike(a, fighters, monsters, touching) {
     for (const f of fighters) {
       if (a.hit.has(f) || f.down || !touching(f)) continue;
       a.hit.add(f);
-      if (f.hurt(a.x)) popText(this.scene, f.x, f.y - 90, a.data.word, '#ff9a3c');
+      if (a.data.push) {
+        if (f.z > 30) continue;
+        f.knockback = (a.dir ?? 1) * a.data.push;
+        popText(this.scene, f.x, f.y - 90, a.data.word, '#9fd8ff');
+      } else if (f.hurt(a.x)) popText(this.scene, f.x, f.y - 90, a.data.word, '#ff9a3c');
     }
     for (const m of monsters) {
       if (a.hit.has(m) || m.dead || m.grabbedBy || !touching(m)) continue;
       a.hit.add(m);
-      m.hurt(a.x, HIT, 1.5);
+      m.hurt(a.x - (a.dir ?? 0) * 40, a.data.push ? 1 : HIT, a.data.push ? 2.2 : 1.5);
       burst(this.scene, m.x, m.y - 30, a.data.glow ?? a.data.color, 8);
       this.scene.trapHit?.(m);
     }

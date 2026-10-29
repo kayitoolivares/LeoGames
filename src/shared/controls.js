@@ -25,6 +25,8 @@ const KEYBOARDS = {
       y: 'KeyR',
       lb: 'KeyZ',
       rb: 'ShiftLeft',
+      lt: 'KeyO',
+      rt: 'KeyU',
     },
   },
   kb2: {
@@ -40,6 +42,8 @@ const KEYBOARDS = {
       y: 'Slash',
       lb: 'Comma',
       rb: 'ControlRight',
+      lt: 'Numpad9',
+      rt: 'Numpad7',
     },
   },
 };
@@ -58,6 +62,8 @@ const KEY_NAMES = {
   ArrowDown: '↓',
   ArrowLeft: '←',
   ArrowRight: '→',
+  Numpad7: 'Num 7',
+  Numpad9: 'Num 9',
 };
 
 // La tecla de un botón en un teclado ('kb1' o 'kb2'), para mostrarla en pantalla. null si no tiene.
@@ -65,6 +71,13 @@ export function keyFor(keyboardId, button) {
   const code = KEYBOARDS[keyboardId].keys[button];
   return code ? (KEY_NAMES[code] ?? code.replace(/^Key/, '')) : null;
 }
+
+// El stick derecho (para mirar en primera persona) en el teclado: I J K L en el teclado 1 y 8 4 5 6 del teclado numérico
+// en el teclado 2.
+const LOOK_KEYS = {
+  kb1: { left: 'KeyJ', right: 'KeyL', up: 'KeyI', down: 'KeyK' },
+  kb2: { left: 'Numpad4', right: 'Numpad6', up: 'Numpad8', down: 'Numpad5' },
+};
 
 export const CONTROL_NAMES = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'lb', 'rb', 'lt', 'rt'];
 
@@ -94,7 +107,7 @@ class Controls {
     this.keysDown = new Set();
     // Teclas que bajaron desde el último update(): un toque muy rápido puede soltarse antes de leerse.
     this.keysTapped = new Set();
-    this.mappedKeys = new Set(Object.values(KEYBOARDS).flatMap((kb) => Object.values(kb.keys)));
+    this.mappedKeys = new Set([...Object.values(KEYBOARDS).flatMap((kb) => Object.values(kb.keys)), ...Object.values(LOOK_KEYS).flatMap(Object.values)]);
     this.devices = new Map();
 
     for (const [id, kb] of Object.entries(KEYBOARDS)) {
@@ -120,6 +133,7 @@ class Controls {
       state: emptyState(),
       prev: emptyState(),
       stick: { x: 0, y: 0 },
+      look: { x: 0, y: 0 },
       stickDirs: { up: false, down: false, left: false, right: false },
     };
   }
@@ -134,6 +148,8 @@ class Controls {
         x: Number(device.state.right) - Number(device.state.left),
         y: Number(device.state.down) - Number(device.state.up),
       };
+      const look = LOOK_KEYS[id];
+      device.look = { x: Number(keyIsDown(look.right)) - Number(keyIsDown(look.left)), y: Number(keyIsDown(look.down)) - Number(keyIsDown(look.up)) };
     }
     this.keysTapped.clear();
 
@@ -157,6 +173,7 @@ class Controls {
         device.prev = device.state;
         device.state = emptyState();
         device.stick = { x: 0, y: 0 };
+        device.look = { x: 0, y: 0 };
       }
     }
 
@@ -188,6 +205,7 @@ class Controls {
     const x = applyDeadzone(pad.axes[0] ?? 0);
     const y = applyDeadzone(pad.axes[1] ?? 0);
     const dirs = this.updateStickDirs(device, x, y);
+    device.look = { x: applyDeadzone(pad.axes[2] ?? 0), y: applyDeadzone(pad.axes[3] ?? 0) };
 
     const state = emptyState();
     for (const [name, index] of Object.entries(PAD_BUTTONS)) state[name] = pressed(index);
@@ -221,6 +239,11 @@ class Controls {
 
   getStick(deviceId) {
     return this.devices.get(deviceId)?.stick ?? { x: 0, y: 0 };
+  }
+
+  // El stick derecho (mirar): { x, y } de -1 a 1. La pantalla táctil no tiene.
+  getLook(deviceId) {
+    return this.devices.get(deviceId)?.look ?? { x: 0, y: 0 };
   }
 
   getDevice(deviceId) {

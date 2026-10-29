@@ -438,8 +438,8 @@ test('pelea en equipo: el Valle de los dinos y defiende el nido', { timeout: ms(
   await p.pickCharacters(1);
   await p.until(() => window.leogames.scene.getScene('Brawl')?.phase === 'map', ms(8000), 'ver el mapa');
   const brawl = (code) => p.page.evaluate((c) => new Function('s', c)(window.leogames.scene.getScene('Brawl')), code);
-  // ◀ desde la Pradera da la vuelta: sin fin, jefes en serie, el nido y el Valle de los dinos.
-  for (let i = 0; i < 4; i += 1) await p.tap(0, BUTTON.LEFT);
+  // ▶ ocho veces desde la Pradera: el Valle de los dinos.
+  for (let i = 0; i < 8; i += 1) await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.A);
   await p.until(
     () => window.leogames.scene.getScene('Brawl').world?.name === 'Valle de los dinos' && window.leogames.scene.getScene('Brawl').phase === 'fight',
@@ -463,11 +463,11 @@ test('pelea en equipo: el Valle de los dinos y defiende el nido', { timeout: ms(
   );
   assert.ok((await stickers(p.page)).includes('pelea-dinos'));
 
-  // Defiende el nido: B = mapa y ▶ = el nido.
+  // Defiende el nido: B = mapa y ▶ tres veces (el mar y la selva, y luego el nido).
   await p.until(() => window.leogames.scene.getScene('Brawl').endMs > 1300, ms(10000), 'que los resultados acepten botones');
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.getScene('Brawl').phase === 'map', ms(6000), 'regresar al mapa');
-  await p.tap(0, BUTTON.RIGHT);
+  for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.RIGHT);
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Brawl').nestMode && window.leogames.scene.getScene('Brawl').phase === 'fight', ms(8000), 'defender el nido');
   assert.deepEqual(await brawl('return [s.nest.hp, s.nestNumber]'), [9, 1]);
@@ -823,18 +823,18 @@ test('bolitas bros: escenarios desbloqueables Espacio y Volcán', { timeout: ms(
     return choices;
   };
 
-  // Sin calcomanías solo están los 12 que no hay que ganar (y luego da la vuelta).
-  const open = ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos', 'ring', 'cancha'];
+  // Sin calcomanías solo están los 15 que no hay que ganar (y luego da la vuelta).
+  const open = ['castillo', 'nubes', 'barco', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos', 'ring', 'cancha', 'granja', 'tren', 'feria'];
   await openSelect();
-  assert.deepEqual(await stageChoices(13), [...open, 'castillo']);
+  assert.deepEqual(await stageChoices(16), [...open, 'castillo']);
   await p.tap(0, BUTTON.B);
   await p.until(() => window.leogames.scene.isActive('Menu'), ms(6000), 'regresar al menú');
 
   // Con "Campeón" y "¡Súper!" aparecen el Espacio (gravedad baja) y el Volcán.
   await p.page.evaluate(() => import('/src/shared/settings.js').then((m) => m.settings.set('stickers', ['smash-gana', 'smash-super'])));
   await openSelect();
-  assert.deepEqual(await stageChoices(14), [...open, 'espacio', 'volcan']);
-  // Después de 14 toques regresa al Castillo: LB una vez es el Volcán y otra el Espacio.
+  assert.deepEqual(await stageChoices(17), [...open, 'espacio', 'volcan']);
+  // Después de 17 toques regresa al Castillo: LB una vez es el Volcán y otra el Espacio.
   await p.tap(0, BUTTON.LB);
   await p.tap(0, BUTTON.LB);
   await p.tap(0, BUTTON.A);
@@ -3960,7 +3960,8 @@ test('súper bolitas: mapa por mundos, casita de regalos, enemigo del mapa, bata
   for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.LEFT);
   await p.until(() => window.leogames.scene.getScene('Plat').mapState.node === 0, ms(3000), 'caminar al 1-1');
   await p.tap(0, BUTTON.X);
-  await p.tap(0, BUTTON.DOWN);
+  // (De "vida extra" se baja pasando Carreritas y Arma tu nivel hasta dar la vuelta a la contrarreloj.)
+  for (let i = 0; i < 3; i += 1) await p.tap(0, BUTTON.DOWN);
   await p.tap(0, BUTTON.A);
   await p.until(() => window.leogames.scene.getScene('Plat').run?.mode === 'trial' && window.leogames.scene.getScene('Plat').phase === 'play', ms(5000), 'empezar la contrarreloj');
   await plat(p.page, () => {

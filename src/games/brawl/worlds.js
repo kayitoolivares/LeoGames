@@ -168,6 +168,42 @@ export const WORLDS = [
       { title: '¡El Rey Rex!', spawns: [{ type: 'raptor', count: 2 }, { type: 'reyRex', count: 1 }] },
     ],
   },
+  {
+    name: 'Fondo del mar',
+    emoji: '🐠',
+    background: 'mar',
+    unlock: 'pelea-mundo-10',
+    sticker: 'pelea-mar',
+    colors: { sky: 0x1b4f8a, hill: 0x22608f, floor: 0xd9c38a, stripe: 0xc4ab6e },
+    trap: 'current',
+    mount: 'pollo-gigante',
+    mini: 'pezGlobo',
+    cage: 2,
+    waves: [
+      { title: 'Ronda 1', spawns: [{ type: 'pececito', count: 4 }] },
+      { title: 'Ronda 2', spawns: [{ type: 'pececito', count: 3 }, { type: 'medusa', count: 2 }] },
+      { title: 'Ronda 3', spawns: [{ type: 'medusa', count: 3 }, { type: 'pezGlobo', count: 2 }] },
+      { title: '¡El Rey Tiburón!', spawns: [{ type: 'pececito', count: 2 }, { type: 'reyTiburon', count: 1 }] },
+    ],
+  },
+  {
+    name: 'Selva',
+    emoji: '🐒',
+    background: 'selva',
+    unlock: 'pelea-mundo-11',
+    sticker: 'pelea-selva',
+    colors: { sky: 0x2f7a3a, hill: 0x1f5a2a, floor: 0x7a5a2f, stripe: 0x8f6e3c },
+    trap: 'coconut',
+    mount: 'dinosaurio',
+    mini: 'gorilita',
+    cage: 2,
+    waves: [
+      { title: 'Ronda 1', spawns: [{ type: 'serpiente', count: 3 }, { type: 'mono', count: 1 }] },
+      { title: 'Ronda 2', spawns: [{ type: 'mono', count: 3 }, { type: 'loro', count: 2 }] },
+      { title: 'Ronda 3', spawns: [{ type: 'serpiente', count: 3 }, { type: 'gorilita', count: 2 }] },
+      { title: '¡El Gran Gorila!', spawns: [{ type: 'mono', count: 2 }, { type: 'granGorila', count: 1 }] },
+    ],
+  },
 ];
 // En el segundo tramo de cada mundo sale el mini jefe (al final de la ronda).
 export const MINI_WAVE = 1;
@@ -206,6 +242,13 @@ export function nestWave(number, worlds, types) {
     if (bosses.length) wave.spawns.push({ type: bosses[Math.floor(Math.random() * bosses.length)], count: 1 });
   }
   return { ...wave, title: number === NEST_ROUNDS ? `Ronda ${number}: ¡la última!` : `Ronda ${number} de ${NEST_ROUNDS}` };
+}
+
+// Defiende la base: oleadas sin fin como las del modo sin fin (cada 5, un jefe).
+export function baseWave(number, worlds, types) {
+  const wave = endlessWave(number, worlds, types);
+  const hasBoss = wave.spawns.some((s) => types[s.type].boss);
+  return { ...wave, title: hasBoss ? `Oleada ${number}: ¡jefe!` : `Oleada ${number}` };
 }
 
 export function endlessWave(number, worlds, types) {

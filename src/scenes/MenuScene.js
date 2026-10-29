@@ -15,11 +15,12 @@ import { COLORS, TEXT, hexToCss, textStyle } from '../ui/style.js';
 import { go } from '../shared/transition.js';
 import { releaseBackgrounds } from '../shared/lazyArt.js';
 
-const COLUMNS = 6;
-const CARD_W = 198;
-const CARD_H = 190;
+// 15 tarjetas: 3 filas de 5, más bajitas que antes para que quepan.
+const COLUMNS = 5;
+const CARD_W = 234;
+const CARD_H = 126;
 const CARD_GAP_X = 10;
-const ROW_Y = [235, 440];
+const ROW_Y = [204, 342, 480];
 // Los personajes de los jugadores pasean abajo: qué tan rápido y qué tan lejos de su lugar.
 const STROLL = { speed: 75, reach: 170, waitMin: 900, waitMax: 3200 };
 const WALKER_POSES = ['normal', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'parpadeo', 'feliz'];
@@ -88,15 +89,16 @@ export class MenuScene extends Phaser.Scene {
     const card = this.add.container(x, y);
     // `inner` es lo que se sacude con "¡muy pronto!", sin pelear con el zoom de la selección.
     const inner = this.add.container(0, 0);
-    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(22);
-    const emoji = this.add.text(0, -54, game.emoji, textStyle(52)).setOrigin(0.5);
-    const title = this.add.text(0, -2, game.title, textStyle(20, TEXT.normal, { fontStyle: 'bold' })).setOrigin(0.5);
-    const description = this.add.text(0, 34, game.description, textStyle(16, TEXT.muted, { align: 'center' })).setOrigin(0.5);
+    // El dibujo a la izquierda y el nombre con su descripción a la derecha; la etiqueta (Jugar, Abrir...) en la esquina.
+    const bg = this.add.rectangle(0, 0, CARD_W, CARD_H, COLORS.panel).setRounded(20);
+    const emoji = this.add.text(-80, 4, game.emoji, textStyle(50)).setOrigin(0.5);
+    const title = this.add.text(30, -22, game.title, textStyle(19, TEXT.normal, { fontStyle: 'bold', align: 'center', wordWrap: { width: 156 } })).setOrigin(0.5);
+    const description = this.add.text(30, 22, game.description, textStyle(14, TEXT.muted, { align: 'center' })).setOrigin(0.5);
     const badgeColor = { play: COLORS.ok, link: COLORS.accent, soon: COLORS.panelBorder }[kind];
     const badgeLabel = game.badge ?? { play: 'Jugar', link: 'Abrir', soon: 'Próximamente' }[kind];
-    const badge = this.add.rectangle(0, 74, 160, 28, badgeColor).setRounded(14);
+    const badge = this.add.rectangle(-80, -46, 64, 20, badgeColor).setRounded(10);
     const badgeText = this.add
-      .text(0, 74, badgeLabel, textStyle(16, kind === 'soon' ? TEXT.muted : TEXT.ink, { fontStyle: 'bold' }))
+      .text(-80, -46, badgeLabel, textStyle(13, kind === 'soon' ? TEXT.muted : TEXT.ink, { fontStyle: 'bold' }))
       .setOrigin(0.5);
 
     inner.add([bg, emoji, title, description, badge, badgeText]);
@@ -196,7 +198,8 @@ export class MenuScene extends Phaser.Scene {
     const before = this.selected;
     if (controls.justPressed(id, 'left')) this.select(this.selected - 1);
     if (controls.justPressed(id, 'right')) this.select(this.selected + 1);
-    if (controls.justPressed(id, 'up') || controls.justPressed(id, 'down')) this.selectOtherRow();
+    if (controls.justPressed(id, 'up')) this.selectRow(-1);
+    if (controls.justPressed(id, 'down')) this.selectRow(1);
     if (this.selected !== before) {
       sfx.select();
       say(GAMES[this.selected].title);
@@ -221,10 +224,11 @@ export class MenuScene extends Phaser.Scene {
     if (controls.justPressed(id, 'a')) this.launch();
   }
 
-  // Con dos filas, arriba y abajo hacen lo mismo: brincar a la otra fila, a la tarjeta más cercana.
-  selectOtherRow() {
-    const other = this.selected < COLUMNS ? this.selected + COLUMNS : this.selected - COLUMNS;
-    this.select(Math.min(other, GAMES.length - 1));
+  // Arriba y abajo brincan a la fila de al lado (de la última se pasa a la primera), a la tarjeta más cercana.
+  selectRow(step) {
+    const rows = Math.ceil(GAMES.length / COLUMNS);
+    const row = (Math.floor(this.selected / COLUMNS) + step + rows) % rows;
+    this.select(Math.min(row * COLUMNS + (this.selected % COLUMNS), GAMES.length - 1));
   }
 
   showToast(text) {

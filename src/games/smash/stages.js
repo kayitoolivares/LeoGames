@@ -9,8 +9,12 @@ import Phaser from 'phaser';
 // `move.swing` = { length, angle (radianes), periodMs }: se columpia colgada de una liana (la Selva).
 // `move.orbit` = { rx, ry }: da vueltas (los globos).
 // `events`: la sorpresa del escenario (ver events.js): rayo, ola, viento, cohete, cocos, bloques, burbujas, fantasma,
-// cerezas o avión.
+// cerezas, avión, tractor, túnel o montaña rusa.
 // `hidden`: no se escoge (la torre es solo de la Aventura); `goal`: dónde está la bandera de la meta.
+// La rueda de la fortuna de la Feria da una vuelta en este tiempo (las canastillas y los rayos de la rueda juntos).
+const WHEEL_PERIOD_MS = 16000;
+// Qué tan arriba de la canastilla está su gancho (de ahí sale su rayo hacia el centro de la rueda).
+const CABIN_HOOK = 46;
 export const STAGES = {
   castillo: {
     name: 'Castillo',
@@ -203,6 +207,67 @@ export const STAGES = {
     drawBackground: drawSky,
     events: 'soccer',
   },
+  // La granja: pacas de paja (la de en medio es el elevador de paja, que sube y baja) y de vez en cuando pasa el
+  // tractor por el piso (hay que brincarlo).
+  granja: {
+    name: 'Granja',
+    sky: 0x9fd8ff,
+    platforms: [
+      { left: 380, right: 1620, top: 800, main: true, look: 'farm' },
+      { left: 540, right: 780, top: 620, soft: true, look: 'hay' },
+      { left: 1220, right: 1460, top: 620, soft: true, look: 'hay' },
+      { left: 880, right: 1120, top: 450, soft: true, look: 'hay', move: { y: 90, periodMs: 4600, phase: 0 } },
+    ],
+    blast: { left: -250, right: 2250, top: -450, bottom: 1400 },
+    respawn: { x: 1000, y: 240 },
+    spawns: [600, 1400, 850, 1150],
+    drawBackground: drawFarm,
+    events: 'tractor',
+  },
+  // El tren en marcha: se pelea en el techo de un vagón mientras el paisaje pasa (los postes y los árboles, ver
+  // drawTrainRide); a veces viene un túnel y al que esté arriba (en las cajas o saltando) se lo lleva.
+  tren: {
+    name: 'Tren en marcha',
+    sky: 0xffd9a8,
+    platforms: [
+      { left: 360, right: 1640, top: 800, main: true, look: 'train' },
+      { left: 520, right: 760, top: 630, soft: true, look: 'crate' },
+      { left: 1240, right: 1480, top: 630, soft: true, look: 'crate' },
+      // El humo de la locomotora: una nube que va y viene.
+      { left: 880, right: 1120, top: 460, soft: true, look: 'cloud', move: { x: 220, periodMs: 5200, phase: 0 } },
+    ],
+    blast: { left: -250, right: 2250, top: -450, bottom: 1300 },
+    respawn: { x: 1000, y: 250 },
+    spawns: [600, 1400, 850, 1150],
+    drawBackground: drawCountry,
+    // Los postes y los árboles que pasan van encima del fondo aunque haya imagen (si no, no se ve que el tren avanza).
+    drawProps: drawTrainRide,
+    events: 'tunnel',
+  },
+  // La feria: las canastillas de la rueda de la fortuna dan vueltas (súbete a una) y de vez en cuando cruza el
+  // carrito de la montaña rusa, subiendo y bajando.
+  feria: {
+    name: 'Feria',
+    sky: 0x8fc8ff,
+    platforms: [
+      { left: 380, right: 1620, top: 800, main: true, look: 'fair' },
+      ...[0, 1, 2].map((i) => ({
+        left: 910,
+        right: 1090,
+        top: 470,
+        soft: true,
+        look: 'cabin',
+        move: { orbit: { rx: 255, ry: 255 }, periodMs: WHEEL_PERIOD_MS, phase: (i * Math.PI * 2) / 3 },
+      })),
+    ],
+    blast: { left: -250, right: 2250, top: -450, bottom: 1400 },
+    respawn: { x: 1000, y: 160 },
+    spawns: [600, 1400, 850, 1150],
+    drawBackground: drawFair,
+    // La rueda se dibuja aunque haya imagen de fondo (las canastillas cuelgan de ella).
+    drawProps: drawWheel,
+    events: 'coaster',
+  },
   espacio: {
     name: 'Espacio',
     sky: 0x14112b,
@@ -295,6 +360,8 @@ export function movePlatforms(platforms, timeMs) {
       const angle = (timeMs / p.move.periodMs) * Math.PI * 2 + p.move.phase;
       ox = orbit.rx * Math.cos(angle);
       oy = orbit.ry * Math.sin(angle);
+      // (La canastilla de la rueda de la fortuna: su rayo va de su gancho al centro de la rueda.)
+      if (p.spoke) p.spoke.setScale(Math.hypot(ox, oy), 1).setRotation(Math.atan2(-oy, -ox));
     }
     // Columpio: cuelga de un punto arriba y va de lado a lado en arco (más alto en las puntas).
     const swing = p.move.swing;
@@ -493,6 +560,52 @@ function drawPlatform(scene, p) {
     parts.push(scene.add.ellipse(0, -190, 50, 160, 0xffffff, 0.25));
     parts.push(scene.add.rectangle(0, 24, width, 48, 0xc98b4f).setRounded(8).setStrokeStyle(4, 0x6b4223));
     for (let x = -width / 2 + 24; x < width / 2; x += 30) parts.push(scene.add.rectangle(x, 24, 3, 44, 0x8b5a2b));
+  } else if (p.look === 'farm') {
+    // La tierra de la granja con pasto encima y una cerca blanca en las orillas.
+    parts.push(scene.add.triangle(0, 40, 0, 0, width, 0, width / 2, 240, 0x8b5a2b).setOrigin(0.5, 0));
+    parts.push(scene.add.rectangle(0, 40, width, 80, 0xa8743f).setRounded(18));
+    parts.push(scene.add.rectangle(0, 10, width + 10, 26, 0x6cc24a).setRounded(13).setStrokeStyle(3, 0x3f8a3a));
+    for (const side of [-1, 1]) {
+      const x0 = side * (width / 2 - 70);
+      for (let k = 0; k < 3; k += 1) parts.push(scene.add.rectangle(x0 + side * k * 26, -24, 8, 46, 0xffffff).setStrokeStyle(2, 0x1b1530));
+      parts.push(scene.add.rectangle(x0 + side * 26, -34, 70, 7, 0xffffff).setStrokeStyle(2, 0x1b1530));
+      parts.push(scene.add.rectangle(x0 + side * 26, -16, 70, 7, 0xffffff).setStrokeStyle(2, 0x1b1530));
+    }
+  } else if (p.look === 'hay') {
+    // Una paca de paja con sus cuerdas.
+    parts.push(scene.add.rectangle(0, 26, width, 52, 0xf2c94c).setRounded(10).setStrokeStyle(4, 0xb08a2a));
+    for (let x = -width / 2 + 16; x < width / 2 - 8; x += 22) parts.push(scene.add.rectangle(x, 26, 3, 40, 0xd9a93a).setAngle(8));
+    for (const x of [-width / 4, width / 4]) parts.push(scene.add.rectangle(x, 26, 8, 52, 0xc0392b));
+  } else if (p.look === 'train') {
+    // El techo del vagón (donde se pelea) con sus ventanas y las ruedas abajo.
+    parts.push(scene.add.rectangle(0, 120, width - 60, 200, 0xd64541).setStrokeStyle(5, 0x1b1530));
+    for (let x = -width / 2 + 110; x < width / 2 - 80; x += 150) parts.push(scene.add.rectangle(x, 100, 90, 70, 0xbfe6ff).setStrokeStyle(4, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 200, width - 60, 16, 0xffd02a));
+    for (const x of [-0.38, -0.25, 0.25, 0.38]) parts.push(scene.add.circle(x * width, 236, 30, 0x3a3a4a).setStrokeStyle(5, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 14, width, 28, 0x8a3030).setRounded(10).setStrokeStyle(4, 0x1b1530));
+  } else if (p.look === 'crate') {
+    parts.push(scene.add.rectangle(0, 40, width, 80, 0xc98b4f).setStrokeStyle(5, 0x6b4223));
+    parts.push(scene.add.rectangle(0, 40, width - 20, 8, 0x8b5a2b).setAngle(16));
+    parts.push(scene.add.rectangle(0, 4, width, 10, 0x8b5a2b));
+  } else if (p.look === 'fair') {
+    // El piso de la feria: tablas de madera con un toldo de rayas rojas y blancas y foquitos de colores.
+    parts.push(scene.add.rectangle(0, 120, width, 220, 0x8b5a3c).setStrokeStyle(5, 0x5c3a1a));
+    const stripes = Math.round(width / 80);
+    for (let i = 0; i < stripes; i += 1) {
+      const x = -width / 2 + (i + 0.5) * (width / stripes);
+      parts.push(scene.add.rectangle(x, 60, width / stripes, 60, i % 2 ? 0xffffff : 0xe53935));
+      parts.push(scene.add.circle(x, 98, 9, [0xffd02a, 0x3fa7ff, 0x4cd97b, 0xff5fd2][i % 4]).setStrokeStyle(2, 0x1b1530));
+    }
+    parts.push(scene.add.rectangle(0, 14, width + 10, 28, 0xc98b4f).setRounded(8).setStrokeStyle(4, 0x5c3a1a));
+  } else if (p.look === 'cabin') {
+    // Una canastilla de la rueda de la fortuna, colgando de su gancho.
+    const color = [0xff5a5f, 0x3fa7ff, 0xffd02a][Math.round((p.move.phase * 3) / (Math.PI * 2)) % 3];
+    p.spoke = scene.add.rectangle(0, -CABIN_HOOK, 1, 8, 0xd8dce8).setOrigin(0, 0.5).setStrokeStyle(2, 0x6a6a7a);
+    parts.push(p.spoke);
+    parts.push(scene.add.rectangle(0, -CABIN_HOOK / 2, 6, CABIN_HOOK, 0x6a6a7a));
+    parts.push(scene.add.rectangle(0, 30, width, 56, color).setRounded(14).setStrokeStyle(4, 0x1b1530));
+    parts.push(scene.add.rectangle(0, 30, width - 40, 22, 0xffffff, 0.5).setRounded(8));
+    parts.push(scene.add.rectangle(0, 6, width + 8, 12, 0xffffff).setRounded(6).setStrokeStyle(3, 0x1b1530));
   }
   box.add(parts);
   return box;
@@ -631,5 +744,113 @@ function drawShip(scene, layer) {
     scene.add.rectangle(970, 610, 26, 380, 0x6b4223),
     sail,
     scene.add.triangle(985, 395, 0, 0, 60, 18, 0, 36, 0x1b1530).setOrigin(0, 0.5),
+  ]);
+}
+
+// Lomitas verdes a lo lejos (la Granja y el paisaje del tren).
+function hills(scene, y, colors) {
+  return [-200, 350, 900, 1450, 2000].map((x, i) => scene.add.ellipse(x, y, 900, 420, colors[i % colors.length]));
+}
+
+// La granja: el sol, lomas, el granero rojo, el silo y un molino que da vueltas.
+function drawFarm(scene, layer) {
+  const blades = scene.add.container(1640, 360);
+  for (let k = 0; k < 4; k += 1) blades.add(scene.add.rectangle(0, 0, 230, 34, 0xfff6e5).setOrigin(0, 0.5).setStrokeStyle(4, 0x8b5a2b).setAngle(k * 90));
+  blades.add(scene.add.circle(0, 0, 18, 0x8b5a2b));
+  scene.tweens.add({ targets: blades, angle: 360, duration: 9000, repeat: -1 });
+  addAll(layer, [
+    scene.add.circle(300, 150, 80, 0xfff1b8, 0.95),
+    ...clouds(scene, [[700, 120, 1], [1500, 180, 0.9], [-100, 260, 0.8]], 0.8),
+    ...hills(scene, 900, [0x7fd06a, 0x6cc24a]),
+    // El granero, con su techo y su puerta en X.
+    scene.add.rectangle(560, 640, 360, 330, 0xd64541).setStrokeStyle(6, 0x1b1530),
+    scene.add.triangle(560, 475, 0, 120, 200, 0, 400, 120, 0x8a3030).setOrigin(0.5, 1).setStrokeStyle(6, 0x1b1530),
+    scene.add.rectangle(560, 720, 150, 170, 0xffffff).setStrokeStyle(6, 0x1b1530),
+    scene.add.rectangle(560, 720, 200, 10, 0xd64541).setAngle(48),
+    scene.add.rectangle(560, 720, 200, 10, 0xd64541).setAngle(-48),
+    // El silo.
+    scene.add.rectangle(820, 600, 130, 420, 0xb8c4d0).setStrokeStyle(6, 0x1b1530),
+    scene.add.ellipse(820, 390, 130, 90, 0x8a96a8).setStrokeStyle(6, 0x1b1530),
+    // El molino.
+    scene.add.triangle(1640, 820, 0, 460, 60, 0, 120, 460, 0xc98b4f).setOrigin(0.5, 1).setStrokeStyle(5, 0x5c3a1a),
+    blades,
+  ]);
+}
+
+// El paisaje que ve el tren: cielo de tarde, montañas y el pasto de abajo con las vías.
+function drawCountry(scene, layer) {
+  const sky = scene.add.graphics();
+  sky.fillGradientStyle(0xffb36b, 0xffb36b, 0xffe6b8, 0xffe6b8, 1, 1, 1, 1);
+  sky.fillRect(-600, -700, 3200, 1800);
+  addAll(layer, [
+    sky,
+    scene.add.circle(1500, 330, 120, 0xfff1b8, 0.95),
+    scene.add.triangle(200, 900, 0, 520, 420, 0, 840, 520, 0x8a7ab0).setOrigin(0.5, 1),
+    scene.add.triangle(900, 900, 0, 420, 360, 0, 720, 420, 0x9d8fc6).setOrigin(0.5, 1),
+    scene.add.triangle(1700, 900, 0, 560, 460, 0, 920, 560, 0x8a7ab0).setOrigin(0.5, 1),
+    ...hills(scene, 1050, [0x8fd06a, 0x7fc25a]),
+    scene.add.rectangle(1000, 1300, 4000, 500, 0x6cb04a),
+  ]);
+}
+
+// Lo que pasa junto al tren (siempre, aunque haya imagen de fondo): las vías, los durmientes, postes y arbustos.
+// Cada fila es un contenedor que se recorre hacia la izquierda lo de un hueco y vuelve a empezar (parece que no acaba).
+function drawTrainRide(scene, layer) {
+  const row = (gap, speed, make) => {
+    const strip = scene.add.container(0, 0);
+    for (let x = -800; x < 3000; x += gap) strip.add(make(x));
+    scene.tweens.add({ targets: strip, x: -gap, duration: (gap / speed) * 1000, repeat: -1 });
+    return strip;
+  };
+  const posts = row(560, 520, (x) =>
+    scene.add.container(x, 0, [
+      scene.add.rectangle(0, 830, 16, 470, 0x6b4223).setStrokeStyle(3, 0x3a2414),
+      scene.add.rectangle(0, 620, 90, 12, 0x6b4223).setStrokeStyle(3, 0x3a2414),
+    ]),
+  );
+  const bushes = row(380, 760, (x) => scene.add.ellipse(x, 1062, 150, 70, 0x4f9a3a).setStrokeStyle(4, 0x2f6a2a));
+  const ties = row(70, 1100, (x) => scene.add.rectangle(x, 1088, 18, 22, 0x6b4223));
+  addAll(layer, [posts, bushes, ties, scene.add.rectangle(1000, 1080, 4000, 8, 0x5a5a6a), scene.add.rectangle(1000, 1094, 4000, 8, 0x5a5a6a)]);
+}
+
+// La feria: banderitas, carpas de rayas y globos que suben.
+function drawFair(scene, layer) {
+  const flags = [];
+  const colors = [0xff5a5f, 0xffd02a, 0x3fa7ff, 0x4cd97b];
+  for (const [y, from, to] of [[180, -100, 900], [220, 1100, 2100]]) {
+    for (let x = from, k = 0; x < to; x += 60, k += 1) {
+      flags.push(scene.add.triangle(x, y + Math.sin(x / 200) * 20, 0, 0, 40, 0, 20, 36, colors[k % colors.length]).setOrigin(0.5, 0));
+    }
+  }
+  const tents = [];
+  for (const [x, color] of [[160, 0x3fa7ff], [1840, 0xb07cff]]) {
+    tents.push(scene.add.rectangle(x, 700, 300, 200, 0xffffff).setStrokeStyle(5, 0x1b1530));
+    for (let k = -1; k <= 1; k += 1) tents.push(scene.add.rectangle(x + k * 100, 700, 50, 200, color));
+    tents.push(scene.add.triangle(x, 600, 0, 140, 170, 0, 340, 140, color).setOrigin(0.5, 1).setStrokeStyle(5, 0x1b1530));
+  }
+  const balloons = [0xff5a5f, 0xffd02a, 0x4cd97b, 0xff5fd2].map((color, i) => {
+    const balloon = scene.add.container(300 + i * 450, 1100, [scene.add.rectangle(0, 50, 2, 70, 0x1b1530), scene.add.ellipse(0, 0, 50, 62, color).setStrokeStyle(3, 0x1b1530)]);
+    scene.tweens.add({ targets: balloon, y: -500, duration: 14000 + i * 1500, delay: i * 2600, repeat: -1 });
+    return balloon;
+  });
+  addAll(layer, [scene.add.circle(1700, 120, 80, 0xfff1b8, 0.95), ...clouds(scene, [[500, 300, 0.8], [1450, 380, 0.7]], 0.7), ...flags, ...tents, ...balloons]);
+}
+
+// La rueda de la fortuna (siempre, aunque haya imagen de fondo): las patas, el aro y el centro. Los rayos que van a
+// cada canastilla los dibuja la canastilla misma (ver 'cabin' y movePlatforms), así giran exacto con ella. Las
+// canastillas cuelgan de su gancho, así que el centro de la rueda está a esa altura arriba de donde dan vueltas.
+function drawWheel(scene, layer) {
+  const cx = 1000;
+  const cy = 470 - CABIN_HOOK;
+  const radius = 255;
+  const legs = scene.add.graphics();
+  legs.lineStyle(18, 0x8a90a8, 1);
+  legs.lineBetween(cx, cy, cx - 190, 800);
+  legs.lineBetween(cx, cy, cx + 190, 800);
+  addAll(layer, [
+    legs,
+    scene.add.circle(cx, cy, radius).setStrokeStyle(10, 0xd8dce8),
+    scene.add.circle(cx, cy, radius - 50).setStrokeStyle(5, 0xffffff, 0.8),
+    scene.add.circle(cx, cy, 30, 0xffd02a).setStrokeStyle(5, 0x1b1530),
   ]);
 }

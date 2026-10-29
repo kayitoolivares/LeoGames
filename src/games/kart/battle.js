@@ -12,7 +12,14 @@ import { INK_MS, RACER_RADIUS, SHIELD_MS, THROW_POSE_MS } from './Racer.js';
 //   estrella: hay una estrella en la arena: el que la toca se la lleva (arriba de su kart) y va sumando tiempo; si
 //             le pegan, la suelta. Gana el que la tuvo más tiempo.
 //   monedas:  van saliendo monedas por la arena; si te pegan se te caen 3. Gana el que junte más.
+// En equipos (Rojos contra Azules, 2 y 2, en la arena del fuerte): lo de tu equipo no te hace nada, los globos son del
+// color del equipo y se suman los globos, el tiempo con la estrella o las monedas de los dos.
 export const BATTLE_RACERS = 4;
+// Los dos equipos (también los de la carrera por equipos).
+export const TEAMS = [
+  { name: 'Rojos', color: 0xff5a5f, emoji: '🔴' },
+  { name: 'Azules', color: 0x3fa7ff, emoji: '🔵' },
+];
 export const BATTLE_KINDS = {
   globos: { emoji: '🎈', image: 'globos', name: 'Globos', info: 'Revienta los globos de los demás: gana el último con globos', ms: 150000 },
   estrella: { emoji: '⭐', image: 'estrella', name: 'Atrapa la estrella', info: 'Llévate la estrella y no la sueltes: gana el que la tenga más tiempo', ms: 120000 },
@@ -34,6 +41,19 @@ const OBSTACLES = [
   { x: 34, z: -24, r: 4.5, h: 4, color: 0x4cd97b },
   { x: -34, z: -24, r: 4.5, h: 4, color: 0xb07cff },
 ];
+// La arena del fuerte (batallas en equipos): un fuerte de cada equipo (`team`), una torre en medio y dos muros.
+const FORT_OBSTACLES = [
+  { x: -44, z: 0, r: 7, h: 7, color: TEAMS[0].color, team: 0 },
+  { x: 44, z: 0, r: 7, h: 7, color: TEAMS[1].color, team: 1 },
+  { x: 0, z: 0, r: 5, h: 9, color: 0xffd02a },
+  { x: 0, z: 40, r: 4.5, h: 4, color: 0x4cd97b },
+  { x: 0, z: -40, r: 4.5, h: 4, color: 0xb07cff },
+];
+// Cómo se ve cada arena: sus bloques, el piso (anillos de colores o mitad roja y mitad azul) y las llantas.
+const ARENAS = {
+  juguetes: { obstacles: OBSTACLES, floor: 'rings', tires: [0xe53935, 0xffffff], panorama: 'arena' },
+  fuerte: { obstacles: FORT_OBSTACLES, floor: 'halves', tires: [TEAMS[0].color, TEAMS[1].color], panorama: 'fuerte' },
+};
 // La compu: qué tan cerca usa sus poderes y cuándo regresa al centro.
 const CPU_SHOOT_RANGE = 40;
 const CPU_AIM = 0.35;
@@ -43,29 +63,31 @@ const CPU_GAS = 0.85;
 const CPU_INK_CHANCE = 0.004;
 
 // La arena: piso redondo de colores, llantas alrededor y bloques. Tiene las mismas cosas que una pista que
-// usan los cohetes y el mapa (closest, points), para poder reutilizarlos.
+// usan los cohetes y el mapa (closest, points), para poder reutilizarlos. `kind`: juguetes o fuerte (ver ARENAS).
 export class Arena {
-  constructor() {
+  constructor(kind = 'juguetes') {
     this.isArena = true;
+    this.kind = kind;
+    this.layout = ARENAS[kind] ?? ARENAS.juguetes;
+    // El paisaje de fondo (kart/fondos), si hay.
+    this.panorama = this.layout.panorama;
     this.radius = ARENA_RADIUS;
     this.wallDistance = ARENA_RADIUS;
     this.roadWidth = ARENA_RADIUS * 2;
-    this.obstacles = OBSTACLES;
+    this.obstacles = this.layout.obstacles;
     this.points = Array.from({ length: 64 }, (_, i) => {
       const a = (i / 64) * Math.PI * 2;
       return new THREE.Vector3(Math.cos(a) * ARENA_RADIUS, 0, Math.sin(a) * ARENA_RADIUS);
     });
     this.count = this.points.length;
     // Cajitas: un anillo afuera y unas entre los bloques.
+    const inner = kind === 'fuerte' ? [[-20, 18], [20, 18], [-20, -18], [20, -18]] : [[0, 24], [0, -24], [24, 0], [-24, 0]];
     this.boxSpots = [
       ...Array.from({ length: 8 }, (_, i) => {
         const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
         return { x: Math.cos(a) * 52, z: Math.sin(a) * 52 };
       }),
-      { x: 0, z: 24 },
-      { x: 0, z: -24 },
-      { x: 24, z: 0 },
-      { x: -24, z: 0 },
+      ...inner.map(([x, z]) => ({ x, z })),
     ];
   }
 
@@ -95,7 +117,37 @@ export class Arena {
     const outside = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.MeshLambertMaterial({ color: 0x6abf4b }));
     outside.rotation.x = -Math.PI / 2;
     scene.add(outside);
-    // Piso de juguete: anillos de colores.
+    if (this.layout.floor === 'halves') this.addHalves(scene);
+    else this.addRings(scene);
+    // Llantas alrededor.
+    const count = 90;
+    const tires = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.1, 1.1, 1.3, 10), new THREE.MeshLambertMaterial(), count);
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+    // (En el fuerte, del lado de cada equipo, de su color y blancas.)
+    const halves = this.layout.floor === 'halves';
+    for (let i = 0; i < count; i += 1) {
+      const a = (i / count) * Math.PI * 2;
+      tires.setMatrixAt(i, matrix.makeTranslation(Math.cos(a) * (ARENA_RADIUS + 1.2), 0.65, Math.sin(a) * (ARENA_RADIUS + 1.2)));
+      const hex = halves ? (i % 2 ? 0xffffff : this.layout.tires[Math.cos(a) < 0 ? 0 : 1]) : this.layout.tires[i % 2];
+      tires.setColorAt(i, color.setHex(hex));
+    }
+    scene.add(tires);
+    // Bloques de juguete (con una letra pintada, como los cubos de los bebés); en el fuerte, los fuertes de cada equipo.
+    for (const o of this.obstacles) {
+      if (o.team !== undefined) {
+        this.addFort(scene, o);
+        continue;
+      }
+      const block = new THREE.Mesh(new THREE.BoxGeometry(o.r * 1.5, o.h, o.r * 1.5), new THREE.MeshLambertMaterial({ color: o.color }));
+      block.position.set(o.x, o.h / 2, o.z);
+      block.rotation.y = Math.PI / 4;
+      scene.add(block);
+    }
+  }
+
+  // Piso de juguete: anillos de colores.
+  addRings(scene) {
     const colors = [0xffe9a8, 0xbfe6ff, 0xffc8e2, 0xc8f0c0];
     for (let k = 0; k < 6; k += 1) {
       const outer = ARENA_RADIUS * (1 - k / 6);
@@ -107,24 +159,49 @@ export class Arena {
       ring.position.y = 0.02;
       scene.add(ring);
     }
-    // Llantas alrededor.
-    const count = 90;
-    const tires = new THREE.InstancedMesh(new THREE.CylinderGeometry(1.1, 1.1, 1.3, 10), new THREE.MeshLambertMaterial(), count);
-    const matrix = new THREE.Matrix4();
-    const color = new THREE.Color();
-    for (let i = 0; i < count; i += 1) {
-      const a = (i / count) * Math.PI * 2;
-      tires.setMatrixAt(i, matrix.makeTranslation(Math.cos(a) * (ARENA_RADIUS + 1.2), 0.65, Math.sin(a) * (ARENA_RADIUS + 1.2)));
-      tires.setColorAt(i, color.setHex(i % 2 ? 0xffffff : 0xe53935));
+  }
+
+  // El fuerte: la mitad de cada equipo pintada de su color (clarito), una raya blanca en medio y un círculo al centro.
+  addHalves(scene) {
+    [0xffd2d2, 0xd2e6ff].forEach((hex, team) => {
+      // (Acostado, el ángulo del círculo va de x hacia -z: la mitad roja es la de x negativas.)
+      const half = new THREE.Mesh(new THREE.CircleGeometry(ARENA_RADIUS, 48, Math.PI / 2 + team * Math.PI, Math.PI), new THREE.MeshLambertMaterial({ color: hex }));
+      half.rotation.x = -Math.PI / 2;
+      half.position.y = 0.02;
+      scene.add(half);
+    });
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(1.4, ARENA_RADIUS * 2), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    line.rotation.x = -Math.PI / 2;
+    line.position.y = 0.03;
+    const circle = new THREE.Mesh(new THREE.RingGeometry(12, 13.4, 40), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    circle.rotation.x = -Math.PI / 2;
+    circle.position.y = 0.03;
+    scene.add(line, circle);
+  }
+
+  // Un fuerte del color de su equipo: torre cuadrada con almenas y su bandera arriba.
+  addFort(scene, o) {
+    const fort = new THREE.Group();
+    const size = o.r * 1.5;
+    const material = new THREE.MeshLambertMaterial({ color: o.color });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(size, o.h, size), material);
+    body.position.y = o.h / 2;
+    fort.add(body);
+    for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, -1], [0, 1], [-1, 0], [1, 0]]) {
+      const merlon = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.8, 1.8), material);
+      merlon.position.set((x * (size - 1.8)) / 2, o.h + 0.9, (z * (size - 1.8)) / 2);
+      fort.add(merlon);
     }
-    scene.add(tires);
-    // Bloques de juguete (con una letra pintada, como los cubos de los bebés).
-    for (const o of OBSTACLES) {
-      const block = new THREE.Mesh(new THREE.BoxGeometry(o.r * 1.5, o.h, o.r * 1.5), new THREE.MeshLambertMaterial({ color: o.color }));
-      block.position.set(o.x, o.h / 2, o.z);
-      block.rotation.y = Math.PI / 4;
-      scene.add(block);
-    }
+    const door = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 0.3), new THREE.MeshLambertMaterial({ color: 0x5a3a2a }));
+    door.position.set(o.x < 0 ? size / 2 + 0.1 : -size / 2 - 0.1, 2, 0);
+    door.rotation.y = Math.PI / 2;
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 7, 6), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    pole.position.y = o.h + 3.5;
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(4, 2.4), new THREE.MeshBasicMaterial({ color: o.color, side: THREE.DoubleSide }));
+    flag.position.set(2, o.h + 5.6, 0);
+    fort.add(door, pole, flag);
+    fort.position.set(o.x, 0, o.z);
+    scene.add(fort);
   }
 
   // No deja salir a nadie de la arena ni atravesar los bloques.
@@ -136,7 +213,7 @@ export class Arena {
       racer.z *= limit / dist;
       racer.speed *= 0.9;
     }
-    for (const o of OBSTACLES) {
+    for (const o of this.obstacles) {
       const dx = racer.x - o.x;
       const dz = racer.z - o.z;
       const d = Math.hypot(dx, dz) || 0.01;
@@ -149,11 +226,13 @@ export class Arena {
   }
 }
 
-// Las reglas de la batalla. `game` es el KartGame (con sus karts, su escena y su HUD); `kind`, cuál batalla.
+// Las reglas de la batalla. `game` es el KartGame (con sus karts, su escena y su HUD); `kind`, cuál batalla;
+// `teams`: Rojos contra Azules (cada kart ya trae su `team`).
 export class Battle {
-  constructor(game, kind = 'globos') {
+  constructor(game, kind = 'globos', { teams = false } = {}) {
     this.game = game;
     this.kind = kind;
+    this.teams = teams;
     this.arena = game.track;
     this.balloonGeometry = new THREE.SphereGeometry(0.6, 12, 10);
     this.stringMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
@@ -184,9 +263,9 @@ export class Battle {
     return { group, mesh, holder: null, x: 0, z: 0, banned: null, bannedMs: 0, hopMs: 0 };
   }
 
-  // Tres globos del color del jugador amarrados atrás del kart.
+  // Tres globos del color del jugador (o de su equipo) amarrados atrás del kart.
   addBalloons(racer) {
-    const material = new THREE.MeshLambertMaterial({ color: racer.color });
+    const material = new THREE.MeshLambertMaterial({ color: this.teams ? racer.teamColor : racer.color });
     racer.balloonGroup = new THREE.Group();
     racer.balloonMeshes = [-0.8, 0, 0.8].map((x, i) => {
       const balloon = new THREE.Mesh(this.balloonGeometry, material);
@@ -211,10 +290,17 @@ export class Battle {
     for (const coin of this.coins ?? []) this.game.scene.remove(coin.mesh);
     if (this.coins) this.coins = [];
     this.coinMs = 0;
+    const mates = [0, 0];
     this.game.racers.forEach((racer, i, list) => {
       const a = (i / list.length) * Math.PI * 2;
-      const x = Math.cos(a) * 50;
-      const z = Math.sin(a) * 50;
+      let x = Math.cos(a) * 50;
+      let z = Math.sin(a) * 50;
+      // En equipos, cada equipo junto a su fuerte (los Rojos a la izquierda y los Azules a la derecha).
+      if (this.teams) {
+        const k = mates[racer.team]++;
+        x = (racer.team === 0 ? -1 : 1) * 56;
+        z = k % 2 ? -18 - Math.floor(k / 2) * 8 : 18 + Math.floor(k / 2) * 8;
+      }
       racer.reset(x, z, Math.atan2(-x, -z), 0);
       racer.balloons = BALLOONS;
       racer.safeMs = 0;
@@ -228,6 +314,28 @@ export class Battle {
 
   alive() {
     return this.game.racers.filter((racer) => !racer.out);
+  }
+
+  // ¿Van en el mismo equipo? (Sin equipos, nadie.)
+  mates(a, b) {
+    return this.teams && a !== b && a.team === b.team;
+  }
+
+  // Los que siguen jugando y no son de su equipo.
+  foesOf(racer) {
+    return this.alive().filter((other) => other !== racer && !this.mates(racer, other));
+  }
+
+  // Lo que lleva cada equipo: globos (de los que siguen), segundos con la estrella o monedas.
+  teamScores() {
+    const scores = [0, 0];
+    for (const racer of this.game.racers) {
+      if (racer.team === undefined) continue;
+      if (this.kind === 'globos') scores[racer.team] += racer.out ? 0 : racer.balloons;
+      else if (this.kind === 'estrella') scores[racer.team] += racer.holdMs / 1000;
+      else scores[racer.team] += racer.battleCoins;
+    }
+    return scores.map((score) => Math.floor(score));
   }
 
   update(dtMs) {
@@ -257,9 +365,10 @@ export class Battle {
     game.projectiles.update(dtMs, players, this.arena, (victim, projectile) => (projectile.kind === 'jelly' ? game.bounceOff(victim) : this.hit(victim, projectile.owner)));
     if (this.star) this.updateStar(dtMs);
     if (this.coins) this.updateCoins(dtMs);
-    // Se acaba si se acabó el tiempo; en la de globos, también si queda uno o si ya no queda ningún jugador (para no
-    // esperar a la compu).
-    const lastOne = this.kind === 'globos' && (players.length <= 1 || players.every((racer) => racer.isCpu));
+    // Se acaba si se acabó el tiempo; en la de globos, también si queda uno (o un solo equipo) o si ya no queda ningún
+    // jugador (para no esperar a la compu).
+    const standing = this.teams ? new Set(players.map((racer) => racer.team)).size : players.length;
+    const lastOne = this.kind === 'globos' && (standing <= 1 || players.every((racer) => racer.isCpu));
     if (lastOne || this.timeMs === 0) this.finish();
   }
 
@@ -357,6 +466,8 @@ export class Battle {
   // o lo acaben de reventar. Sin globos queda fuera.
   hit(victim, attacker) {
     if (victim.out || victim.safeMs > 0) return;
+    // (Lo de tu equipo no te hace nada.)
+    if (attacker && this.mates(victim, attacker)) return;
     const hurt = victim.hit();
     if (!hurt) {
       if (!victim.isCpu) victim.say('¡La burbuja te salvó!');
@@ -416,7 +527,7 @@ export class Battle {
     racer.itemUses -= 1;
     if (racer.itemUses <= 0) racer.item = null;
     racer.throwMs = THROW_POSE_MS;
-    const rivals = this.alive().filter((other) => other !== racer);
+    const rivals = this.foesOf(racer);
     if (item === 'rocket') game.projectiles.addRocket(racer, nearest(racer, rivals));
     else if (item === 'banana' || item === 'banana3') game.projectiles.addBanana(racer);
     else if (item === 'turbo') racer.boost(1.7, 2000);
@@ -428,7 +539,7 @@ export class Battle {
       game.strikeLightning(racer);
       // (En Atrapa la estrella, al que la trae se le cae.)
       const holder = this.star?.holder;
-      if (holder && holder !== racer && holder.shrinkMs > 0) this.dropStar(holder);
+      if (holder && holder !== racer && !this.mates(racer, holder) && holder.shrinkMs > 0) this.dropStar(holder);
     }
     else if (['star', 'ghost', 'jelly', 'tornado', 'spring', 'sticky'].includes(item)) game.usePower(racer, item, null, nearest(racer, rivals));
     else if (item === 'ink') {
@@ -445,14 +556,17 @@ export class Battle {
   // Cerca de la pared se regresa al centro y le saca la vuelta a los bloques.
   cpuInput(racer) {
     const game = this.game;
-    const rivals = this.alive().filter((other) => other !== racer);
+    const rivals = this.foesOf(racer);
     let target = null;
-    // Atrapa la estrella: va por ella (o por el que la trae); si la trae él, se aleja del más cercano.
+    // Atrapa la estrella: va por ella (o por el que la trae); si la trae él, se aleja del más cercano. Si la trae
+    // alguien de su equipo, lo cuida: va contra el rival que esté más cerca de él.
     if (this.star) {
       const star = this.star;
       if (star.holder === racer) {
         const foe = nearest(racer, rivals);
         if (foe) target = { x: racer.x * 2 - foe.x, z: racer.z * 2 - foe.z };
+      } else if (star.holder && this.mates(racer, star.holder)) {
+        target = nearest(star.holder, rivals);
       } else {
         target = star.holder ?? { x: star.x, z: star.z };
       }
@@ -484,9 +598,11 @@ export class Battle {
   }
 
   // Lo que dice el panel de cada jugador: sus globos y el reloj.
+  // (En equipos, también cómo van los dos equipos.)
   panel(racer) {
     const pos = { globos: racer.out ? '💥' : '🎈'.repeat(racer.balloons), estrella: `⭐ ${clock(racer.holdMs)}`, monedas: `🪙 ${racer.battleCoins}` }[this.kind];
-    return { pos, lap: `⏱️ ${clock(this.timeMs)}` };
+    const [red, blue] = this.teams ? this.teamScores() : [];
+    return { pos, lap: `⏱️ ${clock(this.timeMs)}${this.teams ? ` · ${TEAMS[0].emoji} ${red} ${TEAMS[1].emoji} ${blue}` : ''}` };
   }
 
   // Los globos que le quedan se ven; al que le acaban de reventar uno parpadea un rato (no le pueden pegar).
@@ -522,6 +638,10 @@ export class Battle {
     if (this.kind === 'estrella') ranking = [...game.racers].sort((a, b) => b.holdMs - a.holdMs || b.hits - a.hits);
     else if (this.kind === 'monedas') ranking = [...game.racers].sort((a, b) => b.battleCoins - a.battleCoins || b.hits - a.hits);
     else ranking = [...this.alive().sort((a, b) => b.balloons - a.balloons || b.hits - a.hits), ...[...this.outOrder].reverse()];
+    if (this.teams) {
+      this.finishTeams(ranking);
+      return;
+    }
     const winner = ranking[0];
     if (!winner.isCpu) rewards.earn('kart-batalla');
     game.hud.showResults(
@@ -529,6 +649,33 @@ export class Battle {
       { title: `¡Ganó ${winner.label}!`, footer: 'A = otra vez  ·  B = otra batalla  ·  X = taller', note: game.payout(ranking) },
     );
     say(`¡Ganó la batalla ${winner.label}, ${winner.driver.name}!`);
+    game.startCeremony(ranking);
+  }
+
+  // En equipos: gana el equipo que sumó más (en globos, el que todavía tenga a alguien jugando); empatados, el que
+  // pegó más. Al podio va primero el equipo ganador.
+  finishTeams(ranking) {
+    const game = this.game;
+    const scores = this.teamScores();
+    const hits = [0, 0];
+    for (const racer of game.racers) hits[racer.team] += racer.hits;
+    const standing = [0, 1].map((team) => this.alive().some((racer) => racer.team === team));
+    let winner = null;
+    if (this.kind === 'globos' && standing[0] !== standing[1]) winner = standing[0] ? 0 : 1;
+    else if (scores[0] !== scores[1]) winner = scores[0] > scores[1] ? 0 : 1;
+    else if (hits[0] !== hits[1]) winner = hits[0] > hits[1] ? 0 : 1;
+    if (winner !== null) ranking = [...ranking.filter((racer) => racer.team === winner), ...ranking.filter((racer) => racer.team !== winner)];
+    if (winner !== null && game.racers.some((racer) => racer.team === winner && !racer.isCpu)) {
+      rewards.earn('kart-batalla');
+      rewards.earn('kart-equipo');
+    }
+    const score = `${TEAMS[0].emoji} ${scores[0]}  a  ${scores[1]} ${TEAMS[1].emoji}`;
+    game.hud.showResults(
+      ranking.map((racer) => ({ label: racer.label, color: hexToCss(racer.color), name: `${racer.displayName} ${TEAMS[racer.team].emoji}`, image: racer.driver.imageUrl })),
+      { title: winner === null ? `¡Empate! ${score}` : `¡Ganaron los ${TEAMS[winner].name}! ${score}`, footer: 'A = otra vez  ·  B = otra batalla  ·  X = taller', note: game.payout(ranking) },
+    );
+    say(winner === null ? '¡Empate entre los dos equipos!' : `¡Ganaron la batalla los ${TEAMS[winner].name}!`);
+    this.winnerTeam = winner;
     game.startCeremony(ranking);
   }
 }

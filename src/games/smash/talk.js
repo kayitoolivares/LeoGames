@@ -58,6 +58,10 @@ export class SmashTalk extends FightTalk {
       star: [`¡${fighterName(fighter)} agarró la estrella!`],
       boomerang: ['¡Un bumerán! Va y regresa'],
       fireflower: ['¡Flor de fuego!'],
+      waterballoon: ['¡Globo de agua! ¡Cuidado, que moja!'],
+      pie: [`¡${fighterName(fighter)} trae un pastel!`],
+      magnet: ['¡Un imán! Jala a los rivales'],
+      umbrella: [`¡${fighterName(fighter)} abrió el paraguas!`],
     }[type];
     if (lines) this.line(lines);
   }

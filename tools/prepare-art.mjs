@@ -12,8 +12,8 @@
 //                                                  y manejando un kart: atras | giro | lado | frente
 //                                                  y las animaciones (ui/motion.js): parpadeo | feliz | enojado |
 //                                                  asustado | caer | mareado | baile1 | baile2
-//   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella
-//   arte/smash/fondos/<escenario>.png              castillo | nubes | barco | espacio | volcan
+//   arte/smash/objetos/<objeto>.png                martillo | bomba | corazon | estrella (ver ITEMS)
+//   arte/smash/fondos/<escenario>.png              castillo | nubes | barco | espacio | volcan (ver STAGES)
 // Los demás juegos (ver GAMES): arte/<juego>/<carpeta>/<nombre>.png
 //
 // A personajes, monstruos y objetos les quita el fondo liso (o de cuadritos, como sale a veces de Gemini),
@@ -38,13 +38,13 @@ const CHARACTERS = [
   ...Array.from({ length: 10 }, (_, i) => `bloque${i + 1}`), 'octobloque',
 ];
 const POSES = ['normal', 'golpe', 'salto', 'dolor', 'caminar1', 'caminar2', 'caminar3', 'caminar4', 'patada', 'cubrirse', 'especial', 'gana', 'aire', 'agachado', 'agarre', 'entrada', 'atras', 'giro', 'lado', 'frente', 'parpadeo', 'feliz', 'enojado', 'asustado', 'caer', 'mareado', 'baile1', 'baile2', 'frente_feliz', 'frente_enojado', 'lado_feliz', 'lado_enojado'];
-const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella', 'bate', 'pistola', 'patineta', 'huevo', 'bola-super', 'diana', 'bumeran', 'flor-fuego', 'resorte', 'capsula', 'tornado', 'saco'];
-const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos', 'ring', 'cancha'];
+const ITEMS = ['martillo', 'bomba', 'corazon', 'estrella', 'bate', 'pistola', 'patineta', 'huevo', 'bola-super', 'diana', 'bumeran', 'flor-fuego', 'resorte', 'capsula', 'tornado', 'saco', 'globo-agua', 'pastel', 'iman', 'paraguas', 'burbuja'];
+const STAGES = ['castillo', 'nubes', 'barco', 'espacio', 'volcan', 'selva', 'juguetes', 'mar', 'embrujada', 'pastel', 'ciudad', 'globos', 'ring', 'cancha', 'granja', 'tren', 'feria'];
 
 // Poses de los monstruos y los jefes (ver src/ui/creature.js): <monstruo>-<pose>.
 const MONSTER_POSES = ['paso', 'ataque', 'dolor', 'burla'];
 const BOSS_POSES = [...MONSTER_POSES, 'furioso', 'cargando', 'mareado', 'derrotado'];
-const BRAWL_BOSSES = ['rey-slime', 'gran-hongo', 'dragon-lava', 'capitan-pulpo', 'gran-yeti', 'rey-calabaza', 'rey-pastel', 'mega-robot', 'rey-rex'];
+const BRAWL_BOSSES = ['rey-slime', 'gran-hongo', 'dragon-lava', 'capitan-pulpo', 'gran-yeti', 'rey-calabaza', 'rey-pastel', 'mega-robot', 'rey-rex', 'rey-tiburon', 'gran-gorila'];
 const withPoses = (names, bosses = []) => names.flatMap((name) => [name, ...(bosses.includes(name) ? BOSS_POSES : MONSTER_POSES).map((pose) => `${name}-${pose}`)]);
 
 // Arte de los otros juegos: por carpeta, qué nombres valen y si es recorte (cutout) o fondo.
@@ -59,11 +59,12 @@ const GAMES = {
           'cangrejo', 'almeja', 'capitan-pulpo', 'muneco-nieve', 'yeti-bebe', 'gran-yeti', 'murcielago', 'calabaza', 'rey-calabaza',
           'gomita', 'cupcake', 'caramelo', 'rey-pastel', 'marcianito', 'ovni', 'robotito', 'mega-robot',
           'raptor', 'ptero', 'trici', 'rey-rex',
+          'pececito', 'medusa', 'pez-globo', 'rey-tiburon', 'mono', 'serpiente', 'loro', 'gorilita', 'gran-gorila',
         ],
         BRAWL_BOSSES,
       ),
     },
-    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo', 'dulces', 'espacio', 'dinos'] },
+    fondos: { kind: 'background', names: ['pradera', 'bosque', 'volcan', 'playa', 'nieve', 'castillo', 'dulces', 'espacio', 'dinos', 'mar', 'selva'] },
     objetos: {
       kind: 'cutout',
       max: 192,
@@ -72,6 +73,8 @@ const GAMES = {
         'espada', 'escudo', 'iman', 'mascota', 'moneda', 'jaula',
         'sombrero-vaquero', 'gorra', 'sombrero-pirata', 'gorro-chef', 'casco-vikingo', 'sombrero-mago',
         'dinosaurio', 'pollo-gigante', 'canon', 'roca', 'huevo-dino',
+        // Defiende la base y la trampa de la selva.
+        'base', 'barricada', 'torrecita', 'resorte', 'coco',
       ],
     },
   },
@@ -84,7 +87,15 @@ const GAMES = {
         'pinguino', 'pinguino-panza', 'carambano', 'bola-nieve', 'galleta', 'dona', 'paleta', 'chicle', 'fantasma', 'fantasma-boca', 'esqueleto', 'vela',
       ]),
     },
-    jefes: { kind: 'cutout', max: 320, names: withPoses(['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon'], ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon']) },
+    // (Con los jefes de la Isla de los jefes: la Abeja Reina, el Pez Globo y la Gelatina Gigante.)
+    jefes: {
+      kind: 'cutout',
+      max: 320,
+      names: withPoses(
+        ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon', 'abeja-reina', 'pez-globo', 'gelatina'],
+        ['rey-hongo', 'rey-nube', 'rey-cangrejo', 'rey-dragon', 'abeja-reina', 'pez-globo', 'gelatina'],
+      ),
+    },
     objetos: {
       kind: 'cutout',
       max: 128,
@@ -100,10 +111,14 @@ const GAMES = {
       max: 128,
       names: ['cohete', 'platano', 'turbo', 'burbuja', 'cometa', 'rayo', 'tinta', 'platanos3', 'globos', 'estrella', 'fantasma', 'bala', 'abeja', 'iman', 'gelatina', 'tornado', 'resorte', 'bomba', 'cronometro'],
     },
-    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura', 'copa-sorpresa', 'copa-tesoro'] },
+    copas: { kind: 'cutout', max: 256, names: ['copa-hoja', 'copa-estrella', 'copa-aventura', 'copa-sorpresa', 'copa-tesoro', 'copa-fiesta'] },
     fondos: {
       kind: 'background',
-      names: ['pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes', 'embrujada', 'pastel', 'dinos', 'nubes', 'desierto', 'neon', 'casa', 'pirata'],
+      names: [
+        'pradera', 'playa', 'dulces', 'nieve', 'castillo', 'espacio', 'arena', 'volcan', 'selva', 'mar', 'juguetes', 'embrujada', 'pastel', 'dinos', 'nubes', 'desierto', 'neon', 'casa', 'pirata',
+        // Copa Fiesta y la arena del fuerte (batallas en equipos).
+        'granja', 'feria', 'jardin', 'mina', 'fuerte',
+      ],
     },
     texturas: { kind: 'background', max: 512, names: ['pasto', 'arena', 'nieve', 'dulce', 'asfalto', 'roca', 'selva', 'alfombra', 'betun', 'nube', 'madera', 'azulejo', 'neon'] },
     // Medallas (escuela y récords) y lo de la tele (helicóptero, dirigible, globo, camarógrafo).
@@ -122,7 +137,7 @@ const GAMES = {
     peligros: {
       kind: 'cutout',
       max: 256,
-      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota', 'espectro', 'fresa', 'dino', 'relampago', 'rodadora', 'taxi', 'pantufla', 'bala-canon'],
+      names: ['oveja', 'cangrejo', 'dona', 'bola-nieve', 'meteorito', 'lava', 'tronco', 'pez-globo', 'pelota', 'espectro', 'fresa', 'dino', 'relampago', 'rodadora', 'taxi', 'pantufla', 'bala-canon', 'vaca', 'mazo', 'catarina', 'estalactita'],
     },
   },
   futbol: {
@@ -149,8 +164,25 @@ const GAMES = {
       names: ['hongo', 'arbusto', 'flores', 'bandera', 'palmera', 'cangrejo', 'castillo', 'estrella-mar', 'pino', 'pinguino', 'muneco', 'iglu', 'planeta', 'ovni', 'asteroide', 'cohete'],
     },
   },
+  // Laberinto come-frutas: el fondo de cada tema, las frutas (la fresa dorada es la de poder) y los fantasmitas.
+  laberinto: {
+    fondos: { kind: 'background', names: ['jardin', 'dulces', 'espacio', 'embrujada'] },
+    objetos: { kind: 'cutout', max: 128, names: ['cereza', 'fresa', 'naranja', 'manzana', 'sandia', 'uvas', 'platano', 'pina', 'fresa-dorada'] },
+    fantasmas: { kind: 'cutout', max: 128, names: ['chispa', 'rosita', 'nube', 'mandarina', 'asustado'] },
+  },
+  // Mundo de bloques: el sol, la luna, el pico y el slime, y las colinas lejanas recortadas (atrás se ve el cielo de día
+  // o de noche). Los bloques son de código.
+  bloques: {
+    objetos: { kind: 'cutout', max: 192, names: ['sol', 'luna', 'pico', 'slime'] },
+    paisaje: { kind: 'cutout', max: 1600, names: ['colinas'] },
+  },
+  // Guerra de pintura: los lanzadores (en la tinta de cada jugador) y adornos grandes alrededor de las arenas.
+  pintura: {
+    objetos: { kind: 'cutout', max: 128, names: ['chorrito', 'largo', 'rodillo', 'globo'] },
+    adornos: { kind: 'cutout', max: 384, names: ['columpio', 'resbaladilla', 'oso', 'torre-bloques', 'tren', 'trompo', 'sombrilla', 'castillo-arena'] },
+  },
   duelo: {
-    fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono', 'playa', 'nieve', 'espacio', 'cueva', 'guarida', 'fabrica'] },
+    fondos: { kind: 'background', names: ['dojo', 'lucha', 'azotea', 'trono', 'playa', 'nieve', 'espacio', 'cueva', 'guarida', 'fabrica', 'piramide', 'nave', 'arrecife'] },
     efectos: { kind: 'cutout', max: 256, names: ['pow', 'zas', 'chispa', 'polvo', 'onda', 'mareo'] },
     jefe: {
       kind: 'cutout',

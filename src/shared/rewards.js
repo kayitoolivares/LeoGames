@@ -25,6 +25,11 @@ export const STICKERS = [
   { id: 'pelea-rescate', emoji: '🔓', name: 'Al rescate', hint: 'Rompe una jaula y rescata a un amigo en Pelea en equipo' },
   { id: 'pelea-combo', emoji: '🔥', name: 'Combo de 20', hint: 'Hagan un combo de 20 golpes en equipo en Pelea en equipo' },
   { id: 'pelea-montar', emoji: '🦖', name: 'Jinete', hint: 'Súbete a un dinosaurio o a un pollo gigante en Pelea en equipo' },
+  // Pelea en equipo, ronda 4: el mar, la selva, la base y los niveles.
+  { id: 'pelea-mar', emoji: '🦈', name: 'Adiós Rey Tiburón', hint: 'Gana el Fondo del mar en Pelea en equipo' },
+  { id: 'pelea-selva', emoji: '🦍', name: 'Adiós Gran Gorila', hint: 'Gana la Selva en Pelea en equipo' },
+  { id: 'pelea-base', emoji: '🏰', name: 'Base segura', hint: 'Aguanten 10 oleadas en Defiende la base de Pelea en equipo' },
+  { id: 'pelea-nivel10', emoji: '🎖️', name: 'Nivel 10', hint: 'Sube un personaje hasta el nivel 10 en Pelea en equipo' },
   { id: 'plat-bandera', emoji: '🚩', name: 'Primera bandera', hint: 'Pasa un nivel de Súper Bolitas' },
   { id: 'plat-mundo-1', emoji: '🍄', name: 'Adiós Rey Hongo', hint: 'Gana el mundo de la pradera en Súper Bolitas' },
   { id: 'plat-mundo-2', emoji: '☁️', name: 'Adiós Rey Nube', hint: 'Gana el mundo de las nubes en Súper Bolitas' },
@@ -47,6 +52,10 @@ export const STICKERS = [
   { id: 'plat-batalla', emoji: '🪙', name: 'Rey de las monedas', hint: 'Juega una batalla de monedas en Súper Bolitas' },
   { id: 'plat-jefes', emoji: '👑', name: 'Todos los jefes', hint: 'Gana los jefes en serie en Súper Bolitas' },
   { id: 'plat-fantasma', emoji: '👻', name: 'Más rápido que tu fantasma', hint: 'Gánale a tu fantasma en la contrarreloj de Súper Bolitas' },
+  // Súper Bolitas: Carreritas, la Isla de los jefes y Arma tu nivel.
+  { id: 'plat-carrera', emoji: '🏃', name: 'Primero en llegar', hint: 'Gana una carrera en las Carreritas de Súper Bolitas' },
+  { id: 'plat-isla', emoji: '🏝️', name: 'Isla de los jefes', hint: 'Vence a la Abeja Reina, al Pez Globo y a la Gelatina Gigante en Súper Bolitas' },
+  { id: 'plat-mi-nivel', emoji: '🛠️', name: 'Hecho en casa', hint: 'Pasa un nivel que armaste tú en Súper Bolitas' },
   { id: 'smash-gana', emoji: '🥊', name: 'Campeón Bolitas', hint: 'Gana una pelea en Bolitas Bros' },
   { id: 'smash-super', emoji: '⚡', name: '¡Súper!', hint: 'Transfórmate en Bolitas Bros' },
   { id: 'smash-bomba', emoji: '💣', name: 'Bombazo', hint: 'Lanza una bomba en Bolitas Bros' },
@@ -59,6 +68,9 @@ export const STICKERS = [
   { id: 'smash-monedas', emoji: '💰', name: 'Monedero lleno', hint: 'Gana el modo Monedas de Bolitas Bros' },
   { id: 'smash-colina', emoji: '⛰️', name: 'Rey de la colina', hint: 'Gana el modo Rey de la colina de Bolitas Bros' },
   { id: 'smash-aventura', emoji: '🗺️', name: 'Aventurero', hint: 'Termina la Aventura de Bolitas Bros' },
+  // Bolitas Bros: combos de dúo y los escenarios nuevos.
+  { id: 'smash-duo', emoji: '🤝', name: 'Combo de dúo', hint: 'En equipo, usen su especial (B) los dos juntos y cerquita en Bolitas Bros' },
+  { id: 'smash-paseo', emoji: '🎡', name: 'De paseo', hint: 'Pelea en la Granja, el Tren en marcha y la Feria de Bolitas Bros' },
   { id: 'kart-gana', emoji: '🏁', name: 'Primer lugar', hint: 'Gana una carrera de Karts locos' },
   { id: 'kart-poder', emoji: '🚀', name: '¡Le diste!', hint: 'Pégale a alguien con un poder en Karts locos' },
   { id: 'kart-copa', emoji: '🏅', name: 'Copa de karts', hint: 'Gana una copa del Gran Premio en Karts locos' },
@@ -71,15 +83,26 @@ export const STICKERS = [
   { id: 'kart-maestro', emoji: '🎓', name: 'Maestro del volante', hint: 'Saca oro en todos los retos de la Escuela de manejo' },
   { id: 'kart-jefe', emoji: '👑', name: 'Le ganaste al jefe', hint: 'Gánale a un jefe en la Aventura de Karts locos' },
   { id: 'kart-aventura', emoji: '🗺️', name: 'Aventurero', hint: 'Pasa todos los retos de la Aventura de Karts locos' },
+  // Karts locos: Copa Fiesta, batallas en equipos y los puentes colgantes de la mina.
+  { id: 'kart-fiesta', emoji: '🎡', name: 'Copa Fiesta', hint: 'Gana la Copa Fiesta (granja, feria, jardín y mina) en Karts locos' },
+  { id: 'kart-equipo', emoji: '🤝', name: 'Batalla en equipo', hint: 'Gana una batalla en equipos (Rojos contra Azules) en Karts locos' },
+  { id: 'kart-red', emoji: '🕸️', name: '¡La red te salvó!', hint: 'Cáete de un puente colgante de la Mina de cristales en Karts locos' },
   { id: 'futbol-liga', emoji: '📋', name: 'Campeones de la Liga', hint: 'Gana la Liga del Fútbol de bolitas' },
   { id: 'golf-hoyo-en-uno', emoji: '⛳', name: '¡Hoyo en uno!', hint: 'Mete la pelota de un solo tiro en el Minigolf' },
   { id: 'golf-gana', emoji: '🏌️', name: 'Campeón del Minigolf', hint: 'Gana los 9 hoyos del Minigolf (o, jugando solo, termínalos en el par o abajo)' },
   { id: 'golf-mundo', emoji: '🌍', name: 'Vuelta al mundo', hint: 'Termina los hoyos de la playa, la nieve y el espacio en el Minigolf' },
   { id: 'golf-loco', emoji: '🎁', name: 'Minigolf loco', hint: 'Métela usando un poder de las cajas sorpresa en el Minigolf loco' },
+  { id: 'laberinto-nivel', emoji: '🍒', name: 'Come-frutas', hint: 'Cómanse todas las bolitas de un nivel del Laberinto' },
+  { id: 'laberinto-fantasmas', emoji: '👻', name: 'Cazafantasmitas', hint: 'Cómanse a los 4 fantasmitas con una sola fruta de poder en el Laberinto' },
+  { id: 'laberinto-recorrido', emoji: '🗺️', name: 'Recorrido completo', hint: 'Pasen los 4 laberintos del recorrido en el Laberinto' },
   { id: 'carrera-gana', emoji: '🏎️', name: 'Piloto veloz', hint: 'Gana una carrera vista desde arriba' },
   { id: 'carrera-copa', emoji: '🏆', name: 'Campeón de Carreras', hint: 'Gana un campeonato de Carreras vista desde arriba' },
   { id: 'carrera-cohete', emoji: '🚀', name: '¡Le atiné!', hint: 'Pégale a otro carro con un cohete en Carreras vista desde arriba' },
   { id: 'carrera-persecucion', emoji: '🦖', name: 'Más rápido que el Rex', hint: 'Sé el último que quede en la Persecución de Carreras' },
+  // Guerra de pintura.
+  { id: 'pintura-piso', emoji: '🎨', name: 'Pinta el piso', hint: 'Gana "Pinta el piso" en la Guerra de pintura' },
+  { id: 'pintura-10', emoji: '💦', name: 'Diez pintados', hint: 'Pinta a 10 rivales en una sola partida de la Guerra de pintura' },
+  { id: 'pintura-robots', emoji: '🤖', name: 'Adiós robotitos', hint: 'Ganen las 5 oleadas de Contra robots en la Guerra de pintura' },
   { id: 'futbol-gol', emoji: '⚽', name: '¡Gol!', hint: 'Mete un gol en Fútbol de bolitas' },
   { id: 'futbol-gana', emoji: '🏆', name: 'Campeones', hint: 'Gana un partido de Fútbol de bolitas' },
   { id: 'futbol-copa', emoji: '🥇', name: 'Copa de fútbol', hint: 'Gana los 3 partidos de la Copa en Fútbol de bolitas' },
@@ -99,9 +122,15 @@ export const STICKERS = [
   { id: 'duelo-retos', emoji: '🏅', name: 'Todos los retos', hint: 'Cumple los 10 retos del Duelo' },
   { id: 'duelo-familiar', emoji: '👨‍👩‍👧', name: 'Campeón de la familia', hint: 'Gana el Torneo familiar del Duelo' },
   { id: 'duelo-jefes', emoji: '👹', name: 'Cazajefes', hint: 'Vence a Dragonzote, Robotote y el Rey Bolón seguidos' },
+  // Duelo: combo de dúo en el 2 contra 2.
+  { id: 'duelo-duo', emoji: '🫂', name: 'Dúo dinámico', hint: 'En el 2 contra 2 del Duelo, usen su especial (X) los dos juntos y cerquita' },
   { id: 'bebe', emoji: '👶', name: 'Hora del bebé', hint: 'Jueguen el Modo Bebé' },
   { id: 'bebe-cuenta', emoji: '🎈', name: '¡Hasta el diez!', hint: 'Cuenta hasta el 10 reventando los globos del Modo Bebé' },
   { id: 'bloquecito-10', emoji: '🔟', name: 'Hasta el 10', hint: 'Cuenta del 1 al 10 con Bloquecito (Y sube de número)' },
+  // Mundo de bloques.
+  { id: 'bloques-diamante', emoji: '💎', name: '¡Diamante!', hint: 'Escarba hasta encontrar un diamante en Mundo de bloques' },
+  { id: 'bloques-casa', emoji: '🏠', name: 'Mi casita', hint: 'Construye una casita en Mundo de bloques: una cama con techo y una puerta' },
+  { id: 'bloques-noche', emoji: '🌙', name: 'Buenas noches', hint: 'Duérmete en una cama de noche en Mundo de bloques (Y junto a la cama)' },
   { id: 'coleccion', emoji: '⭐', name: 'Coleccionista', hint: 'Consigue 10 calcomanías' },
 ];
 
@@ -124,6 +153,8 @@ export const UNLOCKS = {
   'pelea-mundo-7': { sticker: 'pelea-castillo', label: 'Gana el castillo embrujado' },
   'pelea-mundo-8': { sticker: 'pelea-dulces', label: 'Gana Dulcelandia' },
   'pelea-mundo-9': { sticker: 'pelea-espacio', label: 'Gana el mundo del espacio' },
+  'pelea-mundo-10': { sticker: 'pelea-dinos', label: 'Gana el Valle de los dinos' },
+  'pelea-mundo-11': { sticker: 'pelea-mar', label: 'Gana el Fondo del mar' },
 };
 
 const COLLECTOR_AT = 10;

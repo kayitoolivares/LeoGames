@@ -15,6 +15,9 @@ import { burst, popText } from '../brawl/effects.js';
 //   plane (Ciudad):       una flecha avisa y cruza un avión de papel gigante.
 //   ropes (Ring):         las cuerdas del ring rebotan al que llega a la orilla caminando o brincando bajito.
 //   soccer (Cancha):      una flecha avisa y cruza rodando un balón de fútbol gigante.
+//   tractor (Granja):     una flecha avisa y pasa el tractor por el piso (hay que brincarlo).
+//   tunnel (Tren):        ¡túnel! viene por arriba y al que esté en las cajas o saltando se lo lleva (abajo no pasa nada).
+//   coaster (Feria):      cruza el carrito de la montaña rusa, subiendo y bajando.
 const EVERY_MS = { first: 9000, min: 11000, extra: 7000 };
 // Lo que cruza la pantalla: cómo se ve, qué tan rápido va, qué dice el letrero y cómo pega.
 const CROSSERS = {
@@ -64,6 +67,70 @@ const CROSSERS = {
       scene.add.ellipse(16, -8, 14, 22, 0x1b1530),
       scene.add.ellipse(40, -8, 14, 22, 0x1b1530),
       scene.add.ellipse(28, 18, 20, 12, 0x1b1530),
+    ],
+  },
+  // El tractor va por el piso, despacito: se puede brincar.
+  tractor: {
+    label: '¡Tractor! 🚜',
+    color: '#9be36a',
+    speed: 520,
+    ground: true,
+    lift: 72,
+    say: true,
+    hit: { damage: 11, base: 460, scale: 8, angle: 45 },
+    draw: (scene) => [
+      scene.add.rectangle(-10, -6, 150, 60, 0x3cb043).setRounded(12).setStrokeStyle(5, 0x1b1530),
+      scene.add.rectangle(-40, -62, 70, 60, 0x9fd8ff).setStrokeStyle(5, 0x1b1530),
+      scene.add.rectangle(-40, -96, 86, 12, 0x3cb043).setStrokeStyle(4, 0x1b1530),
+      scene.add.rectangle(48, -52, 12, 44, 0x3a3a4a).setStrokeStyle(3, 0x1b1530),
+      scene.add.circle(-48, 34, 40, 0x2b2b3a).setStrokeStyle(5, 0x1b1530),
+      scene.add.circle(-48, 34, 16, 0xffd02a),
+      scene.add.circle(56, 46, 26, 0x2b2b3a).setStrokeStyle(5, 0x1b1530),
+      scene.add.circle(56, 46, 10, 0xffd02a),
+    ],
+  },
+  // El túnel del tren: viene siempre de enfrente (el tren va hacia la derecha) y tapa todo lo de arriba; parado en el
+  // techo del vagón no te toca.
+  tunnel: {
+    label: '¡Túnel! ¡Todos abajo! ⬇️',
+    color: '#ffd84d',
+    speed: 1250,
+    dir: -1,
+    say: true,
+    span: { top: 1100, bottom: 185 },
+    halfW: 150,
+    hit: { damage: 9, base: 420, scale: 6, angle: 15 },
+    draw: (scene) => {
+      const tall = 1100 - 185;
+      const parts = [scene.add.rectangle(0, 0, 300, tall, 0x9a6a4a).setStrokeStyle(6, 0x1b1530)];
+      for (let y = -tall / 2 + 40, row = 0; y < tall / 2 - 30; y += 60, row += 1) {
+        for (let x = row % 2 ? -120 : -80; x < 140; x += 80) parts.push(scene.add.rectangle(x, y, 70, 46, 0xb07a52).setStrokeStyle(2, 0x6b4223));
+      }
+      // La orilla de abajo con rayas de aviso.
+      for (let x = -130; x <= 130; x += 52) parts.push(scene.add.rectangle(x, tall / 2 - 12, 26, 24, 0xffd02a).setAngle(30));
+      return parts;
+    },
+  },
+  // El carrito de la montaña rusa, con dos pasajeros con los brazos arriba.
+  coaster: {
+    label: '¡Montaña rusa! 🎢',
+    color: '#ff9ee8',
+    speed: 950,
+    high: 230,
+    spread: 160,
+    say: true,
+    wave: 120,
+    hit: { damage: 10, base: 420, scale: 7, angle: 55 },
+    draw: (scene) => [
+      ...[-30, 30].flatMap((x, i) => [
+        scene.add.rectangle(x - 16, -60, 8, 30, 0xffe0b0).setAngle(-20),
+        scene.add.rectangle(x + 16, -60, 8, 30, 0xffe0b0).setAngle(20),
+        scene.add.circle(x, -40, 18, [0xff8a1e, 0x8158d8][i]).setStrokeStyle(3, 0x1b1530),
+      ]),
+      scene.add.rectangle(0, 0, 150, 56, 0xe53935).setRounded(16).setStrokeStyle(5, 0x1b1530),
+      scene.add.rectangle(0, -4, 120, 12, 0xffd02a),
+      scene.add.circle(-46, 32, 14, 0x3a3a4a).setStrokeStyle(4, 0x1b1530),
+      scene.add.circle(46, 32, 14, 0x3a3a4a).setStrokeStyle(4, 0x1b1530),
     ],
   },
   plane: {
@@ -215,18 +282,36 @@ export class StageEvents {
     return this.crosser(event, dtMs, fighters, CROSSERS.ball);
   }
 
+  tractor(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.tractor);
+  }
+
+  tunnel(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.tunnel);
+  }
+
+  coaster(event, dtMs, fighters) {
+    return this.crosser(event, dtMs, fighters, CROSSERS.coaster);
+  }
+
   crosser(event, dtMs, fighters, kind) {
     const WARN = 1500;
     if (!event.dir) {
-      event.dir = Math.random() < 0.5 ? -1 : 1;
-      // (El balón va rodando por el piso; lo demás, a cualquier altura.)
-      event.y = kind.ground ? this.main.top - 62 : this.main.top - 60 - Math.random() * 320;
+      // (El túnel siempre viene de enfrente del tren.)
+      event.dir = kind.dir ?? (Math.random() < 0.5 ? -1 : 1);
+      // El balón y el tractor van por el piso; el túnel tapa todo lo de arriba; lo demás, a cualquier altura.
+      if (kind.span) event.y = this.main.top - (kind.span.top + kind.span.bottom) / 2;
+      else if (kind.ground) event.y = this.main.top - (kind.lift ?? 62);
+      else event.y = this.main.top - (kind.high ?? 60) - Math.random() * (kind.spread ?? 320);
+      // (La flecha del túnel, a la altura de su orilla de abajo.)
+      const arrowY = kind.span ? this.main.top - kind.span.bottom - 70 : event.y;
       const edgeX = event.dir > 0 ? this.main.left - 120 : this.main.right + 120;
-      event.arrow = this.add(this.scene.add.text(edgeX, event.y, event.dir > 0 ? '➡️' : '⬅️', { fontSize: '64px' }).setOrigin(0.5));
+      event.arrow = this.add(this.scene.add.text(edgeX, arrowY, event.dir > 0 ? '➡️' : '⬅️', { fontSize: '64px' }).setOrigin(0.5));
       event.thing = this.add(this.scene.add.container(event.dir > 0 ? this.blast.left : this.blast.right, event.y));
       event.thing.add(kind.draw(this.scene));
       event.thing.setScale(event.dir, 1);
-      popText(this.scene, edgeX, event.y - 60, kind.label, kind.color, this.layer);
+      popText(this.scene, edgeX, arrowY - 60, kind.label, kind.color, this.layer);
+      if (kind.say) this.scene.talk?.line(kind.label);
     }
     event.arrow.setAlpha(Math.floor(event.t / 150) % 2 ? 1 : 0.3);
     if (event.t < WARN) return true;
@@ -236,7 +321,12 @@ export class StageEvents {
     // (El fantasma va flotando en ondas.)
     const y = event.y + (kind.wave ? Math.sin(event.t / 260) * kind.wave : 0);
     event.thing.y = y;
-    for (const f of fighters) if (Math.abs(f.x - event.thing.x) < 80 && Math.abs(f.y - y) < 60) this.strike(event, f, kind.hit, event.thing.x - event.dir * 100);
+    // (El túnel le pega a todo el que tenga la cabeza más arriba de su orilla de abajo.)
+    const span = kind.span;
+    const touches = span
+      ? (f) => Math.abs(f.x - event.thing.x) < kind.halfW + f.radius && f.y - f.radius < this.main.top - span.bottom
+      : (f) => Math.abs(f.x - event.thing.x) < 80 && Math.abs(f.y - y) < 60;
+    for (const f of fighters) if (touches(f)) this.strike(event, f, kind.hit, event.thing.x - event.dir * 100);
     return event.dir > 0 ? event.thing.x < this.blast.right : event.thing.x > this.blast.left;
   }
 

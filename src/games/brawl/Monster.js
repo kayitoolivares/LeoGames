@@ -132,6 +132,54 @@ export const MONSTER_TYPES = {
     summon: { type: 'raptor', firstMs: 3000, everyMs: 7000, count: 2 },
     fireball: { firstMs: 2200, everyMs: 3800, aimMs: 700, look: 'rock' },
   },
+  // Fondo del mar. (El pez globo se infla cuando le pegan.)
+  pececito: { name: 'Pececito', art: 'pececito', radius: 26, hp: 2, speed: 150, color: 0xffa94d, windupMs: 500, stagger: true, small: true, fly: true },
+  medusa: { name: 'Medusa', art: 'medusa', radius: 28, hp: 3, speed: 85, color: 0xff9ee8, windupMs: 620, stagger: true, small: true, fly: true },
+  pezGlobo: { name: 'Pez globo', art: 'pez-globo', radius: 42, hp: 7, speed: 70, color: 0xffd84d, windupMs: 740, stagger: true, puff: true },
+  // El Rey Tiburón embiste: se pone en el carril de alguien, una franja roja avisa y cruza toda la pantalla.
+  reyTiburon: {
+    name: 'Rey Tiburón',
+    art: 'rey-tiburon',
+    radius: 92,
+    hp: 38,
+    speed: 58,
+    color: 0x6f8fb8,
+    windupMs: 860,
+    boss: true,
+    crown: true,
+    summon: { type: 'pececito', firstMs: 4500, everyMs: 8000, count: 2 },
+    charge: { firstMs: 2500, everyMs: 5200, aimMs: 1000, speed: 900 },
+  },
+  // Selva. (Los monitos avientan plátanos desde lejos.)
+  mono: {
+    name: 'Monito',
+    art: 'mono',
+    radius: 28,
+    hp: 3,
+    speed: 120,
+    color: 0xa0673a,
+    windupMs: 560,
+    stagger: true,
+    small: true,
+    hop: true,
+    fireball: { firstMs: 3000, everyMs: 6500, aimMs: 650, look: 'banana' },
+  },
+  serpiente: { name: 'Serpiente', art: 'serpiente', radius: 26, hp: 2, speed: 160, color: 0x4cd97b, windupMs: 480, stagger: true, small: true },
+  loro: { name: 'Loro', art: 'loro', radius: 26, hp: 2, speed: 145, color: 0xff5a5f, windupMs: 520, stagger: true, small: true, fly: true },
+  gorilita: { name: 'Gorilita', art: 'gorilita', radius: 44, hp: 8, speed: 78, color: 0x6a6a7e, windupMs: 720, stagger: true },
+  // El Gran Gorila brinca y al caer hace temblar el piso: una onda sale de él y hay que saltarla.
+  granGorila: {
+    name: 'Gran Gorila',
+    art: 'gran-gorila',
+    radius: 96,
+    hp: 42,
+    speed: 54,
+    color: 0x4a4a5e,
+    windupMs: 880,
+    boss: true,
+    summon: { type: 'mono', firstMs: 3500, everyMs: 7500, count: 2 },
+    quake: { firstMs: 3000, everyMs: 5600, aimMs: 900, radius: 420 },
+  },
 };
 // Mini jefe (a la mitad de cada mundo): un monstruo de ese mundo más grande y con mucha más vida, con su barra.
 export const MINI_BOSS = { hp: 3, size: 1.4 };
@@ -146,11 +194,15 @@ const REST_MS = 700;
 const HURT_MS = 320;
 const RETARGET_MS = 500;
 const HOP_HEIGHT = 18;
+// El salto del Gran Gorila (qué tan alto) y cuánto se infla el pez globo.
+const QUAKE_JUMP = 150;
+const PUFF = { ms: 1000, scale: 1.4 };
 
 // Un monstruo: persigue al jugador más cercano, avisa con "!" y luego se lanza.
 // Estados: chase (perseguir) → windup (aviso) → lunge (embestida) → rest (descanso). Un golpe lo manda a hurt.
-// Los jefes con fuego tienen además "aim" (apunta con "!" y lanza la bola). Para llamar ayudantes o lanzar
-// fuego deja una petición en `request` que atiende la escena.
+// Los jefes con fuego tienen además "aim" (apunta con "!" y lanza la bola); el que embiste, "aimCharge" (avisa) y
+// "charge" (cruza la pantalla); y el que brinca, "quakeJump" (al caer, la onda). Para llamar ayudantes, lanzar
+// fuego, avisar la embestida o hacer temblar el piso deja una petición en `request` que atiende la escena.
 export class Monster {
   // `mini`: es el mini jefe del mundo (más grande, con más vida, no se deja agarrar).
   constructor(scene, typeKey, x, y, { mini = false } = {}) {
@@ -172,14 +224,17 @@ export class Monster {
     this.knockback = 0;
     this.target = null;
     this.retargetMs = 0;
-    // (En Defiende el nido, más de la mitad de los chicos va por los huevos.)
-    this.raidsNest = Boolean(scene.nest) && !this.type.boss && !mini && Math.random() < 0.6;
+    // (En Defiende el nido, más de la mitad de los chicos va por los huevos; en Defiende la base, por la base.)
+    this.raidsNest = Boolean(scene.nest) && !this.type.boss && !mini && Math.random() < (scene.nest?.raidChance ?? 0.6);
     this.entered = false;
     this.dead = false;
     this.hitDuringLunge = new Set();
     this.request = null;
     this.summonMs = this.type.summon?.firstMs ?? 0;
     this.fireMs = this.type.fireball?.firstMs ?? 0;
+    this.chargeMs = this.type.charge?.firstMs ?? 0;
+    this.quakeMs = this.type.quake?.firstMs ?? 0;
+    this.puffMs = 0;
     this.hopMs = Math.random() * 1000;
 
     this.sprite = new Blob(scene, x, y, this.type.color, this.radius, { angry: true });
@@ -194,8 +249,12 @@ export class Monster {
       // Camina, se agacha antes de lanzarse, ataca, le duele, se burla y (los jefes) se enoja y se marea.
       // (Los que dan saltitos ya rebotan solos; los demás caminan balanceándose y los que vuelan aletean.)
       this.creature = brawlCreature(scene, this.image, this.type.art, this.radius * 2.6, this.type.fly ? 'fly' : this.type.hop ? null : 'walk');
-    } else if (this.type.crown) {
-      this.sprite.figure.add(drawCrown(scene, this.radius));
+    } else {
+      // Sin dibujo: la bolita enojada con lo que distingue a cada monstruo nuevo (aleta, tentáculos, orejas...).
+      const extra = drawFeatures(scene, typeKey, this.radius, this.type.color);
+      if (extra) this.sprite.figure.addAt(extra.back, 0).add(extra.front);
+      this.features = extra;
+      if (this.type.crown) this.sprite.figure.add(drawCrown(scene, this.radius));
     }
     const top = this.image ? this.radius - this.image.displayHeight : -this.radius;
     this.alert = scene.add
@@ -208,7 +267,13 @@ export class Monster {
   setState(state, ms) {
     this.state = state;
     this.stateMs = ms;
-    if (state === 'lunge') this.hitDuringLunge.clear();
+    this.stateTotalMs = ms;
+    if (state === 'lunge' || state === 'charge') this.hitDuringLunge.clear();
+  }
+
+  // Embistiendo o lanzándose: le pega a quien toque (lo revisa la escena).
+  get charging() {
+    return this.state === 'lunge' || this.state === 'charge';
   }
 
   update(dtMs, fighters) {
@@ -226,6 +291,7 @@ export class Monster {
     this.hopMs += dtMs;
     this.dizzyMs = Math.max(0, (this.dizzyMs ?? 0) - dtMs);
     this.slowMs = Math.max(0, this.slowMs - dtMs);
+    this.puffMs = Math.max(0, this.puffMs - dtMs);
     // El jefe se enoja a la mitad de su vida (la escena pone el letrero).
     if (this.type.boss && !this.angry && this.hp <= this.maxHp / 2 && !this.dead) {
       this.angry = true;
@@ -251,11 +317,21 @@ export class Monster {
     } else if (this.state === 'lunge') {
       this.x += this.facing * LUNGE_SPEED * dt;
       if (this.stateMs <= 0) this.setState('rest', REST_MS);
+    } else if (this.state === 'aimCharge' && this.stateMs <= 0) {
+      this.setState('charge', Infinity);
+    } else if (this.state === 'quakeJump' && this.stateMs <= 0) {
+      this.request = { kind: 'quake', x: this.x, y: this.y, radius: this.type.quake.radius, owner: this };
+      this.setState('rest', REST_MS * 1.5);
     } else if ((this.state === 'rest' || this.state === 'hurt') && this.stateMs <= 0) this.setState('chase', 0);
 
     // Entran caminando desde fuera de la pantalla; ya adentro, no se salen.
     const minX = ARENA.left + this.radius * 0.5;
     const maxX = ARENA.right - this.radius * 0.5;
+    // La embestida cruza hasta la otra orilla.
+    if (this.state === 'charge') {
+      this.x += this.facing * this.type.charge.speed * dt;
+      if ((this.facing > 0 && this.x >= maxX) || (this.facing < 0 && this.x <= minX)) this.setState('rest', REST_MS * 1.5);
+    }
     if (!this.entered && this.x > minX && this.x < maxX) this.entered = true;
     if (this.entered) this.x = Math.min(maxX, Math.max(minX, this.x));
     this.y = Math.min(ARENA.bottom, Math.max(ARENA.top, this.y));
@@ -281,6 +357,28 @@ export class Monster {
         // Se pone a la altura del jugador antes de lanzar, para que la bola vaya por su carril.
         this.y = this.target.y;
         this.setState('aim', this.type.fireball.aimMs);
+        return;
+      }
+    }
+    // Embestida: se pone en el carril de alguien y avisa (la escena pinta la franja); luego cruza la pantalla.
+    if (this.type.charge && this.target) {
+      this.chargeMs -= dtMs;
+      if (this.chargeMs <= 0 && this.state === 'chase' && !this.request) {
+        this.chargeMs = this.type.charge.everyMs * (this.angry ? ANGRY.powers : 1);
+        this.facing = this.target.x > this.x ? 1 : -1;
+        this.y = this.target.y;
+        this.setState('aimCharge', this.type.charge.aimMs);
+        this.request = { kind: 'chargeWarn', y: this.y, dir: this.facing, ms: this.type.charge.aimMs, owner: this };
+        return;
+      }
+    }
+    // Brinco con temblor: salta en su lugar y al caer sale la onda.
+    if (this.type.quake) {
+      this.quakeMs -= dtMs;
+      if (this.quakeMs <= 0 && this.state === 'chase' && !this.request) {
+        this.quakeMs = this.type.quake.everyMs * (this.angry ? ANGRY.powers : 1);
+        this.setState('quakeJump', this.type.quake.aimMs);
+        this.request = { kind: 'quakeWarn', x: this.x, y: this.y, owner: this };
       }
     }
   }
@@ -354,6 +452,7 @@ export class Monster {
     }
     if (this.type.stagger && !this.mini && this.state !== 'thrown') this.setState('hurt', HURT_MS);
     if (this.hp <= 0) this.dead = true;
+    if (this.type.puff) this.puffMs = PUFF.ms;
     this.creature?.hurt(350);
     // A los grandes, un remate o un especial los marea un ratito.
     if (this.isBig && power >= 2) this.dizzyMs = 900;
@@ -368,8 +467,9 @@ export class Monster {
   creaturePose() {
     if (this.grabbedBy || this.state === 'thrown' || this.state === 'hurt') return 'dolor';
     if (this.dizzyMs > 0) return 'mareado';
-    if (this.state === 'windup' || this.state === 'aim') return 'cargando';
-    if (this.state === 'lunge') return 'ataque';
+    if (this.state === 'windup' || this.state === 'aim' || this.state === 'aimCharge') return 'cargando';
+    if (this.state === 'quakeJump') return this.stateMs > this.stateTotalMs / 2 ? 'cargando' : 'ataque';
+    if (this.charging) return 'ataque';
     return this.state === 'chase' ? 'caminar' : 'normal';
   }
 
@@ -390,12 +490,14 @@ export class Monster {
   }
 
   render() {
-    const warning = this.state === 'windup' || this.state === 'aim';
+    const warning = this.state === 'windup' || this.state === 'aim' || this.state === 'aimCharge';
     const shake = warning ? (Math.random() - 0.5) * 6 : 0;
     this.sprite.setPosition(this.x + shake, this.y).setDepth(this.y);
     this.sprite.look(this.facing * 0.9, 0.2);
     this.alert.setVisible(warning);
     this.image?.setFlipX(this.facing < 0);
+    // (Las colas y aletas dibujadas van detrás, según hacia dónde mira.)
+    if (this.features) for (const g of [this.features.back, this.features.front]) g.scaleX = this.facing < 0 ? -1 : 1;
     // Enojado: parpadea rojo.
     if (this.angry && this.image && Math.floor(this.hopMs / 220) % 2 === 0) this.image.setTint(0xff8a8a);
     else if (this.angry && this.image) this.image.clearTint();
@@ -409,7 +511,11 @@ export class Monster {
     this.hopCount = hop;
     if (this.grabbedBy) lift = this.grabbedBy.z + 46;
     if (this.state === 'thrown') lift = THROWN.height;
+    // El brinco del Gran Gorila (sube y cae de golpe).
+    if (this.state === 'quakeJump') lift = Math.sin((1 - this.stateMs / this.stateTotalMs) * Math.PI) * QUAKE_JUMP;
     this.sprite.figure.y = -lift;
+    // El pez globo inflado.
+    if (this.type.puff) this.sprite.figure.setScale(this.puffMs > 0 ? PUFF.scale : 1);
     this.sprite.figure.angle = this.state === 'thrown' ? (this.sprite.figure.angle + 25 * this.thrownDir) % 360 : this.grabbedBy ? 180 : 0;
     if (this.creature) {
       this.creature.face(this.facing);
@@ -449,4 +555,89 @@ function drawCrown(scene, radius) {
     crown.fillTriangle(x0, base, x0 + width / 6, base - height, x0 + width / 3, base);
   }
   return crown;
+}
+
+// Lo que distingue a los monstruos del mar y de la selva cuando todavía no tienen dibujo: `back` va detrás de la
+// bolita (aletas, colas, orejas) y `front` encima (dientes, pico, lengua). null para los demás.
+function drawFeatures(scene, typeKey, r, color) {
+  const back = scene.add.graphics();
+  const front = scene.add.graphics();
+  const darker = Phaser.Display.Color.IntegerToColor(color).darken(25).color;
+  const outline = (g, width = r * 0.08) => g.lineStyle(width, COLORS.ink, 1);
+  if (typeKey === 'pececito' || typeKey === 'reyTiburon') {
+    // Cola y aleta de arriba.
+    back.fillStyle(darker, 1);
+    outline(back);
+    back.fillTriangle(-r * 0.7, 0, -r * 1.55, -r * 0.65, -r * 1.55, r * 0.65);
+    back.strokeTriangle(-r * 0.7, 0, -r * 1.55, -r * 0.65, -r * 1.55, r * 0.65);
+    back.fillTriangle(-r * 0.35, -r * 0.8, r * 0.25, -r * 0.85, -r * 0.2, -r * 1.55);
+    back.strokeTriangle(-r * 0.35, -r * 0.8, r * 0.25, -r * 0.85, -r * 0.2, -r * 1.55);
+    if (typeKey === 'reyTiburon') {
+      // Dientes.
+      front.fillStyle(0xffffff, 1);
+      for (let k = -2; k <= 2; k += 1) front.fillTriangle(k * r * 0.12 - r * 0.06, r * 0.36, k * r * 0.12 + r * 0.06, r * 0.36, k * r * 0.12, r * 0.5);
+    }
+  } else if (typeKey === 'medusa') {
+    // Tentáculos ondulados.
+    back.lineStyle(r * 0.14, darker, 1);
+    for (let k = -2; k <= 2; k += 1) {
+      const x = k * r * 0.32;
+      back.beginPath();
+      back.moveTo(x, r * 0.6);
+      for (let s = 1; s <= 4; s += 1) back.lineTo(x + (s % 2 ? r * 0.16 : -r * 0.16), r * 0.6 + s * r * 0.28);
+      back.strokePath();
+    }
+  } else if (typeKey === 'pezGlobo') {
+    // Picos alrededor.
+    back.fillStyle(darker, 1);
+    outline(back, r * 0.05);
+    for (let k = 0; k < 12; k += 1) {
+      const a = (k / 12) * Math.PI * 2;
+      const side = 0.22;
+      const pts = [Math.cos(a - side) * r * 0.9, Math.sin(a - side) * r * 0.9, Math.cos(a) * r * 1.35, Math.sin(a) * r * 1.35, Math.cos(a + side) * r * 0.9, Math.sin(a + side) * r * 0.9];
+      back.fillTriangle(...pts);
+      back.strokeTriangle(...pts);
+    }
+  } else if (typeKey === 'mono' || typeKey === 'gorilita' || typeKey === 'granGorila') {
+    // Orejas (y la cola del monito).
+    for (const side of [-1, 1]) {
+      back.fillStyle(darker, 1);
+      outline(back);
+      back.fillCircle(side * r * 0.95, -r * 0.15, r * 0.32);
+      back.strokeCircle(side * r * 0.95, -r * 0.15, r * 0.32);
+      back.fillStyle(0xf2c79a, 1);
+      back.fillCircle(side * r * 0.98, -r * 0.15, r * 0.16);
+    }
+    if (typeKey === 'mono') {
+      back.lineStyle(r * 0.16, darker, 1);
+      back.beginPath();
+      back.arc(-r * 1.1, r * 0.2, r * 0.45, -Math.PI * 0.9, Math.PI * 0.5, false);
+      back.strokePath();
+    }
+  } else if (typeKey === 'serpiente') {
+    // Colita de bolitas y lengua.
+    back.fillStyle(darker, 1);
+    for (let k = 1; k <= 4; k += 1) back.fillCircle(-r * (0.6 + k * 0.42), r * 0.55, r * (0.5 - k * 0.08));
+    front.lineStyle(r * 0.07, 0xff4d6d, 1);
+    front.lineBetween(0, r * 0.55, 0, r * 0.85);
+    front.lineBetween(0, r * 0.85, -r * 0.1, r * 1);
+    front.lineBetween(0, r * 0.85, r * 0.1, r * 1);
+  } else if (typeKey === 'loro') {
+    // Cresta, ala y pico.
+    back.fillStyle(0x3fa7ff, 1);
+    outline(back);
+    back.fillEllipse(r * 0.85, r * 0.2, r * 0.7, r * 1.1);
+    back.strokeEllipse(r * 0.85, r * 0.2, r * 0.7, r * 1.1);
+    back.fillStyle(0xffd84d, 1);
+    back.fillTriangle(-r * 0.2, -r * 0.85, r * 0.2, -r * 0.85, 0, -r * 1.45);
+    front.fillStyle(0xffc93c, 1);
+    outline(front, r * 0.05);
+    front.fillTriangle(-r * 0.16, r * 0.3, r * 0.16, r * 0.3, 0, r * 0.62);
+    front.strokeTriangle(-r * 0.16, r * 0.3, r * 0.16, r * 0.3, 0, r * 0.62);
+  } else {
+    back.destroy();
+    front.destroy();
+    return null;
+  }
+  return { back, front };
 }

@@ -2,13 +2,14 @@ import * as THREE from 'three';
 import manifest from './art.json';
 
 // Los peligros de cada pista (ver `hazards` en tracks.js). Cada uno se mueve a su manera:
-//   cross: un animalito cruza el camino de lado a lado, se espera tantito y regresa (ovejas, cangrejos y peces globo,
-//          que nadan flotando y se inflan de vez en cuando).
+//   cross: un animalito cruza el camino de lado a lado, se espera tantito y regresa (ovejas, cangrejos, vacas,
+//          catarinas y peces globo, que nadan flotando y se inflan de vez en cuando).
 //   roll:  una bola rueda por la pista en sentido contrario, de bajada (donas, troncos, bolas de nieve que van
 //          creciendo y pelotas que botan: cuando va arriba se puede pasar por abajo).
-//   slam:  bloques de piedra (o pantuflas gigantes) flotan arriba del camino y caen de golpe; su sombra avisa antes
-//          (de dos en dos: siempre queda un lado libre).
-//   fall:  meteoritos (o bolas de lava del volcán) que caen adelante de los karts; un círculo rojo avisa dónde.
+//   slam:  bloques de piedra (o pantuflas gigantes, o los mazos de la feria) flotan arriba del camino y caen de golpe;
+//          su sombra avisa antes (de dos en dos: siempre queda un lado libre).
+//   fall:  meteoritos (o bolas de lava del volcán, o estalactitas en la mina) que caen adelante de los karts; un
+//          círculo rojo avisa dónde.
 // Si al kart le pega uno, da vueltas como con un plátano (la burbuja lo protege). Saltando se esquivan.
 // Se dibujan con su imagen de Gemini (kart/peligros/<nombre>.png) o, mientras no haya, con un emoji.
 
@@ -31,6 +32,11 @@ const EMOJI = {
   taxi: '🚕',
   pantufla: '🥿',
   'bala-canon': '💣',
+  vaca: '🐄',
+  mazo: '🔨',
+  catarina: '🐞',
+  // (La estalactita se dibuja aquí mismo: ver drawStalactite.)
+  estalactita: '',
 };
 // Tamaño de cada uno (alto, en unidades del mundo) y qué tan cerca hay que pasar para que pegue.
 const SIZES = {
@@ -50,12 +56,15 @@ const SIZES = {
   rodadora: 3,
   taxi: 3.8,
   'bala-canon': 2.6,
+  vaca: 4,
+  catarina: 2.8,
+  estalactita: 3.8,
 };
 // Los que van flotando (qué tan alto) y los que botan (qué tan alto brincan).
 const FLOAT = { 'pez-globo': 1.6, espectro: 1.8 };
 const BOUNCE = { pelota: 4.5, rodadora: 1.6 };
-// Los que cruzan más rápido (el taxi no se espera tanto).
-const CROSS_SPEED = { taxi: 9 };
+// Los que cruzan más rápido (el taxi no se espera tanto) o más despacio (la vaca).
+const CROSS_SPEED = { taxi: 9, vaca: 2.8 };
 const REACH = 1.8;
 // Después de que le pega a alguien, no le vuelve a pegar a ese mismo en un rato.
 const COOLDOWN_MS = 1800;
@@ -313,7 +322,8 @@ export class Hazards {
         const k = 1 - left / FALL.dropMs;
         m.rock.visible = true;
         m.rock.position.set(m.x, m.ground + FALL.top * (1 - k) + SIZES[this.kind] / 2, m.z);
-        m.rock.material.rotation = timeMs / 120;
+        // (Las estalactitas caen derechitas, con la punta para abajo.)
+        if (this.kind !== 'estalactita') m.rock.material.rotation = timeMs / 120;
       }
       if (left > 0) return true;
       this.events.push({ type: 'impact', x: m.x, y: m.ground, z: m.z, kind: this.kind });
@@ -358,6 +368,10 @@ const OUCH = {
   taxi: '¡Cuidado con el taxi! 🚕',
   pantufla: '¡Pantuflazo! 🥿',
   'bala-canon': '¡Bala de cañón! 💣',
+  vaca: '¡Muuu! Una vaca 🐄',
+  mazo: '¡Mazazo! 🔨',
+  catarina: '¡Te tumbó una catarina! 🐞',
+  estalactita: '¡Te cayó una estalactita! 🪨',
 };
 
 // La imagen de Gemini si ya está; si no, el emoji en un cuadrito transparente. El bloque es la cara de una
@@ -397,6 +411,8 @@ function hazardTexture(kind, onLoad) {
       onLoad?.();
     };
     image.src = art;
+  } else if (kind === 'estalactita') {
+    drawStalactite(ctx);
   } else {
     ctx.font = `${kind === 'bloque' ? 92 : 108}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
     ctx.textAlign = 'center';
@@ -404,6 +420,36 @@ function hazardTexture(kind, onLoad) {
     ctx.fillText(EMOJI[kind] ?? '❗', 64, 70);
   }
   return texture;
+}
+
+// Una estalactita de roca morada (picuda hacia abajo) con cristalitos que brillan.
+function drawStalactite(ctx) {
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#1b1530';
+  const gradient = ctx.createLinearGradient(30, 0, 98, 0);
+  gradient.addColorStop(0, '#9a8aaa');
+  gradient.addColorStop(1, '#5e4f6e');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.moveTo(22, 10);
+  ctx.lineTo(106, 10);
+  ctx.lineTo(84, 52);
+  ctx.lineTo(70, 118);
+  ctx.lineTo(52, 60);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  for (const [x, y, color] of [[44, 26, '#3fe0ff'], [78, 30, '#ff4dd2'], [64, 66, '#3fe0ff']]) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 8);
+    ctx.lineTo(x + 6, y);
+    ctx.lineTo(x, y + 8);
+    ctx.lineTo(x - 6, y);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 // Ojos de enojado (con cejas chuecas) y boca de dientes apretados, para el bloque que aplasta.

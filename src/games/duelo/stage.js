@@ -19,6 +19,9 @@ const AMBIENTS = {
   sparkles: { colors: [0xffffff, 0xfff3a8, 0x9fe3ff], size: [3, 5], vy: [-5, 5], sway: 0, shape: 'dot', glow: true, twinkle: true },
   snow: { colors: [0xffffff, 0xe8f4ff], size: [4, 8], vy: [40, 80], sway: 40, shape: 'dot' },
   crystals: { colors: [0xd36bff, 0x6fd8ff, 0xff8fe0], size: [3, 6], vy: [-30, -10], sway: 20, shape: 'dot', glow: true, twinkle: true },
+  // Los de las arenas nuevas: arenita que vuela (Pirámide) y burbujas que suben (Arrecife).
+  sand: { colors: [0xf2d27a, 0xe8c27a, 0xfff0c0], size: [3, 5], vy: [-8, 8], sway: 90, shape: 'dot' },
+  bubbles: { colors: [0xdff4ff, 0xffffff], size: [5, 11], vy: [-70, -35], sway: 25, shape: 'dot' },
 };
 // Lo que cae en algunos escenarios: primero una sombra avisa dónde, luego cae y al que le pegue lo tumba.
 const HAZARDS = {

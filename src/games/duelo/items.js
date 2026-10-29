@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { itemTexture } from '../smash/art.js';
+import { drawItem } from '../smash/items.js';
 import { textStyle } from '../../ui/style.js';
 import { FLOOR, WALLS } from './DueloFighter.js';
 
@@ -8,12 +9,18 @@ import { FLOOR, WALLS } from './DueloFighter.js';
 //   hammer  martillo: los siguientes 3 golpes pegan más fuerte y tumban
 //   bomb    bomba: la avienta de una vez hacia el rival
 //   shield  escudo: una burbuja que aguanta los siguientes 2 golpes
-// Los dibujos son los de Bolitas Bros (el escudo se dibuja aquí).
+//   pie     pastel: lo avienta de una vez; al que le cae en la cara no puede pegar un ratito
+//   bubble  burbuja: la avienta de una vez; al que atrapa se lo lleva flotando y luego lo deja caer
+//   magnet  imán: jala al rival hasta tenerlo pegadito (y un instante no puede hacer nada)
+// Los dibujos son los de Bolitas Bros (el escudo se dibuja aquí; los nuevos, si no hay dibujo, con figuras).
 export const FIGHT_ITEMS = {
   heart: { name: '¡Corazón!', emoji: '❤️' },
   hammer: { name: '¡Martillo!', emoji: '🔨' },
   bomb: { name: '¡Bomba!', emoji: '💣' },
   shield: { name: '¡Escudo!', emoji: '🛡️' },
+  pie: { name: '¡Pastel!', emoji: '🥧', drawn: true },
+  bubble: { name: '¡Burbuja!', emoji: '🫧', drawn: true },
+  magnet: { name: '¡Imán!', emoji: '🧲', drawn: true },
 };
 const KINDS = Object.keys(FIGHT_ITEMS);
 const SPAWN_MS = [8000, 14000];
@@ -44,6 +51,8 @@ export class FightItems {
     } else if (kind === 'shield') {
       sprite.add(scene.add.circle(0, 0, SIZE * 0.45, 0x9fe3ff, 0.45).setStrokeStyle(5, 0xffffff));
       sprite.add(scene.add.star(0, 0, 5, 8, 18, 0xffffff));
+    } else if (FIGHT_ITEMS[kind].drawn) {
+      sprite.add(drawItem(scene, kind).setScale(SIZE / 48));
     } else {
       sprite.add(scene.add.text(0, 0, FIGHT_ITEMS[kind].emoji, textStyle(SIZE * 0.8, '#ffffff')).setOrigin(0.5));
     }

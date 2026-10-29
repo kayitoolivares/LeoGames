@@ -80,8 +80,17 @@ const BOOMERANG_THROWS = 3;
 const BOOMERANG_SPEED = 1150;
 const FLOWER_SHOTS = 6;
 const FIREBALL_THROW = { vx: 620, vy: -160 };
+// El globo de agua y el pastel se avientan (el globo en arco, el pastel derecho); el imán jala a los rivales (3 veces);
+// el paraguas te deja caer despacito un rato. Mojado te resbalas (casi no frenas) y con pastel en la cara no puedes pegar.
+const MAGNET_PULLS = 3;
+const BALLOON_THROW = { vx: 560, vy: -430 };
+const UMBRELLA_MS = 12000;
+const UMBRELLA_FALL = 170;
+export const WET_MS = 3500;
+const WET_GRIP = 0.15;
+export const PIE_MS = 2600;
 // Cuántas veces se puede usar lo que traes en la mano (lo que no está aquí, sin límite).
-const HELD_USES = { bat: BAT_SWINGS, raygun: RAYGUN_SHOTS, boomerang: BOOMERANG_THROWS, fireflower: FLOWER_SHOTS };
+const HELD_USES = { bat: BAT_SWINGS, raygun: RAYGUN_SHOTS, boomerang: BOOMERANG_THROWS, fireflower: FLOWER_SHOTS, magnet: MAGNET_PULLS };
 // Agarrar (escudo + X pegadito): lo detiene un momento y lo avienta hacia donde apunte el stick (o hacia adelante).
 const HOLD_MS = 380;
 export const THROW_HIT = { damage: 9, base: 430, scale: 10, angle: 40 };
@@ -174,6 +183,10 @@ export const ATTACKS = {
   blaze: { startup: 140, active: 560, recovery: 260, damage: 4, base: 170, scale: 4, angle: 25, hx: 104, hy: 0, radius: 58, multi: 150 },
   // Robotote: puño cohete (lo crea la escena).
   rocketfist: { startup: 160, active: 0, recovery: 260 },
+  // X con el globo de agua, con el pastel y con el imán (los crea la escena).
+  lob: { startup: 70, active: 0, recovery: 160 },
+  toss: { startup: 60, active: 0, recovery: 150 },
+  pull: { startup: 90, active: 0, recovery: 240 },
   // Bloquecito (los trucos que no comparte con otros personajes, ver BLOCK_TRICKS).
   // El 2: dos golpes rápidos.
   pair: { startup: 40, active: 200, recovery: 160, damage: 5, base: 220, scale: 6, angle: 35, hx: 46, hy: 0, radius: 32, multi: 100 },
@@ -261,8 +274,9 @@ export class SmashFighter {
     this.meter = 0;
     this.superMs = 0;
     // Para los resultados: a cuántos sacó, cuántas veces se cayó, cuánto pegó, su golpe más fuerte, cuántos golpes
-    // dio, sus paradas perfectas, cuántos objetos agarró y, en sus modos, sus monedas y sus segundos en la colina.
-    this.record = { kos: 0, falls: 0, dealt: 0, best: 0, hits: 0, perfects: 0, items: 0, coins: 0, hill: 0 };
+    // dio, sus paradas perfectas, cuántos objetos agarró, sus combos de dúo y, en sus modos, sus monedas y sus segundos en
+    // la colina.
+    this.record = { kos: 0, falls: 0, dealt: 0, best: 0, hits: 0, perfects: 0, items: 0, coins: 0, hill: 0, duos: 0 };
 
     this.sprite = new Blob(scene, 0, 0, color, this.radius);
     addAccessory(scene, this.sprite, character);
@@ -279,6 +293,20 @@ export class SmashFighter {
     this.skateSprite = drawItem(scene, 'skate').setScale(1.3).setVisible(false);
     this.boomerangSprite = drawItem(scene, 'boomerang').setScale(0.8).setVisible(false);
     this.flowerSprite = drawItem(scene, 'fireflower').setScale(0.7).setVisible(false);
+    // Lo nuevo en la mano: el globo de agua, el pastel y el imán; el paraguas arriba de la cabeza.
+    this.balloonSprite = drawItem(scene, 'waterballoon').setScale(0.75).setVisible(false);
+    this.pieSprite = drawItem(scene, 'pie').setScale(0.75).setVisible(false);
+    this.magnetSprite = drawItem(scene, 'magnet').setScale(0.75).setVisible(false);
+    this.umbrellaSprite = drawItem(scene, 'umbrella').setScale(1.7).setVisible(false);
+    // Mojado (gotitas que escurren) y con pastel en la cara (betún con su cereza).
+    this.drops = scene.add.container(0, 0, [0, 1, 2].map((i) => scene.add.ellipse((i - 1) * 16, 0, 9, 13, 0x3fa7ff).setStrokeStyle(2, 0xffffff))).setVisible(false);
+    this.cream = scene.add
+      .container(0, 0, [
+        scene.add.ellipse(0, 0, 58, 42, 0xfff6e5).setStrokeStyle(3, 0xe8d8c8),
+        ...[-20, 2, 20].map((x, i) => scene.add.ellipse(x, 18 + (i % 2) * 8, 12, 20, 0xfff6e5)),
+        scene.add.circle(6, -16, 8, 0xe0203a).setStrokeStyle(2, COLORS.ink),
+      ])
+      .setVisible(false);
     // La bola súper: brilla de colores alrededor mientras tiene listo su golpe final.
     this.finalGlow = scene.add.circle(0, 0, this.radius * 1.7, 0xffffff, 0.35).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.flames = scene.add
@@ -296,7 +324,8 @@ export class SmashFighter {
       ])
       .setVisible(false);
     this.sprite.figure.add([this.fist, this.hammerSprite, this.bombSprite, this.batSprite, this.gunSprite, this.boomerangSprite, this.flowerSprite, this.flames, this.water]);
-    this.sprite.add([this.skateSprite]);
+    this.sprite.figure.add([this.balloonSprite, this.pieSprite, this.magnetSprite]);
+    this.sprite.add([this.skateSprite, this.umbrellaSprite, this.drops, this.cream]);
     this.sprite.addAt(this.finalGlow, 0);
     // Brillo detrás del personaje en súper modo.
     this.aura = scene.add.circle(0, 0, this.radius * 1.5, 0xffd84d, 0.5).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
@@ -382,6 +411,9 @@ export class SmashFighter {
     this.held = null;
     this.starPowerMs = 0;
     this.skateMs = 0;
+    this.umbrellaMs = 0;
+    this.wetMs = 0;
+    this.pieMs = 0;
     this.holding = null;
     this.heldBy = null;
     this.rollMs = 0;
@@ -406,6 +438,11 @@ export class SmashFighter {
     return this.stocks > 0 && !this.out;
   }
 
+  // Qué tanto se agarra del piso (mojado por un globo de agua casi no frena: se resbala).
+  get grip() {
+    return this.wetMs > 0 ? WET_GRIP : 1;
+  }
+
   // Recién reaparecido, con la estrella, transformándose o invisible (Fantasma): no le pasa nada.
   isInvulnerable() {
     return this.invulnerableMs > 0 || this.starPowerMs > 0 || this.transformMs > 0 || this.ghostMs > 0 || this.rollMs > 0 || this.airDodgeMs > 0;
@@ -422,6 +459,9 @@ export class SmashFighter {
     this.held = null;
     this.starPowerMs = 0;
     this.skateMs = 0;
+    this.umbrellaMs = 0;
+    this.wetMs = 0;
+    this.pieMs = 0;
     this.finalReady = false;
     this.releaseHold();
     if (this.superMs > 0) this.setSuper(false);
@@ -440,6 +480,10 @@ export class SmashFighter {
     }
     if (type === 'skate') {
       this.skateMs = SKATE_MS;
+      return true;
+    }
+    if (type === 'umbrella') {
+      this.umbrellaMs = UMBRELLA_MS;
       return true;
     }
     // El huevo, la cápsula y el tornado los pone la escena (el ayudante, lo que sale de la cápsula y el tornado).
@@ -582,6 +626,11 @@ export class SmashFighter {
     this.starPowerMs = Math.max(0, this.starPowerMs - dtMs);
     this.dropMs = Math.max(0, this.dropMs - dtMs);
     this.skateMs = Math.max(0, this.skateMs - dtMs);
+    this.umbrellaMs = Math.max(0, this.umbrellaMs - dtMs);
+    this.wetMs = Math.max(0, this.wetMs - dtMs);
+    this.pieMs = Math.max(0, this.pieMs - dtMs);
+    // Con pastel en la cara no ve: no puede pegar ni usar su especial (sí correr, saltar y cubrirse).
+    if (this.pieMs > 0) input = { ...input, attack: false, attackHeld: false, special: false };
     this.rollMs = Math.max(0, this.rollMs - dtMs);
     this.airDodgeMs = Math.max(0, this.airDodgeMs - dtMs);
     this.ledgeCooldownMs = Math.max(0, this.ledgeCooldownMs - dtMs);
@@ -657,7 +706,7 @@ export class SmashFighter {
       // El escudo solo se usa en el piso; saltar lo cancela.
       this.shielding = this.grounded && input.shield && !this.attack && !input.jump;
       if (this.shielding) {
-        this.vx = approach(this.vx, 0, GROUND_FRICTION * dt);
+        this.vx = approach(this.vx, 0, GROUND_FRICTION * this.grip * dt);
         this.shieldHp -= SHIELD_DRAIN * dt;
         if (this.shieldHp <= 0) this.breakShield();
       } else {
@@ -666,7 +715,7 @@ export class SmashFighter {
     } else {
       this.shielding = false;
       this.vx *= Math.exp(-LAUNCH_DRAG * dt);
-      if (this.grounded) this.vx = approach(this.vx, 0, GROUND_FRICTION * dt);
+      if (this.grounded) this.vx = approach(this.vx, 0, GROUND_FRICTION * this.grip * dt);
     }
     if (!this.shielding) this.shieldHp = Math.min(SHIELD_MAX, this.shieldHp + SHIELD_REGEN * dt);
     // Cuánto lleva con el escudo arriba (recién levantado = escudo perfecto).
@@ -678,6 +727,8 @@ export class SmashFighter {
     if (this.dashMs > 0) this.vy = 0;
     else if (this.rocketMs > 0) this.vy = -ROCKET.rise;
     else this.vy = Math.min(MAX_FALL * gravity, this.vy + GRAVITY * gravity * dt);
+    // Con el paraguas abierto cae despacito (si no va saliendo volando por un golpe).
+    if (this.umbrellaMs > 0 && this.hitstunMs === 0 && this.vy > UMBRELLA_FALL) this.vy = UMBRELLA_FALL;
     const prevFeet = this.y + this.radius;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
@@ -868,6 +919,22 @@ export class SmashFighter {
       // El último batazo: el bate se rompe después de pegar.
       this.held.ms = a.active + a.recovery;
     }
+    // El globo de agua sale en arco y el pastel derecho; los dos se acaban al aventarlos.
+    if (justActive && attack.type === 'lob') {
+      this.projectileRequest = { kind: 'balloon', x: this.x + this.facing * (this.radius + 10), y: this.y - 20, vx: this.facing * BALLOON_THROW.vx, vy: BALLOON_THROW.vy, dir: this.facing };
+      this.held = null;
+      sfx.throw();
+    }
+    if (justActive && attack.type === 'toss') {
+      this.projectileRequest = { kind: 'pie', x: this.x + this.facing * (this.radius + 14), y: this.shotY() - 6, dir: this.facing };
+      this.held = null;
+      sfx.throw();
+    }
+    // El imán jala a los rivales de alrededor (lo hace la escena).
+    if (justActive && attack.type === 'pull' && this.held) {
+      this.projectileRequest = { kind: 'magnet' };
+      if (--this.held.uses <= 0) this.held = null;
+    }
     if (justActive && attack.type === 'throw') {
       this.projectileRequest = {
         kind: 'bomb',
@@ -906,7 +973,7 @@ export class SmashFighter {
     } else if (this.grounded) {
       // Atacando sigue caminando, un poco más despacio (no se queda frenado); cargando un golpe, nada.
       const slow = this.attack?.charge > 0 ? 0 : this.attack ? 0.65 : 1;
-      this.vx = approach(this.vx, input.x * stats.run * slow * speedBonus, GROUND_FRICTION * dt);
+      this.vx = approach(this.vx, input.x * stats.run * slow * speedBonus, GROUND_FRICTION * this.grip * dt);
     } else {
       this.vx = approach(this.vx, input.x * stats.air * speedBonus, AIR_ACCEL * dt);
     }
@@ -940,6 +1007,9 @@ export class SmashFighter {
     else if (this.held?.type === 'raygun') type = 'zap';
     else if (this.held?.type === 'fireflower') type = 'flame';
     else if (this.held?.type === 'boomerang' && !this.held.out) type = 'boomerang';
+    else if (this.held?.type === 'waterballoon') type = 'lob';
+    else if (this.held?.type === 'pie') type = 'toss';
+    else if (this.held?.type === 'magnet') type = 'pull';
     else if (input.y < -0.5) type = 'up';
     else if (input.y > 0.5) type = this.grounded ? 'sweep' : 'stomp';
     // Los golpes normales en el piso se pueden cargar (manteniendo X).
@@ -965,6 +1035,8 @@ export class SmashFighter {
       if (key === 'resorte') {
         this.vy = -SPRING_SPEED;
         this.attack = { type: 'spring', elapsed: 0, hit: new Set() };
+        // (El súper salto es el especial de Resorte: cuenta para el combo de dúo.)
+        this.scene.specialUsed?.(this);
       } else {
         this.vy = -RESCUE_SPEED;
       }
@@ -1061,6 +1133,8 @@ export class SmashFighter {
     if (this.isBoss && this.slamCooldownMs) cooldown = this.slamCooldownMs;
     this.cooldownMs = cooldown * (this.superMs > 0 ? SUPER.cooldown : 1);
     sound?.();
+    // Si un compañero hizo su especial casi al mismo tiempo y cerquita: ¡combo de dúo! (lo revisa la escena).
+    this.scene.specialUsed?.(this);
   }
 
   breakShield() {
@@ -1306,7 +1380,7 @@ export class SmashFighter {
     const a = this.attack && ATTACKS[this.attack.type];
     const type = this.attack?.type;
     // El puño sale en los golpes normales y en el puñetazo cargado (si la imagen no trae su pose de golpe).
-    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water', 'bat', 'zap', 'grabbing', 'flame', 'boomerang', 'blaze', 'rocketfist'];
+    const noFist = ['dash', 'spring', 'hammer', 'throw', 'fire', 'laser', 'tail', 'slide', 'cannon', 'wand', 'rocket', 'water', 'bat', 'zap', 'grabbing', 'flame', 'boomerang', 'blaze', 'rocketfist', 'lob', 'toss', 'pull'];
     const showFist = Boolean(a) && !noFist.includes(type) && !this.punchArt;
     this.fist.setVisible(showFist);
     if (showFist) {
@@ -1357,6 +1431,20 @@ export class SmashFighter {
     const hasFlower = this.held?.type === 'fireflower';
     this.flowerSprite.setVisible(hasFlower);
     if (hasFlower) this.flowerSprite.setPosition(this.facing * this.handReach(0.95), -10 - this.attackLift).setScale(0.7 * this.facing, 0.7);
+    // El globo de agua, el pastel y el imán, en la mano.
+    for (const [sprite, kind] of [[this.balloonSprite, 'waterballoon'], [this.pieSprite, 'pie'], [this.magnetSprite, 'magnet']]) {
+      const has = this.held?.type === kind;
+      sprite.setVisible(has);
+      if (has) sprite.setPosition(this.facing * this.handReach(0.95), -8 - this.attackLift).setScale(0.75 * this.facing, 0.75);
+    }
+    // El paraguas va arriba de la cabeza (se mece un poquito); las gotas escurren; el pastel tapa la cara.
+    const top = this.image ? this.baseRadius - this.image.displayHeight : -this.radius;
+    this.umbrellaSprite.setVisible(this.umbrellaMs > 0);
+    if (this.umbrellaMs > 0) this.umbrellaSprite.setPosition(this.facing * 8, top - 18).setAngle(Math.sin(this.scene.time.now / 200) * 8 - (this.grounded ? 0 : this.facing * 6));
+    this.drops.setVisible(this.wetMs > 0);
+    if (this.wetMs > 0) this.drops.list.forEach((drop, i) => drop.setY(top * 0.4 + ((this.scene.time.now / 6 + i * 30) % 70)));
+    this.cream.setVisible(this.pieMs > 0);
+    if (this.pieMs > 0) this.cream.setPosition(this.facing * this.baseRadius * 0.15, this.image ? top * 0.55 + this.baseRadius * 0.3 : -this.baseRadius * 0.1);
   }
 
   // Qué tan adelante lleva lo que trae en la mano (Bloquecito, según su ancho).

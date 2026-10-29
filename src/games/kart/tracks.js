@@ -2,7 +2,7 @@
 // `pads`: flechas de turbo [dónde (0 a 1 de la vuelta), carril]; `ramps`: rampas [dónde] (en rectas).
 // `unlock`: qué hay que ganar antes (ver UNLOCKS en rewards.js). `theme`: cómo se ve el camino (ver Track).
 // `scenery`: adornos de la pista (snow = nieve y monos de nieve; beach, candy, castle, space, jungle, sea, toys,
-// volcano: ver scenery.js). `hazards`: su peligro (ver hazards.js).
+// volcano: ver scenery.js; farm, fair, garden, mine: ver scenery3.js). `hazards`: su peligro (ver hazards.js).
 // `mapColor`: color del dibujo de la pista al escogerla (si no, el del piso).
 // `texture`: textura del piso (kart/texturas, de Gemini) y `textureTint` de qué color se tiñe. El paisaje de fondo
 // es kart/fondos/<pista>.jpg (si existe; si no, montañas de colores).
@@ -14,6 +14,8 @@
 // `weatherShift`: el clima cambia en la última vuelta ({ to, say }), si se corre con el clima de la pista.
 // `living`: cosas que se mueven solas [{ kind: train | gates | cannons | bridge, at }] (ver living.js).
 // `roadTexture`: la textura del camino (si no, asfalto).
+// `ledges`: tramos sin llantas a los lados [desde, hasta] (puentes colgantes): el que se sale se cae y una red lo
+// regresa al camino (ver ledges.js). `intro`: lo que dice el locutor al empezar en esa pista.
 export const TRACKS = {
   pradera: {
     name: 'Pradera',
@@ -440,6 +442,112 @@ export const TRACKS = {
     theme: { decor: 'none', road: 0xffe2b8, curbs: [0x6a4a2a, 0xfff6e0], barrierColors: [0x6a4a2a, 0xffd02a] },
     scenery: 'pirate',
   },
+  // Copa Fiesta.
+  granja: {
+    name: 'Granja',
+    emoji: '🐄',
+    unlock: null,
+    mapColor: 0x7ccf4f,
+    // Entre graneros, un molino y pacas de paja: vacas que cruzan, un tractor con su remolque y un atajo por el maizal.
+    points: [[-100, -30, 0], [-60, -72, 2], [10, -74, 6], [70, -70, 8], [104, -30, 4], [90, 16, 2], [50, 20, 6], [26, 48, 4], [74, 78, 2], [6, 88, 4], [-40, 64, 8], [-80, 74, 4], [-106, 30, 0]],
+    pads: [[0.04, 0], [0.28, -3], [0.6, 3], [0.86, 0]],
+    ramps: [0.2],
+    shortcut: [0.32, 0.48],
+    living: [{ kind: 'tractor', at: 0.66 }],
+    hazards: { kind: 'vaca', pattern: 'cross', spots: [0.1, 0.53, 0.8] },
+    intro: '¡Bienvenidos a la granja! Cuidado con las vacas y con el tractor',
+    sky: 0x9fd8ff,
+    ground: 0x7ccf4f,
+    groundLight: 0x5a7a3a,
+    mountains: 0x8ab86a,
+    texture: 'pasto',
+    dust: 0xb59a6a,
+    // Camino de tierra con orillas de granero (rojo y blanco) y pacas de paja en vez de llantas.
+    theme: { decor: 'none', road: 0xa8784a, curbs: [0xffffff, 0xd9542a], barrierColors: [0xffd27a, 0xd9542a] },
+    scenery: 'farm',
+  },
+  feria: {
+    name: 'Feria',
+    emoji: '🎡',
+    unlock: null,
+    mapColor: 0xff5fa8,
+    // La feria al atardecer: rueda de la fortuna, carpa de circo, foquitos de colores, mazos de "prueba tu fuerza" que
+    // caen y un carrusel en el camino que te da vueltas.
+    points: [[-96, -56, 0], [-30, -76, 0], [40, -70, 2], [96, -56, 4], [104, 0, 6], [80, 40, 4], [30, 30, 2], [-6, 50, 4], [20, 80, 6], [-40, 84, 4], [-80, 60, 2], [-60, 20, 0], [-104, 0, 0]],
+    pads: [[0.04, 0], [0.26, 3], [0.56, -3], [0.88, 0]],
+    ramps: [0.17],
+    shortcut: [0.33, 0.49],
+    living: [{ kind: 'carousel', at: 0.68 }],
+    hazards: { kind: 'mazo', pattern: 'slam', spots: [0.09, 0.79] },
+    intro: '¡Llegamos a la feria! Súbanse al carrusel y cuidado con los mazos',
+    sky: 0xffb3c8,
+    ground: 0x8acb5a,
+    groundLight: 0x6a4a7a,
+    mountains: 0xc890c8,
+    texture: 'pasto',
+    textureTint: 0xffe0c0,
+    dust: 0xe8c8a0,
+    light: 0.9,
+    theme: { decor: 'none', road: 0x7a5aa0, curbs: [0xff3b6b, 0xffffff], barrierColors: [0xffd02a, 0xff3b6b], glow: true, avoid: { x: -10, z: -20, radius: 40 } },
+    scenery: 'fair',
+  },
+  jardin: {
+    name: 'Jardín gigante',
+    emoji: '🌻',
+    unlock: null,
+    mapColor: 0x4cd97b,
+    // Los karts son chiquititos: flores y hongos gigantes, catarinas que cruzan, aspersores que mojan y una hoja que
+    // sirve de planeador.
+    points: [[-100, -10, 0], [-84, -62, 4], [-30, -80, 8], [20, -50, 4], [64, -80, 6], [106, -50, 8], [96, 6, 4], [56, 24, 0], [90, 60, 4], [50, 84, 8], [0, 60, 4], [-40, 82, 2], [-90, 56, 0]],
+    pads: [[0.04, 0], [0.22, 3], [0.58, -3], [0.84, 0]],
+    ramps: [],
+    gliders: [0.955],
+    shortcut: [0.3, 0.46],
+    living: [
+      { kind: 'sprinkler', at: 0.7 },
+      { kind: 'sprinkler', at: 0.73, side: -1 },
+    ],
+    hazards: { kind: 'catarina', pattern: 'cross', spots: [0.14, 0.52, 0.88] },
+    intro: '¡Somos chiquititos en el jardín gigante! Cuidado con las catarinas',
+    sky: 0xbfeaff,
+    ground: 0x5cbf3a,
+    groundLight: 0x3a6a2a,
+    mountains: 0x6ab84a,
+    texture: 'pasto',
+    dust: 0x9a7a4a,
+    // Camino de tierra entre el pasto, con orillas de colores de flor.
+    theme: { decor: 'none', road: 0xc9a27a, curbs: [0xffd02a, 0xff7fb0], barrierColors: [0xffffff, 0xff7fb0] },
+    scenery: 'garden',
+  },
+  mina: {
+    name: 'Mina de cristales',
+    emoji: '💎',
+    unlock: null,
+    mapColor: 0x3fe0ff,
+    // Adentro de una cueva: cristales que brillan, carritos de la mina que cruzan, estalactitas que caen y dos puentes
+    // colgantes sin barandal (si te caes, la red te regresa al camino).
+    points: [[-104, -30, 0], [-60, -74, 2], [0, -76, 4], [60, -74, 6], [104, -40, 4], [100, 10, 2], [60, 24, 6], [24, 0, 8], [-12, 24, 6], [20, 56, 4], [70, 60, 2], [60, 86, 4], [0, 84, 6], [-60, 78, 4], [-104, 40, 0]],
+    pads: [[0.04, 0], [0.24, 3], [0.5, -3], [0.9, 0]],
+    ramps: [0.96],
+    shortcut: [0.275, 0.42],
+    ledges: [
+      [0.11, 0.2],
+      [0.72, 0.81],
+    ],
+    living: [{ kind: 'minecart', at: 0.6 }],
+    hazards: { kind: 'estalactita', pattern: 'fall' },
+    intro: '¡A la mina de cristales! En los puentes no hay barandal: si te caes, la red te regresa',
+    sky: 0x1a1430,
+    ground: 0x4a3f4a,
+    groundLight: 0x15102a,
+    mountains: 0x2a2440,
+    // (Sin textura de piso: la roca del volcán tiene grietas que parecen lava.)
+    dust: 0x8a7a8a,
+    light: 0.75,
+    fog: [40, 320],
+    theme: { decor: 'none', road: 0x6a5a5a, curbs: [0x3fe0ff, 0x2b2238], barrierColors: [0xb07cff, 0x3fe0ff], glow: true },
+    scenery: 'mine',
+  },
 };
 
 export const TRACK_KEYS = Object.keys(TRACKS);
@@ -451,6 +559,7 @@ export const CUPS = {
   aventura: { name: 'Copa Aventura', emoji: '🧭', image: 'copa-aventura', tracks: ['selva', 'mar', 'juguetes', 'volcan'], unlock: null },
   sorpresa: { name: 'Copa Sorpresa', emoji: '🎁', image: 'copa-sorpresa', tracks: ['embrujada', 'pastel', 'dinos', 'nubes'], unlock: null },
   tesoro: { name: 'Copa Tesoro', emoji: '💰', image: 'copa-tesoro', tracks: ['desierto', 'neon', 'casa', 'pirata'], unlock: null },
+  fiesta: { name: 'Copa Fiesta', emoji: '🎡', image: 'copa-fiesta', tracks: ['granja', 'feria', 'jardin', 'mina'], unlock: null },
 };
 export const CUP_KEYS = Object.keys(CUPS);
 

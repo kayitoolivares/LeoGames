@@ -25,5 +25,10 @@
     "vaca-canta",
     "vaca"
   ],
-  "escondites": []
+  "escondites": [
+    "arbusto",
+    "casita",
+    "nube",
+    "regalo"
+  ]
 }

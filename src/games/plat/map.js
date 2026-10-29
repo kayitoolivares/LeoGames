@@ -5,6 +5,7 @@ import { Blob } from '../../ui/Blob.js';
 import { CharacterLook } from '../../ui/CharacterLook.js';
 import { COLORS, TEXT, textStyle } from '../../ui/style.js';
 import { artImage } from './art.js';
+import { BOSSES } from './boss.js';
 import { ENEMIES } from './enemies.js';
 import { LEVELS, SECRETS, WORLDS } from './levels.js';
 
@@ -40,6 +41,9 @@ export const progress = {
     settings.set(KEY, data);
   },
   open(index) {
+    // La Isla de los jefes no va en orden: su primer nivel se abre al pasar `opensAfter` y cada uno abre el siguiente.
+    const lv = LEVELS[index];
+    if (lv && WORLDS[lv.world].bonus) return this.level(lv.index === 0 ? WORLDS[lv.world].opensAfter : LEVELS[index - 1].id).done;
     return index <= this.get().unlocked;
   },
   level(id) {
@@ -53,7 +57,7 @@ export const progress = {
     const merged = before.big.map((had, i) => had || Boolean(big[i]));
     const record = before.bestMs === null || ms < before.bestMs;
     data.levels[id] = { done: true, big: merged, bestMs: record ? ms : before.bestMs };
-    if (index !== null) data.unlocked = Math.max(data.unlocked, Math.min(LEVELS.length - 1, index + 1));
+    if (index !== null && !WORLDS[LEVELS[index].world].bonus) data.unlocked = Math.max(data.unlocked, Math.min(LEVELS.length - 1, index + 1));
     let secretOpened = false;
     if (secretWorld !== null && !data.secrets[secretWorld]) {
       data.secrets[secretWorld] = true;
@@ -117,16 +121,12 @@ export const ghosts = {
 export const MAP_ENEMY = ['g', 'q', 'c', 't', 'p', 'J', 'E'];
 
 // Los lugares del mapa de un mundo, en el orden del caminito: nivel 1, casita de regalos, fuerte, nivel 3, castillo
-// del jefe y (si ya se abrió) el nivel secreto.
+// del jefe y (si ya se abrió) el nivel secreto. (La Isla de los jefes tiene 3 niveles: después de la casita, los
+// otros dos.)
 export function worldNodes(world) {
   const levelIndex = (i) => LEVELS.findIndex((lv) => lv.world === world && lv.index === i);
-  const nodes = [
-    { kind: 'level', index: levelIndex(0) },
-    { kind: 'house' },
-    { kind: 'level', index: levelIndex(1) },
-    { kind: 'level', index: levelIndex(2) },
-    { kind: 'level', index: levelIndex(3) },
-  ];
+  const nodes = WORLDS[world].levels.map((_, i) => ({ kind: 'level', index: levelIndex(i) }));
+  nodes.splice(1, 0, { kind: 'house' });
   const secret = SECRETS.find((s) => s.world === world);
   if (secret && progress.secretOpen(world)) nodes.push({ kind: 'secret', info: secret });
   return nodes;
@@ -145,6 +145,7 @@ export function worldOpen(world) {
 const DEPTH = 10002;
 const SLOTS = [150, 330, 510, 690, 870, 1050];
 const SLOT_Y = [430, 330, 430, 330, 430, 300];
+const SLOTS_FEW = [220, 500, 780, 1060];
 
 // El mapa de un mundo: su isla con el caminito, los lugares, los jugadores (caminan de lugar en lugar), el enemigo
 // del mapa y abajo la información. `state` = { world, node, enemy } (dónde están; el enemigo puede ser null).
@@ -164,7 +165,9 @@ export function showMap(scene, state, characters) {
       .setOrigin(0.5),
   );
   const nodes = worldNodes(state.world);
-  const pos = (i) => [SLOTS[i], SLOT_Y[i]];
+  // (Con pocos lugares, como en la Isla de los jefes, se reparten a lo ancho de la isla.)
+  const xs = nodes.length <= 4 ? SLOTS_FEW : SLOTS;
+  const pos = (i) => [xs[i], SLOT_Y[i]];
   const path = scene.add.graphics();
   path.lineStyle(16, 0xf2d48a, 1);
   path.beginPath();
@@ -181,7 +184,7 @@ export function showMap(scene, state, characters) {
       const info = node.kind === 'secret' ? node.info : LEVELS[node.index];
       const data = progress.level(info.id);
       const boss = Boolean(info.spec.boss);
-      const label = node.kind === 'secret' ? '★' : boss ? (info.spec.boss.startsWith('rey') ? '👑' : '🏰') : info.id;
+      const label = node.kind === 'secret' ? '★' : boss ? (BOSSES[info.spec.boss].mini ? '🏰' : '👑') : info.id;
       icon.add(scene.add.circle(0, 0, 34, open ? (data.done ? 0x4cd97b : 0xffffff) : 0x8a86b8).setStrokeStyle(5, COLORS.ink));
       icon.add(scene.add.text(0, 0, label, textStyle(label.length > 2 ? 18 : 28, '#1b1530', { fontStyle: 'bold' })).setOrigin(0.5));
       icon.add(scene.add.text(0, 52, data.big.map((b) => (b ? '●' : '○')).join(''), textStyle(18, '#ffd84d', { ...outline, strokeThickness: 4 })).setOrigin(0.5));
@@ -285,6 +288,8 @@ export const MODES = [
   { id: 'rush', label: '👑 Jefes en serie' },
   { id: 'shop', label: '🛍️ Tienda de sombreros y trajes' },
   { id: 'life', label: '❤️ Comprar una vida extra (20 monedas)' },
+  { id: 'race', label: '🏁 Carreritas: ¡a ver quién llega primero!' },
+  { id: 'editor', label: '🛠️ Arma tu nivel (y juégalo)' },
 ];
 
 export function showModes(scene, selected, coins) {
@@ -294,7 +299,7 @@ export function showModes(scene, selected, coins) {
   root.add(scene.add.text(width / 2, 90, 'Modos', textStyle(52, TEXT.accent, { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 10 })).setOrigin(0.5));
   root.add(scene.add.text(width / 2, 150, `💰 ${coins} monedas de la familia`, textStyle(24, '#ffd84d', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5));
   const rows = MODES.map((mode, i) => {
-    const text = scene.add.text(width / 2, 240 + i * 70, mode.label, textStyle(28, '#ffffff', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5);
+    const text = scene.add.text(width / 2, 220 + i * 62, mode.label, textStyle(28, '#ffffff', { fontStyle: 'bold', stroke: '#1b1530', strokeThickness: 5 })).setOrigin(0.5);
     root.add(text);
     return text;
   });
